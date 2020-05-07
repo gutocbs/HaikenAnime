@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>AnimeSlot.qml</file>
+        <file>Home.qml</file>
+        <file>AnimeGrid.qml</file>
+        <file>AnimeSelecionado.qml</file>
+        <file>SlotBaixoEsquerda.qml</file>
+        <file>BotoesAnime.qml</file>
+        <file>AnimeReconhecidoSlot.qml</file>
+        <file>SlotMenus.qml</file>
+    </qresource>
+</RCC>
