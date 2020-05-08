@@ -6,16 +6,21 @@ Item {
     height: 606
     property alias row1Y: row1.y
     property color corOriginal: "#b9c9fa"
+    property color corTextoNormal: "black"
+    property color corEpisodioEncontrado: "#357838"
+    property color corEpisodioNaoEncontrado: "#783c35"
     property var localNome: ["0","1","2","3","4","5","6","7","8","9","10","11"]
     property var localEpisodios: ["0","1","2","3","4","5","6","7","8","9","10","11"]
+    property var localCorEpisodios: ["0","0","0","0","0","0","0","0","0","0","0","0"]
     property var localNota: ["0","1","2","3","4","5","6","7","8","9","10","11"]
     property var localLista: ["0","1","2","3","4","5","6","7","8","9","10","11"]
-    property var localCor: ["0","1","2","3","4","5","6","7","8","9","10","11"]
+    property var localCor: ["0","0","0","0","0","0","0","0","0","0","0","0"]
     property var localImagem: ["","","","","","","","","","","",""]
 
     function getDataFromMain(id,pos){
         var listaNomeTemp = localNome
         var listaEpisodiosTemp = localEpisodios
+        var listaCorEpisodiosTemp = localCorEpisodios
         var listaNotaTemp = localNota
         var listaListaTemp = localLista
         var listaCorTemp = localCor
@@ -27,6 +32,12 @@ Item {
             listaListaTemp[pos] = listaAnime[pos]
             listaImaemTemp[pos] = "file:///"+dirImagensMedias+id
             listaCorTemp[pos] = corOriginal
+            if(episodiosEncontradosAnime[pos] === "1")
+                listaCorEpisodiosTemp[pos] = corEpisodioEncontrado
+            else if(episodiosEncontradosAnime[pos] === "-1")
+                listaCorEpisodiosTemp[pos] = corEpisodioNaoEncontrado
+            else
+                listaCorEpisodiosTemp[pos] = corTextoNormal
         }
         else{
             listaNomeTemp[pos] = ""
@@ -42,6 +53,7 @@ Item {
         localLista = listaListaTemp
         localCor = listaCorTemp
         localImagem = listaImaemTemp
+        localCorEpisodios = listaCorEpisodiosTemp
     }
 
     Column {
@@ -79,6 +91,7 @@ Item {
                         lista: localLista[posicao]
                         corLabel: localCor[posicao]
                         imagem: localImagem[posicao]
+                        corEpisodio: localCorEpisodios[posicao]
 
                     }
                 }
@@ -111,6 +124,7 @@ Item {
                         lista: localLista[posicao]
                         corLabel: localCor[posicao]
                         imagem: localImagem[posicao]
+                        corEpisodio: localCorEpisodios[posicao]
 
 
                     }
@@ -142,6 +156,7 @@ Item {
                         lista: localLista[posicao]
                         corLabel: localCor[posicao]
                         imagem: localImagem[posicao]
+                        corEpisodio: localCorEpisodios[posicao]
 
 
                     }
@@ -180,6 +195,7 @@ Item {
                         lista: localLista[posicao]
                         nota: localNota[posicao]
                         imagem: localImagem[posicao]
+                        corEpisodio: localCorEpisodios[posicao]
 
                     }
                 }
@@ -210,6 +226,7 @@ Item {
                         lista: localLista[posicao]
                         nota: localNota[posicao]
                         imagem: localImagem[posicao]
+                        corEpisodio: localCorEpisodios[posicao]
 
                     }
                 }
@@ -240,6 +257,7 @@ Item {
                         lista: localLista[posicao]
                         nota: localNota[posicao]
                         imagem: localImagem[posicao]
+                        corEpisodio: localCorEpisodios[posicao]
 
                     }
                 }
@@ -277,6 +295,7 @@ Item {
                         lista: localLista[posicao]
                         nota: localNota[posicao]
                         imagem: localImagem[posicao]
+                        corEpisodio: localCorEpisodios[posicao]
 
                     }
                 }
@@ -307,6 +326,7 @@ Item {
                         lista: localLista[posicao]
                         nota: localNota[posicao]
                         imagem: localImagem[posicao]
+                        corEpisodio: localCorEpisodios[posicao]
 
                     }
                 }
@@ -337,6 +357,7 @@ Item {
                         lista: localLista[posicao]
                         nota: localNota[posicao]
                         imagem: localImagem[posicao]
+                        corEpisodio: localCorEpisodios[posicao]
 
                     }
                 }
@@ -374,6 +395,7 @@ Item {
                         lista: localLista[posicao]
                         nota: localNota[posicao]
                         imagem: localImagem[posicao]
+                        corEpisodio: localCorEpisodios[posicao]
 
                     }
                 }
@@ -405,6 +427,7 @@ Item {
                         lista: localLista[posicao]
                         nota: localNota[posicao]
                         imagem: localImagem[posicao]
+                        corEpisodio: localCorEpisodios[posicao]
 
                     }
                 }
@@ -435,6 +458,7 @@ Item {
                         nota: localNota[posicao]
                         corLabel: localCor[posicao]
                         imagem: localImagem[posicao]
+                        corEpisodio: localCorEpisodios[posicao]
 
                     }
                 }

@@ -26,6 +26,10 @@ void confUsuario::fbuscaDiretoriosAnimes(){
         return;
     }
 //    qDebug() << "Searching for anime folders";
+    if(vdiretorioAnimes.isEmpty()){
+        this->thread()->exit(0);
+        return;
+    }
     //Busca cada diretorio existente nas configurações
     for(int i = 0; i < vdiretorioAnimes.size(); i++){
         //Procura apenas por diretorios e subdiretorios
@@ -91,7 +95,7 @@ void confUsuario::fbuscaDiretoriosAnimes(){
     fsetupListasPraBusca();
 }
 
-void confUsuario::fbuscaPastasThread(QThread &dThread)
+void confUsuario::fgetThread(QThread &dThread)
 {
     vlista = 0;
     connect(&dThread, &QThread::started, this, &confUsuario::fsetupListasPraBusca, Qt::QueuedConnection);

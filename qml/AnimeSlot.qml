@@ -15,6 +15,7 @@ Item {
     property var lista: "Watching"
     property var imagem: "qrc:/qtquickplugin/images/template_image.png"
     property color corLabel: "#b9c9fa"
+    property color corEpisodio: "black"
     property var idAnimeSlot: ""
 
     Row {
@@ -130,6 +131,7 @@ Item {
                         horizontalAlignment: Text.AlignHCenter
                         anchors.fill: parent
                         font.pixelSize: 12
+                        color: corEpisodio
                     }
                 }
             }

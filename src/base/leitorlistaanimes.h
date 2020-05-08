@@ -22,7 +22,7 @@ public:
     explicit leitorlistaanimes(QObject *parent = nullptr);
     ~leitorlistaanimes();
 
-    enum type{ANIME, MANGA, NOVEL};
+    enum type{ANIME, MANGA, NOVEL, SEASON};
     Q_ENUM(type)
 
     bool fleJson();

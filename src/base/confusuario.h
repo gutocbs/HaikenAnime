@@ -24,7 +24,7 @@ public:
     void fbuscaDiretoriosAnimes();
     void frecebeListaAnime(leitorlistaanimes*);
     void frecebeConfigs(const QStringList &ldiretorios);
-    void fbuscaPastasThread(QThread &dThread);
+    void fgetThread(QThread &dThread);
     void fsalvaPastasArquivos();
     void flePastasArquivos();
     void fselecionaPastaEspecificaAnime(const QString &ridAnime, const QString &rdirAnime);

@@ -15,6 +15,7 @@ public:
     QString vdiretorioImagensGrandes;
     QString vdiretorioImagensPequenas;
     QString vimagemStaple;
+    QString vimagemAvatar;
     void fcriaDiretoriosBase();
 //    void fcriaArquivoLog();
 

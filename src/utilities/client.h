@@ -12,6 +12,8 @@ class Client : public QObject
     Q_OBJECT
 public:
     explicit Client(QObject *parent = nullptr);
+    ~Client();
+
     enum clients{ANILIST, MYANIMELIST, KITSU};
     Q_ENUM(clients)
 
@@ -25,11 +27,17 @@ public:
 public slots:
     void fselecionaClient(QVariant);
     void fbaixaListas();
+    QString fgetAvatar();
 
 signals:
+    void sdownloadCompleted(bool);
+
+private slots:
+    void fdownloadSignal(bool);
 
 private:
     void fpassaThread();
+    void fconnections();
 
     clients clientEscolhido;
     anilist *clientAnilist;

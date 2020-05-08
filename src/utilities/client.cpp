@@ -2,16 +2,39 @@
 
 Client::Client(QObject *parent) : QObject(parent)
 {
-
 }
 
+Client::~Client()
+{
+    tthreadClient.requestInterruption();
+    tthreadClient.wait();
+    switch (clientEscolhido) {
+        case ANILIST:
+            clientAnilist->deleteLater();
+        break;
+    }
+}
+
+void Client::fconnections(){
+    switch (clientEscolhido) {
+        case ANILIST:
+            //Ao terminar de baixar a lista, manda um aviso que devo mandar pra main class
+            connect(clientAnilist, &anilist::sterminouDownload, this, &Client::fdownloadSignal);
+        break;
+    }
+}
+
+void Client::fdownloadSignal(bool downloadSignal){
+    emit sdownloadCompleted(downloadSignal);
+}
 
 void Client::fselecionaClient(QVariant rnomeClient)
 {
     if(rnomeClient.toString().compare("Anilist", Qt::CaseInsensitive) == 0){
         clientEscolhido = clients::ANILIST;
-        clientAnilist = new anilist(this);
+        clientAnilist = new anilist();
     }
+    fconnections();
 }
 
 void Client::frecebeAutorizacao(const QString &ruser, QString rauthcode)
@@ -27,6 +50,15 @@ void Client::fbaixaListas()
     if(!tthreadClient.isRunning()){
         fpassaThread();
         tthreadClient.start();
+    }
+}
+
+QString Client::fgetAvatar()
+{
+    switch (clientEscolhido) {
+        case ANILIST:
+            return clientAnilist->fretornaAvatar();
+        break;
     }
 }
 
@@ -88,7 +120,7 @@ bool Client::fgetListaPorAno()
 {
     switch (clientEscolhido) {
         case ANILIST:
-            if(clientAnilist->fgetList())
+            if(clientAnilist->fgetListasAnoSeason())
                 return true;
         break;
     }

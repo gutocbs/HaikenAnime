@@ -1129,6 +1129,7 @@ QVector<anime *> leitorlistaanimes::fleListaAnoSeason(int ano, const QString &se
                 else if (lnomeIngles == "?")
                     lnomeIngles = lnome;
                 lnovoAnime->vnome = lnome;
+                qDebug() << lnome;
                 lnovoAnime->vnomeIngles = lnomeIngles;
                 if(!lnomeAlternativo.isEmpty()){
                     lnovoAnime->vnomeAlternativo = lnomeAlternativo;
@@ -1998,6 +1999,7 @@ bool leitorlistaanimes::fdeletedaLista(const QString &rid)
 }
 
 QVector<anime *> leitorlistaanimes::sortLista(const QString &rordem, QString rlista, type rtipo){
+    qDebug() << rlista << rtipo;
     if(rtipo == type::ANIME){
         if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
             llistaTemp = vlistaWatching;
@@ -2011,27 +2013,6 @@ QVector<anime *> leitorlistaanimes::sortLista(const QString &rordem, QString rli
             llistaTemp = vlistaPlanToWatch;
         else if(rlista == "busca")
             llistaTemp = vlistaBusca;
-        else if(rlista.contains("season", Qt::CaseInsensitive)){
-            rlista = rlista.remove("season");
-            if(rlista.contains("Winter", Qt::CaseInsensitive)){
-                rlista = rlista.remove("Winter");
-                llistaTemp = fleListaAnoSeason(rlista.toInt(), "winter");
-            }
-            else if(rlista.contains("Spring", Qt::CaseInsensitive)){
-                rlista = rlista.remove("Spring");
-                llistaTemp = fleListaAnoSeason(rlista.toInt(), "spring");
-            }
-            else if(rlista.contains("Summer", Qt::CaseInsensitive)){
-                rlista = rlista.remove("Summer");
-                llistaTemp = fleListaAnoSeason(rlista.toInt(), "summer");
-            }
-            else if(rlista.contains("Fall", Qt::CaseInsensitive)){
-                rlista = rlista.remove("Fall");
-                llistaTemp = fleListaAnoSeason(rlista.toInt(), "fall");
-            }
-            else
-                llistaTemp = fleListaAno(rlista.toInt());
-        }
     }
     else if(rtipo == type::MANGA){
         if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
@@ -2060,6 +2041,26 @@ QVector<anime *> leitorlistaanimes::sortLista(const QString &rordem, QString rli
             llistaTemp = vlistaNovelPlanToRead;
         else if(rlista == "busca")
             llistaTemp = vlistaBusca;
+    }
+    else if(rtipo == type::SEASON){
+        if(rlista.contains("WINTER", Qt::CaseInsensitive)){
+            rlista = rlista.remove("WINTER");
+            llistaTemp = fleListaAnoSeason(rlista.toInt(), "winter");
+        }
+        else if(rlista.contains("SPRING", Qt::CaseInsensitive)){
+            rlista = rlista.remove("SPRING");
+            llistaTemp = fleListaAnoSeason(rlista.toInt(), "spring");
+        }
+        else if(rlista.contains("SUMMER", Qt::CaseInsensitive)){
+            rlista = rlista.remove("SUMMER");
+            llistaTemp = fleListaAnoSeason(rlista.toInt(), "summer");
+        }
+        else if(rlista.contains("FALL", Qt::CaseInsensitive)){
+            rlista = rlista.remove("FALL");
+            llistaTemp = fleListaAnoSeason(rlista.toInt(), "fall");
+        }
+        else
+            llistaTemp = fleListaAno(rlista.toInt());
     }
     else
         llistaTemp.clear();

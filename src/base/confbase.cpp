@@ -52,5 +52,6 @@ void confBase::fcriaDiretoriosBase()
     vdiretorioImagensMedio = QDir::currentPath() + QDir::separator() + limagePath + QDir::separator() + "Medio" + QDir::separator();
     vdiretorioImagensGrandes = QDir::currentPath() + QDir::separator() + limagePath + QDir::separator() + "Grande" + QDir::separator();
     vimagemStaple = QDir::currentPath() + QDir::separator() + lconfPath + QDir::separator() + "Temp" + QDir::separator() + "imagemStaple.jpg";
+    vimagemAvatar = QDir::currentPath() + QDir::separator() + ltempPath + QDir::separator() + "Imagens" + QDir::separator() + "avatar";
 }
 

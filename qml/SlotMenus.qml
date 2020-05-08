@@ -5,6 +5,12 @@ Item {
     width: 1920
     height: 187
 
+    property var nomeBotaoCurrent: "Watching"
+    property var nomeBotaoCompleted: "Completed"
+    property var nomeBotaoPaused: "On Hold"
+    property var nomeBotaoDropped: "Dropped"
+    property var nomeBotaoPlanning: "Plan to Watch"
+
     Row {
         id: row
         anchors.bottomMargin: 20
@@ -23,27 +29,27 @@ Item {
                 spacing: 2
 
                 Button {
-                    id: button
-                    text: qsTr("Anime")
+                    id: botaoHome
+                    text: qsTr("Home")
                     display: AbstractButton.TextBesideIcon
                     font.family: "Tahoma"
                 }
 
                 Button {
-                    id: button1
-                    text: qsTr("Manga")
+                    id: botaoConfiguracao
+                    text: qsTr("Configuration")
                     font.family: "Tahoma"
                 }
 
                 Button {
-                    id: button2
-                    text: qsTr("LN")
+                    id: botaoTorrent
+                    text: qsTr("Torrent")
                     font.family: "Tahoma"
                 }
 
                 Button {
-                    id: button3
-                    text: qsTr("Season")
+                    id: botaoAjuda
+                    text: qsTr("Help")
                     font.family: "Tahoma"
                 }
 
@@ -58,18 +64,18 @@ Item {
                         anchors.fill: parent
 
                         Image {
-                            id: image
+                            id: avatar
                             width: 100
                             height: 100
                             fillMode: Image.PreserveAspectFit
-                            source: "qrc:/qtquickplugin/images/template_image.png"
+                            source: imagemAvatar
                         }
 
                         Label {
                             id: label
                             width: 200
                             height: 50
-                            text: qsTr("Label")
+                            text: nomeUsuario
                             font.bold: true
                             font.pointSize: 24
                             font.family: "Tahoma"
@@ -86,27 +92,67 @@ Item {
                 spacing: 2
 
                 Button {
-                    id: button4
+                    id: botaoTipoAnime
                     text: qsTr("Home")
                     font.family: "Tahoma"
+                    onClicked: {
+                        mainClass.fselecionaTipoAnime()
+                        nomeBotaoCurrent = "Watching"
+                        nomeBotaoCompleted = "Completed"
+                        nomeBotaoPaused = "On Hold"
+                        nomeBotaoDropped = "Dropped"
+                        nomeBotaoPlanning = "Plan to Watch"
+                        botaoPlanning.visible = true
+                        boxAnos.visible = false
+                    }
                 }
 
                 Button {
-                    id: button5
-                    text: qsTr("Configuration")
+                    id: botaoTipoManga
+                    text: qsTr("Manga")
                     font.family: "Tahoma"
+                    onClicked: {
+                        mainClass.fselecionaTipoManga()
+                        nomeBotaoCurrent = "Reading"
+                        nomeBotaoCompleted = "Completed"
+                        nomeBotaoPaused = "On Hold"
+                        nomeBotaoDropped = "Dropped"
+                        nomeBotaoPlanning = "Plan to Read"
+                        botaoPlanning.visible = true
+                        boxAnos.visible = false
+                    }
                 }
 
                 Button {
-                    id: button6
-                    text: qsTr("Torrent")
+                    id: botaoTipoLN
+                    text: qsTr("LN")
                     font.family: "Tahoma"
+
+                    onClicked: {
+                        mainClass.fselecionaTipoNovel()
+                        nomeBotaoCurrent = "Reading"
+                        nomeBotaoCompleted = "Completed"
+                        nomeBotaoPaused = "On Hold"
+                        nomeBotaoDropped = "Dropped"
+                        nomeBotaoPlanning = "Plan to Read"
+                        botaoPlanning.visible = true
+                        boxAnos.visible = false
+
+                    }
                 }
 
                 Button {
-                    id: button7
-                    text: qsTr("Help")
+                    id: botaoSeason
+                    text: qsTr("Season")
                     font.family: "Tahoma"
+                    onClicked: {
+                        nomeBotaoCurrent = "Winter"
+                        nomeBotaoCompleted = "Spring"
+                        nomeBotaoPaused = "Summer"
+                        nomeBotaoDropped = "Fall"
+                        botaoPlanning.visible = false
+                        boxAnos.visible = true
+                    }
                 }
             }
 
@@ -117,45 +163,81 @@ Item {
                 spacing: 2
 
                 Button {
-                    id: botaoWatching
-                    text: qsTr("Watching")
+                    id: botaoCurrent
+                    text: nomeBotaoCurrent
                     font.family: "Tahoma"
                     onClicked: mainClass.fselecionaListaCurrent()
                 }
 
                 Button {
-                    id: button9
-                    text: qsTr("Completed")
+                    id: botaoCompleted
+                    text: nomeBotaoCompleted
                     font.family: "Tahoma"
                     onClicked: mainClass.fselecionaListaCompleted()
                 }
 
                 Button {
-                    id: button10
-                    text: qsTr("On Hold")
+                    id: botaoPaused
+                    text: nomeBotaoPaused
                     font.family: "Tahoma"
                     onClicked: mainClass.fselecionaListaPaused()
                 }
 
                 Button {
-                    id: button11
-                    text: qsTr("Dropped")
+                    id: botaoDropped
+                    text: nomeBotaoDropped
                     font.family: "Tahoma"
                     onClicked: mainClass.fselecionaListaDropped()
                 }
 
-                Button {
-                    id: button12
-                    text: qsTr("Plan to Watch")
-                    font.family: "Tahoma"
-                    onClicked: mainClass.fselecionaListaPlanning()
+                Item {
+                    id: element1
+                    width: 100
+                    height: 40
+
+
+                    ComboBox {
+                        id: boxAnos
+                        width: 100
+                        textRole: "ano"
+                        model: ListModel {
+                            id: listModelAnos
+                        }
+                        Component.onCompleted: {
+                            if(listModelAnos.count !== numeroAnosListas){
+                                for(var i = 0; i < numeroAnosListas; i++){
+                                    model.append({"ano": (2000+i).toString()})
+                                }
+                            }
+                        }
+                        onActivated: mainClass.fselecionaTipoSeason(boxAnos.currentText)
+                    }
+                    Button {
+                        id: botaoPlanning
+                        x: 0
+                        y: 0
+                        text: nomeBotaoPlanning
+                        font.family: "Tahoma"
+                        onClicked: mainClass.fselecionaListaPlanning()
+                    }
                 }
 
                 Button {
                     id: button13
                     text: qsTr("Refresh")
                     font.family: "Tahoma"
+                    onClicked: mainClass.
                 }
+
+                Label {
+                    id: labelTime
+                    text: time
+                    renderType: Text.NativeRendering
+                    font.bold: true
+                    font.pointSize: 15
+                    font.family: "Tahoma"
+                }
+
             }
         }
     }
@@ -164,6 +246,6 @@ Item {
 
 /*##^##
 Designer {
-    D{i:0;formeditorZoom:4}D{i:9;anchors_height:400}D{i:1;anchors_height:147;anchors_width:200}
+    D{i:0;formeditorZoom:1.5}D{i:9;anchors_height:400}D{i:1;anchors_height:147;anchors_width:200}
 }
 ##^##*/

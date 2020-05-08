@@ -21,6 +21,7 @@ Window {
     property var nomeAnime: ["0","1","2","3","4","5","6","7","8","9","10","11"]
     //Episodios
     property var episodiosAnime: ["0","1","2","3","4","5","6","7","8","9","10","11"]
+    property var episodiosEncontradosAnime: ["0","0","0","0","0","0","0","0","0","0","0","0"]
     //Nota
     property var notaAnime: ["0","1","2","3","4","5","6","7","8","9","10","11"]
     //Lista
@@ -38,6 +39,11 @@ Window {
     property var episodiosAnimeSelecionado: "Peter Pan"
     property var tipoAnimeSelecionado: "Peter Pan"
     property var imagemAnimeSelecionado: "null"
+    property var imagemAvatar: ""
+    property var nomeUsuario: ""
+    property var time: ""
+
+    property var numeroAnosListas: 0
 
     function getData(id, posicaoGrid){
         var listaIdTemp = idAnime
@@ -45,16 +51,24 @@ Window {
         var listaEpisodiosTemp = episodiosAnime
         var listaNotaTemp = notaAnime
         var listaListaTemp = listaAnime
+        var listaEpisodiosEncontradosTemp = episodiosEncontradosAnime
         listaIdTemp[posicaoGrid] = id
         listaNomeTemp[posicaoGrid] = mainClass.fretornaNomeAnimePosicao(posicaoGrid)
         listaEpisodiosTemp[posicaoGrid] = mainClass.fretornaEpisodiosAnimePosicao(posicaoGrid)
         listaNotaTemp[posicaoGrid] = mainClass.fretornaNotaAnimePosicao(posicaoGrid)
-        listaListaTemp[posicaoGrid] = mainClass.fretornaListaAnimePosicao(posicaoGrid)
+        if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "1")
+            listaEpisodiosEncontradosTemp[posicaoGrid] = "1"
+        else if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "-1")
+            listaEpisodiosEncontradosTemp[posicaoGrid] = "-1"
+        else
+            listaEpisodiosEncontradosTemp[posicaoGrid] = "0"
         idAnime = listaIdTemp
         nomeAnime = listaNomeTemp
         episodiosAnime = listaEpisodiosTemp
         notaAnime = listaNotaTemp
         listaAnime = listaListaTemp
+        episodiosEncontradosAnime = listaEpisodiosEncontradosTemp
+
     }
 
     Connections{
@@ -87,9 +101,25 @@ Window {
         onSepisodiosLancadosAnimeSelecionado: episodiosAnimeSelecionado = data
         onStipoAnimeSelecionado: tipoAnimeSelecionado = data
         onSimagemAnimeSelecionado: imagemAnimeSelecionado = data
+        onStimer: time = data
+        onSconnectGUI:{
+            if(data === false){
+                slotMenus.enabled = false;
+                home.enabled = false;
+            }
+            else{
+                slotMenus.enabled = true;
+                home.enabled = true;
+            }
+        }
     }
 
-    Component.onCompleted: mainClass.finfoAnimeSelecionado(0);
+    Component.onCompleted: {
+        mainClass.finfoAnimeSelecionado(0)
+        numeroAnosListas = mainClass.fretornaNumeroAnos()
+        imagemAvatar = "file:///"+mainClass.fretornaPathAvatar()
+        nomeUsuario = mainClass.fretornaNomeUsuario()
+    }
 
     Column {
         id: column
@@ -115,6 +145,7 @@ Window {
             height: parent.height-187
 
             Home{
+                id: home
                 transformOrigin: Item.Center;
             }
         }

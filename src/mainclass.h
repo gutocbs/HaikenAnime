@@ -7,6 +7,10 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QMetaEnum>
+#include <QTimer>
+#include <QThread>
+#include <QDate>
+#include <QTime>
 
 #include "src/base/leitorlistaanimes.h"
 #include "src/base/anime.h"
@@ -14,6 +18,7 @@
 #include "src/base/arquivos.h"
 #include "src/base/confusuario.h"
 #include "src/utilities/client.h"
+#include "src/utilities/downloader.h"
 
 class MainClass : public QObject
 {
@@ -23,18 +28,29 @@ class MainClass : public QObject
 //    Q_ENUM(type)
 public:
     explicit MainClass(QObject *parent = nullptr);
-    enum lista{CURRENT, COMPLETED, PAUSED, DROPPED, PLANNING};
+    ~MainClass();
+
+    enum lista{CURRENT, COMPLETED, PAUSED, DROPPED, PLANNING, WINTER, SUMMER, FALL, SPRING};
     Q_ENUM(lista)
 public slots:
     void fmostraListaAnimes();
     void finfoAnimeSelecionado(QVariant);
+    QVariant fretornaNumeroAnos();
     QVariant fretornaNomeAnimePosicao(QVariant);
     QVariant fretornaEpisodiosAnimePosicao(QVariant);
     QVariant fretornaNotaAnimePosicao(QVariant);
     QVariant fretornaListaAnimePosicao(QVariant);
+    QVariant fretornaEpisodioAnimeEncontrado(QVariant);
+    QVariant fretornaNomeUsuario();
+    QVariant fretornaPathAvatar();
+    void fupdateTimer();
 
     void fordemLista(QVariant);
     void fabreSite(QVariant);
+    void fselecionaTipoAnime();
+    void fselecionaTipoManga();
+    void fselecionaTipoNovel();
+    void fselecionaTipoSeason(QVariant);
     void fselecionaListaCurrent();
     void fselecionaListaCompleted();
     void fselecionaListaPaused();
@@ -43,11 +59,15 @@ public slots:
     void fabreProximoEpisodio();
     void fabrePastaAnime();
     void fabreStream();
+    void frefresh();
 
     void fproximaPagina();
     void fanteriorPagina();
 
     void fmudaListaAnime(QVariant);
+    void ftryClientConnection(bool);
+    void fconnectSuccess();
+    void fconnectFail();
 
 signals:
     void sidAnime1(QVariant data);
@@ -79,26 +99,45 @@ signals:
     void sdirImagensGrandes(QVariant data);
     void sdirImagensMedias(QVariant data);
 
+    void sconnectGUI(QVariant data);
+    void stimer(QVariant data);
+
 
 private:
+    void fconnections();
+    void fdownloadCoverImages();
     //Classes
     leitorlistaanimes *cleitorListaAnimes;
     confBase *cconfiguracoesDiretoriosPadrao;
     arquivos *carquivos;
     confUsuario *cconfiguracoesUsuarioDiretorios;
     Client *cclient;
+    Downloader *cdownloader;
 
     QVector<anime*> vlistaSelecionada;
 
     int vindexAnimeSelecionado;
     int vposicaoGridAnimeSelecionado;
     int vpagina;
+    int vanoBuscaAnimes;
 
     QString vordemLista;
     QString vlistaAtual;
     leitorlistaanimes::type vtipoAtual;
 
-    QMetaEnum vmetaEnum;
+    QMetaEnum vmetaEnumLista;
+    QMetaEnum vmetaEnumTipo;
+
+    QThread tthreadDiretorios;
+
+    QStringList vlistaFilaTipo;
+    QStringList vlistaFilaLista;
+    QList<int> vlistaFilaSize;
+
+
+    QTimer *vtimerAutoRefresh;
+    QTimer *vtimerCountdown;
+    QTime time;
 };
 
 #endif // MAINCLASS_H
