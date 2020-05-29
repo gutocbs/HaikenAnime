@@ -30,7 +30,7 @@ public:
     QString fretornaAvatar();
 
     void fbaixaListaThread(QThread &cThread);
-    void frecebeAutorizacao(const QString &ruser, QString);
+    void frecebeAutorizacao(const QString &ruser, QVariant);
 
 public slots:
     bool fgetList();

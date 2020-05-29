@@ -1,0 +1,6 @@
+mutation{
+        SaveMediaListEntry (mediaId: variableID, progress: variableProgresso) {
+    	id
+    	status
+	} 
+}

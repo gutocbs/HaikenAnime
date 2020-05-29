@@ -19,6 +19,7 @@
 #include "src/base/confusuario.h"
 #include "src/utilities/client.h"
 #include "src/utilities/downloader.h"
+#include "src/base/abaconfig.h"
 
 class MainClass : public QObject
 {
@@ -69,6 +70,13 @@ public slots:
     void fconnectSuccess();
     void fconnectFail();
 
+    void fbotaoHome();
+    void fbotaoConfig();
+    void fbotaoTorrent();
+    void fsetauthCode(QVariant);
+    void fsetUsername(QVariant);
+    void fsetClient(QVariant);
+
 signals:
     void sidAnime1(QVariant data);
     void sidAnime2(QVariant data);
@@ -102,6 +110,11 @@ signals:
     void sconnectGUI(QVariant data);
     void stimer(QVariant data);
 
+    void sbotaoHome();
+    void sbotaoConfig();
+    void sbotaoTorrent();
+    void sconfigSelecionada(QVariant data);
+
 
 private:
     void fconnections();
@@ -113,6 +126,7 @@ private:
     confUsuario *cconfiguracoesUsuarioDiretorios;
     Client *cclient;
     Downloader *cdownloader;
+    abaConfig *cabaConfig;
 
     QVector<anime*> vlistaSelecionada;
 

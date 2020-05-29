@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/Anilist">
+        <file>qrc/Anilist/AvatarTotalPages.txt</file>
+        <file>qrc/Anilist/AnimeInfo.txt</file>
+        <file>qrc/Anilist/AnimeInfoAno.txt</file>
+        <file>qrc/Anilist/AnoTotalPages.txt</file>
+        <file>qrc/Anilist/MutationLista.txt</file>
+        <file>qrc/Anilist/MutationProgresso.txt</file>
+        <file>qrc/Anilist/MutationScore.txt</file>
+        <file>qrc/Anilist/QueryDelete.txt</file>
+        <file>qrc/Anilist/MutationDelete.txt</file>
+    </qresource>
+</RCC>

@@ -1,5 +1,6 @@
 import QtQuick 2.0
 import QtQuick.Controls 2.3
+import QtQuick.Controls.Styles 1.4
 
 Item {
     width: 1920
@@ -33,18 +34,21 @@ Item {
                     text: qsTr("Home")
                     display: AbstractButton.TextBesideIcon
                     font.family: "Tahoma"
+                    onClicked: mainClass.fbotaoHome()
                 }
 
                 Button {
                     id: botaoConfiguracao
                     text: qsTr("Configuration")
                     font.family: "Tahoma"
+                    onClicked: mainClass.fbotaoConfig()
                 }
 
                 Button {
                     id: botaoTorrent
                     text: qsTr("Torrent")
                     font.family: "Tahoma"
+                    onClicked: mainClass.fbotaoTorrent()
                 }
 
                 Button {
@@ -152,6 +156,7 @@ Item {
                         nomeBotaoDropped = "Fall"
                         botaoPlanning.visible = false
                         boxAnos.visible = true
+                        mainClass.fselecionaTipoSeason(boxAnos.currentText)
                     }
                 }
             }
@@ -208,6 +213,7 @@ Item {
                                 for(var i = 0; i < numeroAnosListas; i++){
                                     model.append({"ano": (2000+i).toString()})
                                 }
+                                boxAnos.currentIndex = 0
                             }
                         }
                         onActivated: mainClass.fselecionaTipoSeason(boxAnos.currentText)
@@ -226,7 +232,7 @@ Item {
                     id: button13
                     text: qsTr("Refresh")
                     font.family: "Tahoma"
-                    onClicked: mainClass.
+                    onClicked: mainClass.frefresh()
                 }
 
                 Label {

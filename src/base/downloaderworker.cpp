@@ -9,6 +9,9 @@ DownloaderWorker::DownloaderWorker(QObject *parent) : QObject(parent)
     vindexLista = 0;
     vfile = nullptr;
     m_busy = false;
+    cconfBase = new confBase;
+//    cleitorlistaanimes = new leitorlistaanimes();
+//    cleitorlistaanimes->instance();
 }
 
 bool DownloaderWorker::isBusy()
@@ -16,18 +19,9 @@ bool DownloaderWorker::isBusy()
     return m_busy;
 }
 
-void DownloaderWorker::fsetLeitorListaAnimes(leitorlistaanimes *rleitorlistaanimes)
-{
-    cleitorlistaanimes = rleitorlistaanimes;
-}
-
-void DownloaderWorker::fsetConfBase(confBase *rconfbase)
-{
-    cconfBase = rconfbase;
-}
-
 void DownloaderWorker::fdownloadAvatarUsuario(int value)
 {
+    Q_UNUSED(value)
     m_busy = true;
     QString lsaveFilePath = "Configurações/Temp/Imagens/avatar";
     lsaveFilePath.append(vURLAvatar.mid(vURLAvatar.lastIndexOf(QChar('.'))));
@@ -76,6 +70,7 @@ void DownloaderWorker::fdownloadXMLTorrentList(const QString &fileURL)
 
 void DownloaderWorker::work(int value)
 {
+    Q_UNUSED(value)
     m_busy = true;
     emit started();
     if(!vlistaSelecionada.isEmpty()){
@@ -84,13 +79,14 @@ void DownloaderWorker::work(int value)
             vlink.replace("large", "medium");
         else if(vlink.contains("small"))
             vlink.replace("small", "medium");
-        vsaveFilePath = cconfBase->vdiretorioImagensMedio;
+        vsaveFilePath = cconfBase->instance()->vdiretorioImagensMedio;
         vsaveFilePath.append(vlistaSelecionada[vindexLista]->vid);
         vsaveFilePath.append(vlink.mid(vlink.lastIndexOf(QChar('.'))));
         if(QFile(vsaveFilePath).exists() && QFile(vsaveFilePath).size() == 0)
             QFile(vsaveFilePath).remove();
 
         if(!(QFileInfo::exists(vsaveFilePath) && QFileInfo(vsaveFilePath).isFile())){
+            qDebug() << vlink;
             QNetworkRequest lrequest;
             lrequest.setUrl(QUrl(vlink));
             vreply = vmanager->get(lrequest);
@@ -109,6 +105,7 @@ void DownloaderWorker::work(int value)
         }
     }
     else{
+        qDebug() << "Lista vazia";
         vlista++;
         m_busy = false;
         emit finished();
@@ -139,6 +136,7 @@ void DownloaderWorker::ffinished()
 
 void DownloaderWorker::workBig(int value)
 {
+    Q_UNUSED(value)
     m_busy = true;
     emit started();
     if(!vlistaSelecionada.isEmpty()){
@@ -147,13 +145,14 @@ void DownloaderWorker::workBig(int value)
             vlink.replace("medium", "large");
         else if(vlink.contains("small"))
             vlink.replace("small", "large");
-        vsaveFilePath = cconfBase->vdiretorioImagensGrandes;
+        vsaveFilePath = cconfBase->instance()->vdiretorioImagensGrandes;
         vsaveFilePath.append(vlistaSelecionada[vindexLista]->vid);
         vsaveFilePath.append(vlink.mid(vlink.lastIndexOf(QChar('.'))));
         if(QFile(vsaveFilePath).exists() && QFile(vsaveFilePath).size() == 0)
             QFile(vsaveFilePath).remove();
 
         if(!(QFileInfo::exists(vsaveFilePath) && QFileInfo(vsaveFilePath).isFile())){
+             qDebug() << vsaveFilePath;
             QNetworkRequest lrequest;
             lrequest.setUrl(QUrl(vlink));
             vreply = vmanager->get(lrequest);
@@ -236,59 +235,51 @@ void DownloaderWorker::fselecionaLista(QString rlista, QString rtipoLista)
     vlista = 0;
     if(rtipoLista.compare("ANIME", Qt::CaseInsensitive) == 0){
         if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaWatching();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaWatching();
         else if(rlista.compare("COMPLETED", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaCompleted();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaCompleted();
         else if(rlista.compare("PAUSED", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaOnHold();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaOnHold();
         else if(rlista.compare("DROPPED", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaDropped();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaDropped();
         else if(rlista.compare("PLANNING", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaPlanToWatch();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaPlanToWatch();
     }
     else if(rtipoLista.compare("MANGA", Qt::CaseInsensitive) == 0){
         if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaMangaReading();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaMangaReading();
         else if(rlista.compare("COMPLETED", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaMangaCompleted();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaMangaCompleted();
         else if(rlista.compare("PAUSED", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaMangaOnHold();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaMangaOnHold();
         else if(rlista.compare("DROPPED", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaMangaDropped();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaMangaDropped();
         else if(rlista.compare("PLANNING", Qt::CaseInsensitive) == 0)
-                vlistaSelecionada = cleitorlistaanimes->retornaListaMangaPlanToRead();
+                vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaMangaPlanToRead();
     }
     else if(rtipoLista.compare("NOVEL", Qt::CaseInsensitive) == 0){
         if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaNovelReading();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaNovelReading();
         else if(rlista.compare("COMPLETED", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaNovelCompleted();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaNovelCompleted();
         else if(rlista.compare("PAUSED", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaNovelOnHold();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaNovelOnHold();
         else if(rlista.compare("DROPPED", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaNovelDropped();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaNovelDropped();
         else if(rlista.compare("PLANNING", Qt::CaseInsensitive) == 0)
-            vlistaSelecionada = cleitorlistaanimes->retornaListaNovelPlanToRead();
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaNovelPlanToRead();
     }
     else if(rtipoLista.compare("SEASON", Qt::CaseInsensitive) == 0){
-        if(rlista.contains("WINTER", Qt::CaseInsensitive)){
-            rlista = rlista.remove("WINTER");
-            vlistaSelecionada = cleitorlistaanimes->fleListaAnoSeason(rlista.toInt(), "winter");
-        }
-        else if(rlista.contains("SPRING", Qt::CaseInsensitive)){
-            rlista = rlista.remove("SPRING");
-            vlistaSelecionada = cleitorlistaanimes->fleListaAnoSeason(rlista.toInt(), "spring");
-        }
-        else if(rlista.contains("SUMMER", Qt::CaseInsensitive)){
-            rlista = rlista.remove("SUMMER");
-            vlistaSelecionada = cleitorlistaanimes->fleListaAnoSeason(rlista.toInt(), "summer");
-        }
-        else if(rlista.contains("FALL", Qt::CaseInsensitive)){
-            rlista = rlista.remove("FALL");
-            vlistaSelecionada = cleitorlistaanimes->fleListaAnoSeason(rlista.toInt(), "fall");
-        }
+        if(rlista.contains("WINTER", Qt::CaseInsensitive))
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaAnimeWinter();
+        else if(rlista.contains("SPRING", Qt::CaseInsensitive))
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaAnimeSpring();
+        else if(rlista.contains("SUMMER", Qt::CaseInsensitive))
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaAnimeSummer();
+        else if(rlista.contains("FALL", Qt::CaseInsensitive))
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaAnimeFall();
         else
-            vlistaSelecionada = cleitorlistaanimes->fleListaAno(rlista.toInt());
+            vlistaSelecionada = cleitorlistaanimes->instance()->fleListaAno(rlista.toInt());
     }
 }
 

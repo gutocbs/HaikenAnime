@@ -1,7 +1,7 @@
 import QtQuick 2.12
 
 Item {
-    id: element
+    id: home
     width: 1920
     height: 814
     scale: 1
@@ -52,6 +52,7 @@ Item {
                 y: 606
                 width: 834
                 height: 201
+                leftPadding: 8
 
                 SlotBaixoEsquerda {
                     id: slotBaixoEsquerda
@@ -110,11 +111,11 @@ Item {
 
 /*##^##
 Designer {
-    D{i:0;formeditorZoom:0.5}D{i:4;anchors_height:208;anchors_width:834;anchors_y:606}
-D{i:5;anchors_height:208;anchors_width:834;anchors_y:606}D{i:7;anchors_height:208;anchors_width:834;anchors_x:834;anchors_y:606}
-D{i:9;anchors_height:814;anchors_width:796;anchors_x:834;anchors_y:0}D{i:8;anchors_height:208;anchors_width:834;anchors_x:834;anchors_y:606}
-D{i:2;anchors_height:814;anchors_width:834;anchors_x:0;anchors_y:0}D{i:12;anchors_height:208;anchors_width:834;anchors_y:606}
-D{i:11;anchors_height:606;anchors_width:1086}D{i:13;anchors_height:208;anchors_width:834;anchors_y:606}
-D{i:10;anchors_height:814;anchors_width:1086;anchors_x:834;anchors_y:0}D{i:1;anchors_height:400;anchors_width:200}
+    D{i:4;anchors_height:208;anchors_width:834;anchors_y:606}D{i:5;anchors_height:208;anchors_width:834;anchors_y:606}
+D{i:7;anchors_height:208;anchors_width:834;anchors_x:834;anchors_y:606}D{i:9;anchors_height:814;anchors_width:796;anchors_x:834;anchors_y:0}
+D{i:8;anchors_height:208;anchors_width:834;anchors_x:834;anchors_y:606}D{i:2;anchors_height:814;anchors_width:834;anchors_x:0;anchors_y:0}
+D{i:13;anchors_height:208;anchors_width:834;anchors_y:606}D{i:12;anchors_height:208;anchors_width:834;anchors_y:606}
+D{i:11;anchors_height:606;anchors_width:1086}D{i:10;anchors_height:814;anchors_width:1086;anchors_x:834;anchors_y:0}
+D{i:1;anchors_height:400;anchors_width:200}
 }
 ##^##*/

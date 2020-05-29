@@ -22,7 +22,15 @@ bool anilist::fgetList(){
     QNetworkAccessManager lacessManager;
 
     //Query que irá solicitar o avatar e o número de páginas que temos que pegar
-    QString totalPages = "query ($id: Int) {   Page (page: 1 perPage: 50) {     pageInfo {       total        currentPage        lastPage        hasNextPage        perPage     }     mediaList(userName: " + vusername + ", id: $id, sort: MEDIA_ID) {       user{         id          name         avatar{           large         }       }     }   } }";
+    QFile avatarTotalPages(":/Anilist/qrc/Anilist/AvatarTotalPages.txt");
+    QTextStream textStream(&avatarTotalPages);
+    if(!avatarTotalPages.open(QIODevice::ReadOnly)){
+        this->thread()->exit(0);
+        return false;
+    }
+    QString totalPages = textStream.readAll();
+    avatarTotalPages.close();
+    totalPages.replace("variableUsername", vusername);
     json.insert("query", totalPages);
 
     //Checa se a thread está sendo interrompida, ou seja, se o programa está sendo fechado durante a execução da função
@@ -88,7 +96,16 @@ bool anilist::fgetList(){
                 vreply->deleteLater();
                 return false;
             }
-            QString query = "query ($id: Int, $perPage: Int) { Page (page:" + QString::number(i) + ", perPage: $perPage) {  		mediaList(userName: " + vusername + ", id: $id, sort: MEDIA_ID) {  			status  			score  			progress  			media{ 				format 				averageScore 				id 				title{ 					romaji 					english 				} 				synonyms 				description 				status 				coverImage{ 					large 				} 				season 				startDate { 					year 					month 				} 				chapters 				volumes 				episodes 				nextAiringEpisode{ 					 					airingAt 					episode 				} 				siteUrl 				streamingEpisodes{ 					site 					url 				}  			} 		  		} 	  	}  }";
+            QFile animeList(":/Anilist/qrc/Anilist/AnimeInfo.txt");
+            QTextStream textStream(&animeList);
+            if(!animeList.open(QIODevice::ReadOnly)){
+                this->thread()->exit(0);
+                return false;
+            }
+            QString query = textStream.readAll();
+            animeList.close();
+            query.replace("variablePage", QString::number(i));
+            query.replace("variableUsername", vusername);
             json.insert("query", query.trimmed());
             vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
             while (!vreply->isFinished())
@@ -119,6 +136,7 @@ bool anilist::fgetList(){
     else
         t.rename("Configurações/Temp/animeList.txt");
     emit sterminouDownload(true);
+    fgetListasAnoSeason();
     this->thread()->exit(0);
     vreply->deleteLater();
     return true;
@@ -126,7 +144,7 @@ bool anilist::fgetList(){
 
 bool anilist::fgetListasAnoSeason()
 {
-    for(int i = 0; i <  QDate::currentDate().year()-1999; i++){
+    for(int i = 0; i <  QDate::currentDate().year()-1998; i++){
         if(!fgetListaAno(QString::number(2000+i)))
             return false;
     }
@@ -145,8 +163,16 @@ bool anilist::fgetListaAno(const QString &rano){
     QNetworkAccessManager lacessManager;
 
     //Query que irá solicitar o avatar e o número de páginas que temos que pegar
-    QString totalPages = "query ($id: Int) {   Page (page: 1 perPage: 50) {     pageInfo {       total        currentPage        lastPage        hasNextPage        perPage     }     media(id: $id, seasonYear: " + rano + ", isAdult: false, sort: ID) {       status     }   } }";
-    json.insert("query", totalPages);
+    QFile totalPages(":/Anilist/qrc/Anilist/AnoTotalPages.txt");
+    QTextStream textStream(&totalPages);
+    if(!totalPages.open(QIODevice::ReadOnly)){
+        this->thread()->exit(0);
+        return false;
+    }
+    QString query = textStream.readAll();
+    totalPages.close();
+    query.replace("variableAno", rano);
+    json.insert("query", query);
 
     //Checa se a thread está sendo interrompida, ou seja, se o programa está sendo fechado durante a execução da função
     //Isso vai ocorrer em diversos pontos da thread por conta dos loops
@@ -195,7 +221,16 @@ bool anilist::fgetListaAno(const QString &rano){
     QFile t("Configurações/Temp/Lists/animeList"+rano+"Temp.txt");
     if(t.open(QIODevice::WriteOnly)){
         for(int i = 1; i < lastpage.toInt()+1; i++){
-            QString query = "query ($id: Int, $perPage: Int) {  	 	Page (page:" + QString::number(i) + ", perPage: $perPage) {  		 		 		media(id: $id, seasonYear: " + rano + ", isAdult: false, sort: ID) {  			 			 			status    			 			 				 				 			format 				 				 			averageScore 				 				 			id 				 				 			title{ 					 					 				romaji 					 					 				english 				 				 			} 				 				 			synonyms 				 				 			description 				 				 			status 				 				 			coverImage{ 					 					 				large 				 				 			} 				 				 			season 				 				 			startDate { 					 					 				year 					 					 				month 				 				 			} 				 				 			chapters 				 				 			volumes 				 				 			episodes 				 				 			nextAiringEpisode{ 					 					 					 				airingAt 					 					 				episode 				 				 			} 				 				 			siteUrl 				 				 			streamingEpisodes{ 					 					 				site 					 					 				url 				 				 			}  			 			 		  		 		 		} 	  	 	 	}    }";
+            QFile animeList(":/Anilist/qrc/Anilist/AnimeInfoAno.txt");
+            QTextStream textStream(&animeList);
+            if(!animeList.open(QIODevice::ReadOnly)){
+                this->thread()->exit(0);
+                return false;
+            }
+            query = textStream.readAll();
+            animeList.close();
+            query.replace("variablePagina", QString::number(i));
+            query.replace("variableAno", rano);
             json.insert("query", query.trimmed());
             vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
             while (!vreply->isFinished())
@@ -242,10 +277,19 @@ bool anilist::fmudaLista(int rid, const QString &rNovaLista){
 
     //Pra deletar
     //QString lnovaLista = "mutation{     DeleteMediaListEntry (mediaId: " + lnovoId + ", status: " + rnovaLista + ") {         id         status     } }";
-    //Cria string com a lista antiga
-    QString llistaAtual = "mutation{     SaveMediaListEntry (mediaId: " + QString::number(rid) + ", status: " + rNovaLista + ") {         id         status     } }";
+    //Cria string com a lista nova lista
+    QFile animeList(":/Anilist/qrc/Anilist/MutationLista.txt");
+    QTextStream textStream(&animeList);
+    if(!animeList.open(QIODevice::ReadOnly)){
+        this->thread()->exit(0);
+        return false;
+    }
+    QString query = textStream.readAll();
+    animeList.close();
+    query.replace("variableID", QString::number(rid));
+    query.replace("variableNovaLista", rNovaLista);
     //Insere item no json
-    json.insert("query", llistaAtual);
+    json.insert("query", query);
     //Manda a solicitação de mudança
     QPointer<QNetworkReply> vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
     //Espera solicitação voltar do servidor
@@ -273,7 +317,6 @@ bool anilist::fmudaLista(int rid, const QString &rNovaLista){
 
 ///fmudaNota(id, nova nota)
 bool anilist::fmudaNota(int rid, int rnovaNota){
-    ///Preciso por o token em um arquvio de configuração criptografado
     QByteArray auth = "Bearer ";
     auth.append(vtoken);
 
@@ -288,10 +331,19 @@ bool anilist::fmudaNota(int rid, int rnovaNota){
 
     //Pra deletar
     //QString lnovaLista = "mutation{     DeleteMediaListEntry (mediaId: " + lnovoId + ", status: " + rnovaLista + ") {         id         status     } }";
-    //Cria string com a lista antiga
-    QString llistaAtual = "mutation{     SaveMediaListEntry (mediaId: " + QString::number(rid) + ", score: " + QString::number(rnovaNota) + ") {         id         status     } }";
+    //Cria string com a nova nota
+    QFile animeList(":/Anilist/qrc/Anilist/MutationScore.txt");
+    QTextStream textStream(&animeList);
+    if(!animeList.open(QIODevice::ReadOnly)){
+        this->thread()->exit(0);
+        return false;
+    }
+    QString query = textStream.readAll();
+    animeList.close();
+    query.replace("variableID", QString::number(rid));
+    query.replace("variableScore", QString::number(rnovaNota));
     //Insere item no json
-    json.insert("query", llistaAtual);
+    json.insert("query", query);
     //Manda a solicitação de mudança
     QPointer<QNetworkReply> vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
 
@@ -320,7 +372,6 @@ bool anilist::fmudaNota(int rid, int rnovaNota){
 }
 
 bool anilist::fmudaProgresso(int rid, int rnovoProgresso){
-    ///Preciso por o token em um arquvio de configuração criptografado
     QByteArray auth = "Bearer ";
     auth.append(vtoken);
 
@@ -335,10 +386,19 @@ bool anilist::fmudaProgresso(int rid, int rnovoProgresso){
 
     //Pra deletar
     //QString lnovaLista = "mutation{     DeleteMediaListEntry (mediaId: " + lnovoId + ", status: " + rnovaLista + ") {         id         status     } }";
-    //Cria string com a lista antiga
-    QString llistaAtual = "mutation{     SaveMediaListEntry (mediaId: " + QString::number(rid) + ", progress: " + QString::number(rnovoProgresso) + ") {         id         status     } }";
+    //Cria string com a nova nota
+    QFile animeList(":/Anilist/qrc/Anilist/MutationProgresso.txt");
+    QTextStream textStream(&animeList);
+    if(!animeList.open(QIODevice::ReadOnly)){
+        this->thread()->exit(0);
+        return false;
+    }
+    QString query = textStream.readAll();
+    animeList.close();
+    query.replace("variableID", QString::number(rid));
+    query.replace("variableProgresso", QString::number(rnovoProgresso));
     //Insere item no json
-    json.insert("query", llistaAtual);
+    json.insert("query", query);
     //Manda a solicitação de mudança
     QPointer<QNetworkReply> vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
 
@@ -374,14 +434,13 @@ void anilist::fbaixaListaThread(QThread &cThread)
     connect(&cThread, SIGNAL(started()), this, SLOT(fgetList()), Qt::QueuedConnection);
 }
 
-void anilist::frecebeAutorizacao(const QString &ruser, QString rauthcode)
+void anilist::frecebeAutorizacao(const QString &ruser, QVariant rauthcode)
 {
     vusername = "\"" + ruser + "\"";
-    vtoken = std::move(rauthcode);
+    vtoken = rauthcode.toString();
 }
 
 bool anilist::fexcluiAnime(int rid){
-    ///Preciso por o token em um arquvio de configuração criptografado
     QByteArray auth = "Bearer ";
     auth.append(vtoken);
 
@@ -393,9 +452,18 @@ bool anilist::fexcluiAnime(int rid){
     QNetworkAccessManager lacessManager;
 
     //Cria string com o pedido de delete
-    QString llistaAtual =  "query{ MediaList(mediaId:" + QString::number(rid) + ", userName: " + vusername + "){ id }}";
+    QFile animeList(":/Anilist/qrc/Anilist/QueryDelete.txt");
+    QTextStream textStream(&animeList);
+    if(!animeList.open(QIODevice::ReadOnly)){
+        this->thread()->exit(0);
+        return false;
+    }
+    QString query = textStream.readAll();
+    animeList.close();
+    query.replace("variableID", QString::number(rid));
+    query.replace("variableUsername", vusername);
     //Insere item no json
-    json.insert("query", llistaAtual);
+    json.insert("query", query);
     //Manda a solicitação de mudança
     QPointer<QNetworkReply> vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
     if(!vreply->isRunning())
@@ -421,14 +489,23 @@ bool anilist::fexcluiAnime(int rid){
     QString lreplyString = jsond.toJson();
 
     json.empty();
-    llistaAtual = lreplyString.toLatin1();
+    query = lreplyString.toLatin1();
     //id do anime na lista
-    QString lid = llistaAtual.mid(llistaAtual.lastIndexOf("id")+5);
-    llistaAtual = lid.left(lid.indexOf("\n"));
-    lid = llistaAtual;
-    llistaAtual = "mutation{     DeleteMediaListEntry (id: " + lid + ") {      deleted     } }";
+    QString lid = query.mid(query.lastIndexOf("id")+5);
+    query = lid.left(lid.indexOf("\n"));
+    lid = query;
+    //Cria string com o pedido de delete
+    QFile queryDelete(":/Anilist/qrc/Anilist/QueryDelete.txt");
+    QTextStream queryDeleteStream(&queryDelete);
+    if(!queryDelete.open(QIODevice::ReadOnly)){
+        this->thread()->exit(0);
+        return false;
+    }
+    query = queryDeleteStream.readAll();
+    queryDelete.close();
+    query.replace("variableID", lid);
     //Insere item no json
-    json.insert("query", llistaAtual);
+    json.insert("query", query);
     //Manda a solicitação de mudança
     vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
     while (!vreply->isFinished())

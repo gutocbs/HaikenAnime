@@ -9,6 +9,8 @@
 #include <QMap> //Salva e lê as pastas especificas de cada anime
 #include <QThread>
 
+#include "src/utilities/singleton.h"
+
 #include "src/base/anime.h"
 #include "lib/anitomy/anitomy.h"
 #include "src/base/leitorlistaanimes.h"
@@ -17,12 +19,15 @@
 class confUsuario : public QObject
 {
     Q_OBJECT
+    static confUsuario *createInstance();
+
 public:
     explicit confUsuario(QObject *parent = nullptr);
+    static confUsuario* instance();
+
     QString fretornaDiretorioEspecifico(int);
     QVector<QString> fretornaDiretoriosAnimes();
     void fbuscaDiretoriosAnimes();
-    void frecebeListaAnime(leitorlistaanimes*);
     void frecebeConfigs(const QStringList &ldiretorios);
     void fgetThread(QThread &dThread);
     void fsalvaPastasArquivos();

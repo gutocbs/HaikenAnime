@@ -27,8 +27,6 @@ public:
     QString fprocuraEpisodioEspecifico(anime*, int);
     bool fcomparaDadosAnime(QString, const QString &rnomeAnime, QString, const QStringList &rnomesAlternativosAnime, int, int);
     bool fabreEpisodio(const QByteArray &rcaminhoArquivo);
-    void frecebeDiretorios(confUsuario*);
-    void frecebeAnimes(leitorlistaanimes*);
     int fcomparaSeasons(QString, int, int);
 
 public slots:

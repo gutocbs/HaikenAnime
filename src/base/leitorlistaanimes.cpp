@@ -1,18 +1,27 @@
 #include "leitorlistaanimes.h"
 
+leitorlistaanimes *leitorlistaanimes::createInstance()
+{
+    return new leitorlistaanimes();
+}
+
 leitorlistaanimes::leitorlistaanimes(QObject *parent) : QObject(parent)
 {
-
 }
 
 leitorlistaanimes::~leitorlistaanimes(){
-//    fdeletaListaAnimes();
-    qDeleteAll(vlistaWatching.begin(),vlistaWatching.end()); //Deletar todas as listas
-    qDeleteAll(vlistaCompleted.begin(),vlistaCompleted.end()); //Deletar todas as listas
-    qDeleteAll(vlistaDropped.begin(),vlistaDropped.end()); //Deletar todas as listas
-    qDeleteAll(vlistaOnHold.begin(),vlistaOnHold.end()); //Deletar todas as listas
-    qDeleteAll(vlistaPlanToWatch.begin(),vlistaPlanToWatch.end()); //Deletar todas as listas
-    qDeleteAll(vlistaBusca.begin(),vlistaBusca.end()); //Deletar todas as listas
+    fdeletaListaAnimes();
+//    qDeleteAll(vlistaWatching.begin(),vlistaWatching.end()); //Deletar todas as listas
+//    qDeleteAll(vlistaCompleted.begin(),vlistaCompleted.end()); //Deletar todas as listas
+//    qDeleteAll(vlistaDropped.begin(),vlistaDropped.end()); //Deletar todas as listas
+//    qDeleteAll(vlistaOnHold.begin(),vlistaOnHold.end()); //Deletar todas as listas
+//    qDeleteAll(vlistaPlanToWatch.begin(),vlistaPlanToWatch.end()); //Deletar todas as listas
+    //    qDeleteAll(vlistaBusca.begin(),vlistaBusca.end()); //Deletar todas as listas
+}
+
+leitorlistaanimes *leitorlistaanimes::instance()
+{
+    return  Singleton<leitorlistaanimes>::instance(leitorlistaanimes::createInstance);
 }
 
 bool leitorlistaanimes::fleJson(){
@@ -584,6 +593,14 @@ bool leitorlistaanimes::fleJson(){
 
 QVector<anime*> leitorlistaanimes::fleListaAno(int ano)
 {
+    if(!vlistaAnimeSeasonWinter.isEmpty())
+        vlistaAnimeSeasonWinter.clear();
+    if(!vlistaAnimeSeasonFall.isEmpty())
+       vlistaAnimeSeasonFall.clear();
+    if(!vlistaAnimeSeasonSummer.isEmpty())
+       vlistaAnimeSeasonSummer.clear();
+    if(!vlistaAnimeSeasonSpring.isEmpty())
+        vlistaAnimeSeasonSpring.clear();
     QVector<anime*> vetorTemporario;
     QFile lleJson("Configurações/Temp/Lists/animeList"+QString::number(ano)+".txt");
     if(lleJson.size() == 0)
@@ -862,6 +879,14 @@ QVector<anime*> leitorlistaanimes::fleListaAno(int ano)
                 lnovoAnime->vtemporada = ltemporadaAnime;
                 if(ldataEstreia.year() == ano){
                     vetorTemporario.append(lnovoAnime);
+                    if(lseason.compare("Winter") == 0)
+                        vlistaAnimeSeasonWinter.append(lnovoAnime);
+                    else if(lseason.compare("Spring") == 0)
+                        vlistaAnimeSeasonSpring.append(lnovoAnime);
+                    else if(lseason.compare("Summer") == 0)
+                        vlistaAnimeSeasonSummer.append(lnovoAnime);
+                    else
+                        vlistaAnimeSeasonFall.append(lnovoAnime);
                     sAnimeAdicionadoNaLista(lid);
                 }
                 QStringList tempNomeAnime;
@@ -875,310 +900,6 @@ QVector<anime*> leitorlistaanimes::fleListaAno(int ano)
                     vHashPosicaoAnimesPorId.insert(lnovoAnime->vid, vetorTemporario.size()-1);
                 if(!vHashListaAnimesPorId.contains(lnovoAnime->vid))
                     vHashListaAnimesPorId.insert(lnovoAnime->vid, QString::number(ano));
-
-                lnome.clear();
-                lnomeIngles.clear();
-                lnomeAlternativo.clear();
-                lnumEpisodiosTotais.clear();
-                lnotaMediaSite.clear();
-                lLinkImagemMedia.clear();
-                lnotaMediaPessoal.clear();
-                lstatus.clear();
-                lsinopse.clear();
-                lid.clear();
-                lseason.clear();
-                lproximoEpisodio.clear();
-                lvnumEpisodiosAssistidos.clear();
-                lformato.clear();
-                lformato.clear();
-                lstreamCrunchyroll.clear();
-                lsiteAnilist.clear();
-            }
-        }
-        lleJson.close();
-    }
-    return vetorTemporario;
-}
-
-QVector<anime *> leitorlistaanimes::fleListaAnoSeason(int ano, const QString &seasonEscolhida)
-{
-    QVector<anime*> vetorTemporario;
-    QFile lleJson("Configurações/Temp/Lists/animeList"+QString::number(ano)+".txt");
-    if(lleJson.size() == 0)
-        return vetorTemporario;
-    QTextStream json(&lleJson);
-    json.setCodec("UTF-8");
-    QString lid;
-    QString lnome;
-    QString lnomeIngles;
-//    QString lnomeJapones;
-    QStringList lnomeAlternativo; //StringList por que pode ter lários nomes alternativos
-    QString lnumEpisodiosTotais;
-    QString lvnumEpisodiosAssistidos;
-    QString lnotaMediaSite;
-    QString lLinkImagemMedia;
-    QString lnotaMediaPessoal;
-    QString lsinopse;
-    QString lseason;
-    QString lstatus;
-//    QString llista;
-    QString lformato;
-    QString lstreamCrunchyroll;
-    QString lsiteAnilist;
-    QString lproximoEpisodio;
-    QString lano;
-    QString lmes;
-    QString lchapters;
-    QString lvolumes;
-    QString ldataEpisodioFinal;
-    int ltemporadaAnime = 1;
-    QDateTime ldataEpisodio;
-    QTime lhoraLancamentoEpisodio;
-    QDate ldataEpisodioConvertida;
-    QDate ldataEstreia;///Data de estréia do próximo episódio
-
-    if(lleJson.open(QIODevice::ReadOnly)){
-        while(!json.atEnd()){
-            QString llinha = json.readLine();
-            if(llinha.contains("null")){
-                llinha.replace("null", "?");
-                llinha.replace("null,", "?");
-            }
-            //Procura pelo primeiro dado do anime, a capa
-            if(llinha.contains("\"large\":")){
-                llinha.remove("\",");
-                llinha.remove("\"");
-                llinha.remove("large: ");
-                lLinkImagemMedia = llinha.trimmed();
-            }
-            else if(llinha.contains("\"description\":")){
-                llinha.remove("\",");
-                llinha.remove("\\n");
-                llinha.remove("\\r");
-                llinha.remove("\\");
-                llinha.remove("\"description\": \"");
-                llinha = llinha.trimmed();
-                lsinopse = llinha.toUtf8();
-            }
-            else if(llinha.contains("\"episodes\":")){
-                llinha.remove(",");
-                llinha.remove("\"");
-                llinha.remove("episodes: ");
-                lnumEpisodiosTotais = llinha.trimmed();
-            }
-            else if(llinha.contains("\"format\":")){
-                llinha.remove("\",");
-                llinha.remove("\"");
-                llinha.replace("_", " ");
-                llinha.remove("format: ");
-                lformato = llinha.trimmed();
-            }
-            else if(llinha.contains("\"id\":")){
-                llinha.remove(",");
-                llinha.remove("\"");
-                llinha.remove("id: ");
-                lid = llinha.trimmed();
-            }
-            else if(llinha.contains("\"url\":")){
-                if(llinha.contains("crunchyroll")){
-                    llinha.remove(",");
-                    llinha.remove("\"");
-                    llinha.remove("url: ");
-                    if(llinha.contains("?"))
-                        llinha.replace("?", "null");
-                    lstreamCrunchyroll = llinha.left(llinha.lastIndexOf("episode-")).trimmed();
-                }
-            }
-            else if(llinha.contains("\"chapters\":")){
-                llinha.remove(",");
-                llinha.remove("\"");
-                llinha.remove("chapters: ");
-                lchapters = llinha.trimmed();
-            }
-            else if(llinha.contains("\"volumes\":")){
-                llinha.remove(",");
-                llinha.remove("\"");
-                llinha.remove("volumes: ");
-                lvolumes = llinha.trimmed();
-            }
-            else if(llinha.contains("\"siteUrl\":")){
-                llinha.remove(",");
-                llinha.remove("\"");
-                llinha.remove("siteUrl: ");
-                lsiteAnilist = llinha.trimmed();
-            }
-            else if(llinha.contains("\"nextAiringEpisode\":")){
-                if(llinha.contains("?"))
-                    ldataEpisodioFinal = "Not      Airing";
-            }
-            else if(llinha.contains("\"airingAt\":")){
-                llinha.remove(",");
-                llinha.remove("\"");
-                llinha.remove("airingAt: ");
-                llinha = llinha.trimmed();
-                ldataEpisodio.setSecsSinceEpoch(llinha.toInt());
-                ldataEpisodioConvertida = ldataEpisodio.date();
-                lhoraLancamentoEpisodio = ldataEpisodio.time();
-                if(ldataEpisodioConvertida.dayOfWeek() == 1)
-                    ldataEpisodioFinal = "Monday ";
-                else if(ldataEpisodioConvertida.dayOfWeek() == 2)
-                    ldataEpisodioFinal = "Tuesday ";
-                else if(ldataEpisodioConvertida.dayOfWeek() == 3)
-                    ldataEpisodioFinal = "Wednesday ";
-                else if(ldataEpisodioConvertida.dayOfWeek() == 4)
-                    ldataEpisodioFinal = "Thursday ";
-                else if(ldataEpisodioConvertida.dayOfWeek() == 5)
-                    ldataEpisodioFinal = "Friday  ";
-                else if(ldataEpisodioConvertida.dayOfWeek() == 6)
-                    ldataEpisodioFinal = "Saturday ";
-                else if(ldataEpisodioConvertida.dayOfWeek() == 7)
-                    ldataEpisodioFinal = "Sunday ";
-                ldataEpisodioFinal.append(lhoraLancamentoEpisodio.toString("hh:mm"));
-            }
-            else if(llinha.contains("\"episode\":")){
-                llinha.remove("\",");
-                llinha.remove("\"");
-                llinha.remove("episode: ");
-                lproximoEpisodio = llinha.trimmed();
-            }
-            else if(llinha.contains("\"season\":")){
-                llinha.remove("\",");
-                llinha.remove("\"");
-                llinha.remove("season: ");
-                llinha = llinha.trimmed();
-                llinha = llinha.toLower();
-                llinha[0] = llinha.at(0).toUpper();
-                if(llinha.contains("?"))
-                    lseason = "-";
-                else
-                    lseason = llinha;
-            }
-            else if(llinha.contains("\"month\":")){
-                llinha.remove(",");
-                llinha.remove("\"");
-                llinha.remove("month: ");
-                lmes = llinha.trimmed();
-            }
-            else if(llinha.contains("\"year\":")){
-                llinha.remove("\",");
-                llinha.remove("\"");
-                llinha.remove("year: ");
-                if(lseason == "-")
-                    lano = "";
-                else
-                    lano = llinha.trimmed();
-            }
-            else if(llinha.contains("\"status\":")){
-                llinha.remove("\",");
-                llinha.remove("\"");
-                llinha.remove("status: ");
-                llinha = llinha.trimmed();
-                if(llinha == "FINISHED")
-                    lstatus = "Finished Airing";
-                else if(llinha == "RELEASING")
-                    lstatus = "Ongoing";
-                else
-                    lstatus = "Not Aired Yet";
-            }
-            else if(llinha.contains("\"synonyms\":")){
-                llinha = json.readLine();
-                while(!llinha.contains("],")){
-                    llinha.remove("\",");
-                    llinha.remove("\"");
-                    lnomeAlternativo.append(llinha.trimmed());
-                    llinha = json.readLine();
-                }
-            }
-            else if(llinha.contains("\"progress\":")){
-                llinha.remove(",");
-                llinha.remove("\"");
-                llinha.remove("progress: ");
-                lvnumEpisodiosAssistidos = llinha.trimmed();
-            }
-            else if(llinha.contains("\"averageScore\":")){
-                llinha.remove(",");
-                llinha.remove("\"");
-                llinha.remove("averageScore: ");
-                lnotaMediaSite = llinha.trimmed();
-            }
-            else if(llinha.contains("\"english\":")){
-                llinha.remove(",");
-                llinha.remove("\"");
-                llinha.remove("english:");
-                lnomeIngles = llinha.trimmed();
-            }
-            else if(llinha.contains("\"romaji\":")){
-                llinha.remove(",");
-                llinha.remove("\"");
-                llinha.remove("romaji:");
-                lnome = llinha.trimmed();
-                if(lnome.endsWith("2"))
-                    ltemporadaAnime = 2;
-                else if(lnome.endsWith("3"))
-                    ltemporadaAnime = 3;
-                else if(lnome.endsWith("4"))
-                    ltemporadaAnime = 4;
-                else
-                    ltemporadaAnime = 1;
-
-                 lnotaMediaPessoal = "";
-//                QPointer<anime> lnovoAnime(new anime);
-                anime* lnovoAnime = new anime;
-                if(lnome == "?")
-                    lnome = lnomeIngles;
-                else if (lnomeIngles == "?")
-                    lnomeIngles = lnome;
-                lnovoAnime->vnome = lnome;
-                qDebug() << lnome;
-                lnovoAnime->vnomeIngles = lnomeIngles;
-                if(!lnomeAlternativo.isEmpty()){
-                    lnovoAnime->vnomeAlternativo = lnomeAlternativo;
-                    lnomeAlternativo.empty();
-                }
-                lnovoAnime->vnumEpisodiosTotais = lnumEpisodiosTotais;
-                if(!lnotaMediaSite.isEmpty())
-                    lnovoAnime->vnotaMediaSite = lnotaMediaSite;
-                else
-                    lnovoAnime->vnotaMediaSite = "-";
-                if(lano != "?" && lmes != "?"){
-                    ldataEstreia.setDate(lano.toInt(), lmes.toInt(), 1);
-                }
-                else if(lmes != "?"){
-                    if(lseason == "Winter")
-                        lmes = "3";
-                    else if(lseason == "Spring")
-                        lmes = "6";
-                    else if(lseason == "Summer")
-                        lmes = "9";
-                    else
-                        lmes = "12";
-                    if(lmes == "?")
-                        lmes = "12";
-                    ldataEstreia.setDate(lano.toInt(), lmes.toInt(), 31);
-                }
-                else if(lano != "?"){
-                    if(lmes == "?")
-                        lmes = "12";
-                    ldataEstreia.setDate(2050, lmes.toInt(), 31);
-                }
-                lnovoAnime->vlista = fbuscaAnimePorIDERetornaLista(lid);
-                lnovoAnime->vnumEpisodiosAssistidos = fbuscaAnimePorIDERetornaEpisodio(lid);
-                lnovoAnime->vnotaMediaPessoal = fbuscaAnimePorIDERetornaNota(lid);
-                lnovoAnime->vLinkImagemMedia = lLinkImagemMedia;
-                lnovoAnime->vstatus = lstatus;
-                lnovoAnime->vsinopse = lsinopse;
-                lnovoAnime->vid = lid;
-                lnovoAnime->vseason = lseason + " " + lano;
-                lnovoAnime->vnumProximoEpisodioLancado = lproximoEpisodio;
-                lnovoAnime->vformato = lformato;
-                lnovoAnime->vdataEstreia = ldataEstreia;
-                lnovoAnime->vdataEpisodio = ldataEpisodioFinal;
-                lnovoAnime->vsiteAnilist = lsiteAnilist;
-                lnovoAnime->vstreamCrunchyroll = lstreamCrunchyroll;
-                lnovoAnime->vtemporada = ltemporadaAnime;
-                if(lseason.compare(seasonEscolhida, Qt::CaseInsensitive) == 0){
-                    vetorTemporario.append(lnovoAnime);
-                }
 
                 lnome.clear();
                 lnomeIngles.clear();
@@ -1685,6 +1406,22 @@ void leitorlistaanimes::fdeletaListaAnimes(){
         qDeleteAll(vlistaNovelPlanToRead.begin(),vlistaNovelPlanToRead.end()); //Deletar todas as listas
         vlistaNovelPlanToRead.clear();
     }
+//    if(!vlistaAnimeSeasonWinter.isEmpty()){
+//        qDeleteAll(vlistaAnimeSeasonWinter.begin(),vlistaAnimeSeasonWinter.end()); //Deletar todas as listas
+//        vlistaAnimeSeasonWinter.clear();
+//    }
+//    if(!vlistaAnimeSeasonSummer.isEmpty()){
+//        qDeleteAll(vlistaAnimeSeasonSummer.begin(),vlistaAnimeSeasonSummer.end()); //Deletar todas as listas
+//        vlistaAnimeSeasonSummer.clear();
+//    }
+//    if(!vlistaAnimeSeasonFall.isEmpty()){
+//        qDeleteAll(vlistaAnimeSeasonFall.begin(),vlistaAnimeSeasonFall.end()); //Deletar todas as listas
+//        vlistaAnimeSeasonFall.clear();
+//    }
+//    if(!vlistaAnimeSeasonSpring.isEmpty()){
+//        qDeleteAll(vlistaAnimeSeasonSpring.begin(),vlistaAnimeSeasonSpring.end()); //Deletar todas as listas
+//        vlistaAnimeSeasonSpring.clear();
+//    }
 }
 
 QString leitorlistaanimes::fprocuraAnimeNasListas(const QString &rnomeAnime)
@@ -2043,22 +1780,14 @@ QVector<anime *> leitorlistaanimes::sortLista(const QString &rordem, QString rli
             llistaTemp = vlistaBusca;
     }
     else if(rtipo == type::SEASON){
-        if(rlista.contains("WINTER", Qt::CaseInsensitive)){
-            rlista = rlista.remove("WINTER");
-            llistaTemp = fleListaAnoSeason(rlista.toInt(), "winter");
-        }
-        else if(rlista.contains("SPRING", Qt::CaseInsensitive)){
-            rlista = rlista.remove("SPRING");
-            llistaTemp = fleListaAnoSeason(rlista.toInt(), "spring");
-        }
-        else if(rlista.contains("SUMMER", Qt::CaseInsensitive)){
-            rlista = rlista.remove("SUMMER");
-            llistaTemp = fleListaAnoSeason(rlista.toInt(), "summer");
-        }
-        else if(rlista.contains("FALL", Qt::CaseInsensitive)){
-            rlista = rlista.remove("FALL");
-            llistaTemp = fleListaAnoSeason(rlista.toInt(), "fall");
-        }
+        if(rlista.contains("WINTER", Qt::CaseInsensitive))
+            llistaTemp = vlistaAnimeSeasonWinter;
+        else if(rlista.contains("SPRING", Qt::CaseInsensitive))
+            llistaTemp = vlistaAnimeSeasonSpring;
+        else if(rlista.contains("SUMMER", Qt::CaseInsensitive))
+            llistaTemp = vlistaAnimeSeasonSummer;
+        else if(rlista.contains("FALL", Qt::CaseInsensitive))
+            llistaTemp = vlistaAnimeSeasonFall;
         else
             llistaTemp = fleListaAno(rlista.toInt());
     }
@@ -2676,6 +2405,26 @@ QVector<anime *> leitorlistaanimes::retornaListaNovelDropped()
 
 QVector<anime *> leitorlistaanimes::retornaListaNovelPlanToRead(){
     return vlistaNovelPlanToRead;
+}
+
+QVector<anime *> leitorlistaanimes::retornaListaAnimeWinter()
+{
+    return vlistaAnimeSeasonWinter;
+}
+
+QVector<anime *> leitorlistaanimes::retornaListaAnimeSpring()
+{
+    return vlistaAnimeSeasonSpring;
+}
+
+QVector<anime *> leitorlistaanimes::retornaListaAnimeSummer()
+{
+    return vlistaAnimeSeasonSummer;
+}
+
+QVector<anime *> leitorlistaanimes::retornaListaAnimeFall()
+{
+    return vlistaAnimeSeasonFall;
 }
 
 bool leitorlistaanimes::fmudaNota(const QString &rid, const QString &rnota){

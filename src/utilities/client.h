@@ -6,6 +6,7 @@
 #include <QThread>
 
 #include "src/clients/anilist.h"
+#include "src/base/abaconfig.h"
 
 class Client : public QObject
 {
@@ -14,15 +15,12 @@ public:
     explicit Client(QObject *parent = nullptr);
     ~Client();
 
-    enum clients{ANILIST, MYANIMELIST, KITSU};
-    Q_ENUM(clients)
-
     bool fmudaLista(int, const QString &rNovaLista);
     bool fmudaNota(int, int);
     bool fmudaProgresso(int, int);
     bool fexcluiAnime(int);
     bool fgetListaPorAno();
-    void frecebeAutorizacao(const QString &ruser, QString);
+    void frecebeAutorizacao(const QString &ruser, QVariant);
     QString fretornaAvatar();
 public slots:
     void fselecionaClient(QVariant);
@@ -39,7 +37,7 @@ private:
     void fpassaThread();
     void fconnections();
 
-    clients clientEscolhido;
+    abaConfig::clients clientEscolhido;
     anilist *clientAnilist;
 
     QThread tthreadClient;

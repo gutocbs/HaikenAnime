@@ -45,6 +45,8 @@ Window {
 
     property var numeroAnosListas: 0
 
+    property var configSelecionada: ""
+
     function getData(id, posicaoGrid){
         var listaIdTemp = idAnime
         var listaNomeTemp = nomeAnime
@@ -105,13 +107,16 @@ Window {
         onSconnectGUI:{
             if(data === false){
                 slotMenus.enabled = false;
-                home.enabled = false;
+                stackView.enabled = false
             }
             else{
                 slotMenus.enabled = true;
-                home.enabled = true;
+                stackView.enabled = true;
             }
         }
+        onSbotaoHome: stackView.push("Home.qml")
+        onSbotaoConfig: stackView.push("ConfigPagina.qml")
+        onSbotaoTorrent: stackView.push("TorrentPagina.qml")
     }
 
     Component.onCompleted: {
@@ -139,16 +144,41 @@ Window {
             }
         }
 
-        Row {
-            id: row1
+        StackView {
+            id: stackView
             width: parent.width
             height: parent.height-187
-
-            Home{
-                id: home
-                transformOrigin: Item.Center;
+            initialItem: "Home.qml"
+            pushEnter: Transition {
+                PropertyAnimation {
+                    property: "opacity"
+                    from: 0
+                    to:1
+                    duration: 200
+                }
+            }
+            pushExit: Transition {
+                PropertyAnimation {
+                    property: "opacity"
+                    from: 1
+                    to:0
+                    duration: 200
+                }
             }
         }
+
+//        Row {
+//            id: row1
+//            width: parent.width
+//            height: parent.height-187
+//                Home{
+//                    id: home
+//                    x: 0
+//                    y: 0
+//                    transformOrigin: Item.Center;
+//                }
+//        }
+
     }
 
 }

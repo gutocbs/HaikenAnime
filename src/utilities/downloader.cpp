@@ -7,15 +7,15 @@ Downloader::Downloader(QObject *parent) : QObject(parent)
 
 Downloader::~Downloader()
 {
-    qDeleteAll(m_workers);
-    m_workers.clear();
+    if(!m_workers.isEmpty()){
+        qDeleteAll(m_workers);
+        m_workers.clear();
+    }
 }
 
-void Downloader::fsetPointers(leitorlistaanimes *rleitorlistaanimes, confBase*rconfbase)
+void Downloader::fsetWorker()
 {
     dw->setObjectName("DownloaderWorker: " + QString::number(0));
-    dw->fsetLeitorListaAnimes(rleitorlistaanimes);
-    dw->fsetConfBase(rconfbase);
     connect(dw,&DownloaderWorker::finished,this, &Downloader::finished);
     connect(dw,&DownloaderWorker::finishedBig,this, &Downloader::finishedBig);
 
@@ -24,6 +24,7 @@ void Downloader::fsetPointers(leitorlistaanimes *rleitorlistaanimes, confBase*rc
 
 void Downloader::setListAndType(QString rlista, QString rtipoLista)
 {
+    qDebug() << rlista << rtipoLista;
     dw->fselecionaLista(rlista, rtipoLista);
 }
 

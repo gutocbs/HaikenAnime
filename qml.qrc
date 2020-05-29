@@ -9,5 +9,15 @@
         <file>BotoesAnime.qml</file>
         <file>AnimeReconhecidoSlot.qml</file>
         <file>SlotMenus.qml</file>
+        <file>ConfigOptions.qml</file>
+        <file>ConfigTorrentSlot.qml</file>
+        <file>ConfigPagina.qml</file>
+        <file>TorrentPagina.qml</file>
+        <file>ConfDiretorio.qml</file>
+        <file>ConfFiltros.qml</file>
+        <file>ConfHistorico.qml</file>
+        <file>ConfigFont.qml</file>
+        <file>TableDelegate.qml</file>
+        <file>CustomFileDialog.qml</file>
     </qresource>
 </RCC>

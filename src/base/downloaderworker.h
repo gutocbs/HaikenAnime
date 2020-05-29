@@ -20,8 +20,6 @@ class DownloaderWorker : public QObject
 public:
     explicit DownloaderWorker(QObject *parent = nullptr);
     bool isBusy();
-    void fsetLeitorListaAnimes(leitorlistaanimes*);
-    void fsetConfBase(confBase*);
     void fsetURLAvatar(const QString &urlAvatar);
     void fdownloadTorrent(const QString &fileURL, const QString &torrentName);
     void fdownloadXMLTorrentList(const QString &fileURL);

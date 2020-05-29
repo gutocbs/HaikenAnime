@@ -6,11 +6,17 @@
 #include <QFile> //Cria arquivos
 #include <QDebug>
 
+#include "src/utilities/singleton.h"
+
 class confBase : public QObject
 {
     Q_OBJECT
+    static confBase *createInstance();
+
 public:
     explicit confBase(QObject *parent = nullptr);
+    static confBase* instance();
+
     QString vdiretorioImagensMedio;
     QString vdiretorioImagensGrandes;
     QString vdiretorioImagensPequenas;

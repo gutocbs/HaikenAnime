@@ -1,7 +1,17 @@
 #include "confbase.h"
 
+confBase *confBase::createInstance()
+{
+    return new confBase();
+}
+
 confBase::confBase(QObject *parent) : QObject(parent)
 {
+}
+
+confBase *confBase::instance()
+{
+    return  Singleton<confBase>::instance(confBase::createInstance);
 }
 
 

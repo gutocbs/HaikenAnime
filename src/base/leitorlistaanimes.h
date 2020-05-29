@@ -11,17 +11,20 @@
 #include <QHash> //Pra procurar o anime com rapidez
 #include <QDir>
 
+#include "src/utilities/singleton.h"
+
 #include "src/base/anime.h"
 #include "src/utilities/formatapalavras.h"
 
 class leitorlistaanimes : public QObject
 {
     Q_OBJECT
+    static leitorlistaanimes *createInstance();
 
 public:
     explicit leitorlistaanimes(QObject *parent = nullptr);
     ~leitorlistaanimes();
-
+    static leitorlistaanimes* instance();
     enum type{ANIME, MANGA, NOVEL, SEASON};
     Q_ENUM(type)
 
@@ -56,10 +59,13 @@ public:
     QVector<anime*> retornaListaNovelOnHold();
     QVector<anime*> retornaListaNovelDropped();
     QVector<anime*> retornaListaNovelPlanToRead();
+    QVector<anime*> retornaListaAnimeWinter();
+    QVector<anime*> retornaListaAnimeSpring();
+    QVector<anime*> retornaListaAnimeSummer();
+    QVector<anime*> retornaListaAnimeFall();
     QVector<anime*> sortLista(const QString &rordem, QString rlistas, type type);
     QVector<anime*> fbuscaLista(const QString &rnome, type rtipoMidia);
     QVector<anime*> fleListaAno(int);
-    QVector<anime*> fleListaAnoSeason(int, const QString &seasonEscolhida);
     anime* fbuscaAnimeNoAno(int, const QString &rid);
     void fcarregaListaAnoEmThread();
 
@@ -90,6 +96,10 @@ private:
     QVector<anime*> vlistaNovelOnHold;
     QVector<anime*> vlistaNovelDropped;
     QVector<anime*> vlistaNovelPlanToRead;
+    QVector<anime*> vlistaAnimeSeasonWinter;
+    QVector<anime*> vlistaAnimeSeasonSummer;
+    QVector<anime*> vlistaAnimeSeasonFall;
+    QVector<anime*> vlistaAnimeSeasonSpring;
     QHash<QString,QString> vHashListaAnimesPorId;
     QHash<QString,QString> vHashListaMangasPorId;
     QHash<QString,QString> vHashListaNovelsPorId;

@@ -2,6 +2,8 @@
 #include <utility>
 arquivos::arquivos(QObject *parent) : QObject(parent)
 {
+//    cconfUsuario = new confUsuario();
+    cleitorlistaanimes = new leitorlistaanimes();
 }
 
 ///fcomparaDadosAnime(QString rfileName, QString rnomeAnime, QString rnomeAnimeIngles, QStringList rnomesAlternativosAnime,int repisodioAnime, int rtemporada)
@@ -52,9 +54,9 @@ bool arquivos::fcomparaDadosAnime(QString rfileName, const QString &rnomeAnime, 
 QString arquivos::fprocuraEpisodio(anime *ranimeBuscado){
     //Verifica se a função retorna um valor que não está vazio, ou seja
     //Se existe uma pasta com o nome do anime
-    if(!cconfUsuario->fretornaDiretorioEspecifico(ranimeBuscado->vid.toInt()).isEmpty()){
+    if(!cconfUsuario->instance()->fretornaDiretorioEspecifico(ranimeBuscado->vid.toInt()).isEmpty()){
         //Começa a iterar a pasta em busca das pastas de animes
-        QDirIterator lit(cconfUsuario->fretornaDiretorioEspecifico(ranimeBuscado->vid.toInt()), QDirIterator::Subdirectories);
+        QDirIterator lit(cconfUsuario->instance()->fretornaDiretorioEspecifico(ranimeBuscado->vid.toInt()), QDirIterator::Subdirectories);
         while(lit.hasNext()){
             QFile lfile(lit.next());
             QFileInfo lchecaSeArquivoOuPasta(lfile.fileName());
@@ -70,8 +72,8 @@ QString arquivos::fprocuraEpisodio(anime *ranimeBuscado){
     }
     else{
         //Começa a iterar a pasta em busca das pastas de animes
-        for(int i = 0; i < cconfUsuario->fretornaDiretoriosAnimes().size(); i++){
-            QDirIterator lit(cconfUsuario->fretornaDiretoriosAnimes().at(i), QDir::Files);
+        for(int i = 0; i < cconfUsuario->instance()->fretornaDiretoriosAnimes().size(); i++){
+            QDirIterator lit(cconfUsuario->instance()->fretornaDiretoriosAnimes().at(i), QDir::Files);
             while(lit.hasNext()){
                 QFile lfile(lit.next());
                 QFileInfo lchecaSeArquivoOuPasta(lfile.fileName());
@@ -92,9 +94,9 @@ QString arquivos::fprocuraEpisodio(anime *ranimeBuscado){
 QString arquivos::fprocuraEpisodioEspecifico(anime *ranimeBuscado, int rEpisodioBuscado){
     //Verifica se a função retorna um valor que não está vazio, ou seja
     //Se existe uma pasta com o nome do anime
-    if(!cconfUsuario->fretornaDiretorioEspecifico(ranimeBuscado->vid.toInt()).isEmpty()){
+    if(!cconfUsuario->instance()->fretornaDiretorioEspecifico(ranimeBuscado->vid.toInt()).isEmpty()){
         //Começa a iterar a pasta em busca das pastas de animes
-        QDirIterator lit(cconfUsuario->fretornaDiretorioEspecifico(ranimeBuscado->vid.toInt()), QDirIterator::Subdirectories);
+        QDirIterator lit(cconfUsuario->instance()->fretornaDiretorioEspecifico(ranimeBuscado->vid.toInt()), QDirIterator::Subdirectories);
         while(lit.hasNext()){
             QFile lfile(lit.next());
             QFileInfo lchecaSeArquivoOuPasta(lfile.fileName());
@@ -110,8 +112,8 @@ QString arquivos::fprocuraEpisodioEspecifico(anime *ranimeBuscado, int rEpisodio
     }
     else{
         //Começa a iterar a pasta em busca das pastas de animes
-        for(int i = 0; i < cconfUsuario->fretornaDiretoriosAnimes().size(); i++){
-            QDirIterator lit(cconfUsuario->fretornaDiretoriosAnimes().at(i), QDir::Files);
+        for(int i = 0; i < cconfUsuario->instance()->fretornaDiretoriosAnimes().size(); i++){
+            QDirIterator lit(cconfUsuario->instance()->fretornaDiretoriosAnimes().at(i), QDir::Files);
             while(lit.hasNext()){
                 QFile lfile(lit.next());
                 QFileInfo lchecaSeArquivoOuPasta(lfile.fileName());
@@ -137,16 +139,6 @@ bool arquivos::fabreEpisodio(const QByteArray &rcaminhoArquivo){
         return true;
     }
     return false;
-}
-
-void arquivos::frecebeDiretorios(confUsuario *rconfUsuario)
-{
-    cconfUsuario = rconfUsuario;
-}
-
-void arquivos::frecebeAnimes(leitorlistaanimes* cleitorlistaanimes)
-{
-    this->cleitorlistaanimes = cleitorlistaanimes;
 }
 
 int arquivos::fcomparaSeasons(QString rnome, int repisodio, int rtemporada)

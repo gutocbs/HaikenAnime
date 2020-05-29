@@ -9,7 +9,7 @@ Client::~Client()
     tthreadClient.requestInterruption();
     tthreadClient.wait();
     switch (clientEscolhido) {
-        case ANILIST:
+        case abaConfig::ANILIST:
             clientAnilist->deleteLater();
         break;
     }
@@ -17,7 +17,7 @@ Client::~Client()
 
 void Client::fconnections(){
     switch (clientEscolhido) {
-        case ANILIST:
+        case abaConfig::ANILIST:
             //Ao terminar de baixar a lista, manda um aviso que devo mandar pra main class
             connect(clientAnilist, &anilist::sterminouDownload, this, &Client::fdownloadSignal);
         break;
@@ -31,16 +31,16 @@ void Client::fdownloadSignal(bool downloadSignal){
 void Client::fselecionaClient(QVariant rnomeClient)
 {
     if(rnomeClient.toString().compare("Anilist", Qt::CaseInsensitive) == 0){
-        clientEscolhido = clients::ANILIST;
+        clientEscolhido = abaConfig::clients::ANILIST;
         clientAnilist = new anilist();
     }
     fconnections();
 }
 
-void Client::frecebeAutorizacao(const QString &ruser, QString rauthcode)
+void Client::frecebeAutorizacao(const QString &ruser, QVariant rauthcode)
 {
     switch (clientEscolhido) {
-        case ANILIST:
+        case abaConfig::ANILIST:
             clientAnilist->frecebeAutorizacao(ruser, rauthcode);
         break;
     }
@@ -56,7 +56,7 @@ void Client::fbaixaListas()
 QString Client::fgetAvatar()
 {
     switch (clientEscolhido) {
-        case ANILIST:
+        case abaConfig::ANILIST:
             return clientAnilist->fretornaAvatar();
         break;
     }
@@ -65,7 +65,7 @@ QString Client::fgetAvatar()
 void Client::fpassaThread()
 {
     switch (clientEscolhido) {
-        case ANILIST:
+        case abaConfig::ANILIST:
             clientAnilist->fbaixaListaThread(tthreadClient);
             clientAnilist->moveToThread(&tthreadClient);
         break;
@@ -75,7 +75,7 @@ void Client::fpassaThread()
 bool Client::fmudaLista(int ridAnime, const QString &rNovaLista)
 {
     switch (clientEscolhido) {
-        case ANILIST:
+        case abaConfig::ANILIST:
             if(clientAnilist->fmudaLista(ridAnime,rNovaLista))
                     return true;
         break;
@@ -86,7 +86,7 @@ bool Client::fmudaLista(int ridAnime, const QString &rNovaLista)
 bool Client::fmudaNota(int ridAnime, int rnovaNota)
 {
     switch (clientEscolhido) {
-        case ANILIST:
+        case abaConfig::ANILIST:
             if(clientAnilist->fmudaNota(ridAnime,rnovaNota))
                 return true;
         break;
@@ -97,7 +97,7 @@ bool Client::fmudaNota(int ridAnime, int rnovaNota)
 bool Client::fmudaProgresso(int ridAnime, int rprogresso)
 {
     switch (clientEscolhido) {
-        case ANILIST:
+        case abaConfig::ANILIST:
             if(clientAnilist->fmudaProgresso(ridAnime, rprogresso))
                     return true;
         break;
@@ -108,7 +108,7 @@ bool Client::fmudaProgresso(int ridAnime, int rprogresso)
 bool Client::fexcluiAnime(int ridAnime)
 {
     switch (clientEscolhido) {
-        case ANILIST:
+        case abaConfig::ANILIST:
             if(clientAnilist->fexcluiAnime(ridAnime))
                     return true;
         break;
@@ -119,7 +119,7 @@ bool Client::fexcluiAnime(int ridAnime)
 bool Client::fgetListaPorAno()
 {
     switch (clientEscolhido) {
-        case ANILIST:
+        case abaConfig::ANILIST:
             if(clientAnilist->fgetListasAnoSeason())
                 return true;
         break;

@@ -1,11 +1,22 @@
 #include "confusuario.h"
 
+confUsuario *confUsuario::createInstance()
+{
+    return new confUsuario();
+}
+
 confUsuario::confUsuario(QObject *parent) : QObject(parent)
 {
     vterminouChecagem = false;
     vlista = 0;
+    cleitorlistaanimes = new leitorlistaanimes();
 //    vdiretorioAnimes.append("E:/Animes/");
-//    vdiretorioAnimes.append("E:/Downloads/");
+    //    vdiretorioAnimes.append("E:/Downloads/");
+}
+
+confUsuario *confUsuario::instance()
+{
+    return  Singleton<confUsuario>::instance(confUsuario::createInstance);
 }
 
 
@@ -209,11 +220,6 @@ void confUsuario::fsetupListasPraBusca()
         qDebug() << "All animes in the computer were found";
         this->thread()->exit(0);
     }
-}
-
-void confUsuario::frecebeListaAnime(leitorlistaanimes *rlistaAnime)
-{
-    cleitorlistaanimes = rlistaAnime;
 }
 
 void confUsuario::frecebeConfigs(const QStringList &ldiretorios)

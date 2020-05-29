@@ -13,7 +13,7 @@ public:
     explicit Downloader(QObject *parent = nullptr);
     ~Downloader();
 
-    void fsetPointers(leitorlistaanimes*,confBase*);
+    void fsetWorker();
 
 public slots:
     void setListAndType(QString, QString);

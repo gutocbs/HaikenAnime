@@ -2,11 +2,14 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 
-#include "src/mainclass.h"
+#include "mainclass.h"
 
 int main(int argc, char *argv[])
 {
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QCoreApplication::setOrganizationName("Haiken");
+    QCoreApplication::setOrganizationDomain("");
+    QCoreApplication::setApplicationName("Haiken App");
 
     QGuiApplication app(argc, argv);
 

@@ -1,5 +1,6 @@
 import QtQuick 2.0
 import QtQuick.Controls 2.3
+import Qt.labs.calendar 1.0
 
 Item {
     id: element
