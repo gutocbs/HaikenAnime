@@ -1736,7 +1736,6 @@ bool leitorlistaanimes::fdeletedaLista(const QString &rid)
 }
 
 QVector<anime *> leitorlistaanimes::sortLista(const QString &rordem, QString rlista, type rtipo){
-    qDebug() << rlista << rtipo;
     if(rtipo == type::ANIME){
         if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
             llistaTemp = vlistaWatching;
@@ -2511,7 +2510,6 @@ bool leitorlistaanimes::fmudaLista(const QString &rid, const QString &rlista, ty
     bool ok;
     //Checa se a lista é um número válido
     llista.toInt(&ok);
-
     if(rtipo == type::ANIME){
         if(llista.compare("Watching", Qt::CaseInsensitive) == 0){
             QPointer<anime> lnovoAnime(new anime);
@@ -2663,14 +2661,13 @@ bool leitorlistaanimes::fmudaLista(const QString &rid, const QString &rlista, ty
             vlistaPlanToWatch.remove(lposicao);
             return true;
         }
+        //oK, no caso, pega listas por ano
         else if(ok){
             QPointer<anime> lnovoAnime(new anime);
             lnovoAnime = fbuscaAnimeNoAno(llista.toInt(), rid);
             if(rlista.compare("Watching") == 0){
                 lnovoAnime->vlista = "Watching";
-                qDebug() << vHashListaAnimesPorId[rid];
                 vHashListaAnimesPorId.insert(rid, "Watching");
-                qDebug() << vHashListaAnimesPorId[rid];
                 vlistaWatching.append(lnovoAnime);
                 vHashPosicaoAnimesPorId.insert(rid,vlistaWatching.size()-1);
             }

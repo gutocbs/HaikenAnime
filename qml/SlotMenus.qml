@@ -97,7 +97,7 @@ Item {
 
                 Button {
                     id: botaoTipoAnime
-                    text: qsTr("Home")
+                    text: qsTr("Anime")
                     font.family: "Tahoma"
                     onClicked: {
                         mainClass.fselecionaTipoAnime()

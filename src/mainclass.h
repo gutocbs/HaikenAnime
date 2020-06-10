@@ -11,6 +11,8 @@
 #include <QThread>
 #include <QDate>
 #include <QTime>
+#include <QVariant>
+#include <QVariantList>
 
 #include "src/base/leitorlistaanimes.h"
 #include "src/base/anime.h"
@@ -34,6 +36,8 @@ public:
     enum lista{CURRENT, COMPLETED, PAUSED, DROPPED, PLANNING, WINTER, SUMMER, FALL, SPRING};
     Q_ENUM(lista)
 public slots:
+
+    //Organizar aqui pra por todos os gets e sets juntos
     void fmostraListaAnimes();
     void finfoAnimeSelecionado(QVariant);
     QVariant fretornaNumeroAnos();
@@ -76,6 +80,11 @@ public slots:
     void fsetauthCode(QVariant);
     void fsetUsername(QVariant);
     void fsetClient(QVariant);
+    bool fsetDirectory(QVariant);
+    bool fremoveDirectory(QVariant);
+    void fsaveConfig();
+    void fsetDirConfig(QVariantList);
+    QVariant fgetDir();
 
 signals:
     void sidAnime1(QVariant data);
@@ -119,6 +128,7 @@ signals:
 private:
     void fconnections();
     void fdownloadCoverImages();
+
     //Classes
     leitorlistaanimes *cleitorListaAnimes;
     confBase *cconfiguracoesDiretoriosPadrao;
@@ -147,7 +157,6 @@ private:
     QStringList vlistaFilaTipo;
     QStringList vlistaFilaLista;
     QList<int> vlistaFilaSize;
-
 
     QTimer *vtimerAutoRefresh;
     QTimer *vtimerCountdown;

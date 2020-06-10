@@ -50,58 +50,54 @@ Item {
                     }
 
                     ListView {
-                        id: listaDiretorios
-                        focus: true
-                        model: ListModel {
-                            id: modeloLista
-                            ListElement {
-                                name: "Grey"
-                                colorCode: "grey"
-                            }
-
-                            ListElement {
-                                name: "Red"
-                                colorCode: "red"
-                            }
-
-                            ListElement {
-                                name: "Blue"
-                                colorCode: "blue"
-                            }
-
-                            ListElement {
-                                name: "Green"
-                                colorCode: "green"
-                            }
-                        }
-                        highlight: Rectangle {
-                            color: "#ff0000"
-                            radius: 20
-                        }
+                        id: listaHistorico
+                        x: 0
+                        y: 0
+                        flickableDirection: Flickable.AutoFlickDirection
+                        clip: true
                         highlightRangeMode: ListView.NoHighlightRange
                         anchors.fill: parent
+                        model: ListModel {
+                            id: modeloLista
+                        }
                         delegate: Item {
                             x: 5
-                            width: 80
+                            id: itemDir
+                            width: listaHistorico.width
                             height: 40
                             Row {
                                 id: row7
-                                spacing: 10
-                                Rectangle {
-                                    width: 40
-                                    height: 40
-                                    color: colorCode
+                                width: parent.width
+                                height: parent.height
+                                Item{
+                                    width: parent.width
+                                    height: parent.height
+                                    Text {
+                                        text: name
+                                        anchors.fill: parent
+                                        verticalAlignment: Text.AlignVCenter
+                                        font.bold: true
+                                    }
                                 }
 
-                                Text {
-                                    text: name
-                                    font.bold: true
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
                             }
-
                             MouseArea {
                                 anchors.fill: parent
+                                onClicked: listaHistorico.currentIndex = index
+                            }
+                        }
+                        highlight: Rectangle {
+                            id: rectangleHighlight
+                            color: "#0da2ff"
+                            opacity: 0.5
+                            radius: 0
+                        }
+                        focus: true
+                        Component.onCompleted: {
+                            var diretorios = mainClass.fgetDir();
+                            for(var i = 0; i < diretorios.length; i++){
+//                                modeloLista.append({"name": diretorios[i].toString()})
+                                modeloLista.append({"name": "anime " + i})
                             }
                         }
                     }

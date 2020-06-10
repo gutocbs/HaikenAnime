@@ -183,6 +183,38 @@ void MainClass::fsetClient(QVariant client)
     cabaConfig->instance()->fsetService(client);
 }
 
+bool MainClass::fsetDirectory(QVariant dirPath)
+{
+    if(cabaConfig->instance()->fsetDirectory(dirPath))
+        return true;
+    return false;
+}
+
+bool MainClass::fremoveDirectory(QVariant dirPath)
+{
+    if(cabaConfig->instance()->fremoveDirectory(dirPath))
+        return true;
+    return false;
+}
+
+void MainClass::fsaveConfig()
+{
+    cabaConfig->instance()->fsaveSettings();
+}
+
+void MainClass::fsetDirConfig(QVariantList dirConfigs)
+{
+    qDebug() << dirConfigs;
+    QSettings vset;
+    cabaConfig->instance()->fsetHighQualityImages();
+    qDebug() << vset.value("ConfigLowQuality").toString();;
+}
+
+QVariant MainClass::fgetDir()
+{
+    return cabaConfig->instance()->fgetDirectory();
+}
+
 void MainClass::finfoAnimeSelecionado(QVariant posicaoAnimeNaGrid)
 {
     emit sdirImagensMedias(QVariant(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensMedio));
@@ -212,11 +244,12 @@ void MainClass::finfoAnimeSelecionado(QVariant posicaoAnimeNaGrid)
                 QString::number(vlistaSelecionada[vindexAnimeSelecionado]->vnumProximoEpisodioLancado.toInt() - 1) + " Episodes"));
         emit stipoAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vformato));
         QPixmap pix;
-        if(pix.load(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes+vlistaSelecionada[vindexAnimeSelecionado]->vid+".png",
-                         "png"))
+        if(pix.load(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes+
+                    vlistaSelecionada[vindexAnimeSelecionado]->vid+".png","png"))
             emit simagemAnimeSelecionado(QVariant(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes+
                                                   vlistaSelecionada[vindexAnimeSelecionado]->vid+".png"));
-        else if(pix.load(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes+vlistaSelecionada[vindexAnimeSelecionado]->vid+".jpg", "jpg"))
+        else if(pix.load(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes+
+                         vlistaSelecionada[vindexAnimeSelecionado]->vid+".jpg", "jpg"))
             emit simagemAnimeSelecionado(QVariant(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes+
                                                   vlistaSelecionada[vindexAnimeSelecionado]->vid+".jpg"));
         else
@@ -651,6 +684,7 @@ void MainClass::fanteriorPagina()
     }
 }
 
+//Não funciona no caso de ter listas de anos
 void MainClass::fmudaListaAnime(QVariant rnewListVariant)
 {
     QString rnewList = rnewListVariant.toString();
@@ -755,6 +789,38 @@ void MainClass::fmudaListaAnime(QVariant rnewListVariant)
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "PLANNING");
             cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
+        }
+        break;
+    case leitorlistaanimes::type::SEASON:
+        if(rnewList.compare("CURRENT") == 0){
+            vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Watching";
+            cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "CURRENT");
+            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, leitorlistaanimes::type::ANIME);
+        }
+        else if(rnewList.compare("COMPLETED") == 0){
+            vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Completed";
+            cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "COMPLETED");
+            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, leitorlistaanimes::type::ANIME);
+        }
+        else if(rnewList.compare("PAUSED") == 0){
+            vlistaSelecionada[vindexAnimeSelecionado]->vlista = "On Hold";
+            cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "PAUSED");
+            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, leitorlistaanimes::type::ANIME);
+        }
+        else if(rnewList.compare("DROPPED") == 0){
+            vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Dropped";
+            cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "DROPPED");
+            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, leitorlistaanimes::type::ANIME);
+        }
+        else if(rnewList.compare("PLANNING") == 0){
+            vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Plan to Read";
+            cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "PLANNING");
+            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, leitorlistaanimes::type::ANIME);
         }
         break;
     default:

@@ -2,10 +2,32 @@ import QtQuick 2.0
 import QtQuick.Controls 2.3
 
 Item {
+    id: configOptions
     width: 460
     height: 814
 
     property bool authorizationBool: false
+
+    function saveSettings(){
+        saveSettingsDiretorio()
+        saveSettingsTorrent()
+    }
+
+    function saveSettingsDiretorio(){
+        settingsConfDiretorio.setValue("imageQualityLow",configDiretorio.lowQuality)
+        settingsConfDiretorio.setValue("detection", configDiretorio.detection)
+        settingsConfDiretorio.setValue("players", configDiretorio.players)
+    }
+    function saveSettingsTorrent(){
+        settingsConfTorrent.setValue("autodownload", configTorrent.autodownload)
+        settingsConfTorrent.setValue("autodownloadTimer", configTorrent.autodownloadTimer)
+        settingsConfTorrent.setValue("downloadLists", configTorrent.downloadLists)
+        settingsConfTorrent.setValue("preferredSub", configTorrent.preferredSub)
+        settingsConfTorrent.setValue("preferredQuality", configTorrent.preferredQuality)
+        settingsConfTorrent.setValue("generalFeed", configTorrent.generalFeed)
+        settingsConfTorrent.setValue("specificFeed", configTorrent.specificFeed)
+    }
+
 
     Column {
         id: column
@@ -473,10 +495,19 @@ Item {
                     id: element14
                     height: parent.height
                     Button {
-                        id: button5
+                        id: botaoSave
                         text: qsTr("Save")
                         onClicked: {
                             mainClass.fsetUsername(usernameText.text)
+                            mainClass.fsaveConfig()
+                            console.log(configDiretorio.lowQuality)
+                            console.log(configDiretorio.detection)
+
+
+                            //Fazer uma função que salva os settings de tudo
+                            //Salva ConfDiretorio
+                            saveSettings()
+                            mainClass.fsetDirConfig(configDiretorio.players)
                         }
                     }
                 }
@@ -484,7 +515,6 @@ Item {
             spacing: 4
         }
     }
-
 }
 
 /*##^##

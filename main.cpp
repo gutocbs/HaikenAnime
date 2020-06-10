@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QPointer>
 
 #include "mainclass.h"
 
@@ -16,6 +17,7 @@ int main(int argc, char *argv[])
     QQmlApplicationEngine engine;
 
     MainClass cmainClass;
+
     engine.rootContext()->setContextProperty("mainClass", &cmainClass);
 
     const QUrl url(QStringLiteral("qrc:/main.qml"));

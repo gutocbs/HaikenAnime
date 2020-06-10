@@ -3,8 +3,32 @@ import QtQuick.Controls 2.3
 import QtQuick.Dialogs 1.3
 
 Item {
+    id: configDir
     width: 1020
     height: 814
+
+    property bool lowQuality: false
+    property var detection: []
+    property var players: []
+
+    Component.onCompleted: {
+        if(!configDiretorio.lowQuality){
+            qualityFalse.checked = true
+        }
+        else{
+            qualityTrue.checked = true
+        }
+        players = configDiretorio.players.toString().split(",")
+        detection = configDiretorio.detection.toString().split(",")
+    }
+
+    function fcheckState(type, name){
+        if(type === "detectionType" && detection.includes(name))
+            return true
+        else if(type === "mediaPlayers" && players.includes(name))
+            return true
+        return false
+    }
 
     Row {
         id: row
@@ -56,57 +80,52 @@ Item {
                         id: listaDiretorios
                         x: 0
                         y: 0
+                        flickableDirection: Flickable.AutoFlickDirection
+                        clip: true
                         highlightRangeMode: ListView.NoHighlightRange
                         anchors.fill: parent
                         model: ListModel {
                             id: modeloLista
-                            ListElement {
-                                name: "Grey"
-                                colorCode: "grey"
-                            }
-
-                            ListElement {
-                                name: "Red"
-                                colorCode: "red"
-                            }
-
-                            ListElement {
-                                name: "Blue"
-                                colorCode: "blue"
-                            }
-
-                            ListElement {
-                                name: "Green"
-                                colorCode: "green"
-                            }
                         }
                         delegate: Item {
                             x: 5
-                            width: 80
+                            id: itemDir
+                            width: listaDiretorios.width
                             height: 40
                             Row {
                                 id: row7
-                                spacing: 10
-                                Rectangle {
-                                    width: 40
-                                    height: 40
-                                    color: colorCode
+                                width: parent.width
+                                height: parent.height
+                                Item{
+                                    width: parent.width
+                                    height: parent.height
+                                    Text {
+                                        text: name
+                                        anchors.fill: parent
+                                        verticalAlignment: Text.AlignVCenter
+                                        font.bold: true
+                                    }
                                 }
 
-                                Text {
-                                    text: name
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    font.bold: true
-                                }
                             }
                             MouseArea {
                                 anchors.fill: parent
                                 onClicked: listaDiretorios.currentIndex = index
                             }
                         }
-                        highlight: Rectangle { color: "red"; radius: 20 }
+                        highlight: Rectangle {
+                            id: rectangleHighlight
+                            color: "#0da2ff"
+                            opacity: 0.5
+                            radius: 0
+                        }
                         focus: true
-                        onCurrentItemChanged: console.log(model.get(listaDiretorios.currentIndex).name + ' selected')
+                        Component.onCompleted: {
+                            var diretorios = mainClass.fgetDir();
+                            for(var i = 0; i < diretorios.length; i++){
+                                modeloLista.append({"name": diretorios[i].toString(), "colorCode": "black"})
+                            }
+                        }
                     }
                 }
             }
@@ -146,7 +165,11 @@ Item {
                         Button {
                             id: button1
                             x: 0
-                            text: qsTr("Button")
+                            text: qsTr("Remove")
+                            onClicked: {
+                                if(mainClass.fremoveDirectory(modeloLista.get(listaDiretorios.currentIndex).name))
+                                    modeloLista.remove(listaDiretorios.currentIndex)
+                            }
                         }
                     }
                 }
@@ -202,7 +225,7 @@ Item {
                     height: parent.height
 
                     Frame {
-                        id: frame1
+                        id: detectionType
                         height: 50
                         Column {
                             id: column4
@@ -213,11 +236,34 @@ Item {
                                     id: checkBox
                                     width: 125
                                     text: qsTr("Media Players")
-                                }
 
+                                    Component.onCompleted:{
+                                        if(fcheckState("detectionType", "MP"))
+                                            checked = true
+                                    }
+
+                                    onCheckStateChanged: {
+                                        if(detection.includes("MP") && checkState === 0)
+                                            detection.splice(detection.indexOf("MP"), 1)
+                                        else if(checkState === 2 && !detection.includes("MP"))
+                                            detection.unshift("MP")
+                                        configDiretorio.detection = detection
+                                    }
+                                }
                                 CheckBox {
                                     id: checkBox1
                                     text: qsTr("Stream")
+                                    Component.onCompleted:{
+                                        if(fcheckState("detectionType", "ST"))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(detection.includes("ST") && checkState === 0)
+                                            detection.splice(detection.indexOf("ST"), 1)
+                                        else if(checkState === 2 && !detection.includes("ST"))
+                                            detection.unshift("ST")
+                                        configDiretorio.detection = detection
+                                    }
                                 }
                             }
                         }
@@ -257,7 +303,7 @@ Item {
                     height: parent.height
 
                     Frame {
-                        id: frame2
+                        id: mediaPlayers
                         x: 0
                         y: 0
                         height: 50
@@ -270,17 +316,51 @@ Item {
                                 CheckBox {
                                     id: checkBox2
                                     width: 125
-                                    text: qsTr("Watching")
+                                    text: qsTr("Crunchyroll")
+                                    Component.onCompleted:{
+                                        if(fcheckState("mediaPlayers", text.replace(" ","").toUpperCase()))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(players.includes("CRUNCHYROLL") && checkState === 0)
+                                            players.splice(players.indexOf("CRUNCHYROLL"), 1)
+                                        else if(checkState === 2 && !detection.includes("CRUNCHYROLL"))
+                                            players.unshift("CRUNCHYROLL")
+                                        configDiretorio.players = players
+                                    }
                                 }
 
                                 CheckBox {
                                     id: checkBox3
-                                    text: qsTr("Dropped")
+                                    width: 165
+                                    text: qsTr("Baka MPlayer")
+                                    Component.onCompleted:{
+                                        if(fcheckState("mediaPlayers", text.replace(" ","").toUpperCase()))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(players.includes("BAKAMPLAYER") && checkState === 0)
+                                            players.splice(players.indexOf("BAKAMPLAYER"), 1)
+                                        else if(checkState === 2)
+                                            players.unshift("BAKAMPLAYER" && !detection.includes("BAKAMPLAYER"))
+                                        configDiretorio.players = players
+                                    }
                                 }
 
                                 CheckBox {
                                     id: checkBox6
-                                    text: qsTr("Check Box")
+                                    text: qsTr("Windows Media Player")
+                                    Component.onCompleted:{
+                                        if(fcheckState("mediaPlayers", text.replace(" ","").toUpperCase()))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(players.includes("WINDOWSMEDIAPLAYER") && checkState === 0)
+                                            players.splice(players.indexOf("WINDOWSMEDIAPLAYER"), 1)
+                                        else if(checkState === 2)
+                                            players.unshift("WINDOWSMEDIAPLAYER" && !detection.includes("WINDOWSMEDIAPLAYER"))
+                                        configDiretorio.players = players
+                                    }
                                 }
                             }
 
@@ -289,17 +369,51 @@ Item {
                                 CheckBox {
                                     id: checkBox4
                                     width: 125
-                                    text: qsTr("Watching")
+                                    text: qsTr("AnimeLab")
+                                    Component.onCompleted:{
+                                        if(fcheckState("mediaPlayers", text.replace(" ","").toUpperCase()))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(players.includes("ANIMELAB") && checkState === 0)
+                                            players.splice(players.indexOf("ANIMELAB"), 1)
+                                        else if(checkState === 2)
+                                            players.unshift("ANIMELAB" && !detection.includes("WINDOWSMEDIAPLAYER"))
+                                        configDiretorio.players = players
+                                    }
                                 }
 
                                 CheckBox {
                                     id: checkBox5
-                                    text: qsTr("Dropped")
+                                    width: 165
+                                    text: qsTr("Media Player Classic")
+                                    Component.onCompleted:{
+                                        if(fcheckState("mediaPlayers", text.replace(" ","").toUpperCase()))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(players.includes("MEDIAPLAYERCLASSIC") && checkState === 0)
+                                            players.splice(players.indexOf("MEDIAPLAYERCLASSIC"), 1)
+                                        else if(checkState === 2)
+                                            players.unshift("MEDIAPLAYERCLASSIC" && !detection.includes("WINDOWSMEDIAPLAYER"))
+                                        configDiretorio.players = players
+                                    }
                                 }
 
                                 CheckBox {
                                     id: checkBox7
-                                    text: qsTr("Check Box")
+                                    text: qsTr("WebTorrent")
+                                    Component.onCompleted:{
+                                        if(fcheckState("mediaPlayers", text.replace(" ","").toUpperCase()))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(players.includes("WEBTORRENT") && checkState === 0)
+                                            players.splice(players.indexOf("WEBTORRENT"), 1)
+                                        else if(checkState === 2)
+                                            players.unshift("WEBTORRENT" && !detection.includes("WEBTORRENT"))
+                                        configDiretorio.players = players
+                                    }
                                 }
                             }
 
@@ -308,17 +422,35 @@ Item {
                                 CheckBox {
                                     id: checkBox8
                                     width: 125
-                                    text: qsTr("Watching")
+                                    text: qsTr("Funimation")
+                                    Component.onCompleted:{
+                                        if(fcheckState("mediaPlayers", text.replace(" ","").toUpperCase()))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(players.includes("FUNIMATION") && checkState === 0)
+                                            players.splice(players.indexOf("FUNIMATION"), 1)
+                                        else if(checkState === 2)
+                                            players.unshift("FUNIMATION" && !detection.includes("FUNIMATION"))
+                                        configDiretorio.players = players
+                                    }
                                 }
 
                                 CheckBox {
                                     id: checkBox9
-                                    text: qsTr("Dropped")
-                                }
-
-                                CheckBox {
-                                    id: checkBox10
-                                    text: qsTr("Check Box")
+                                    width: 165
+                                    text: qsTr("MPV")
+                                    Component.onCompleted:{
+                                        if(fcheckState("mediaPlayers", text.replace(" ","").toUpperCase()))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(players.includes("MPV") && checkState === 0)
+                                            players.splice(players.indexOf("MPV"), 1)
+                                        else if(checkState === 2)
+                                            players.unshift("MPV" && !detection.includes("MPV"))
+                                        configDiretorio.players = players
+                                    }
                                 }
                             }
 
@@ -327,17 +459,35 @@ Item {
                                 CheckBox {
                                     id: checkBox11
                                     width: 125
-                                    text: qsTr("Watching")
+                                    text: qsTr("Hulu")
+                                    Component.onCompleted:{
+                                        if(fcheckState("mediaPlayers", text.replace(" ","").toUpperCase()))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(players.includes("HULU") && checkState === 0)
+                                            players.splice(players.indexOf("HULU"), 1)
+                                        else if(checkState === 2)
+                                            players.unshift("HULU" && !detection.includes("HULU"))
+                                        configDiretorio.players = players
+                                    }
                                 }
 
                                 CheckBox {
                                     id: checkBox12
-                                    text: qsTr("Dropped")
-                                }
-
-                                CheckBox {
-                                    id: checkBox13
-                                    text: qsTr("Check Box")
+                                    width: 165
+                                    text: qsTr("VLC")
+                                    Component.onCompleted:{
+                                        if(fcheckState("mediaPlayers", text.replace(" ","").toUpperCase()))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(players.includes("VLC") && checkState === 0)
+                                            players.splice(players.indexOf("VLC"), 1)
+                                        else if(checkState === 2)
+                                            players.unshift("VLC" && !detection.includes("VLC"))
+                                        configDiretorio.players = players
+                                    }
                                 }
                             }
 
@@ -346,17 +496,35 @@ Item {
                                 CheckBox {
                                     id: checkBox14
                                     width: 125
-                                    text: qsTr("Watching")
+                                    text: qsTr("KissAnime")
+                                    Component.onCompleted:{
+                                        if(fcheckState("mediaPlayers", text.replace(" ","").toUpperCase()))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(players.includes("KISSANIME") && checkState === 0)
+                                            players.splice(players.indexOf("KISSANIME"), 1)
+                                        else if(checkState === 2)
+                                            players.unshift("KISSANIME" && !detection.includes("KISSANIME"))
+                                        configDiretorio.players = players
+                                    }
                                 }
 
                                 CheckBox {
                                     id: checkBox15
-                                    text: qsTr("Dropped")
-                                }
-
-                                CheckBox {
-                                    id: checkBox16
-                                    text: qsTr("Check Box")
+                                    width: 165
+                                    text: qsTr("Winamp")
+                                    Component.onCompleted:{
+                                        if(fcheckState("mediaPlayers", text.replace(" ","").toUpperCase()))
+                                            checked = true
+                                    }
+                                    onCheckStateChanged: {
+                                        if(players.includes("WINAMP") && checkState === 0)
+                                            players.splice(players.indexOf("WINAMP"), 1)
+                                        else if(checkState === 2)
+                                            players.unshift("WINAMP" && !detection.includes("WINAMP"))
+                                        configDiretorio.players = players
+                                    }
                                 }
                             }
                         }
@@ -408,13 +576,15 @@ Item {
                                 id: row23
 
                                 RadioButton {
-                                    id: radioButton
+                                    id: qualityTrue
                                     text: qsTr("Yes")
+                                    onClicked: configDiretorio.lowQuality = true
                                 }
 
                                 RadioButton {
-                                    id: radioButton1
+                                    id: qualityFalse
                                     text: qsTr("No")
+                                    onClicked: configDiretorio.lowQuality = false
                                 }
                             }
                         }
@@ -453,9 +623,11 @@ Item {
 
 /*##^##
 Designer {
-    D{i:0;formeditorZoom:0.33000001311302185}D{i:8;anchors_height:160;anchors_width:110}
-D{i:36;anchors_height:400;anchors_width:200}D{i:35;anchors_height:200;anchors_width:200}
-D{i:45;anchors_height:400;anchors_width:200}D{i:44;anchors_height:200;anchors_width:200}
+    D{i:0;formeditorZoom:0.8999999761581421}D{i:8;anchors_height:160;anchors_width:110}
+D{i:35;anchors_height:200;anchors_width:200}D{i:36;anchors_height:400;anchors_width:200}
+D{i:31;anchors_height:400;anchors_width:200}D{i:30;anchors_height:200;anchors_width:200}
+D{i:39;anchors_height:200;anchors_width:200}D{i:45;anchors_height:400;anchors_width:200}
+D{i:44;anchors_height:200;anchors_width:200}D{i:40;anchors_height:400;anchors_width:200}
 D{i:1;anchors_height:400;anchors_width:200}
 }
 ##^##*/

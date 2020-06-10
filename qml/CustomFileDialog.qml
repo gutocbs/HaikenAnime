@@ -7,8 +7,10 @@ FileDialog {
     folder: shortcuts.home
     selectFolder: true
     onAccepted: {
-        console.log("You chose: " + fileDialog.fileUrls)
-//        Qt.quit()
+        var dirStr = ""+fileDialog.folder
+        dirStr = dirStr.replace("file:///","")
+        if(mainClass.fsetDirectory(dirStr))
+            modeloLista.append({"name": dirStr, "colorCode": "black"})
     }
     onRejected: {
         console.log("Canceled")

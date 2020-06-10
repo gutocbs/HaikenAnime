@@ -5,6 +5,35 @@ Item {
     width: 1020
     height: 814
 
+    property var listaDownload: []
+    property var autodownload: false
+    property var autodownloadTimer: "10"
+    property var preferredSub: ""
+    property var preferredQuality: ""
+    property var generalFeed: ""
+    property var specificFeed: ""
+
+    Component.onCompleted: {
+        if(!configTorrent.autodownload)
+            autoDownloadNo.checked = true
+        else{
+            autoDownloadYes.checked = true
+            autodownload = true
+        }
+        autodownloadTimer = configTorrent.autodownloadTimer
+        listaDownload = configTorrent.downloadLists.toString().split(",")
+        preferredSub = configTorrent.preferredSub
+        preferredQuality = configTorrent.preferredQuality
+        generalFeed = configTorrent.generalFeed
+        specificFeed = configTorrent.specificFeed
+    }
+
+    function fcheckState(lista){
+        if(listaDownload.includes(lista))
+            return true
+        return false
+    }
+
     Row {
         id: row14
         anchors.fill: parent
@@ -67,7 +96,9 @@ Item {
                     height: parent.height
 
                     ComboBox {
-                        id: comboBox
+                        id: torrentBox
+                        model: ["uTorrent", "qBittorrent"]
+//                        onActivated: mainClass.fsetClient(service.currentText)
                     }
                 }
             }
@@ -115,13 +146,15 @@ Item {
                             anchors.fill: parent
 
                             RadioButton {
-                                id: radioButton
+                                id: autoDownloadYes
                                 text: qsTr("Yes")
+                                onClicked: configTorrent.autodownload = true
                             }
 
                             RadioButton {
-                                id: radioButton1
+                                id: autoDownloadNo
                                 text: qsTr("No")
+                                onClicked: configTorrent.autodownload = false
                             }
                         }
                     }
@@ -167,7 +200,8 @@ Item {
 
                         TextField {
                             id: textField
-                            text: qsTr("10")
+                            text: autodownloadTimer
+                            onTextChanged: configTorrent.autodownloadTimer = text
                             horizontalAlignment: Text.AlignHCenter
                             placeholderText: "10"
                             anchors.fill: parent
@@ -245,11 +279,35 @@ Item {
                                     id: checkBox
                                     width: 125
                                     text: qsTr("Watching")
+                                    Component.onCompleted:{
+                                        if(fcheckState("WATCHING"))
+                                            checked = true
+                                    }
+
+                                    onCheckStateChanged: {
+                                        if(listaDownload.includes("WATCHING") && checkState === 0)
+                                            listaDownload.splice(listaDownload.indexOf("WATCHING"), 1)
+                                        else if(checkState === 2)
+                                            listaDownload.unshift("WATCHING")
+                                        configTorrent.downloadLists = listaDownload
+                                    }
                                 }
 
                                 CheckBox {
                                     id: checkBox1
                                     text: qsTr("Dropped")
+                                    Component.onCompleted:{
+                                        if(fcheckState("DROPPED"))
+                                            checked = true
+                                    }
+
+                                    onCheckStateChanged: {
+                                        if(listaDownload.includes("DROPPED") && checkState === 0)
+                                            listaDownload.splice(listaDownload.indexOf("DROPPED"), 1)
+                                        else if(checkState === 2)
+                                            listaDownload.unshift("DROPPED")
+                                        configTorrent.downloadLists = listaDownload
+                                    }
                                 }
                             }
 
@@ -258,11 +316,35 @@ Item {
                                 CheckBox {
                                     id: checkBox2
                                     text: qsTr("Plan to Watch")
+                                    Component.onCompleted:{
+                                        if(fcheckState("PLANNING"))
+                                            checked = true
+                                    }
+
+                                    onCheckStateChanged: {
+                                        if(listaDownload.includes("PLANNING") && checkState === 0)
+                                            listaDownload.splice(listaDownload.indexOf("PLANNING"), 1)
+                                        else if(checkState === 2)
+                                            listaDownload.unshift("PLANNING")
+                                        configTorrent.downloadLists = listaDownload
+                                    }
                                 }
 
                                 CheckBox {
                                     id: checkBox3
                                     text: qsTr("On Hold")
+                                    Component.onCompleted:{
+                                        if(fcheckState("PAUSED"))
+                                            checked = true
+                                    }
+
+                                    onCheckStateChanged: {
+                                        if(listaDownload.includes("PAUSED") && checkState === 0)
+                                            listaDownload.splice(listaDownload.indexOf("PAUSED"), 1)
+                                        else if(checkState === 2)
+                                            listaDownload.unshift("PAUSED")
+                                        configTorrent.downloadLists = listaDownload
+                                    }
                                 }
                             }
                         }
@@ -303,9 +385,10 @@ Item {
                     height: parent.height
 
                     TextField {
-                        id: textField1
+                        id: idPreferredSub
                         height: parent.height
-                        text: qsTr("10")
+                        text: preferredSub
+                        onTextChanged: configTorrent.preferredSub = text
                         placeholderText: "10"
                         horizontalAlignment: Text.AlignHCenter
                     }
@@ -348,7 +431,10 @@ Item {
                     height: parent.height
 
                     ComboBox {
-                        id: comboBox1
+                        id: quality
+                        model: ["1080p", "720p", "480p"]
+                        currentIndex: model.indexOf(preferredQuality)
+                        onActivated: configTorrent.preferredQuality = quality.currentText
                     }
                 }
             }
@@ -390,10 +476,11 @@ Item {
                     width: parent.width
                     height: parent.height
                     TextField {
-                        id: textField2
-                        text: qsTr("10")
+                        id: idgeneralFeed
+                        text: generalFeed
                         anchors.fill: parent
-                        placeholderText: "10"
+                        placeholderText: "https://www.tokyotosho.info/rss.php?filter=1,11&zwnj=0"
+                        onTextChanged: configTorrent.generalFeed = text
                         horizontalAlignment: Text.AlignHCenter
                     }
                 }
@@ -430,10 +517,11 @@ Item {
                     width: parent.width
                     height: parent.height
                     TextField {
-                        id: textField3
-                        text: qsTr("10")
+                        id: idspecificFeed
+                        text: specificFeed
                         anchors.fill: parent
-                        placeholderText: "10"
+                        placeholderText: "https://nyaa.si/?page=rss&c=1_2&f=0&q=%title%"
+                        onTextChanged: configTorrent.specificFeed = text
                         horizontalAlignment: Text.AlignHCenter
                     }
                 }
