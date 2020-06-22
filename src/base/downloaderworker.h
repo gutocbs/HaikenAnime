@@ -13,6 +13,7 @@
 
 #include "src/base/leitorlistaanimes.h"
 #include "src/base/confbase.h"
+#include "src/base/abaconfig.h"
 
 class DownloaderWorker : public QObject
 {
@@ -22,18 +23,20 @@ public:
     bool isBusy();
     void fsetURLAvatar(const QString &urlAvatar);
     void fdownloadTorrent(const QString &fileURL, const QString &torrentName);
-    void fdownloadXMLTorrentList(const QString &fileURL);
+    void fdownloadXMLTorrentList();
 
 signals:
     void started();
     void finished();
     void finishedBig();
+    void finishedXML();
     void sterminouLista(QString);
 
 public slots:
 //    void timeout();
     void fdownloadAvatarUsuario(int value);
     void ffinishedAvatar();
+    void ffinishedGeneralXML();
     void work(int value);
     void ffinished();
     void workBig(int value);

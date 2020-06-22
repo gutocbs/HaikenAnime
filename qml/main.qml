@@ -42,6 +42,11 @@ Window {
     property var imagemAvatar: ""
     property var nomeUsuario: ""
     property var time: ""
+    //Anime reconhecido
+    property var idanimeReconhecido: ""
+    property var nomeAnimeReconhecido: ""
+    property var episodiosAnimeReconhecido: ""
+
 
     property var numeroAnosListas: 0
 
@@ -117,6 +122,11 @@ Window {
         onSbotaoHome: stackView.push("Home.qml")
         onSbotaoConfig: stackView.push("ConfigPagina.qml")
         onSbotaoTorrent: stackView.push("TorrentPagina.qml")
+        onSanimeReconhecidoID: {
+            idanimeReconhecido = dataId
+            nomeAnimeReconhecido = dataNome
+            episodiosAnimeReconhecido = dataEpisodio
+        }
     }
 
     Component.onCompleted: {

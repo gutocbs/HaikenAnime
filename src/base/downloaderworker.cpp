@@ -63,9 +63,35 @@ void DownloaderWorker::fdownloadTorrent(const QString &fileURL, const QString &t
 
 }
 
-void DownloaderWorker::fdownloadXMLTorrentList(const QString &fileURL)
+void DownloaderWorker::fdownloadXMLTorrentList()
 {
+    QString lsaveFilePath = "Configurações/Temp/torrents.xml";
 
+//    if(QFile(lsaveFilePath).size() == 0)
+        QFile(lsaveFilePath).remove();
+    QPointer<abaConfig> cabaConfig;
+    QNetworkRequest lrequest;
+    lrequest.setUrl(QUrl(cabaConfig->instance()->fgetGeneralFeed()));
+    vreply = vmanager->get(lrequest);
+
+    vfile = new QFile(this);
+    vfile->setFileName(lsaveFilePath);
+    vfile->open(QIODevice::WriteOnly);
+
+    connect(vmanager,SIGNAL(finished(QNetworkReply*)),this,SLOT(onFinished(QNetworkReply*)));
+    connect(vreply,SIGNAL(readyRead()),this,SLOT(onReadyRead()));
+    connect(vreply,SIGNAL(finished()),this,SLOT(ffinishedGeneralXML()));
+}
+
+void DownloaderWorker::ffinishedGeneralXML()
+{
+    if(vfileIsOpen){
+        if(vfile->isOpen())
+            vfile->close();
+    }
+    vfileIsOpen = false;
+    m_busy = false;
+    emit finishedXML();
 }
 
 void DownloaderWorker::work(int value)

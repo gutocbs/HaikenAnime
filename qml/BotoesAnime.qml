@@ -279,15 +279,16 @@ Item {
                                 height: parent.height
 
                                 Button {
-                                    id: button5
+                                    id: botaoProgressoMenos
                                     x: 0
                                     y: 10
                                     width: parent.width
                                     height: parent.width
-                                    text: qsTr("+")
+                                    text: qsTr("-")
                                     font.pointSize: 8
                                     font.family: "Tahoma"
                                     anchors.verticalCenter: parent.verticalCenter
+                                    onClicked: mainClass.fmudaProgresso("diminui")
                                 }
                             }
                         }
@@ -303,15 +304,16 @@ Item {
                                 height: parent.height
 
                                 Button {
-                                    id: button6
+                                    id: botaoProgressoMais
                                     x: 0
                                     y: 10
                                     width: parent.width
                                     height: parent.width
-                                    text: qsTr("-")
+                                    text: qsTr("+")
                                     anchors.verticalCenter: parent.verticalCenter
                                     font.pointSize: 8
                                     font.family: "Tahoma"
+                                    onClicked: mainClass.fmudaProgresso("aumenta")
                                 }
                             }
                         }
@@ -432,15 +434,16 @@ Item {
                                 height: parent.height
 
                                 Button {
-                                    id: button7
+                                    id: botaoNotaMenos
                                     x: 0
                                     y: 10
                                     width: parent.width
                                     height: parent.width
-                                    text: qsTr("+")
+                                    text: qsTr("-")
                                     anchors.verticalCenter: parent.verticalCenter
                                     font.pointSize: 8
                                     font.family: "Tahoma"
+                                    onClicked: mainClass.fmudaNota("diminui")
                                 }
                             }
                         }
@@ -456,15 +459,16 @@ Item {
                                 height: parent.height
 
                                 Button {
-                                    id: button8
+                                    id: botaoNotaMais
                                     x: 0
                                     y: 10
                                     width: parent.width
                                     height: parent.width
-                                    text: qsTr("-")
+                                    text: qsTr("+")
                                     anchors.verticalCenter: parent.verticalCenter
                                     font.pointSize: 8
                                     font.family: "Tahoma"
+                                    onClicked: mainClass.fmudaNota("aumenta")
                                 }
                             }
                         }

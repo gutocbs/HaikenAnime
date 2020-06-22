@@ -48,7 +48,16 @@ Item {
                     id: botaoTorrent
                     text: qsTr("Torrent")
                     font.family: "Tahoma"
-                    onClicked: mainClass.fbotaoTorrent()
+                    onClicked: {
+                        mainClass.fbotaoTorrent()
+                        nomeBotaoCurrent = "Refresh"
+                        nomeBotaoCompleted = "Download"
+                        nomeBotaoPaused = "Anime Info"
+                        nomeBotaoDropped = "Torrent Info"
+                        nomeBotaoPlanning = "Plan to Watch"
+                        botaoPlanning.visible = true
+                        boxAnos.visible = false
+                    }
                 }
 
                 Button {

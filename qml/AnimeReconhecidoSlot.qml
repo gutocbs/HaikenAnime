@@ -8,14 +8,19 @@ Item {
     height: 200
     visible: true
 
-    property var titulo: "What is Lorem Ipsum?"
-    property var episodios: "1/12"
-    property var nota: "7/10"
-    property var posicao: 0
-    property var lista: "Watching"
-    property var imagem: "qrc:/qtquickplugin/images/template_image.png"
+    property var titulo: nomeAnimeReconhecido
+    property var episodios: episodiosAnimeReconhecido
+    property var imagem: "file:///"+dirImagensMedias+idanimeReconhecido
+    property var idAnime: idanimeReconhecido
+    property var visivel: false
     property color corLabel: "#b9c9fa"
-    property var idAnimeSlot: ""
+
+    onIdAnimeChanged: {
+        if(idAnime === "")
+            visivel = false
+        else
+            visivel = true
+    }
 
     Row {
         id: row4
@@ -30,6 +35,7 @@ Item {
                 id: element4
                 width: 110
                 height: 200
+                visible: visivel
 
                 Image {
                     id: image
@@ -42,7 +48,7 @@ Item {
                     id: selecionaAnime
                     width: 110
                     height: 150
-                    onPressed: mainClass.finfoAnimeSelecionado(posicao)
+                    onPressed: mainClass.finfoAnimeSelecionado(0)
                 }
 
             }
@@ -60,6 +66,7 @@ Item {
                     id: element5
                     width: 150
                     height: 67
+                    visible: visivel
 
 
                     Rectangle {
@@ -100,6 +107,7 @@ Item {
                     id: element6
                     width: 150
                     height: 25
+                    visible: visivel
 
                     Rectangle {
                         id: labelNome1
@@ -116,7 +124,7 @@ Item {
                         y: 0
                         width: 150
                         height: 25
-                        text: titulo
+                        text: episodios
                         textFormat: Text.AutoText
                         wrapMode: Text.WordWrap
                         font.family: "Tahoma"
@@ -139,6 +147,7 @@ Item {
                     id: element7
                     width: 200
                     height: 40
+                    visible: visivel
 
                     Text {
                         id: element3
@@ -168,6 +177,7 @@ Item {
                 DelayButton {
                     id: delayButton
                     text: qsTr("Change!")
+                    visible: visivel
                 }
             }
         }

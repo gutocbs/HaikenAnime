@@ -3,7 +3,7 @@ import QtQuick.Controls 2.3
 import QtQuick.Layouts 1.3
 
 Item {
-    id: element
+    id: slotAnime
     width: 260
     height: 150
     visible: true

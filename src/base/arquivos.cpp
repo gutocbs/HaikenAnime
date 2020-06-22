@@ -91,6 +91,7 @@ QString arquivos::fprocuraEpisodio(anime *ranimeBuscado){
     return "";
 }
 
+///anime* animebuscado, int episodioBuscado
 QString arquivos::fprocuraEpisodioEspecifico(anime *ranimeBuscado, int rEpisodioBuscado){
     //Verifica se a função retorna um valor que não está vazio, ou seja
     //Se existe uma pasta com o nome do anime
@@ -155,7 +156,7 @@ int arquivos::fcomparaSeasons(QString rnome, int repisodio, int rtemporada)
 
     QString nomeAnimeTemp;
 
-    vlistaSelecionada = cleitorlistaanimes->retornaListaWatching();
+    vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaWatching();
     for(int i = 0; i < vlistaSelecionada.size(); i++){
         nomeAnimeTemp = formatador.fremoveTudo(vlistaSelecionada[i]->vnome);
         if(rnome.compare(nomeAnimeTemp) == 0 && vlistaSelecionada[i]->vtemporada < rtemporada
@@ -172,7 +173,7 @@ int arquivos::fcomparaSeasons(QString rnome, int repisodio, int rtemporada)
         }
     }
 
-    vlistaSelecionada = cleitorlistaanimes->retornaListaCompleted();
+    vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaCompleted();
     for(int i = 0; i < vlistaSelecionada.size(); i++){
         nomeAnimeTemp = formatador.fremoveTudo(vlistaSelecionada[i]->vnome);
         if(rnome.compare(nomeAnimeTemp) == 0 && vlistaSelecionada[i]->vtemporada < rtemporada
@@ -189,7 +190,7 @@ int arquivos::fcomparaSeasons(QString rnome, int repisodio, int rtemporada)
         }
     }
 
-    vlistaSelecionada = cleitorlistaanimes->retornaListaOnHold();
+    vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaOnHold();
     for(int i = 0; i < vlistaSelecionada.size(); i++){
         nomeAnimeTemp = formatador.fremoveTudo(vlistaSelecionada[i]->vnome);
         if(rnome.compare(nomeAnimeTemp) == 0 && vlistaSelecionada[i]->vtemporada < rtemporada
@@ -206,7 +207,7 @@ int arquivos::fcomparaSeasons(QString rnome, int repisodio, int rtemporada)
         }
     }
 
-    vlistaSelecionada = cleitorlistaanimes->retornaListaDropped();
+    vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaDropped();
     for(int i = 0; i < vlistaSelecionada.size(); i++){
         nomeAnimeTemp = formatador.fremoveTudo(vlistaSelecionada[i]->vnome);
         if(rnome.compare(nomeAnimeTemp) == 0 && vlistaSelecionada[i]->vtemporada < rtemporada
@@ -223,7 +224,7 @@ int arquivos::fcomparaSeasons(QString rnome, int repisodio, int rtemporada)
         }
     }
 
-    vlistaSelecionada = cleitorlistaanimes->retornaListaPlanToWatch();
+    vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaPlanToWatch();
     for(int i = 0; i < vlistaSelecionada.size(); i++){
         nomeAnimeTemp = formatador.fremoveTudo(vlistaSelecionada[i]->vnome);
         if(rnome.compare(nomeAnimeTemp) == 0 && vlistaSelecionada[i]->vtemporada < rtemporada

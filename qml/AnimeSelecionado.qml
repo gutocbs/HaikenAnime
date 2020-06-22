@@ -11,8 +11,6 @@ Item {
     Row {
         id: row7
         anchors.fill: parent
-
-
         Column {
             id: column1
             spacing: 1

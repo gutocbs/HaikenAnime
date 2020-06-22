@@ -1216,6 +1216,38 @@ anime* leitorlistaanimes::fbuscaAnimeNoAno(int ano, const QString &rid)
     return nullptr;
 }
 
+anime *leitorlistaanimes::fretornaAnimePorID(const QString &rid)
+{
+    QString llista = fbuscaAnimePorIDERetornaLista(rid);
+    int lposicao = fbuscaAnimePorIDERetornaPosicao(rid);
+    if(lposicao != -1){
+        if(llista.compare("Watching", Qt::CaseInsensitive) == 0){
+            return vlistaWatching[lposicao];
+        }
+        else if(llista.compare("Plan to Watch", Qt::CaseInsensitive) == 0){
+            return vlistaPlanToWatch[lposicao];
+        }
+        else if(llista.compare("On Hold", Qt::CaseInsensitive) == 0){
+            return vlistaOnHold[lposicao];
+        }
+        else if(llista.compare("Dropped", Qt::CaseInsensitive) == 0){
+            return vlistaDropped[lposicao];
+        }
+        else if(llista.compare("Completed", Qt::CaseInsensitive) == 0){
+            return vlistaCompleted[lposicao];
+        }
+        else{
+            bool ok;
+            //Checa se a lista é um número válido
+            llista.toInt(&ok);
+            if(ok){
+                return fbuscaAnimeNoAno(llista.toInt(), rid);
+            }
+        }
+    }
+    return nullptr;
+}
+
 void leitorlistaanimes::fleListaIdsNomesAnos()
 {
     QFile larquivo("Configurações/idListaNome.txt");

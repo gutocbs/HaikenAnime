@@ -23,9 +23,26 @@ SOURCES += \
         lib/anitomy/string.cpp \
         lib/anitomy/token.cpp \
         lib/anitomy/tokenizer.cpp \
+        lib/robotlib/Bounds.cc \
+#        lib/robotlib/Clipboard.cc \
+#        lib/robotlib/Color.cc \
+#        lib/robotlib/Hash.cc \
+#        lib/robotlib/Image.cc \
+#        lib/robotlib/Keyboard.cc \
+#        lib/robotlib/Memory.cc \
+        lib/robotlib/Module.cc \
+#        lib/robotlib/Mouse.cc \
+        lib/robotlib/Point.cc \
+        lib/robotlib/Process.cc \
+#        lib/robotlib/Range.cc \
+#        lib/robotlib/Screen.cc \
+        lib/robotlib/Size.cc \
+#        lib/robotlib/Timer.cc \
+        lib/robotlib/Window.cc \
         main.cpp \
         mainclass.cpp \
         src/base/abaconfig.cpp \
+        src/base/abatorrent.cpp \
         src/base/arquivos.cpp \
         src/base/confbase.cpp \
         src/base/confusuario.cpp \
@@ -35,7 +52,8 @@ SOURCES += \
         src/utilities/client.cpp \
         src/utilities/downloader.cpp \
         src/utilities/formatapalavras.cpp \
-        src/utilities/logger.cpp
+        src/utilities/logger.cpp \
+    src/utilities/playerrecognition.cpp
 
 RESOURCES += qml.qrc \
     queries.qrc
@@ -51,6 +69,8 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
+LIBS += libpsapi
+
 HEADERS += \
     lib/anitomy/anitomy.h \
     lib/anitomy/element.h \
@@ -60,7 +80,28 @@ HEADERS += \
     lib/anitomy/string.h \
     lib/anitomy/token.h \
     lib/anitomy/tokenizer.h \
+    lib/robotlib/Bounds.h \
+#    lib/robotlib/Clipboard.h \
+#    lib/robotlib/Color.h \
+#    lib/robotlib/Enum.h \
+#    lib/robotlib/Global.h \
+#    lib/robotlib/Hash.h \
+#    lib/robotlib/Image.h \
+#    lib/robotlib/Keyboard.h \
+#    lib/robotlib/Memory.h \
+    lib/robotlib/Module.h \
+#    lib/robotlib/Mouse.h \
+    lib/robotlib/Point.h \
+    lib/robotlib/Process.h \
+#    lib/robotlib/Range.h \
+#    lib/robotlib/Robot.h \
+#    lib/robotlib/Screen.h \
+    lib/robotlib/Size.h \
+#    lib/robotlib/Timer.h \
+#    lib/robotlib/Types.h \
+    lib/robotlib/Window.h \
     mainclass.h \
+    src/base/abatorrent.h \
     src/base/abaconfig.h \
     src/base/anime.h \
     src/base/arquivos.h \
@@ -68,10 +109,12 @@ HEADERS += \
     src/base/confusuario.h \
     src/base/downloaderworker.h \
     src/base/leitorlistaanimes.h \
+    src/base/torrentinfo.h \
     src/clients/anilist.h \
     src/utilities/call_once.h \
     src/utilities/client.h \
     src/utilities/downloader.h \
     src/utilities/formatapalavras.h \
     src/utilities/logger.h \
+    src/utilities/playerrecognition.h \
     src/utilities/singleton.h \

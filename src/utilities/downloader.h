@@ -15,6 +15,9 @@ public:
 
     void fsetWorker();
 
+signals:
+    void sfinishedXML();
+
 public slots:
     void setListAndType(QString, QString);
     void setAvatar(QString);
@@ -30,6 +33,10 @@ public slots:
     void workAvatar(int value);
     void finishedAvatar();
     void checkworkAvatar();
+
+    void workXML(int value);
+    void finishedXML();
+    void checkworkXML();
 
     bool isBusy();
 private:

@@ -67,6 +67,7 @@ public:
     QVector<anime*> fbuscaLista(const QString &rnome, type rtipoMidia);
     QVector<anime*> fleListaAno(int);
     anime* fbuscaAnimeNoAno(int, const QString &rid);
+    anime *fretornaAnimePorID(const QString &rid);
     void fcarregaListaAnoEmThread();
 
 signals:

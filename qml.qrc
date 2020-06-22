@@ -19,5 +19,6 @@
         <file>ConfigFont.qml</file>
         <file>TableDelegate.qml</file>
         <file>CustomFileDialog.qml</file>
+        <file>TorrentListDelegate.qml</file>
     </qresource>
 </RCC>

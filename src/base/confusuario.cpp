@@ -163,7 +163,7 @@ void confUsuario::fsetupListasPraBusca()
             this->thread()->exit(0);
             return;
         }
-        vlistaAnimes = cleitorlistaanimes->retornaListaWatching();
+        vlistaAnimes = cleitorlistaanimes->instance()->retornaListaWatching();
         vlista++;
         qDebug() << "Searching for animes from list Watching";
         fbuscaDiretoriosAnimes();
@@ -173,7 +173,7 @@ void confUsuario::fsetupListasPraBusca()
             this->thread()->exit(0);
             return;
         }
-        vlistaAnimes = cleitorlistaanimes->retornaListaCompleted();
+        vlistaAnimes = cleitorlistaanimes->instance()->retornaListaCompleted();
         vlista++;
         qDebug() << "Searching for animes from list Completed";
         fbuscaDiretoriosAnimes();
@@ -183,7 +183,7 @@ void confUsuario::fsetupListasPraBusca()
             this->thread()->exit(0);
             return;
         }
-        vlistaAnimes = cleitorlistaanimes->retornaListaDropped();
+        vlistaAnimes = cleitorlistaanimes->instance()->retornaListaDropped();
         vlista++;
         qDebug() << "Searching for animes from list Dropped";
         fbuscaDiretoriosAnimes();
@@ -193,7 +193,7 @@ void confUsuario::fsetupListasPraBusca()
             this->thread()->exit(0);
             return;
         }
-        vlistaAnimes = cleitorlistaanimes->retornaListaOnHold();
+        vlistaAnimes = cleitorlistaanimes->instance()->retornaListaOnHold();
         vlista++;
         qDebug() << "Searching for animes from list On Hold";
         fbuscaDiretoriosAnimes();
@@ -203,7 +203,7 @@ void confUsuario::fsetupListasPraBusca()
             this->thread()->exit(0);
             return;
         }
-        vlistaAnimes = cleitorlistaanimes->retornaListaPlanToWatch();
+        vlistaAnimes = cleitorlistaanimes->instance()->retornaListaPlanToWatch();
         vlista++;
         qDebug() << "Searching for animes from list Plan to Watch";
         fbuscaDiretoriosAnimes();
@@ -214,7 +214,7 @@ void confUsuario::fsetupListasPraBusca()
             return;
         }
         fsalvaPastasArquivos();
-        cleitorlistaanimes->fcarregaListaAnoEmThread();
+        cleitorlistaanimes->instance()->fcarregaListaAnoEmThread();
         emit schecouPastas();
         vterminouChecagem = true;
         qDebug() << "All animes in the computer were found";

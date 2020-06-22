@@ -1,7 +1,7 @@
 import QtQuick 2.0
 
 Item {
-    id: element
+    id: gridAnimes
     width: 804
     height: 606
     property alias row1Y: row1.y
@@ -16,7 +16,39 @@ Item {
     property var localLista: ["0","1","2","3","4","5","6","7","8","9","10","11"]
     property var localCor: ["0","0","0","0","0","0","0","0","0","0","0","0"]
     property var localImagem: ["","","","","","","","","","","",""]
+    Connections{
+        target: mainClass
+        onSbaixouImagensMedias:{
+            var tempImage = localImagem
+            localImagem = ["","","","","","","","","","","",""]
+            getDataFromMain(animeSlot.idAnimeSlot,animeSlot.posicao)
+            getDataFromMain(animeSlot1.idAnimeSlot,animeSlot1.posicao)
+            getDataFromMain(animeSlot2.idAnimeSlot,animeSlot2.posicao)
+            getDataFromMain(animeSlot3.idAnimeSlot,animeSlot3.posicao)
+            getDataFromMain(animeSlot4.idAnimeSlot,animeSlot4.posicao)
+            getDataFromMain(animeSlot5.idAnimeSlot,animeSlot5.posicao)
+            getDataFromMain(animeSlot6.idAnimeSlot,animeSlot6.posicao)
+            getDataFromMain(animeSlot7.idAnimeSlot,animeSlot7.posicao)
+            getDataFromMain(animeSlot8.idAnimeSlot,animeSlot8.posicao)
+            getDataFromMain(animeSlot9.idAnimeSlot,animeSlot9.posicao)
+            getDataFromMain(animeSlot10.idAnimeSlot,animeSlot10.posicao)
+            getDataFromMain(animeSlot11.idAnimeSlot,animeSlot11.posicao)
+            localImagem = tempImage
+            getDataFromMain(animeSlot.idAnimeSlot,animeSlot.posicao)
+            getDataFromMain(animeSlot1.idAnimeSlot,animeSlot1.posicao)
+            getDataFromMain(animeSlot2.idAnimeSlot,animeSlot2.posicao)
+            getDataFromMain(animeSlot3.idAnimeSlot,animeSlot3.posicao)
+            getDataFromMain(animeSlot4.idAnimeSlot,animeSlot4.posicao)
+            getDataFromMain(animeSlot5.idAnimeSlot,animeSlot5.posicao)
+            getDataFromMain(animeSlot6.idAnimeSlot,animeSlot6.posicao)
+            getDataFromMain(animeSlot7.idAnimeSlot,animeSlot7.posicao)
+            getDataFromMain(animeSlot8.idAnimeSlot,animeSlot8.posicao)
+            getDataFromMain(animeSlot9.idAnimeSlot,animeSlot9.posicao)
+            getDataFromMain(animeSlot10.idAnimeSlot,animeSlot10.posicao)
+            getDataFromMain(animeSlot11.idAnimeSlot,animeSlot11.posicao)
 
+        }
+    }
     function getDataFromMain(id,pos){
         var listaNomeTemp = localNome
         var listaEpisodiosTemp = localEpisodios

@@ -18,6 +18,7 @@ void Downloader::fsetWorker()
     dw->setObjectName("DownloaderWorker: " + QString::number(0));
     connect(dw,&DownloaderWorker::finished,this, &Downloader::finished);
     connect(dw,&DownloaderWorker::finishedBig,this, &Downloader::finishedBig);
+    connect(dw,&DownloaderWorker::finishedXML,this, &Downloader::finishedXML);
 
     m_workers.append(dw);
 }
@@ -95,6 +96,30 @@ void Downloader::checkworkAvatar()
     foreach(DownloaderWorker *dw, m_workers) {
         if(!dw->isBusy()) {
             dw->fdownloadAvatarUsuario(m_work.takeFirst());
+            if(m_work.isEmpty()) return;
+        }
+    }
+}
+
+void Downloader::workXML(int value)
+{
+    m_work.append(value);
+    checkworkXML();
+}
+
+void Downloader::finishedXML()
+{
+    checkworkXML();
+    emit sfinishedXML();
+}
+
+void Downloader::checkworkXML()
+{
+    if(m_work.isEmpty()) return;
+    foreach(DownloaderWorker *dw, m_workers) {
+        if(!dw->isBusy()) {
+            dw->fdownloadXMLTorrentList();
+            m_work.takeFirst();
             if(m_work.isEmpty()) return;
         }
     }

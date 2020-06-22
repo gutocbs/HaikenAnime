@@ -52,6 +52,13 @@ public:
     QStringList fgetDetection();
     QStringList fgetPlayers();
 
+    void fsetGeneralFeed();
+    QString fgetGeneralFeed();
+    void fsetTorrentOptions();
+    QStringList fgetDownloadLists();
+    QString fgetPreferredSub();
+    QString fgetPreferredQuality();
+
 private:
 
     QSettings vsettings;
@@ -68,7 +75,9 @@ private:
     //Filtros
     //Recognition
     bool vhighQualityImages;
+    bool vautoDownloadTorrents;
     QMap<QString, QStringList> vdirConfigMap;
+    QMap<QString, QStringList> vtorConfigMap;
 
 };
 

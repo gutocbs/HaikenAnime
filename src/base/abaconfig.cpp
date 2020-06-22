@@ -73,6 +73,10 @@ void abaConfig::floadSettings()
     foreach(QVariant key, vlist) {
         vanimesDirectory.append(key.toString());
     }
+
+    fsetGeneralFeed();
+    fsetTorrentOptions();
+    fsetPlayers();
 }
 
 void abaConfig::fsetService(QVariant client)
@@ -145,6 +149,60 @@ QStringList abaConfig::fgetDetection()
 QStringList abaConfig::fgetPlayers()
 {
     return vdirConfigMap["players"];
+}
+
+void abaConfig::fsetGeneralFeed()
+{
+    QStringList generalFeed;
+    generalFeed.append(vsettings.value("confTorrent/generalFeed").toString());
+    if(!vtorConfigMap.contains("generalFeed") || (vtorConfigMap.contains("generalFeed") &&
+                                                  vtorConfigMap["generalFeed"] != generalFeed)){
+        vtorConfigMap.insert("generalFeed", generalFeed);
+    }
+}
+
+QString abaConfig::fgetGeneralFeed()
+{
+    return vtorConfigMap["generalFeed"].first();
+}
+
+void abaConfig::fsetTorrentOptions()
+{
+    vautoDownloadTorrents = vsettings.value("confTorrent/autodownload").toBool();
+    if(!vtorConfigMap.contains("autodownloadTimer") || (vtorConfigMap.contains("autodownloadTimer") &&
+            vtorConfigMap["autodownloadTimer"] != vsettings.value("confTorrent/autodownloadTimer").toStringList())){
+        vtorConfigMap.insert("autodownloadTimer", vsettings.value("confTorrent/autodownloadTimer").toStringList());
+    }
+    QStringList config = vsettings.value("confTorrent/downloadLists").toStringList();
+    config.removeDuplicates();
+    config.removeAll("");
+    if(!vtorConfigMap.contains("downloadLists") || (vtorConfigMap.contains("downloadLists") &&
+            vtorConfigMap["downloadLists"] != config)){
+        vtorConfigMap.insert("downloadLists", config);
+    }
+    if(!vtorConfigMap.contains("preferredSub") || (vtorConfigMap.contains("preferredSub") &&
+            vtorConfigMap["preferredSub"] != vsettings.value("confTorrent/preferredSub").toStringList())){
+        vtorConfigMap.insert("preferredSub", vsettings.value("confTorrent/preferredSub").toStringList());
+    }
+    if(!vtorConfigMap.contains("preferredQuality") || (vtorConfigMap.contains("preferredQuality") &&
+            vtorConfigMap["preferredQuality"] != vsettings.value("confTorrent/preferredQuality").toStringList())){
+        vtorConfigMap.insert("preferredQuality", vsettings.value("confTorrent/preferredQuality").toStringList());
+    }
+}
+
+QStringList abaConfig::fgetDownloadLists()
+{
+    return vtorConfigMap["downloadLists"];
+}
+
+QString abaConfig::fgetPreferredSub()
+{
+    return vtorConfigMap["preferredSub"].first();
+}
+
+QString abaConfig::fgetPreferredQuality()
+{
+    return vtorConfigMap["preferredQuality"].first();
 }
 
 void abaConfig::fsetAuthCode(QVariant auth)

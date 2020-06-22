@@ -22,6 +22,9 @@
 #include "src/utilities/client.h"
 #include "src/utilities/downloader.h"
 #include "src/base/abaconfig.h"
+#include "src/base/abatorrent.h"
+#include "lib/robotlib/Robot.h"
+#include "src/utilities/playerrecognition.h"
 
 class MainClass : public QObject
 {
@@ -65,6 +68,11 @@ public slots:
     void fabrePastaAnime();
     void fabreStream();
     void frefresh();
+    void fchecaAnimeAssistido();
+    void fAumentaProgressoID(const QString &ridAnime, const QString &episodioAnime);
+    void fmudaProgresso(QVariant);
+    void fmudaNota(QVariant);
+    void fresetRequests();
 
     void fproximaPagina();
     void fanteriorPagina();
@@ -73,6 +81,7 @@ public slots:
     void ftryClientConnection(bool);
     void fconnectSuccess();
     void fconnectFail();
+    void fclientUpdate();
 
     void fbotaoHome();
     void fbotaoConfig();
@@ -85,6 +94,9 @@ public slots:
     void fsaveConfig();
     void fsetDirConfig(QVariantList);
     QVariant fgetDir();
+    void fsetTorrentList();
+    QVariant fgetTorrentList();
+    void fchangeTorrentState(QVariant);
 
 signals:
     void sidAnime1(QVariant data);
@@ -123,6 +135,10 @@ signals:
     void sbotaoConfig();
     void sbotaoTorrent();
     void sconfigSelecionada(QVariant data);
+    void storrentPronto();
+    void sbaixouImagensMedias();
+
+    void sanimeReconhecidoID(QVariant dataId, QVariant dataNome, QVariant dataEpisodio);
 
 
 private:
@@ -137,6 +153,7 @@ private:
     Client *cclient;
     Downloader *cdownloader;
     abaConfig *cabaConfig;
+    abaTorrent *cabaTorrent;
 
     QVector<anime*> vlistaSelecionada;
 
@@ -144,6 +161,9 @@ private:
     int vposicaoGridAnimeSelecionado;
     int vpagina;
     int vanoBuscaAnimes;
+    int vcontadorAssistindoEpisodio;
+    //Essa variável controla o número de requests por minuto que é possível fazer no site.
+    int vrateLimitRequests;
 
     QString vordemLista;
     QString vlistaAtual;
@@ -157,9 +177,13 @@ private:
     QStringList vlistaFilaTipo;
     QStringList vlistaFilaLista;
     QList<int> vlistaFilaSize;
+    QMap<QStringList, QString> vlistaAcoes;
 
     QTimer *vtimerAutoRefresh;
     QTimer *vtimerCountdown;
+    QTimer *vtimerChecaAssistindo;
+    QTimer *vtimerUpdateClient;
+    QTimer timerMaxClientRequests;
     QTime time;
 };
 
