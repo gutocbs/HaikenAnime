@@ -12,6 +12,8 @@ Item {
     property var preferredQuality: ""
     property var generalFeed: ""
     property var specificFeed: ""
+    property var preferredTorrentPath: ""
+    property var saveFolder: ""
 
     Component.onCompleted: {
         if(!configTorrent.autodownload)
@@ -95,14 +97,34 @@ Item {
                     width: parent.width
                     height: parent.height
 
-                    ComboBox {
-                        id: torrentBox
-                        model: ["uTorrent", "qBittorrent"]
-//                        onActivated: mainClass.fsetClient(service.currentText)
+                    TextField {
+                        id: idPreferredTorrentPath
+                        text: preferredTorrentPath
+                        anchors.fill: parent
+                        horizontalAlignment: Text.AlignHCenter
+                        placeholderText: preferredTorrentPath
                     }
                 }
             }
+            Row {
+                id: row24
+                width: parent.width
+                height: 50
+                Item {
+                    id: element21
+                    width: parent.width
+                    height: parent.height
 
+                    Button {
+                        id: button1
+                        x: parent.width-width
+                        text: qsTr("Select")
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.family: "Tahoma"
+                        onClicked: stackViewTorrents.push("CustomFileDialogTorrent.qml")
+                    }
+                }
+            }
             Row {
                 id: row4
                 x: 0
@@ -123,7 +145,6 @@ Item {
                     }
                 }
             }
-
             Row {
                 id: row5
                 x: 0
@@ -160,7 +181,6 @@ Item {
                     }
                 }
             }
-
             Row {
                 id: row6
                 x: 0
@@ -181,7 +201,6 @@ Item {
                     }
                 }
             }
-
             Row {
                 id: row7
                 x: 0
@@ -228,7 +247,6 @@ Item {
                     }
                 }
             }
-
             Row {
                 id: row8
                 x: 0
@@ -249,7 +267,6 @@ Item {
                     }
                 }
             }
-
             Row {
                 id: row9
                 x: 0
@@ -352,7 +369,6 @@ Item {
                     }
                 }
             }
-
             Row {
                 id: row10
                 x: 0
@@ -373,7 +389,6 @@ Item {
                     }
                 }
             }
-
             Row {
                 id: row11
                 x: 0
@@ -394,7 +409,6 @@ Item {
                     }
                 }
             }
-
             Row {
                 id: row12
                 x: 0
@@ -419,7 +433,6 @@ Item {
                     }
                 }
             }
-
             Row {
                 id: row13
                 x: 0
@@ -526,16 +539,75 @@ Item {
                     }
                 }
             }
+
+            Row {
+                id: row21
+                x: 0
+                width: parent.width
+                height: 50
+                Item {
+                    id: element18
+                    width: parent.width
+                    height: parent.height
+                    Label {
+                        id: label4
+                        text: qsTr("Save Folder")
+                        anchors.fill: parent
+                        verticalAlignment: Text.AlignVCenter
+                        font.family: "Tahoma"
+                        font.bold: false
+                        font.pointSize: 12
+                    }
+                }
+            }
+
+            Row {
+                id: row22
+                x: 0
+                width: parent.width
+                height: 50
+                Item {
+                    id: element19
+                    width: parent.width
+                    height: parent.height
+                    TextField {
+                        id: idSaveFolder
+                        text: saveFolder
+                        anchors.fill: parent
+                        horizontalAlignment: Text.AlignHCenter
+                        placeholderText: saveFolder
+                    }
+                }
+            }
+
+            Row {
+                id: row25
+                width: parent.width
+                height: 50
+                Item {
+                    id: element22
+                    width: parent.width
+                    height: parent.height
+                    Button {
+                        id: button2
+                        x: parent.width-width
+                        text: qsTr("Select")
+                        anchors.verticalCenter: parent.verticalCenter
+                        font.family: "Tahoma"
+                        onClicked: stackViewTorrents.push("CustomFileDialogTorrentSaveFolder.qml")
+                    }
+                }
+            }
         }
+    }
+    StackView {
+        id: stackViewTorrents
     }
 
 }
 
 /*##^##
 Designer {
-    D{i:0;formeditorZoom:0.33000001311302185}D{i:17;anchors_height:400;anchors_width:200}
-D{i:16;anchors_height:200;anchors_width:200}D{i:35;anchors_height:400;anchors_width:200}
-D{i:34;anchors_height:200;anchors_width:200}D{i:2;anchors_height:400;anchors_width:200}
-D{i:60;anchors_height:50}D{i:66;anchors_height:50}D{i:1;anchors_height:400;anchors_width:200}
+    D{i:0;formeditorZoom:0.75}D{i:17}D{i:16}D{i:35}D{i:34}D{i:2}D{i:60}D{i:66}D{i:1}
 }
 ##^##*/

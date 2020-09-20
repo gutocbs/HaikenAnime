@@ -24,6 +24,7 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     cclient->frecebeAutorizacao("gutocbs", cabaConfig->instance()->fgetAuthCode());
     cclient->fbaixaListas();
 
+    cconfiguracoesUsuarioDiretorios->instance()->frecebeConfigs(cabaConfig->instance()->fgetDirectory().toStringList());
 
     cleitorListaAnimes->instance()->fleJson();
     vlistaSelecionada = cleitorListaAnimes->instance()->retornaListaWatching();
@@ -40,6 +41,7 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     vlistaAtual = enumlistaToQString(lista::CURRENT);
     vtipoAtual = leitorlistaanimes::type::ANIME;
     vordemLista = "";
+    vjanelaAtual = janela::MAIN;
 
     vtimerAutoRefresh = new QTimer(this);
     vtimerCountdown = new QTimer(this);
@@ -219,16 +221,19 @@ void MainClass::fclientUpdate()
 
 void MainClass::fbotaoHome()
 {
+    vjanelaAtual = janela::MAIN;
     emit sbotaoHome();
 }
 
 void MainClass::fbotaoConfig()
 {
+    vjanelaAtual = janela::CONFIG;
     emit sbotaoConfig();
 }
 
 void MainClass::fbotaoTorrent()
 {
+    vjanelaAtual = janela::TORRENT;
     emit sbotaoTorrent();
 }
 
@@ -284,14 +289,66 @@ void MainClass::fsetTorrentList()
     cabaTorrent->fgetTorrentList();
 }
 
-QVariant MainClass::fgetTorrentList()
+QVariant MainClass::fgetTorrentList(QVariant ordem)
 {
-    return QVariant(cabaTorrent->fgetTorrentInfo());
+    return QVariant(cabaTorrent->fgetTorrentInfo(ordem.toString()));
 }
 
-void MainClass::fchangeTorrentState(QVariant posicaoTabela)
+void MainClass::fchangeTorrentState(QVariant posicaoTabela, QVariant checkState)
 {
-    cabaTorrent->fchangeTorrentState(posicaoTabela.toInt());
+    cabaTorrent->fchangeTorrentState(posicaoTabela.toInt(), checkState.toBool());
+}
+
+void MainClass::fsearchAnimeFromTorrent(QVariant posicaoTabela)
+{
+    QVariant infoAnime = cabaTorrent->fgetSingleTorrentInfo(posicaoTabela.toInt());
+    if(!infoAnime.toInt())
+        fbotaoBusca(infoAnime.toStringList().at(1));
+}
+
+QVariant MainClass::fopenTorrentLink(QVariant posicaoTabela)
+{
+    QVariant infoAnime = cabaTorrent->fgetSingleTorrentInfo(posicaoTabela.toInt());
+    if(!infoAnime.toInt())
+        return infoAnime.toStringList().at(8);
+    return "";
+}
+
+
+
+void MainClass::fbotaoBusca(QVariant search)
+{
+    QString searchText = search.toString();
+    //Caso seja a janela de mangas e animes
+    if(vjanelaAtual == janela::MAIN){
+        if(!searchText.isEmpty()){
+            qDebug() << "Searching " << searchText;
+            vlistaSelecionada = cleitorListaAnimes->instance()->fbuscaLista(searchText.simplified(), vtipoAtual);
+            if(!vlistaSelecionada.isEmpty()){
+                vlistaAtual = enumlistaToQString(lista::SEARCH);
+                vindexAnimeSelecionado = 0;
+                vpagina = 1;
+    //            ui->NumPagina->setText("Busca  - " + QString::number(vlistaSelecionada.size()) +
+    //                                   " animes in the list - Page "+QString::number(vpagina)+"/"+
+    //                                   QString::number(((vlistaSelecionada.size()-1)/12)+1));
+                finfoAnimeSelecionado(0);
+            }
+            else{
+                qDebug() << searchText << " not found!";
+                vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+            }
+        }
+    }
+    //Caso seja a janela de torrent
+    else if(vjanelaAtual == janela::TORRENT){
+        if(!searchText.isEmpty())
+            cabaTorrent->fgetSpecificTorrentList(searchText);
+    }
+}
+
+void MainClass::fbotaoDownloadTorrents()
+{
+    cabaTorrent->fdownloadAnimes();
 }
 
 void MainClass::finfoAnimeSelecionado(QVariant posicaoAnimeNaGrid)
@@ -321,7 +378,14 @@ void MainClass::finfoAnimeSelecionado(QVariant posicaoAnimeNaGrid)
         else
             emit sepisodiosLancadosAnimeSelecionado(QVariant(
                 QString::number(vlistaSelecionada[vindexAnimeSelecionado]->vnumProximoEpisodioLancado.toInt() - 1) + " Episodes"));
+        emit sepisodiosAssistidosAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vnumEpisodiosAssistidos));
+        emit sepisodiosTotaisAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vnumEpisodiosTotais));
         emit stipoAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vformato));
+        QString episodePath = carquivos->fprocuraEpisodio(vlistaSelecionada[vindexAnimeSelecionado]);
+        if(!episodePath.isEmpty())
+            emit sproximoEpisodioAnimeSelecionado(true);
+        else
+            emit sproximoEpisodioAnimeSelecionado(false);
         QPixmap pix;
         if(pix.load(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes+
                     vlistaSelecionada[vindexAnimeSelecionado]->vid+".png","png"))
@@ -708,6 +772,8 @@ void MainClass::fchecaAnimeAssistido()
         if(!QString::fromStdString(janela.GetTitle()).isEmpty()){
             nomejanela = QString::fromStdString(janela.GetTitle());
             foreach(QString player, lplayers){
+                if(player.isEmpty())
+                    break;
                 //Algumas janelas não especificam o player no nome, então temos que incluí-los de acordo com o padrão
                 //Do titulo da janela e a extensão do arquivo
                 if(nomejanela.contains("online in high quality - ") && player.compare("kissanime", Qt::CaseInsensitive) == 0)

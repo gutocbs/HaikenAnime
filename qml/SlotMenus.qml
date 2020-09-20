@@ -12,6 +12,16 @@ Item {
     property var nomeBotaoDropped: "Dropped"
     property var nomeBotaoPlanning: "Plan to Watch"
 
+    Rectangle {
+        id: rectangle
+        x: 0
+        y: parent.height-(parent.height/4)-(parent.height/20)
+        width: parent.width
+        height: parent.height/15
+        color: "#5a69a2"
+        border.color: "#5a69a2"
+    }
+
     Row {
         id: row
         anchors.bottomMargin: 20
@@ -86,6 +96,7 @@ Item {
 
                         Label {
                             id: label
+                            x: 110
                             width: 200
                             height: 50
                             text: nomeUsuario
@@ -94,7 +105,9 @@ Item {
                             font.family: "Tahoma"
                             anchors.verticalCenter: parent.verticalCenter
                         }
+
                     }
+
                 }
             }
 
@@ -172,7 +185,7 @@ Item {
 
             Row {
                 id: row3
-                width: 200
+                width: parent.width
                 height: parent.height/3
                 spacing: 2
 
@@ -246,6 +259,8 @@ Item {
 
                 Label {
                     id: labelTime
+                    x: button13.x + button13.width + 10
+                    y: -parent.height/3
                     text: time
                     renderType: Text.NativeRendering
                     font.bold: true
@@ -255,12 +270,92 @@ Item {
 
             }
         }
+
+        Column {
+            id: column1
+            width: parent.width-column.width
+            height: parent.height
+
+            Row {
+                id: row5
+                width: parent.width
+                height: parent.height*2/3
+
+                Column {
+                    id: column3
+                    width: parent.width-450
+                    height: parent.height
+                }
+
+                Column {
+                    id: column4
+                    width: parent.width-column3.width
+                    height: parent.height
+
+                    Item {
+                        id: element3
+                        width: parent.width
+                        height: parent.height
+
+                        TextField {
+                            id: searchBar
+                            x: parent.width-width-8
+                            y: parent.height/2
+                            width: 400
+                            text: qsTr("")
+                            rightPadding: 6
+                            renderType: Text.NativeRendering
+                            font.pointSize: 10
+                            font.family: "Tahoma"
+                            placeholderText: "Search"
+                            horizontalAlignment: Text.AlignLeft
+                            selectByMouse: true
+                        }
+                    }
+                }
+            }
+
+            Row {
+                id: row6
+                width: parent.width
+                height: parent.height/3
+
+
+                Column {
+                    id: column5
+                    y: 0
+                    width: parent.width-450
+                    height: parent.height
+                }
+                Column {
+                    id: column2
+                    width: parent.width-column5.width
+                    height: parent.height
+
+                    Item {
+                        id: element2
+                        width: parent.width
+                        height: parent.height
+
+                        Button {
+                            id: botaoSearch
+                            x: parent.width-width-8
+                            y: 0
+                            text: "Search"
+                            font.family: "Tahoma"
+                            onClicked: mainClass.fbotaoBusca(searchBar.text)
+                        }
+                    }
+                }
+            }
+        }
     }
+
 
 }
 
 /*##^##
 Designer {
-    D{i:0;formeditorZoom:1.5}D{i:9;anchors_height:400}D{i:1;anchors_height:147;anchors_width:200}
+    D{i:0;formeditorZoom:0.33000001311302185}D{i:2;anchors_height:147;anchors_width:200}
 }
 ##^##*/

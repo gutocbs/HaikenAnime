@@ -19,6 +19,8 @@ void Downloader::fsetWorker()
     connect(dw,&DownloaderWorker::finished,this, &Downloader::finished);
     connect(dw,&DownloaderWorker::finishedBig,this, &Downloader::finishedBig);
     connect(dw,&DownloaderWorker::finishedXML,this, &Downloader::finishedXML);
+    connect(dw,&DownloaderWorker::finishedSpecificXML,this, &Downloader::finishedSpecificXML);
+    connect(dw,&DownloaderWorker::finishedAnimeTorrent,this, &Downloader::finishedAnimeTorrent);
 
     m_workers.append(dw);
 }
@@ -119,6 +121,57 @@ void Downloader::checkworkXML()
     foreach(DownloaderWorker *dw, m_workers) {
         if(!dw->isBusy()) {
             dw->fdownloadXMLTorrentList();
+            m_work.takeFirst();
+            if(m_work.isEmpty()) return;
+        }
+    }
+}
+
+void Downloader::workSpecificXML(int value, QString search)
+{
+    searchName = search;
+    m_work.append(value);
+    checkworkSpecificXML();
+}
+
+void Downloader::finishedSpecificXML()
+{
+    checkworkSpecificXML();
+    emit sfinishedXML();
+}
+
+void Downloader::checkworkSpecificXML()
+{
+    if(m_work.isEmpty()) return;
+    foreach(DownloaderWorker *dw, m_workers) {
+        if(!dw->isBusy()) {
+            dw->fdownloadSpecificXMLTorrentList(searchName);
+            m_work.takeFirst();
+            if(m_work.isEmpty()) return;
+        }
+    }
+}
+
+void Downloader::workAnimeTorrent(int value, QString link, QString nome)
+{
+    torrentLink.append(link);
+    torrentName.append(nome);
+    m_work.append(value);
+    checkworkAnimeTorrent();
+}
+
+void Downloader::finishedAnimeTorrent()
+{
+    checkworkAnimeTorrent();
+    emit sfinishedAnimeTorrent();
+}
+
+void Downloader::checkworkAnimeTorrent()
+{
+    if(m_work.isEmpty()) return;
+    foreach(DownloaderWorker *dw, m_workers) {
+        if(!dw->isBusy() && !torrentLink.isEmpty() && !torrentName.isEmpty()) {
+            dw->fdownloadAnimeTorrent(torrentLink.takeFirst(), torrentName.takeFirst(), m_work.first());
             m_work.takeFirst();
             if(m_work.isEmpty()) return;
         }

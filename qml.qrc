@@ -1,24 +1,26 @@
 <RCC>
     <qresource prefix="/">
-        <file>main.qml</file>
-        <file>AnimeSlot.qml</file>
-        <file>Home.qml</file>
-        <file>AnimeGrid.qml</file>
-        <file>AnimeSelecionado.qml</file>
-        <file>SlotBaixoEsquerda.qml</file>
-        <file>BotoesAnime.qml</file>
-        <file>AnimeReconhecidoSlot.qml</file>
-        <file>SlotMenus.qml</file>
-        <file>ConfigOptions.qml</file>
-        <file>ConfigTorrentSlot.qml</file>
-        <file>ConfigPagina.qml</file>
-        <file>TorrentPagina.qml</file>
-        <file>ConfDiretorio.qml</file>
-        <file>ConfFiltros.qml</file>
-        <file>ConfHistorico.qml</file>
-        <file>ConfigFont.qml</file>
-        <file>TableDelegate.qml</file>
-        <file>CustomFileDialog.qml</file>
-        <file>TorrentListDelegate.qml</file>
+        <file>QML/AnimeGrid.qml</file>
+        <file>QML/AnimeReconhecidoSlot.qml</file>
+        <file>QML/AnimeSelecionado.qml</file>
+        <file>QML/AnimeSlot.qml</file>
+        <file>QML/BotoesAnime.qml</file>
+        <file>QML/ConfDiretorio.qml</file>
+        <file>QML/ConfFiltros.qml</file>
+        <file>QML/ConfHistorico.qml</file>
+        <file>QML/ConfigFont.qml</file>
+        <file>QML/ConfigOptions.qml</file>
+        <file>QML/ConfigPagina.qml</file>
+        <file>QML/ConfigTorrentSlot.qml</file>
+        <file>QML/CustomFileDialog.qml</file>
+        <file>QML/Home.qml</file>
+        <file>QML/main.qml</file>
+        <file>QML/SlotBaixoEsquerda.qml</file>
+        <file>QML/SlotMenus.qml</file>
+        <file>QML/TableDelegate.qml</file>
+        <file>QML/TorrentListDelegate.qml</file>
+        <file>QML/TorrentPagina.qml</file>
+        <file>QML/CustomFileDialogTorrent.qml</file>
+        <file>QML/CustomFileDialogTorrentSaveFolder.qml</file>
     </qresource>
 </RCC>

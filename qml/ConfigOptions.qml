@@ -21,11 +21,13 @@ Item {
     function saveSettingsTorrent(){
         settingsConfTorrent.setValue("autodownload", configTorrent.autodownload)
         settingsConfTorrent.setValue("autodownloadTimer", configTorrent.autodownloadTimer)
+        settingsConfTorrent.setValue("preferredTorrentPath", configTorrent.preferredTorrentPath)
         settingsConfTorrent.setValue("downloadLists", configTorrent.downloadLists)
         settingsConfTorrent.setValue("preferredSub", configTorrent.preferredSub)
         settingsConfTorrent.setValue("preferredQuality", configTorrent.preferredQuality)
         settingsConfTorrent.setValue("generalFeed", configTorrent.generalFeed)
         settingsConfTorrent.setValue("specificFeed", configTorrent.specificFeed)
+        settingsConfTorrent.setValue("saveFolder", configTorrent.saveFolder)
     }
 
 
@@ -161,7 +163,7 @@ Item {
                         x: parent.width- width -10
                         text: qsTr("Make Account")
                         leftPadding: 8
-                        onClicked: Qt.openUrlExternally("https://anilist.co/signup");
+                        onClicked: Qt.openUrlExternally("https://anilist.co/signup")
                     }
                 }
             }

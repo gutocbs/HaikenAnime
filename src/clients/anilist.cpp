@@ -265,11 +265,11 @@ bool anilist::fgetListaAno(const QString &rano){
 
 bool anilist::fmudaLista(int rid, const QString &rNovaLista){
     ///Preciso por o token em um arquvio de configuração criptografado
-    QByteArray auth = "Bearer ";
+    QString auth = "Bearer ";
     auth.append(vtoken);
 
     QNetworkRequest lrequest(graphqlUrl);
-    lrequest.setRawHeader(QByteArray("Authorization"), auth);
+    lrequest.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
     lrequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     lrequest.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
     QJsonObject json;
@@ -317,13 +317,13 @@ bool anilist::fmudaLista(int rid, const QString &rNovaLista){
 
 ///fmudaNota(id, nova nota)
 bool anilist::fmudaNota(int rid, int rnovaNota){
-    QByteArray auth = "Bearer ";
+    QString auth = "Bearer ";
     auth.append(vtoken);
 
     //Como pegar o nome ou id de usuário pelo token?
     //Posso pegar igual fazia antes,/ sem o token?
     QNetworkRequest lrequest(graphqlUrl);
-    lrequest.setRawHeader(QByteArray("Authorization"), auth);
+    lrequest.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
     lrequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     lrequest.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
     QJsonObject json;
@@ -372,13 +372,13 @@ bool anilist::fmudaNota(int rid, int rnovaNota){
 }
 
 bool anilist::fmudaProgresso(int rid, int rnovoProgresso){
-    QByteArray auth = "Bearer ";
+    QString auth = "Bearer ";
     auth.append(vtoken);
 
     //Como pegar o nome ou id de usuário pelo token?
     //Posso pegar igual fazia antes,/ sem o token?
     QNetworkRequest lrequest(graphqlUrl);
-    lrequest.setRawHeader(QByteArray("Authorization"), auth);
+    lrequest.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
     lrequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     lrequest.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
     QJsonObject json;
@@ -441,11 +441,11 @@ void anilist::frecebeAutorizacao(const QString &ruser, QVariant rauthcode)
 }
 
 bool anilist::fexcluiAnime(int rid){
-    QByteArray auth = "Bearer ";
+    QString auth = "Bearer ";
     auth.append(vtoken);
 
     QNetworkRequest lrequest(graphqlUrl);
-    lrequest.setRawHeader(QByteArray("Authorization"), auth);
+    lrequest.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
     lrequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     lrequest.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
     QJsonObject json;

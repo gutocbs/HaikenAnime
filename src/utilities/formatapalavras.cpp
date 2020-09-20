@@ -7,66 +7,71 @@ FormataPalavras::FormataPalavras(QObject *parent) : QObject(parent)
 
 //Vamos testar todas as combinações possíveis. Se for igual em alguma, retornamos true.
 //se não for igual em nenhuma, é false.
-bool FormataPalavras::fcomparaNomes(const QString &rnome1, const QString &rnome2)
+bool FormataPalavras::fcomparaNomes(QString rnome1, QString rnome2)
 {
-    if(rnome1.isEmpty() || rnome2.isEmpty())
-        return false;
+    try {
+        if(rnome1.isEmpty() || rnome2.isEmpty())
+            return false;
 
-    if(rnome1.compare(rnome2, Qt::CaseInsensitive) == 0)
-        return true;
-
-    if(fremovePontuacao(rnome1).compare(fremovePontuacao(rnome2)) == 0)
-        return true;
-
-    if(fremoveSeason(rnome1).compare(fremoveSeason(rnome2)) == 0)
-        return true;
-
-    if(fremoveCaracteresEspeciais(rnome1).compare(fremoveCaracteresEspeciais(rnome2)) == 0)
-        return true;
-
-    if(fmudaCaracteresEspeciais(rnome1).compare(fmudaCaracteresEspeciais(rnome2)) == 0)
-        return true;
-
-    if(fmudaNumeracaoArabePraRomana(rnome1).compare(fmudaNumeracaoArabePraRomana(rnome2)) == 0)
-        return true;
-
-    if(fremoveNumeracao(rnome1).compare(fremoveNumeracao(rnome2)) == 0)
-        return true;
-
-    if(fmudaNumeracaoRomanaPraArabe(rnome1).compare(fmudaNumeracaoRomanaPraArabe(rnome2)) == 0)
-        return true;
-
-    if(fmudaNumeracaoRomanaPraSX(rnome1).compare(fmudaNumeracaoRomanaPraSX(rnome2)) == 0)
-        return true;
-
-    if(fmudaNumeracaoRomanaPraSeason(rnome1).compare(fmudaNumeracaoRomanaPraSeason(rnome2)) == 0)
-        return true;
-
-    if(fremoveNumeracaoRomana(rnome1).compare(fremoveNumeracaoRomana(rnome2)) == 0)
-        return true;
-
-    if(fremoveCaracteresExtras(rnome1).compare(fremoveCaracteresExtras(rnome2)) == 0)
-        return true;
-
-    if(fremoveTV(rnome1).compare(fremoveTV(rnome2)) == 0)
-        return true;
-
-    if(rnome1.contains("OVA") || rnome1.contains("Special") || rnome2.contains("OVA") || rnome2.contains("Special")){
-        if(fmudaOVAPraSpecials(rnome1).compare(fmudaOVAPraSpecials(rnome2)) == 0)
+        if(rnome1.compare(rnome2, Qt::CaseInsensitive) == 0)
             return true;
-        if(fmudaSpecialsPraOVA(rnome1).compare(fmudaSpecialsPraOVA(rnome2)) == 0)
+
+        if(fremovePontuacao(rnome1).compare(fremovePontuacao(rnome2)) == 0)
             return true;
-        if(fmudaOVAPraSpecial(rnome1).compare(fmudaOVAPraSpecial(rnome2)) == 0)
+
+        if(fremoveSeason(rnome1).compare(fremoveSeason(rnome2)) == 0)
             return true;
-        if(fmudaSpecialPraOVA(rnome1).compare(fmudaSpecialPraOVA(rnome2)) == 0)
+
+        if(fremoveCaracteresEspeciais(rnome1).compare(fremoveCaracteresEspeciais(rnome2)) == 0)
             return true;
+
+        if(fmudaCaracteresEspeciais(rnome1).compare(fmudaCaracteresEspeciais(rnome2)) == 0)
+            return true;
+
+        if(fmudaNumeracaoArabePraRomana(rnome1).compare(fmudaNumeracaoArabePraRomana(rnome2)) == 0)
+            return true;
+
+        if(fremoveNumeracao(rnome1).compare(fremoveNumeracao(rnome2)) == 0)
+            return true;
+
+        if(fmudaNumeracaoRomanaPraArabe(rnome1).compare(fmudaNumeracaoRomanaPraArabe(rnome2)) == 0)
+            return true;
+
+        if(fmudaNumeracaoRomanaPraSX(rnome1).compare(fmudaNumeracaoRomanaPraSX(rnome2)) == 0)
+            return true;
+
+        if(fmudaNumeracaoRomanaPraSeason(rnome1).compare(fmudaNumeracaoRomanaPraSeason(rnome2)) == 0)
+            return true;
+
+        if(fremoveNumeracaoRomana(rnome1).compare(fremoveNumeracaoRomana(rnome2)) == 0)
+            return true;
+
+        if(fremoveCaracteresExtras(rnome1).compare(fremoveCaracteresExtras(rnome2)) == 0)
+            return true;
+
+        if(fremoveTV(rnome1).compare(fremoveTV(rnome2)) == 0)
+            return true;
+
+        if(rnome1.contains("OVA") || rnome1.contains("Special") || rnome2.contains("OVA") || rnome2.contains("Special")){
+            if(fmudaOVAPraSpecials(rnome1).compare(fmudaOVAPraSpecials(rnome2)) == 0)
+                return true;
+            if(fmudaSpecialsPraOVA(rnome1).compare(fmudaSpecialsPraOVA(rnome2)) == 0)
+                return true;
+            if(fmudaOVAPraSpecial(rnome1).compare(fmudaOVAPraSpecial(rnome2)) == 0)
+                return true;
+            if(fmudaSpecialPraOVA(rnome1).compare(fmudaSpecialPraOVA(rnome2)) == 0)
+                return true;
+        }
+
+        if(fremoveOVAEspecial(rnome1).compare(fremoveOVAEspecial(rnome2)) == 0)
+            return true;
+
+        if(fremoveTudo(rnome1).compare(fremoveTudo(rnome2)) == 0)
+            return true;
+
+    }  catch (QString error) {
+        qCritical() << error;
     }
-
-    if(fremoveOVAEspecial(rnome1).compare(fremoveOVAEspecial(rnome2)) == 0)
-        return true;
-
-    if(fremoveTudo(rnome1).compare(fremoveTudo(rnome2)) == 0)
-        return true;
 
     return false;
 }

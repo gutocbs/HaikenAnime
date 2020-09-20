@@ -63,6 +63,7 @@ public:
     QVector<anime*> retornaListaAnimeSpring();
     QVector<anime*> retornaListaAnimeSummer();
     QVector<anime*> retornaListaAnimeFall();
+    QVector<anime*> retornaListaBusca();
     QVector<anime*> sortLista(const QString &rordem, QString rlistas, type type);
     QVector<anime*> fbuscaLista(const QString &rnome, type rtipoMidia);
     QVector<anime*> fleListaAno(int);

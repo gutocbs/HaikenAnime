@@ -77,15 +77,18 @@ void confUsuario::fbuscaDiretoriosAnimes(){
                     this->thread()->exit(0);
                     return;
                 }
-                if(formatador.fcomparaNomes(lfileName,vlistaAnimes[w]->vnome)){
-                    vdiretorioEspecificoAnime.insert(vlistaAnimes[w]->vid, lfile.fileName());
-                    vlistaAnimes.remove(w);
-                    break;
-                }
-                else if(formatador.fcomparaNomes(lfileName,vlistaAnimes[w]->vnomeIngles)){
-                    vdiretorioEspecificoAnime.insert(vlistaAnimes[w]->vid, lfile.fileName());
-                    vlistaAnimes.remove(w);
-                    break;
+                ///Não posso fazer isso. O nome em inglês nunca deveria ser null pra começar. Não era pra ter isso aqui
+                if(!vlistaAnimes[w]->vnomeIngles.isNull()){
+                    if(formatador.fcomparaNomes(lfileName,vlistaAnimes[w]->vnome)){
+                        vdiretorioEspecificoAnime.insert(vlistaAnimes[w]->vid, lfile.fileName());
+                        vlistaAnimes.remove(w);
+                        break;
+                    }
+                    else if(formatador.fcomparaNomes(lfileName,vlistaAnimes[w]->vnomeIngles)){
+                        vdiretorioEspecificoAnime.insert(vlistaAnimes[w]->vid, lfile.fileName());
+                        vlistaAnimes.remove(w);
+                        break;
+                    }
                 }
                 else{
                     //Compara os nomes alternativos dos animes, pro caso de serem usados nos arquivos
@@ -224,5 +227,7 @@ void confUsuario::fsetupListasPraBusca()
 
 void confUsuario::frecebeConfigs(const QStringList &ldiretorios)
 {
-    vdiretorioAnimes = ldiretorios.toVector();
+    QStringList filtroLista = ldiretorios;
+    filtroLista.removeDuplicates();
+    vdiretorioAnimes.append(filtroLista.toVector());
 }

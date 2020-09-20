@@ -28,13 +28,22 @@ public:
     QStringList fconverteLista(){
         if(vbaixar)
             return QString("true§"+vnomeAnime+"§"+vfansub+"§"+vresolucao+"§"+vepisodioAnime+"§"+vnomeTorrent+"§"
-                       +vdescricaoTorrent+"§"+QString::number(vposicao)+"§"+QString::number(vprioridade)).split("§");
+                       +vdescricaoTorrent+"§"+QString::number(vposicao)+"§"+vlinkTorrent+"§"+QString::number(vprioridade)).split("§");
 
         return QString("false§"+vnomeAnime+"§"+vfansub+"§"+vresolucao+"§"+vepisodioAnime+"§"+vnomeTorrent+"§"
-                   +vdescricaoTorrent+"§"+QString::number(vposicao)+"§"+QString::number(vprioridade)).split("§");
+                   +vdescricaoTorrent+"§"+QString::number(vposicao)+"§"+vtorrentInfoLink+"§"+QString::number(vprioridade)).split("§");
     }
-signals:
 
+    ///0 - Check
+    ///1 - Nome
+    ///2 - Fansub
+    ///3 - Resolução
+    ///4 - Episódio
+    ///5 - Nome do Torrent
+    ///6 - Descrição do torrent
+    ///7 - Posição na lista original
+    ///8 - Link da página do torrent
+    ///9 - Prioridade do torrent
 public slots:
 };
 

@@ -2458,6 +2458,11 @@ QVector<anime *> leitorlistaanimes::retornaListaAnimeFall()
     return vlistaAnimeSeasonFall;
 }
 
+QVector<anime *> leitorlistaanimes::retornaListaBusca()
+{
+    return vlistaBusca;
+}
+
 bool leitorlistaanimes::fmudaNota(const QString &rid, const QString &rnota){
     QString llista = fbuscaAnimePorIDERetornaLista(rid);
     int lposicao = fbuscaAnimePorIDERetornaPosicao(rid);

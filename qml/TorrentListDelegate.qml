@@ -47,7 +47,7 @@ Item {
                     display: AbstractButton.IconOnly
                     anchors.fill: parent
                     checked: check
-                    onCheckStateChanged: mainClass.fchangeTorrentState(index)
+                    onCheckStateChanged: mainClass.fchangeTorrentState(index, checkDelegate.checked)
                 }
             }
         }
@@ -62,7 +62,7 @@ Item {
                 height: parent.height
 
                 Text {
-                    id: element2
+                    id: nomeAnime
                     color: corFonte
                     text: animeName
                     anchors.leftMargin: 5

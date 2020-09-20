@@ -17,6 +17,7 @@ public:
 
 signals:
     void sfinishedXML();
+    void sfinishedAnimeTorrent();
 
 public slots:
     void setListAndType(QString, QString);
@@ -38,8 +39,19 @@ public slots:
     void finishedXML();
     void checkworkXML();
 
+    void workSpecificXML(int value, QString);
+    void finishedSpecificXML();
+    void checkworkSpecificXML();
+
+    void workAnimeTorrent(int value, QString, QString);
+    void finishedAnimeTorrent();
+    void checkworkAnimeTorrent();
+
     bool isBusy();
 private:
+    QString searchName;
+    QStringList torrentLink;
+    QStringList torrentName;
     QVector<DownloaderWorker *> m_workers;
     QVector<int> m_work;
     DownloaderWorker *dw;

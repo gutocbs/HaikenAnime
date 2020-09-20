@@ -36,8 +36,10 @@ public:
     explicit MainClass(QObject *parent = nullptr);
     ~MainClass();
 
-    enum lista{CURRENT, COMPLETED, PAUSED, DROPPED, PLANNING, WINTER, SUMMER, FALL, SPRING};
+    enum lista{CURRENT, COMPLETED, PAUSED, DROPPED, PLANNING, WINTER, SUMMER, FALL, SPRING, SEARCH};
     Q_ENUM(lista)
+    enum janela{MAIN, TORRENT, CONFIG};
+    Q_ENUM(janela)
 public slots:
 
     //Organizar aqui pra por todos os gets e sets juntos
@@ -95,8 +97,12 @@ public slots:
     void fsetDirConfig(QVariantList);
     QVariant fgetDir();
     void fsetTorrentList();
-    QVariant fgetTorrentList();
-    void fchangeTorrentState(QVariant);
+    QVariant fgetTorrentList(QVariant);
+    void fchangeTorrentState(QVariant, QVariant);
+    void fsearchAnimeFromTorrent(QVariant);
+    QVariant fopenTorrentLink(QVariant);
+    void fbotaoBusca(QVariant);
+    void fbotaoDownloadTorrents();
 
 signals:
     void sidAnime1(QVariant data);
@@ -122,7 +128,10 @@ signals:
     void smediaPessoalAnimeSelecionado(QVariant data);
     void sreleaseAnimeSelecionado(QVariant data);
     void sepisodiosLancadosAnimeSelecionado(QVariant data);
+    void sepisodiosAssistidosAnimeSelecionado(QVariant data);
+    void sepisodiosTotaisAnimeSelecionado(QVariant data);
     void stipoAnimeSelecionado(QVariant data);
+    void sproximoEpisodioAnimeSelecionado(QVariant data);
     void simagemAnimeSelecionado(QVariant data);
 
     void sdirImagensGrandes(QVariant data);
@@ -168,6 +177,7 @@ private:
     QString vordemLista;
     QString vlistaAtual;
     leitorlistaanimes::type vtipoAtual;
+    janela vjanelaAtual;
 
     QMetaEnum vmetaEnumLista;
     QMetaEnum vmetaEnumTipo;

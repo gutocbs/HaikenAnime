@@ -12,7 +12,7 @@ class FormataPalavras : public QObject
     Q_OBJECT
 public:
     explicit FormataPalavras(QObject *parent = nullptr);
-    bool fcomparaNomes(const QString &rnome1, const QString &rnome2);
+    bool fcomparaNomes(QString rnome1, QString rnome2);
     QString fremoveTudo(QString);
     QString fremovePontuacao(QString);
     QString fremoveCaracteresEspeciais(QString);

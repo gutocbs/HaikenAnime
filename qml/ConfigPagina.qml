@@ -26,11 +26,13 @@ Item {
     property var configTorrent: {
         autodownload: false
         autodownloadTimer: []
+        preferredTorrentPath: []
         downloadLists: []
         preferredSub: []
         preferredQuality: []
         generalFeed: []
         specificFeed: []
+        saveFolder: []
     }
 
 

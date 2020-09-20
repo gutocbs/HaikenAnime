@@ -18,7 +18,7 @@ Item {
     property var localImagem: ["","","","","","","","","","","",""]
     Connections{
         target: mainClass
-        onSbaixouImagensMedias:{
+        function onSbaixouImagensMedias(){
             var tempImage = localImagem
             localImagem = ["","","","","","","","","","","",""]
             getDataFromMain(animeSlot.idAnimeSlot,animeSlot.posicao)

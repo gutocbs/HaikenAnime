@@ -10,6 +10,7 @@
 #include <QNetworkRequest>
 #include <QNetworkReply>
 #include <QFile>
+#include <QFileInfo>
 
 #include "src/base/leitorlistaanimes.h"
 #include "src/base/confbase.h"
@@ -24,12 +25,16 @@ public:
     void fsetURLAvatar(const QString &urlAvatar);
     void fdownloadTorrent(const QString &fileURL, const QString &torrentName);
     void fdownloadXMLTorrentList();
+    void fdownloadSpecificXMLTorrentList(QString);
+    void fdownloadAnimeTorrent(QString, QString, int);
 
 signals:
     void started();
     void finished();
     void finishedBig();
     void finishedXML();
+    void finishedSpecificXML();
+    void finishedAnimeTorrent();
     void sterminouLista(QString);
 
 public slots:
@@ -37,6 +42,8 @@ public slots:
     void fdownloadAvatarUsuario(int value);
     void ffinishedAvatar();
     void ffinishedGeneralXML();
+    void ffinishedSpecificXML();
+    void ffinishedAnimeTorrent();
     void work(int value);
     void ffinished();
     void workBig(int value);

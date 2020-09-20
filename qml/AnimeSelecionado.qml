@@ -166,7 +166,7 @@ Item {
                             id: element7
                             x: 0
                             y: 0
-                            text: qsTr("Méda")
+                            text: qsTr("Media")
                             font.family: "Tahoma"
                             fontSizeMode: Text.Fit
                             verticalAlignment: Text.AlignVCenter
@@ -643,6 +643,9 @@ Item {
                         id: botoesAnime
                         x: 0
                         y: 0
+                        episodios: root.episodiosAssistidosAnimeSelecionado + "/" + root.episodiosTotaisAnimeSelecionado
+                        nota: root.mediaPessoalAnimeSelecionado + "/10"
+                        cor: root.proximoEpisodioAnimeSelecionado
                     }
                 }
             }

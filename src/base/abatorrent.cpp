@@ -20,6 +20,14 @@ void abaTorrent::fgetTorrentList()
     connect(downloadTorrentXML,&Downloader::sfinishedXML,this, &abaTorrent::freadTorrentList);
 }
 
+void abaTorrent::fgetSpecificTorrentList(QString search)
+{
+    QPointer<Downloader> downloadTorrentXML(new Downloader);
+    downloadTorrentXML->fsetWorker();
+    downloadTorrentXML->workSpecificXML(0, search);
+    connect(downloadTorrentXML,&Downloader::sfinishedXML,this, &abaTorrent::freadTorrentList);
+}
+
 void abaTorrent::freadTorrentList()
 {
     if(!vlistaTorrents.isEmpty())
@@ -93,6 +101,8 @@ void abaTorrent::freadTorrentList()
                 lfansub = QString::fromStdWString(elements.get(anitomy::kElementReleaseGroup));
                 //Resolução do anime
                 lresolucao = QString::fromStdWString(elements.get(anitomy::kElementVideoResolution));
+                if(lresolucao.compare("720p") == 0 || lresolucao.compare("480p") == 0 || lresolucao.compare("360p") == 0)
+                    lresolucao.insert(0,"0");
 
 
                 //Tento achar o id do anime de forma rápida, pra pegar informações com mais facilidade
@@ -200,18 +210,103 @@ void abaTorrent::freadTorrentList()
     emit sfimXML();
 }
 
-void abaTorrent::fchangeTorrentState(int posicaTabela)
+void abaTorrent::fchangeTorrentState(int posicaTabela, bool checkState)
 {
-    if(vinfoTorrent.isEmpty() || vinfoTorrent.at(posicaTabela).toString().isEmpty())
+    if(vinfoTorrent.isEmpty() || vinfoTorrent.at(posicaTabela).toStringList().isEmpty())
         return;
+    QList<QVariant> listaOrdenada = fgetTorrentInfo(vordemLista);
     QStringList tempList = vinfoTorrent.at(posicaTabela).toStringList();
-    int posicaoListaTorrents = tempList.at(tempList.size()-2).toInt();
-    if(vlistaTorrents.size() > posicaoListaTorrents){
-        if(vlistaTorrents[posicaoListaTorrents]->vbaixar)
-            vlistaTorrents[posicaoListaTorrents]->vbaixar = false;
-        else
-            vlistaTorrents[posicaoListaTorrents]->vbaixar = true;
+    //-3 por que a posição na lista está no terceiro elemento de frente pra trás na QStringList
+    int posicaoListaTorrents = tempList.at(tempList.size()-3).toInt();
+    if(vlistaTorrents.size() > posicaoListaTorrents)
+        vlistaTorrents[posicaoListaTorrents]->vbaixar = checkState;
+}
+
+void abaTorrent::fdownloadAnimes()
+{
+    QPointer<Downloader> downloadTorrent(new Downloader);
+    int idDownloader = 0;
+    if(vlistaAnimesBaixados.isEmpty()){
+        for(int i = 0; i < vlistaTorrents.size(); i++){
+            if(vlistaTorrents[i]->vbaixar){
+                vlistaAnimesBaixados.append(i);
+                downloadTorrent->fsetWorker();
+                qDebug() << "Baixando " + vlistaTorrents[i]->vnomeTorrent;
+                downloadTorrent->workAnimeTorrent(idDownloader++, vlistaTorrents[i]->vlinkTorrent, vlistaTorrents[i]->vnomeTorrent);
+                vlistaTorrents[i]->vbaixar = false;
+                connect(downloadTorrent,&Downloader::sfinishedAnimeTorrent,this, &abaTorrent::fdownloadAnimes);
+                return;
+            }
+        }
     }
+    else{
+        for(int i = vlistaAnimesBaixados.last(); i < vlistaTorrents.size(); i++){
+            if(vlistaTorrents[i]->vbaixar){
+                vlistaAnimesBaixados.append(i);
+                downloadTorrent->fsetWorker();
+                qDebug() << "Baixando " + vlistaTorrents[i]->vnomeTorrent;
+                downloadTorrent->workAnimeTorrent(idDownloader++, vlistaTorrents[i]->vlinkTorrent, vlistaTorrents[i]->vnomeTorrent);
+                vlistaTorrents[i]->vbaixar = false;
+                connect(downloadTorrent,&Downloader::sfinishedAnimeTorrent,this, &abaTorrent::fdownloadAnimes);
+                //Só vai retornar se achar um novo anime para baixar
+                return;
+            }
+        }
+    }
+    //Caso ele rode o vetor todo e não tenha mais nenhum download, ele sai e começa a carregar os torrents no programa
+    QString processo = cabaConfig->instance()->fgetPreferredTorrentPath();
+    QProcess lprocesso;
+    lprocesso.setProgram(cabaConfig->instance()->fgetPreferredTorrentPath());
+    if(!lprocesso.startDetached())
+        qDebug() << "Error: Could not open torrent's software";
+    else
+       fdownloadTorrents();
+}
+
+void abaTorrent::fdownloadTorrents()
+{
+    if(cabaConfig->instance()->fgetSaveFolder().isEmpty()){
+//        ui->labelMensagem->setText("Error: Trying to download without setting a download folder");
+        qWarning() << "Error: Trying to download without setting a download folder";
+//        emit error("No download folder");
+        return;
+    }
+    if(vlistaAnimesBaixados.isEmpty())
+        return;
+    int tamanhoLista = vlistaAnimesBaixados.size();
+    for(int i = 0; i < tamanhoLista; i++){
+        //É necessário ter um delay entre os inputs de comando
+        this->thread()->wait(700);
+        QPointer<QProcess> lprocesso(new QProcess);
+        QStringList argumentos;
+    //    if(cconfig->fretornaTorrentEscolhido() == "uTorrent"){
+    //        lprocesso->setProgram(QDir::homePath() + "/AppData/Roaming/uTorrent/uTorrent.exe");
+    //        argumentos.append("/DIRECTORY");
+    //        argumentos.append(cconfig->fretornaPastaSalvarAnimes() + "/" + torrent[vlistaDownload[0]]->vnomeAnime);
+    //        argumentos.append(QDir::currentPath() + "/Configurações/Temp/Torrents/" + torrent[vlistaDownload[0]]->vnomeTorrent +
+    //                ".torrent");
+    //    }
+        if(cabaConfig->instance()->fgetPreferredTorrentPath().contains("qbittorrent")){
+            lprocesso->setProgram(cabaConfig->instance()->fgetPreferredTorrentPath());
+            argumentos.append("--add-paused=false");
+            argumentos.append("--skip-dialog=true");
+            argumentos.append("--save-path=" + cabaConfig->instance()->fgetSaveFolder() + "/" + vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeAnime);
+            argumentos.append(QDir::currentPath() + "/Configurações/Temp/Torrents/" + vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeTorrent
+                    + ".torrent");
+        }
+        lprocesso->setArguments(argumentos);
+        if(lprocesso->startDetached())
+            qDebug() << "Download started successfully!";
+        vlistaTorrents[vlistaAnimesBaixados[0]]->vbaixar = false;
+        vlistaAnimesBaixados.remove(0);
+    }
+}
+
+QVariant abaTorrent::fgetSingleTorrentInfo(int posicaTabela)
+{
+    if(vinfoTorrent.isEmpty() || vinfoTorrent.size() < posicaTabela)
+        return 0;
+    return vinfoTorrent.at(posicaTabela).toStringList();
 }
 
 int abaTorrent::fcheckPriority(torrentinfo* rtorrent)
@@ -251,13 +346,79 @@ int abaTorrent::fcheckPriority(torrentinfo* rtorrent)
     return prioridade;
 }
 
-QList<QVariant> abaTorrent::fgetTorrentInfo()
+
+QList<QVariant> abaTorrent::fgetTorrentInfo(QString ordem)
 {
+    vordemLista = ordem;
     //Aqui é onde eu devo dar sort na lista, pra deixar ela do jeito que preciso.
     vinfoTorrent.clear();
     for(int i = 0; i < vlistaTorrents.size(); i++)
         vinfoTorrent.append(vlistaTorrents[i]->fconverteLista());
-    std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
-        return a.toStringList().last() > b.toStringList().last() ;});
+    if(ordem.startsWith("c")){
+        if(ordem.contains("nomeAnime")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(1) < b.toStringList().at(1) ;});
+        }
+        else if(ordem.contains("nomeSub")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(2) < b.toStringList().at(2) ;});
+        }
+        else if(ordem.contains("resolucao")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(3) < b.toStringList().at(3) ;});
+        }
+        else if(ordem.contains("episodio")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(4) < b.toStringList().at(4) ;});
+        }
+        else if(ordem.contains("nomeArquivo")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(5) < b.toStringList().at(5) ;});
+        }
+        else if(ordem.contains("descricao")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(6) < b.toStringList().at(6) ;});
+        }
+        else if(ordem.contains("check")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(0) < b.toStringList().at(0) ;});
+        }
+    }
+    else{
+        if(ordem.contains("prioridade")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().last() > b.toStringList().last() ;});
+        }
+        else if(ordem.contains("nomeAnime")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(1) > b.toStringList().at(1) ;});
+        }
+        else if(ordem.contains("nomeSub")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(2) > b.toStringList().at(2) ;});
+        }
+        else if(ordem.contains("resolucao")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(3) > b.toStringList().at(3) ;});
+        }
+        else if(ordem.contains("episodio")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(4) > b.toStringList().at(4) ;});
+        }
+        else if(ordem.contains("nomeArquivo")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(5) > b.toStringList().at(5) ;});
+        }
+        else if(ordem.contains("descricao")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(6) > b.toStringList().at(6) ;});
+        }
+        else if(ordem.contains("check")){
+            std::sort(vinfoTorrent.begin(),vinfoTorrent.end(),[](QVariant &a, QVariant &b)->bool{
+                return a.toStringList().at(0) < b.toStringList().at(0) ;});
+        }
+    }
     return vinfoTorrent;
 }
+//return QString("true§"+vnomeAnime+"§"+vfansub+"§"+vresolucao+"§"+vepisodioAnime+"§"+vnomeTorrent+"§"
+//           +vdescricaoTorrent+"§"+QString::number(vposicao)+"§"+QString::number(vprioridade)).split("§");

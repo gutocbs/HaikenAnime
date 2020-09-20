@@ -75,6 +75,7 @@ void abaConfig::floadSettings()
     }
 
     fsetGeneralFeed();
+    fsetSpecificFeed();
     fsetTorrentOptions();
     fsetPlayers();
 }
@@ -166,6 +167,48 @@ QString abaConfig::fgetGeneralFeed()
     return vtorConfigMap["generalFeed"].first();
 }
 
+void abaConfig::fsetSpecificFeed()
+{
+    QStringList specificFeed;
+    specificFeed.append(vsettings.value("confTorrent/specificFeed").toString());
+    if(!vtorConfigMap.contains("specificFeed") || (vtorConfigMap.contains("specificFeed") &&
+                                                  vtorConfigMap["specificFeed"] != specificFeed)){
+        vtorConfigMap.insert("specificFeed", specificFeed);
+    }
+}
+
+QString abaConfig::fgetSpecificFeed()
+{
+    if(!vtorConfigMap["specificFeed"].first().isEmpty())
+        return vtorConfigMap["specificFeed"].first();
+    else
+        return "";
+}
+
+QString abaConfig::fgetPreferredTorrent()
+{
+    if(!vtorConfigMap["preferredTorrent"].first().isEmpty())
+        return vtorConfigMap["preferredTorrent"].first();
+    else
+        return "";
+}
+
+QString abaConfig::fgetPreferredTorrentPath()
+{
+    if(!vtorConfigMap["preferredTorrentPath"].isEmpty())
+        return vtorConfigMap["preferredTorrentPath"].first();
+    else
+        return "";
+}
+
+QString abaConfig::fgetSaveFolder()
+{
+    if(!vtorConfigMap["saveFolder"].first().isEmpty())
+        return vtorConfigMap["saveFolder"].first();
+    else
+        return "";
+}
+
 void abaConfig::fsetTorrentOptions()
 {
     vautoDownloadTorrents = vsettings.value("confTorrent/autodownload").toBool();
@@ -187,6 +230,18 @@ void abaConfig::fsetTorrentOptions()
     if(!vtorConfigMap.contains("preferredQuality") || (vtorConfigMap.contains("preferredQuality") &&
             vtorConfigMap["preferredQuality"] != vsettings.value("confTorrent/preferredQuality").toStringList())){
         vtorConfigMap.insert("preferredQuality", vsettings.value("confTorrent/preferredQuality").toStringList());
+    }
+    if(!vtorConfigMap.contains("preferredTorrent") || (vtorConfigMap.contains("preferredTorrent") &&
+            vtorConfigMap["preferredTorrent"] != vsettings.value("confTorrent/preferredTorrent").toStringList())){
+        vtorConfigMap.insert("preferredTorrent", vsettings.value("confTorrent/preferredTorrent").toStringList());
+    }
+    if(!vtorConfigMap.contains("preferredTorrentPath") || (vtorConfigMap.contains("preferredTorrentPath") &&
+            vtorConfigMap["preferredTorrentPath"] != vsettings.value("confTorrent/preferredTorrentPath").toStringList())){
+        vtorConfigMap.insert("preferredTorrentPath", vsettings.value("confTorrent/preferredTorrentPath").toStringList());
+    }
+    if(!vtorConfigMap.contains("saveFolder") || (vtorConfigMap.contains("saveFolder") &&
+            vtorConfigMap["saveFolder"] != vsettings.value("confTorrent/saveFolder").toStringList())){
+        vtorConfigMap.insert("saveFolder", vsettings.value("confTorrent/saveFolder").toStringList());
     }
 }
 

@@ -7,6 +7,11 @@ Item {
     width: 666
     height: 190
 
+    property var episodios: "1/12"
+    property var nota: "0/10"
+    property var episodioValido: false
+    property var cor: "#000000"
+
     Rectangle {
         id: rectangle
         color: "#c7d6ff"
@@ -145,10 +150,12 @@ Item {
                     height: parent.height
 
                     Rectangle {
-                        id: rectangle1
+                        id: checkEpisode
                         x: 0
                         y: 0
-                        color: "#1bd36a"
+//                        "#1bd36a" // verde
+//                        #d31b1b // Vermelho
+                        color: cor
                         anchors.fill: parent
                     }
                 }
@@ -243,12 +250,12 @@ Item {
                         height: parent.height
 
                         Label {
-                            id: label3
+                            id: labelProgresso
                             x: 0
                             y: 7
                             width: parent.width
                             height: column12.width
-                            text: qsTr("xy/zw")
+                            text: episodios
                             anchors.verticalCenter: parent.verticalCenter
                             verticalAlignment: Text.AlignVCenter
                             horizontalAlignment: Text.AlignLeft
@@ -399,12 +406,12 @@ Item {
                         height: parent.height
 
                         Label {
-                            id: label4
+                            id: labelNota
                             x: 0
                             y: 7
                             width: parent.width
                             height: column12.width
-                            text: qsTr("xy/zw")
+                            text: nota
                             anchors.verticalCenter: parent.verticalCenter
                             verticalAlignment: Text.AlignVCenter
                             horizontalAlignment: Text.AlignLeft

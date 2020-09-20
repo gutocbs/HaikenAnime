@@ -23,13 +23,17 @@ public:
     //Faz baixar a lista, ler o arquivo XML e montar a tabela
     void fRefreshControl();
     void fgetTorrentList();
+    void fgetSpecificTorrentList(QString);
     void freadTorrentList();
-    void fchangeTorrentState(int);
+    void fchangeTorrentState(int, bool);
+    void fdownloadAnimes();
+    void fdownloadTorrents();
+    QVariant fgetSingleTorrentInfo(int);
 
     int fcheckPriority(torrentinfo*);
     bool fcheckAlreadyDownloaded();
 
-    QList<QVariant> fgetTorrentInfo();
+    QList<QVariant> fgetTorrentInfo(QString);
 
 signals:
     void sfimXML();
@@ -40,9 +44,11 @@ private:
     QPointer<leitorlistaanimes> cleitorListaAnimes;
     QPointer<abaConfig> cabaConfig;
     QVector<torrentinfo*> vlistaTorrents;
+    QVector<int> vlistaAnimesBaixados;
     QHash<QString,QString> vHashDeNomeEId;
     QMap<QString, QStringList> vdownloadList;
     QList<QVariant> vinfoTorrent;
+    QString vordemLista;
 };
 
 #endif // ABATORRENT_H

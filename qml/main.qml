@@ -36,9 +36,12 @@ Window {
     property var mediaGlobalAnimeSelecionado: "Peter Pan"
     property var mediaPessoalAnimeSelecionado: "Peter Pan"
     property var releaseAnimeSelecionado: "Peter Pan"
+    property var episodiosAssistidosAnimeSelecionado: "Peter Pan"
+    property var episodiosTotaisAnimeSelecionado: "Peter Pan"
     property var episodiosAnimeSelecionado: "Peter Pan"
     property var tipoAnimeSelecionado: "Peter Pan"
     property var imagemAnimeSelecionado: "null"
+    property var proximoEpisodioAnimeSelecionado: "#1bd36a"
     property var imagemAvatar: ""
     property var nomeUsuario: ""
     property var time: ""
@@ -106,7 +109,16 @@ Window {
         onSmediaPessoalAnimeSelecionado: mediaPessoalAnimeSelecionado = data
         onSreleaseAnimeSelecionado: releaseAnimeSelecionado = data
         onSepisodiosLancadosAnimeSelecionado: episodiosAnimeSelecionado = data
+        onSepisodiosTotaisAnimeSelecionado: episodiosTotaisAnimeSelecionado = data
+        onSepisodiosAssistidosAnimeSelecionado: episodiosAssistidosAnimeSelecionado = data
         onStipoAnimeSelecionado: tipoAnimeSelecionado = data
+        onSproximoEpisodioAnimeSelecionado: {
+            if(data)
+                proximoEpisodioAnimeSelecionado = "#1bd36a"
+            else
+                proximoEpisodioAnimeSelecionado = "#d31b1b"
+        }
+
         onSimagemAnimeSelecionado: imagemAnimeSelecionado = data
         onStimer: time = data
         onSconnectGUI:{
@@ -151,6 +163,7 @@ Window {
             SlotMenus {
                 id: slotMenus
                 y: 0
+                width: 1912
             }
         }
 

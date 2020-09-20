@@ -37,6 +37,8 @@ public:
     QVariant fgetUsername();
     QVariant fgetAuthCode();
     QVariant fgetDirectory();
+    QString fgetPreferredTorrent();
+    QString fgetPreferredTorrentPath();
     void fsaveAuthcode();
     void fsetAuthCode(QVariant);
     void fsetService(QVariant);
@@ -54,10 +56,14 @@ public:
 
     void fsetGeneralFeed();
     QString fgetGeneralFeed();
+    void fsetSpecificFeed();
+    QString fgetSpecificFeed();
     void fsetTorrentOptions();
     QStringList fgetDownloadLists();
     QString fgetPreferredSub();
     QString fgetPreferredQuality();
+    QString fgetSaveFolder();
+
 
 private:
 

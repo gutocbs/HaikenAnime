@@ -83,6 +83,61 @@ void DownloaderWorker::fdownloadXMLTorrentList()
     connect(vreply,SIGNAL(finished()),this,SLOT(ffinishedGeneralXML()));
 }
 
+void DownloaderWorker::fdownloadSpecificXMLTorrentList(QString searchName)
+{
+    QString lsaveFilePath = "Configurações/Temp/torrents.xml";
+
+//    if(QFile(lsaveFilePath).size() == 0)
+        QFile(lsaveFilePath).remove();
+    QPointer<abaConfig> cabaConfig;
+    QNetworkRequest lrequest;
+    QString searchULR = cabaConfig->instance()->fgetSpecificFeed();
+    searchULR.replace("%title%", searchName);
+    lrequest.setUrl(QUrl(searchULR));
+    vreply = vmanager->get(lrequest);
+
+    vfile = new QFile(this);
+    vfile->setFileName(lsaveFilePath);
+    vfile->open(QIODevice::WriteOnly);
+
+    connect(vmanager,SIGNAL(finished(QNetworkReply*)),this,SLOT(onFinished(QNetworkReply*)));
+    connect(vreply,SIGNAL(readyRead()),this,SLOT(onReadyRead()));
+    connect(vreply,SIGNAL(finished()),this,SLOT(ffinishedSpecificXML()));
+}
+
+void DownloaderWorker::fdownloadAnimeTorrent(QString linkTorrent, QString nomeTorrent, int posicaoLista)
+{
+    m_busy = true;
+    emit started();
+
+    vsaveFilePath = "Configurações/Temp/Torrents/";
+    vsaveFilePath.append(nomeTorrent);
+    vsaveFilePath.append(".torrent");
+    vlink = linkTorrent;
+    qDebug() << vsaveFilePath;
+//    if(QFile(vsaveFilePath).exists() && QFile(vsaveFilePath).size() == 0)
+    if(QFile::exists(vsaveFilePath)){
+        QFile::remove(vsaveFilePath);
+        qDebug() << "removido";
+    }
+
+    if(!(QFileInfo::exists(vsaveFilePath) && QFileInfo(vsaveFilePath).isFile())){
+        QNetworkRequest lrequest;
+        lrequest.setUrl(QUrl(vlink));
+        vreply = vmanager->get(lrequest);
+
+        vfile = new QFile;
+        vfile->setFileName(vsaveFilePath);
+        vfile->open(QIODevice::WriteOnly);
+        vfileIsOpen = true;
+        connect(vmanager,SIGNAL(finished(QNetworkReply*)),this,SLOT(onFinished(QNetworkReply*)));
+        connect(vreply,SIGNAL(readyRead()),this,SLOT(onReadyRead()));
+        connect(vreply,SIGNAL(finished()),this,SLOT(ffinishedAnimeTorrent()));
+    }
+    else
+        ffinishedAnimeTorrent();
+}
+
 void DownloaderWorker::ffinishedGeneralXML()
 {
     if(vfileIsOpen){
@@ -92,6 +147,31 @@ void DownloaderWorker::ffinishedGeneralXML()
     vfileIsOpen = false;
     m_busy = false;
     emit finishedXML();
+}
+
+void DownloaderWorker::ffinishedSpecificXML()
+{
+    if(vfileIsOpen){
+        if(vfile->isOpen())
+            vfile->close();
+    }
+    vfileIsOpen = false;
+    m_busy = false;
+    emit finishedSpecificXML();
+}
+
+void DownloaderWorker::ffinishedAnimeTorrent()
+{
+    if(vfileIsOpen){
+        if(vfile->isOpen())
+            vfile->close();
+    }
+    vfileIsOpen = false;
+    if(vreply)
+        vreply->close();
+
+    m_busy = false;
+    emit finishedAnimeTorrent();
 }
 
 void DownloaderWorker::work(int value)
@@ -270,6 +350,8 @@ void DownloaderWorker::fselecionaLista(QString rlista, QString rtipoLista)
             vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaDropped();
         else if(rlista.compare("PLANNING", Qt::CaseInsensitive) == 0)
             vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaPlanToWatch();
+        else if(rlista.compare("SEARCH", Qt::CaseInsensitive) == 0)
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaBusca();
     }
     else if(rtipoLista.compare("MANGA", Qt::CaseInsensitive) == 0){
         if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
@@ -282,6 +364,8 @@ void DownloaderWorker::fselecionaLista(QString rlista, QString rtipoLista)
             vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaMangaDropped();
         else if(rlista.compare("PLANNING", Qt::CaseInsensitive) == 0)
                 vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaMangaPlanToRead();
+        else if(rlista.compare("SEARCH", Qt::CaseInsensitive) == 0)
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaBusca();
     }
     else if(rtipoLista.compare("NOVEL", Qt::CaseInsensitive) == 0){
         if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
@@ -294,6 +378,8 @@ void DownloaderWorker::fselecionaLista(QString rlista, QString rtipoLista)
             vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaNovelDropped();
         else if(rlista.compare("PLANNING", Qt::CaseInsensitive) == 0)
             vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaNovelPlanToRead();
+        else if(rlista.compare("SEARCH", Qt::CaseInsensitive) == 0)
+            vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaBusca();
     }
     else if(rtipoLista.compare("SEASON", Qt::CaseInsensitive) == 0){
         if(rlista.contains("WINTER", Qt::CaseInsensitive))
