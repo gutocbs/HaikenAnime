@@ -131,36 +131,25 @@ QString FormataPalavras::fmudaCaracteresEspeciais(QString rpalavra)
 QString FormataPalavras::fremoveSeason(QString rpalavra)
 {
     rpalavra = rpalavra.toLower();
-    rpalavra.replace("season 1", "1");
-    rpalavra.replace("season 2", "2");
-    rpalavra.replace("season 3", "3");
-    rpalavra.replace("season 4", "4");
-    rpalavra.replace("season 5", "5");
-    rpalavra.replace("season 6", "6");
-    rpalavra.replace("season 7", "7");
-    rpalavra.replace("season 8", "8");
-    rpalavra.replace("season 9", "9");
-    rpalavra.replace("season 10", "10");
-    rpalavra.replace("season1", "1");
-    rpalavra.replace("season2", "2");
-    rpalavra.replace("season3", "3");
-    rpalavra.replace("season4", "4");
-    rpalavra.replace("season5", "5");
-    rpalavra.replace("season6", "6");
-    rpalavra.replace("season7", "7");
-    rpalavra.replace("season8", "8");
-    rpalavra.replace("season9", "9");
-    rpalavra.replace("season10", "10");
-    rpalavra.replace("s1", "1");
-    rpalavra.replace("s2", "2");
-    rpalavra.replace("s3", "3");
-    rpalavra.replace("s4", "4");
-    rpalavra.replace("s5", "5");
-    rpalavra.replace("s6", "6");
-    rpalavra.replace("s7", "7");
-    rpalavra.replace("s8", "8");
-    rpalavra.replace("s9", "9");
-    rpalavra.replace("s10", "10");
+    QString rpalavraTemp;// = rpalavra;
+    for(int i = 0; i < 10; i++){
+        rpalavraTemp = rpalavra;
+        rpalavraTemp.replace(QString::number(i),"x");
+        if(rpalavraTemp.contains("season x"))
+            rpalavra.replace("season " + QString::number(i), QString::number(i));
+        else if(rpalavraTemp.contains("seasonx"))
+                rpalavra.replace("season" + QString::number(i), QString::number(i));
+        else if(rpalavraTemp.contains("sx"))
+                rpalavra.replace("s" + QString::number(i), QString::number(i));
+        else if(rpalavraTemp.contains("xst season") || rpalavraTemp.contains("xnd season") ||
+                rpalavraTemp.contains("xrd season") || rpalavraTemp.contains("xth season")){
+            rpalavra.remove("st");
+            rpalavra.remove("nd");
+            rpalavra.remove("rd");
+            rpalavra.remove("th");
+            rpalavra.replace(QString::number(i) + " season", QString::number(i));
+        }
+    }
     rpalavra = rpalavra.simplified();
     return rpalavra;
 }
@@ -274,24 +263,24 @@ QString FormataPalavras::fremoveNumeracaoRomana(QString rpalavra)
 QString FormataPalavras::fremoveCaracteresExtras(QString rpalavra)
 {
     rpalavra = rpalavra.toLower();
-    rpalavra.remove("@");
-    rpalavra.remove("#");
-    rpalavra.remove("$");
-    rpalavra.remove("%");
-    rpalavra.remove("&");
-    rpalavra.remove("*");
-    rpalavra.remove("(");
-    rpalavra.remove(")");
-    rpalavra.remove(">");
-    rpalavra.remove("<");
-    rpalavra.remove("/");
-    rpalavra.remove("\\");
-    rpalavra.remove("+");
-    rpalavra.remove("-");
-    rpalavra.remove("_");
-    rpalavra.remove("=");
-    rpalavra.remove(":");
-    rpalavra.remove("|");
+    rpalavra.replace("@", " ");
+    rpalavra.replace("#", " ");
+    rpalavra.replace("$", " ");
+    rpalavra.replace("%", " ");
+    rpalavra.replace("&", " ");
+    rpalavra.replace("*", " ");
+    rpalavra.replace("(", " ");
+    rpalavra.replace(")", " ");
+    rpalavra.replace(">", " ");
+    rpalavra.replace("<", " ");
+    rpalavra.replace("/", " ");
+    rpalavra.replace("\\", " ");
+    rpalavra.replace("+", " ");
+    rpalavra.replace("-", " ");
+    rpalavra.replace("_", " ");
+    rpalavra.replace("=", " ");
+    rpalavra.replace(":", " ");
+    rpalavra.replace("|", " ");
     rpalavra = rpalavra.simplified();
     return rpalavra;
 

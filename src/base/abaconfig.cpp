@@ -132,6 +132,10 @@ void abaConfig::fsetDetection()
 void abaConfig::fsetPlayers()
 {
     QStringList players = vsettings.value("confDir/players").toStringList();
+    players.removeDuplicates();
+    players.removeAll("true");
+    players.removeAll("false");
+    players.removeAll("");
     if(!vdirConfigMap.contains("players") || (vdirConfigMap.contains("players") && vdirConfigMap["players"] != players)){
         vdirConfigMap.insert("players", players);
     }

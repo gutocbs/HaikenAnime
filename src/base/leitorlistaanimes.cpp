@@ -1325,7 +1325,7 @@ void leitorlistaanimes::fsalvaListaIdsNomesAnos()
         lstreamTexto.setCodec("UTF-8");
         foreach(QString key, vHashNomeAnimesPorId.keys()){
             lstreamTexto << key << ";" << vHashListaAnimesPorId[key] << ";" << vHashPosicaoAnimesPorId[key] << ";" <<
-                            vHashNomeAnimesPorId[key].join(";").trimmed() << endl;
+                            vHashNomeAnimesPorId[key].join(";").trimmed() << Qt::endl;
         }
         larquivo.close();
     }
@@ -1335,7 +1335,7 @@ void leitorlistaanimes::fsalvaListaIdsNomesAnos()
         lstreamTexto.setCodec("UTF-8");
         foreach(QString key, vHashNomeMangasPorId.keys()){
             lstreamTexto << key << ";" << vHashListaMangasPorId[key] << ";" << vHashPosicaoMangasPorId[key] << ";" <<
-                            vHashNomeMangasPorId[key].join(";").trimmed() << endl;
+                            vHashNomeMangasPorId[key].join(";").trimmed() << Qt::endl;
         }
         larquivoManga.close();
     }
@@ -1345,7 +1345,7 @@ void leitorlistaanimes::fsalvaListaIdsNomesAnos()
         lstreamTexto.setCodec("UTF-8");
         foreach(QString key, vHashNomeNovelsPorId.keys()){
             lstreamTexto << key << ";" << vHashListaNovelsPorId[key] << ";" << vHashPosicaoNovelsPorId[key] << ";" <<
-                            vHashNomeNovelsPorId[key].join(";").trimmed() << endl;
+                            vHashNomeNovelsPorId[key].join(";").trimmed() << Qt::endl;
         }
         larquivoNovel.close();
     }
@@ -1354,7 +1354,7 @@ void leitorlistaanimes::fsalvaListaIdsNomesAnos()
         QTextStream lstreamTexto(&larquivoSizePorAno);
         lstreamTexto.setCodec("UTF-8");
         foreach(int key, vHashSizeListasPorAno.keys()){
-            lstreamTexto << QString::number(key) << ";" << vHashSizeListasPorAno[key] << endl;
+            lstreamTexto << QString::number(key) << ";" << vHashSizeListasPorAno[key] << Qt::endl;
         }
         larquivoSizePorAno.close();
     }

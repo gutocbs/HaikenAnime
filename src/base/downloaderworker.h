@@ -21,6 +21,7 @@ class DownloaderWorker : public QObject
     Q_OBJECT
 public:
     explicit DownloaderWorker(QObject *parent = nullptr);
+//    DownloaderWorker();
     bool isBusy();
     void fsetURLAvatar(const QString &urlAvatar);
     void fdownloadTorrent(const QString &fileURL, const QString &torrentName);

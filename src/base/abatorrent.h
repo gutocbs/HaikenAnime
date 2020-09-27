@@ -43,6 +43,7 @@ private:
     anitomy::Anitomy anitomy;
     QPointer<leitorlistaanimes> cleitorListaAnimes;
     QPointer<abaConfig> cabaConfig;
+    QPointer<Downloader> downloaderTorrent;
     QVector<torrentinfo*> vlistaTorrents;
     QVector<int> vlistaAnimesBaixados;
     QHash<QString,QString> vHashDeNomeEId;

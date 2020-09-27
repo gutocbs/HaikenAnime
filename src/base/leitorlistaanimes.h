@@ -37,13 +37,15 @@ public:
     void finsereNomeAlternativo(const QString &rid,const QStringList &rlistaNomesAlternativos);
     void fleListaIdsNomesAnos();
     void fsalvaListaIdsNomesAnos();
+
     int fbuscaAnimePorIDERetornaPosicao(const QString &ridAnime);
     QString fbuscaAnimePorIDERetornaEpisodio(const QString &rid);
     QString fbuscaAnimePorIDERetornaNota(const QString &rid);
     QString fbuscaAnimePorIDERetornaTitulo(const QString &rid);
     QString fbuscaAnimePorIDERetornaLista(const QString &ridAnime);
-    QString fprocuraAnimeNasListas(const QString &rnomeAnime);
     QString fprocuraIdNasListasRapido(const QString &rnomeAnime);
+    QString fprocuraAnimeNasListas(const QString &rnomeAnime);
+
     QVector<anime*> retornaListaWatching();
     QVector<anime*> retornaListaCompleted();
     QVector<anime*> retornaListaOnHold();

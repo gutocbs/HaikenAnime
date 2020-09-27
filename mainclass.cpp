@@ -72,6 +72,10 @@ void MainClass::fconnections()
     connect(cabaTorrent, &abaTorrent::sfimXML, this, &MainClass::storrentPronto);
     //Conecta o timer de checagem de animes com a função
     connect(vtimerChecaAssistindo, &QTimer::timeout, this, QOverload<>::of(&MainClass::fchecaAnimeAssistido));
+
+    connect(vtimerAutoRefresh, &QTimer::timeout, cclient, QOverload<>::of(&Client::fbaixaListas));
+    connect(vtimerCountdown, &QTimer::timeout, this, QOverload<>::of(&MainClass::fupdateTimer));
+    connect(vtimerUpdateClient, &QTimer::timeout, this, QOverload<>::of(&MainClass::fclientUpdate));
 }
 
 void MainClass::fdownloadCoverImages()
@@ -115,6 +119,9 @@ void MainClass::fconnectSuccess()
     ///TODO: BLOQUEAR BOTÕES
     //If the list is not empty, we have to empty it first.
     emit sconnectGUI(false);
+    if(tthreadDiretorios.isRunning())
+        tthreadDiretorios.requestInterruption();
+    //    cconfiguracoesUsuarioDiretorios->instance()->thread()->requestInterruption();
     if(!vlistaSelecionada.isEmpty())
         cleitorListaAnimes->instance()->fdeletaListaAnimes();
     cleitorListaAnimes->instance()->fleJson();
@@ -136,9 +143,6 @@ void MainClass::fconnectSuccess()
     vtimerUpdateClient->start();
     vtimerAutoRefresh->start();
     vtimerCountdown->start();
-    connect(vtimerAutoRefresh, &QTimer::timeout, cclient, QOverload<>::of(&Client::fbaixaListas));
-    connect(vtimerCountdown, &QTimer::timeout, this, QOverload<>::of(&MainClass::fupdateTimer));
-    connect(vtimerUpdateClient, &QTimer::timeout, this, QOverload<>::of(&MainClass::fclientUpdate));
 
 
     //After, we try to download the cover images
@@ -457,6 +461,8 @@ QVariant MainClass::fretornaPathAvatar()
 
 void MainClass::fupdateTimer()
 {
+    if(time == QTime(0,0,0))
+        time = QTime::fromString("10","m");
     time = time.addSecs(-1);
     emit stimer(QVariant(time.toString("mm:ss")));
 }
@@ -565,6 +571,7 @@ void MainClass::fselecionaTipoSeason(QVariant data)
     }
 }
 
+///Se a função de todas as listas forem iguais, posso fazer uma função e passar o lista::Current como referência
 void MainClass::fselecionaListaCurrent()
 {
     switch (vtipoAtual) {

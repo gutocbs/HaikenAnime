@@ -357,8 +357,8 @@ Item {
                                     onCheckStateChanged: {
                                         if(players.includes("WINDOWSMEDIAPLAYER") && checkState === 0)
                                             players.splice(players.indexOf("WINDOWSMEDIAPLAYER"), 1)
-                                        else if(checkState === 2)
-                                            players.unshift("WINDOWSMEDIAPLAYER" && !detection.includes("WINDOWSMEDIAPLAYER"))
+                                        else if(checkState === 2 && !detection.includes("WINDOWSMEDIAPLAYER"))
+                                            players.unshift("WINDOWSMEDIAPLAYER")
                                         configDiretorio.players = players
                                     }
                                 }
@@ -377,8 +377,8 @@ Item {
                                     onCheckStateChanged: {
                                         if(players.includes("ANIMELAB") && checkState === 0)
                                             players.splice(players.indexOf("ANIMELAB"), 1)
-                                        else if(checkState === 2)
-                                            players.unshift("ANIMELAB" && !detection.includes("WINDOWSMEDIAPLAYER"))
+                                        else if(checkState === 2 && !detection.includes("WINDOWSMEDIAPLAYER"))
+                                            players.unshift("ANIMELAB")
                                         configDiretorio.players = players
                                     }
                                 }
@@ -394,8 +394,8 @@ Item {
                                     onCheckStateChanged: {
                                         if(players.includes("MEDIAPLAYERCLASSIC") && checkState === 0)
                                             players.splice(players.indexOf("MEDIAPLAYERCLASSIC"), 1)
-                                        else if(checkState === 2)
-                                            players.unshift("MEDIAPLAYERCLASSIC" && !detection.includes("WINDOWSMEDIAPLAYER"))
+                                        else if(checkState === 2 && !detection.includes("WINDOWSMEDIAPLAYER"))
+                                            players.unshift("MEDIAPLAYERCLASSIC")
                                         configDiretorio.players = players
                                     }
                                 }
@@ -410,8 +410,8 @@ Item {
                                     onCheckStateChanged: {
                                         if(players.includes("WEBTORRENT") && checkState === 0)
                                             players.splice(players.indexOf("WEBTORRENT"), 1)
-                                        else if(checkState === 2)
-                                            players.unshift("WEBTORRENT" && !detection.includes("WEBTORRENT"))
+                                        else if(checkState === 2 && !detection.includes("WEBTORRENT"))
+                                            players.unshift("WEBTORRENT")
                                         configDiretorio.players = players
                                     }
                                 }
@@ -430,8 +430,8 @@ Item {
                                     onCheckStateChanged: {
                                         if(players.includes("FUNIMATION") && checkState === 0)
                                             players.splice(players.indexOf("FUNIMATION"), 1)
-                                        else if(checkState === 2)
-                                            players.unshift("FUNIMATION" && !detection.includes("FUNIMATION"))
+                                        else if(checkState === 2 && !detection.includes("FUNIMATION"))
+                                            players.unshift("FUNIMATION")
                                         configDiretorio.players = players
                                     }
                                 }
@@ -447,8 +447,8 @@ Item {
                                     onCheckStateChanged: {
                                         if(players.includes("MPV") && checkState === 0)
                                             players.splice(players.indexOf("MPV"), 1)
-                                        else if(checkState === 2)
-                                            players.unshift("MPV" && !detection.includes("MPV"))
+                                        else if(checkState === 2 && !detection.includes("MPV"))
+                                            players.unshift("MPV")
                                         configDiretorio.players = players
                                     }
                                 }
@@ -467,8 +467,8 @@ Item {
                                     onCheckStateChanged: {
                                         if(players.includes("HULU") && checkState === 0)
                                             players.splice(players.indexOf("HULU"), 1)
-                                        else if(checkState === 2)
-                                            players.unshift("HULU" && !detection.includes("HULU"))
+                                        else if(checkState === 2 && !detection.includes("HULU"))
+                                            players.unshift("HULU")
                                         configDiretorio.players = players
                                     }
                                 }
@@ -484,8 +484,8 @@ Item {
                                     onCheckStateChanged: {
                                         if(players.includes("VLC") && checkState === 0)
                                             players.splice(players.indexOf("VLC"), 1)
-                                        else if(checkState === 2)
-                                            players.unshift("VLC" && !detection.includes("VLC"))
+                                        else if(checkState === 2 && !detection.includes("VLC"))
+                                            players.unshift("VLC")
                                         configDiretorio.players = players
                                     }
                                 }
@@ -504,8 +504,8 @@ Item {
                                     onCheckStateChanged: {
                                         if(players.includes("KISSANIME") && checkState === 0)
                                             players.splice(players.indexOf("KISSANIME"), 1)
-                                        else if(checkState === 2)
-                                            players.unshift("KISSANIME" && !detection.includes("KISSANIME"))
+                                        else if(checkState === 2 && !detection.includes("KISSANIME"))
+                                            players.unshift("KISSANIME")
                                         configDiretorio.players = players
                                     }
                                 }
@@ -521,8 +521,8 @@ Item {
                                     onCheckStateChanged: {
                                         if(players.includes("WINAMP") && checkState === 0)
                                             players.splice(players.indexOf("WINAMP"), 1)
-                                        else if(checkState === 2)
-                                            players.unshift("WINAMP" && !detection.includes("WINAMP"))
+                                        else if(checkState === 2 && !detection.includes("WINAMP"))
+                                            players.unshift("WINAMP")
                                         configDiretorio.players = players
                                     }
                                 }

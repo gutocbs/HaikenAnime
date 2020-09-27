@@ -11,8 +11,17 @@ DownloaderWorker::DownloaderWorker(QObject *parent) : QObject(parent)
     m_busy = false;
     cconfBase = new confBase;
 //    cleitorlistaanimes = new leitorlistaanimes();
-//    cleitorlistaanimes->instance();
+    //    cleitorlistaanimes->instance();
 }
+
+//DownloaderWorker::DownloaderWorker()
+//{
+//    m_busy = false;
+//    vmanager->deleteLater();
+//    vreply->deleteLater();
+//    vfile->deleteLater();
+
+//}
 
 bool DownloaderWorker::isBusy()
 {

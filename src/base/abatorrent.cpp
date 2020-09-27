@@ -2,6 +2,8 @@
 
 abaTorrent::abaTorrent(QObject *parent) : QObject(parent)
 {
+    downloaderTorrent = new Downloader;
+    downloaderTorrent->fsetWorker();
 }
 
 void abaTorrent::fRefreshControl()
@@ -14,18 +16,18 @@ void abaTorrent::fRefreshControl()
 
 void abaTorrent::fgetTorrentList()
 {
-    QPointer<Downloader> downloadTorrentXML(new Downloader);
-    downloadTorrentXML->fsetWorker();
-    downloadTorrentXML->workXML(0);
-    connect(downloadTorrentXML,&Downloader::sfinishedXML,this, &abaTorrent::freadTorrentList);
+//    QPointer<Downloader> downloadTorrentXML(new Downloader);
+//    downloadTorrentXML->fsetWorker();
+    downloaderTorrent->workXML(1);
+    connect(downloaderTorrent,&Downloader::sfinishedXML,this, &abaTorrent::freadTorrentList);
 }
 
 void abaTorrent::fgetSpecificTorrentList(QString search)
 {
-    QPointer<Downloader> downloadTorrentXML(new Downloader);
-    downloadTorrentXML->fsetWorker();
-    downloadTorrentXML->workSpecificXML(0, search);
-    connect(downloadTorrentXML,&Downloader::sfinishedXML,this, &abaTorrent::freadTorrentList);
+//    QPointer<Downloader> downloadTorrentXML(new Downloader);
+//    downloadTorrentXML->fsetWorker();
+    downloaderTorrent->workSpecificXML(1, search);
+    connect(downloaderTorrent,&Downloader::sfinishedXML,this, &abaTorrent::freadTorrentList);
 }
 
 void abaTorrent::freadTorrentList()
@@ -224,17 +226,17 @@ void abaTorrent::fchangeTorrentState(int posicaTabela, bool checkState)
 
 void abaTorrent::fdownloadAnimes()
 {
-    QPointer<Downloader> downloadTorrent(new Downloader);
+//    QPointer<Downloader> downloadTorrent(new Downloader);
     int idDownloader = 0;
     if(vlistaAnimesBaixados.isEmpty()){
         for(int i = 0; i < vlistaTorrents.size(); i++){
             if(vlistaTorrents[i]->vbaixar){
                 vlistaAnimesBaixados.append(i);
-                downloadTorrent->fsetWorker();
+//                downloadTorrent->fsetWorker();
                 qDebug() << "Baixando " + vlistaTorrents[i]->vnomeTorrent;
-                downloadTorrent->workAnimeTorrent(idDownloader++, vlistaTorrents[i]->vlinkTorrent, vlistaTorrents[i]->vnomeTorrent);
+                downloaderTorrent->workAnimeTorrent(idDownloader++, vlistaTorrents[i]->vlinkTorrent, vlistaTorrents[i]->vnomeTorrent);
                 vlistaTorrents[i]->vbaixar = false;
-                connect(downloadTorrent,&Downloader::sfinishedAnimeTorrent,this, &abaTorrent::fdownloadAnimes);
+                connect(downloaderTorrent,&Downloader::sfinishedAnimeTorrent,this, &abaTorrent::fdownloadAnimes);
                 return;
             }
         }
@@ -243,11 +245,11 @@ void abaTorrent::fdownloadAnimes()
         for(int i = vlistaAnimesBaixados.last(); i < vlistaTorrents.size(); i++){
             if(vlistaTorrents[i]->vbaixar){
                 vlistaAnimesBaixados.append(i);
-                downloadTorrent->fsetWorker();
+                downloaderTorrent->fsetWorker();
                 qDebug() << "Baixando " + vlistaTorrents[i]->vnomeTorrent;
-                downloadTorrent->workAnimeTorrent(idDownloader++, vlistaTorrents[i]->vlinkTorrent, vlistaTorrents[i]->vnomeTorrent);
+                downloaderTorrent->workAnimeTorrent(idDownloader++, vlistaTorrents[i]->vlinkTorrent, vlistaTorrents[i]->vnomeTorrent);
                 vlistaTorrents[i]->vbaixar = false;
-                connect(downloadTorrent,&Downloader::sfinishedAnimeTorrent,this, &abaTorrent::fdownloadAnimes);
+                connect(downloaderTorrent,&Downloader::sfinishedAnimeTorrent,this, &abaTorrent::fdownloadAnimes);
                 //Só vai retornar se achar um novo anime para baixar
                 return;
             }
