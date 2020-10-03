@@ -245,7 +245,7 @@ void abaTorrent::fdownloadAnimes()
         for(int i = vlistaAnimesBaixados.last(); i < vlistaTorrents.size(); i++){
             if(vlistaTorrents[i]->vbaixar){
                 vlistaAnimesBaixados.append(i);
-                downloaderTorrent->fsetWorker();
+//                downloaderTorrent->fsetWorker();
                 qDebug() << "Baixando " + vlistaTorrents[i]->vnomeTorrent;
                 downloaderTorrent->workAnimeTorrent(idDownloader++, vlistaTorrents[i]->vlinkTorrent, vlistaTorrents[i]->vnomeTorrent);
                 vlistaTorrents[i]->vbaixar = false;
@@ -292,13 +292,18 @@ void abaTorrent::fdownloadTorrents()
             lprocesso->setProgram(cabaConfig->instance()->fgetPreferredTorrentPath());
             argumentos.append("--add-paused=false");
             argumentos.append("--skip-dialog=true");
-            argumentos.append("--save-path=" + cabaConfig->instance()->fgetSaveFolder() + "/" + vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeAnime);
+            argumentos.append("--save-path=" + cabaConfig->instance()->fgetSaveFolder() + "/" +
+                              vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeAnime);
             argumentos.append(QDir::currentPath() + "/Configurações/Temp/Torrents/" + vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeTorrent
                     + ".torrent");
         }
         lprocesso->setArguments(argumentos);
-        if(lprocesso->startDetached())
+        if(lprocesso->startDetached()){
+            QString id = cleitorListaAnimes->instance()->fprocuraNomeRetornaID(vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeAnime);
+            cconfPastasAnimes->instance()->fselecionaPastaEspecificaAnime(id, cabaConfig->instance()->fgetSaveFolder() +
+                                                                          "/" + vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeAnime);
             qDebug() << "Download started successfully!";
+        }
         vlistaTorrents[vlistaAnimesBaixados[0]]->vbaixar = false;
         vlistaAnimesBaixados.remove(0);
     }

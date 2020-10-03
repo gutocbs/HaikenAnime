@@ -1456,7 +1456,7 @@ void leitorlistaanimes::fdeletaListaAnimes(){
 //    }
 }
 
-QString leitorlistaanimes::fprocuraAnimeNasListas(const QString &rnomeAnime)
+QString leitorlistaanimes::fprocuraNomeRetornaID(const QString &rnomeAnime)
 {
     //Essa função é importante por que se ela não encontrar o nome certo logo de cara, vai fazer uma busca mais detalhada e adicionar
     //o nome procurado nas informações do anime, quando encontrar.

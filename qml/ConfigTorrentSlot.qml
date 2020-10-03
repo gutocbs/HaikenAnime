@@ -28,6 +28,8 @@ Item {
         preferredQuality = configTorrent.preferredQuality
         generalFeed = configTorrent.generalFeed
         specificFeed = configTorrent.specificFeed
+        preferredTorrentPath = configTorrent.preferredTorrentPath
+        saveFolder = configTorrent.saveFolder
     }
 
     function fcheckState(lista){

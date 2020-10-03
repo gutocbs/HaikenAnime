@@ -229,6 +229,7 @@ Item {
                                     text: qsTr("Progresso")
                                     anchors.verticalCenter: parent.verticalCenter
                                     verticalAlignment: Text.AlignVCenter
+                                    renderType: Text.NativeRendering
                                     horizontalAlignment: Text.AlignLeft
                                     font.pointSize: 8
                                     font.family: "Tahoma"
@@ -386,6 +387,7 @@ Item {
                                     text: qsTr("Nota")
                                     anchors.verticalCenter: parent.verticalCenter
                                     verticalAlignment: Text.AlignVCenter
+                                    renderType: Text.NativeRendering
                                     horizontalAlignment: Text.AlignLeft
                                     font.pointSize: 8
                                     font.family: "Tahoma"
@@ -542,6 +544,7 @@ Item {
                                     font.pointSize: 8
                                     font.family: "Tahoma"
                                     verticalAlignment: Text.AlignVCenter
+                                    renderType: Text.NativeRendering
                                     horizontalAlignment: Text.AlignLeft
                                     anchors.verticalCenter: parent.verticalCenter
                                 }

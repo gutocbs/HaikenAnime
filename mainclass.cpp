@@ -799,7 +799,7 @@ void MainClass::fchecaAnimeAssistido()
                     c->fchecaStream(player, nomejanela);
                     QString nomeAnime = c->fretornaAnime();
                     QString episodio = c->fretornaEpisodio();
-                    QString vidAnime = cleitorListaAnimes->instance()->fprocuraAnimeNasListas(nomeAnime);
+                    QString vidAnime = cleitorListaAnimes->instance()->fprocuraNomeRetornaID(nomeAnime);
                     if(!vidAnime.isEmpty()){
                         emit sanimeReconhecidoID(QVariant(vidAnime), QVariant(nomeAnime), QVariant(episodio));
                         //Vai checar a cada 10 segundos, então tem que assistir dois minutos de anime pra contar. Assim, atualiza os curtas ao mesmo

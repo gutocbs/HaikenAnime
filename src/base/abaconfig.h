@@ -8,6 +8,8 @@
 #include <QMetaEnum>
 #include <QFile>
 #include <QMap>
+#include <QDir>
+#include <QFile>
 
 #include <QVariant>
 #include <QVariantList>
@@ -63,6 +65,8 @@ public:
     QString fgetPreferredSub();
     QString fgetPreferredQuality();
     QString fgetSaveFolder();
+    bool fsetDefaultTorrentSoftware();
+    bool fsetDeafultDownloadFolder();
 
 
 private:

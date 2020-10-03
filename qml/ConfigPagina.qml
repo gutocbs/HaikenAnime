@@ -51,6 +51,8 @@ Item {
         else
             configTorrent.autodownload = true
         configTorrent.autodownloadTimer = settingsConfTorrent.value("autodownloadTimer", "10")
+        configTorrent.saveFolder = settingsConfTorrent.value("saveFolder", "")
+        configTorrent.preferredTorrentPath = settingsConfTorrent.value("preferredTorrentPath", "")
         configTorrent.downloadLists = settingsConfTorrent.value("downloadLists", "")
         configTorrent.preferredSub = settingsConfTorrent.value("preferredSub", "")
         configTorrent.preferredQuality = settingsConfTorrent.value("preferredQuality", "")

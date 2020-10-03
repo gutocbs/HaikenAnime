@@ -94,6 +94,7 @@ Item {
                         verticalAlignment: Text.AlignVCenter
                         horizontalAlignment: Text.AlignHCenter
                         wrapMode: Text.WordWrap
+                        minimumPixelSize: 20
                         anchors.fill: parent
                     }
                 }
@@ -128,6 +129,8 @@ Item {
                         font.family: "tahoma"
                         fontSizeMode: Text.Fit
                         verticalAlignment: Text.AlignVCenter
+                        wrapMode: Text.NoWrap
+                        minimumPixelSize: 20
                         horizontalAlignment: Text.AlignHCenter
                         anchors.fill: parent
                         font.pixelSize: 12
@@ -163,6 +166,7 @@ Item {
                         renderType: Text.NativeRendering
                         anchors.fill: parent
                         verticalAlignment: Text.AlignVCenter
+                        minimumPixelSize: 20
                         fontSizeMode: Text.Fit
                         horizontalAlignment: Text.AlignHCenter
                         font.family: "tahoma"
@@ -197,6 +201,7 @@ Item {
                         renderType: Text.NativeRendering
                         anchors.fill: parent
                         verticalAlignment: Text.AlignVCenter
+                        minimumPixelSize: 20
                         fontSizeMode: Text.Fit
                         horizontalAlignment: Text.AlignHCenter
                         font.family: "tahoma"
@@ -215,6 +220,6 @@ Item {
 
 /*##^##
 Designer {
-    D{i:0;formeditorZoom:1.75}D{i:1;anchors_height:400;anchors_width:200}
+    D{i:0;formeditorZoom:1.75}D{i:1}
 }
 ##^##*/

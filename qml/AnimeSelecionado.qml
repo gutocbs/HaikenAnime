@@ -36,6 +36,7 @@ Item {
                         text: root.nomeAnimeSelecionado
                         fontSizeMode: Text.Fit
                         verticalAlignment: Text.AlignVCenter
+                        renderType: Text.NativeRendering
                         font.family: "Tahoma"
                         anchors.fill: parent
                         font.pixelSize: 20
@@ -68,6 +69,7 @@ Item {
                         text: root.nomeAlternativoAnimeSelecionado
                         fontSizeMode: Text.Fit
                         verticalAlignment: Text.AlignVCenter
+                        renderType: Text.NativeRendering
                         font.family: "Tahoma"
                         anchors.fill: parent
                         font.pixelSize: 20
@@ -110,6 +112,7 @@ Item {
                             fontSizeMode: Text.Fit
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
+                            renderType: Text.NativeRendering
                             anchors.fill: parent
                             font.pixelSize: 20
                         }
@@ -139,6 +142,7 @@ Item {
                             font.family: "Tahoma"
                             fontSizeMode: Text.Fit
                             verticalAlignment: Text.AlignVCenter
+                            renderType: Text.NativeRendering
                             horizontalAlignment: Text.AlignHCenter
                             anchors.fill: parent
                             font.pixelSize: 20
@@ -170,6 +174,7 @@ Item {
                             font.family: "Tahoma"
                             fontSizeMode: Text.Fit
                             verticalAlignment: Text.AlignVCenter
+                            renderType: Text.NativeRendering
                             horizontalAlignment: Text.AlignHCenter
                             anchors.fill: parent
                             font.pixelSize: 20
@@ -201,6 +206,7 @@ Item {
                             fontSizeMode: Text.Fit
                             anchors.fill: parent
                             verticalAlignment: Text.AlignVCenter
+                            renderType: Text.NativeRendering
                             horizontalAlignment: Text.AlignHCenter
                             font.pixelSize: 20
                         }
@@ -230,6 +236,7 @@ Item {
                             fontSizeMode: Text.Fit
                             font.family: "Tahoma"
                             verticalAlignment: Text.AlignVCenter
+                            renderType: Text.NativeRendering
                             horizontalAlignment: Text.AlignHCenter
                             anchors.fill: parent
                             font.pixelSize: 20
@@ -260,6 +267,7 @@ Item {
                             font.family: "Tahoma"
                             fontSizeMode: Text.Fit
                             verticalAlignment: Text.AlignVCenter
+                            renderType: Text.NativeRendering
                             horizontalAlignment: Text.AlignHCenter
                             anchors.fill: parent
                             font.pixelSize: 20
@@ -292,6 +300,7 @@ Item {
                             anchors.fill: parent
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
+                            renderType: Text.NativeRendering
                             font.pixelSize: 20
                         }
                     }
@@ -327,6 +336,7 @@ Item {
                             text: root.statusAnimeSelecionado
                             font.bold: true
                             wrapMode: Text.WordWrap
+                            renderType: Text.NativeRendering
                             anchors.fill: parent
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -360,6 +370,7 @@ Item {
                             text: root.mediaPessoalAnimeSelecionado
                             font.bold: true
                             wrapMode: Text.WordWrap
+                            renderType: Text.NativeRendering
                             anchors.fill: parent
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -393,6 +404,7 @@ Item {
                             text: root.mediaGlobalAnimeSelecionado
                             font.bold: true
                             wrapMode: Text.WordWrap
+                            renderType: Text.NativeRendering
                             anchors.fill: parent
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -421,11 +433,12 @@ Item {
 
                         Text {
                             id: element15
-                            text: seasonAnimeSelecionado
+                            text: seasonAnimeSelecionado.split(" ")[0]
                             anchors.fill: parent
                             elide: Text.ElideNone
                             font.bold: true
                             wrapMode: Text.WordWrap
+                            renderType: Text.NativeRendering
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
                             fontSizeMode: Text.Fit
@@ -447,11 +460,12 @@ Item {
 
                         Text {
                             id: element19
-                            text: seasonAnimeSelecionado
+                            text: seasonAnimeSelecionado.split(" ")[1]
                             anchors.fill: parent
                             fontSizeMode: Text.Fit
                             font.bold: true
                             verticalAlignment: Text.AlignVCenter
+                            renderType: Text.NativeRendering
                             horizontalAlignment: Text.AlignHCenter
                             font.pixelSize: 20
                         }
@@ -481,6 +495,7 @@ Item {
                             text: root.releaseAnimeSelecionado
                             font.bold: true
                             wrapMode: Text.WordWrap
+                            renderType: Text.NativeRendering
                             anchors.fill: parent
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -514,6 +529,7 @@ Item {
                             text: root.episodiosAnimeSelecionado
                             font.bold: true
                             wrapMode: Text.WordWrap
+                            renderType: Text.NativeRendering
                             anchors.fill: parent
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -547,6 +563,7 @@ Item {
                             text: root.tipoAnimeSelecionado
                             font.bold: true
                             wrapMode: Text.WordWrap
+                            renderType: Text.NativeRendering
                             anchors.fill: parent
                             horizontalAlignment: Text.AlignHCenter
                             verticalAlignment: Text.AlignVCenter
@@ -613,6 +630,7 @@ Item {
                         text: root.sinopseAnimeSelecionado
                         fontSizeMode: Text.Fit
                         wrapMode: Text.WordWrap
+                        renderType: Text.NativeRendering
                         anchors.fill: parent
                         font.family: "Tahoma"
                         verticalAlignment: Text.AlignTop

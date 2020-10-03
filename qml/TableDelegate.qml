@@ -49,6 +49,7 @@ Item {
                     text: name
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
+                    font.family: "Tahoma"
                     anchors.fill: parent
                 }
             }
@@ -66,6 +67,7 @@ Item {
                     id: label1
                     text: subName
                     verticalAlignment: Text.AlignVCenter
+                    font.family: "Tahoma"
                     horizontalAlignment: Text.AlignHCenter
                     anchors.fill: parent
                 }
@@ -84,6 +86,7 @@ Item {
                     id: label2
                     text: resolution
                     verticalAlignment: Text.AlignVCenter
+                    font.family: "Tahoma"
                     horizontalAlignment: Text.AlignHCenter
                     anchors.fill: parent
                 }
@@ -102,6 +105,7 @@ Item {
                     id: label3
                     text: episode
                     verticalAlignment: Text.AlignVCenter
+                    font.family: "Tahoma"
                     horizontalAlignment: Text.AlignHCenter
                     anchors.fill: parent
                 }
@@ -120,6 +124,7 @@ Item {
                     id: label4
                     text: fileName
                     verticalAlignment: Text.AlignVCenter
+                    font.family: "Tahoma"
                     horizontalAlignment: Text.AlignHCenter
                     anchors.fill: parent
                 }
@@ -140,6 +145,7 @@ Item {
                     horizontalAlignment: Text.AlignHCenter
                     anchors.fill: parent
                     verticalAlignment: Text.AlignVCenter
+                    font.family: "Tahoma"
                 }
             }
         }
@@ -150,6 +156,6 @@ Item {
 
 /*##^##
 Designer {
-    D{i:1;anchors_height:400;anchors_width:200}
+    D{i:0;formeditorZoom:0.6600000262260437}D{i:1}
 }
 ##^##*/
