@@ -1,4 +1,5 @@
 import QtQuick 2.0
+import QtQuick.Controls 2.3
 
 Item {
     id: element
@@ -25,20 +26,39 @@ Item {
                     width: 666
                     height: 40
 
-                    Rectangle {
-                        id: rectangle
-                        color: "#c7d6ff"
-                        anchors.fill: parent
-                    }
-
-                    Text {
-                        id: element1
+                    Button {
+                        id: button
+                        visible: true
                         text: root.nomeAnimeSelecionado
-                        fontSizeMode: Text.Fit
-                        verticalAlignment: Text.AlignVCenter
-                        font.family: "Tahoma"
                         anchors.fill: parent
+                        focusPolicy: Qt.NoFocus
+                        spacing: 0
                         font.pixelSize: 20
+                        font.bold: true
+                        display: AbstractButton.TextOnly
+                        clip: false
+                        hoverEnabled: false
+                        enabled: true
+                        flat: true
+                        contentItem: Text {
+                            text: button.text
+                            font: button.font
+                            opacity: enabled ? 1.0 : 0.3
+                            color: "#000000"
+                            horizontalAlignment: Text.AlignHLeft
+                            verticalAlignment: Text.AlignVCenter
+                            wrapMode: Text.WordWrap
+                            elide: Text.ElideRight
+                        }
+                        background: Rectangle {
+                            implicitWidth: 100
+                            implicitHeight: 40
+                            opacity: enabled ? 1 : 0.3
+                            color: "#c7d6ff"
+                            border.color: "#c7d6ff"
+                            border.width: 1
+                            radius: 2
+                        }
                     }
                 }
             }
@@ -53,24 +73,39 @@ Item {
                     width: 666
                     height: 40
 
-                    Rectangle {
-                        id: rectangle1
-                        x: 0
-                        y: 0
-                        color: "#c7d6ff"
-                        anchors.fill: parent
-                    }
-
-                    Text {
-                        id: element2
-                        x: 0
-                        y: 0
+                    Button {
+                        id: button1
+                        visible: true
                         text: root.nomeAlternativoAnimeSelecionado
-                        fontSizeMode: Text.Fit
-                        verticalAlignment: Text.AlignVCenter
-                        font.family: "Tahoma"
                         anchors.fill: parent
                         font.pixelSize: 20
+                        focusPolicy: Qt.NoFocus
+                        contentItem: Text {
+                            opacity: enabled ? 1.0 : 0.3
+                            color: "#000000"
+                            text: button1.text
+                            elide: Text.ElideRight
+                            fontSizeMode: Text.Fit
+                            horizontalAlignment: Text.AlignLeft
+                            verticalAlignment: Text.AlignVCenter
+                            wrapMode: Text.WordWrap
+                            font: button1.font
+                        }
+                        flat: true
+                        clip: false
+                        display: AbstractButton.TextOnly
+                        spacing: 0
+                        enabled: true
+                        background: Rectangle {
+                            opacity: enabled ? 1 : 0.3
+                            color: "#c7d6ff"
+                            radius: 2
+                            border.color: "#c7d6ff"
+                            border.width: 1
+                            implicitHeight: 40
+                            implicitWidth: 100
+                        }
+                        hoverEnabled: false
                     }
                 }
             }
@@ -97,21 +132,45 @@ Item {
 
 
                         Rectangle {
-                            id: rectangle2
+                            id: rectangle7
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-                        Text {
-                            id: element5
-                            x: 0
-                            y: 0
+                        Button {
+                            id: button2
+                            visible: true
                             text: qsTr("Status")
-                            font.family: "Tahoma"
-                            fontSizeMode: Text.Fit
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
                             anchors.fill: parent
                             font.pixelSize: 20
+                            focusPolicy: Qt.NoFocus
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button2.text
+                                elide: Text.ElideRight
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                fontSizeMode: Text.Fit
+                                font: button2.font
+                            }
+                            flat: true
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
+                            hoverEnabled: false
                         }
                     }
                 }
@@ -125,23 +184,47 @@ Item {
                         width: 95
                         height: 40
 
+
                         Rectangle {
-                            id: rectangle7
+                            id: rectangle8
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-
-                        Text {
-                            id: element6
-                            x: 0
-                            y: 0
+                        Button {
+                            id: button3
+                            visible: true
                             text: qsTr("Nota")
-                            font.family: "Tahoma"
-                            fontSizeMode: Text.Fit
-                            verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignHCenter
                             anchors.fill: parent
                             font.pixelSize: 20
+                            focusPolicy: Qt.NoFocus
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button3.text
+                                elide: Text.ElideRight
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                fontSizeMode: Text.Fit
+                                font: button3.font
+                            }
+                            flat: true
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
+                            hoverEnabled: false
                         }
                     }
 
@@ -156,23 +239,47 @@ Item {
                         width: 95
                         height: 40
 
+
                         Rectangle {
-                            id: rectangle8
+                            id: rectangle9
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-
-                        Text {
-                            id: element7
-                            x: 0
-                            y: 0
+                        Button {
+                            id: button4
+                            visible: true
                             text: qsTr("Media")
-                            font.family: "Tahoma"
-                            fontSizeMode: Text.Fit
-                            verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignHCenter
                             anchors.fill: parent
                             font.pixelSize: 20
+                            focusPolicy: Qt.NoFocus
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button4.text
+                                elide: Text.ElideRight
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                fontSizeMode: Text.Fit
+                                font: button4.font
+                            }
+                            flat: true
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
+                            hoverEnabled: false
                         }
                     }
                 }
@@ -186,23 +293,47 @@ Item {
                         width: 95
                         height: 40
 
+
                         Rectangle {
-                            id: rectangle9
+                            id: rectangle10
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-
-                        Text {
-                            id: element8
-                            x: 0
-                            y: 0
+                        Button {
+                            id: button5
+                            visible: true
                             text: qsTr("Season")
-                            font.family: "Tahoma"
-                            fontSizeMode: Text.Fit
                             anchors.fill: parent
-                            verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignHCenter
                             font.pixelSize: 20
+                            focusPolicy: Qt.NoFocus
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button5.text
+                                elide: Text.ElideRight
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                fontSizeMode: Text.Fit
+                                font: button5.font
+                            }
+                            flat: true
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
+                            hoverEnabled: false
                         }
                     }
                 }
@@ -216,23 +347,47 @@ Item {
                         width: 95
                         height: 40
 
+
                         Rectangle {
-                            id: rectangle10
+                            id: rectangle11
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-
-                        Text {
-                            id: element9
-                            x: 0
-                            y: 0
+                        Button {
+                            id: button6
+                            visible: true
                             text: qsTr("Air at")
-                            fontSizeMode: Text.Fit
-                            font.family: "Tahoma"
-                            verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignHCenter
                             anchors.fill: parent
                             font.pixelSize: 20
+                            focusPolicy: Qt.NoFocus
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button6.text
+                                elide: Text.ElideRight
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                fontSizeMode: Text.Fit
+                                font: button6.font
+                            }
+                            flat: true
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
+                            hoverEnabled: false
                         }
                     }
                 }
@@ -247,22 +402,48 @@ Item {
                         height: 40
 
                         Rectangle {
-                            id: rectangle11
+                            id: rectangle12
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
 
-                        Text {
-                            id: element10
+                        Button {
+                            id: button7
                             x: 0
                             y: 0
+                            visible: true
                             text: qsTr("Released")
-                            font.family: "Tahoma"
-                            fontSizeMode: Text.Fit
-                            verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignHCenter
                             anchors.fill: parent
                             font.pixelSize: 20
+                            focusPolicy: Qt.NoFocus
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button7.text
+                                elide: Text.ElideRight
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                fontSizeMode: Text.Fit
+                                font: button7.font
+                            }
+                            flat: true
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
+                            hoverEnabled: false
                         }
                     }
                 }
@@ -277,22 +458,47 @@ Item {
                         width: 95
                         height: 40
 
+
                         Rectangle {
-                            id: rectangle12
+                            id: rectangle13
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-
-                        Text {
-                            id: element11
-                            x: 0
-                            y: 0
+                        Button {
+                            id: button8
+                            visible: true
                             text: qsTr("Type")
-                            fontSizeMode: Text.Fit
                             anchors.fill: parent
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
                             font.pixelSize: 20
+                            focusPolicy: Qt.NoFocus
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button8.text
+                                elide: Text.ElideRight
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                fontSizeMode: Text.Fit
+                                font: button8.font
+                            }
+                            flat: true
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
+                            hoverEnabled: false
                         }
                     }
                 }
@@ -313,26 +519,54 @@ Item {
                         width: 95
                         height: 50
 
+
                         Rectangle {
-                            id: rectangle13
+                            id: rectangle14
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-
-                        Text {
-                            id: element12
-                            x: 0
-                            y: 0
-                            height: 50
+                        Button {
+                            id: button9
+                            visible: true
                             text: root.statusAnimeSelecionado
-                            font.bold: true
-                            wrapMode: Text.WordWrap
                             anchors.fill: parent
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            fontSizeMode: Text.Fit
-                            font.family: "Tahoma"
-                            font.pixelSize: 20
+                            font.pixelSize: 15
+                            focusPolicy: Qt.NoFocus
+                            font.bold: true
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                visible: true
+                                color: "#000000"
+                                text: button9.text
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                minimumPointSize: 11
+                                minimumPixelSize: 11
+                                elide: Text.ElideRight
+                                anchors.fill: parent
+                                fontSizeMode: Text.Fit
+                                font.family: "Tahoma"
+                                font.bold: true
+                                font.pointSize: 11
+                            }
+                            flat: true
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
+                            hoverEnabled: false
                         }
                     }
                 }
@@ -347,25 +581,54 @@ Item {
                         width: 95
                         height: 50
 
+
                         Rectangle {
-                            id: rectangle14
+                            id: rectangle15
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-
-                        Text {
-                            id: element13
-                            x: 0
-                            y: 0
+                        Button {
+                            id: button10
+                            visible: true
                             text: root.mediaPessoalAnimeSelecionado
-                            font.bold: true
-                            wrapMode: Text.WordWrap
                             anchors.fill: parent
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            fontSizeMode: Text.Fit
-                            font.family: "Tahoma"
                             font.pixelSize: 20
+                            focusPolicy: Qt.NoFocus
+                            font.bold: true
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button10.text
+                                elide: Text.ElideRight
+                                anchors.fill: parent
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                font.bold: true
+                                font.pointSize: 15
+                                font.family: "Tahoma"
+                                minimumPointSize: 11
+                                minimumPixelSize: 11
+                                fontSizeMode: Text.Fit
+                                //                                font: button10.font
+                            }
+                            flat: true
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
+                            hoverEnabled: false
                         }
                     }
                 }
@@ -380,25 +643,53 @@ Item {
                         width: 95
                         height: 50
 
+
                         Rectangle {
-                            id: rectangle15
+                            id: rectangle16
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-
-                        Text {
-                            id: element14
-                            x: 0
-                            y: 0
+                        Button {
+                            id: button19
+                            visible: true
                             text: root.mediaGlobalAnimeSelecionado
-                            font.bold: true
-                            wrapMode: Text.WordWrap
                             anchors.fill: parent
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            fontSizeMode: Text.Fit
-                            font.family: "Tahoma"
                             font.pixelSize: 20
+                            hoverEnabled: false
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button19.text
+                                elide: Text.ElideRight
+                                anchors.fill: parent
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                font.pointSize: 15
+                                font.family: "Tahoma"
+                                fontSizeMode: Text.Fit
+                                minimumPointSize: 11
+                                minimumPixelSize: 11
+                                font.bold: true
+                            }
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            focusPolicy: Qt.NoFocus
+                            font.bold: true
+                            flat: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
                         }
                     }
                 }
@@ -414,23 +705,51 @@ Item {
                         height: 25
 
                         Rectangle {
-                            id: rectangle16
+                            id: rectangle17
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-
-                        Text {
-                            id: element15
-                            text: seasonAnimeSelecionado
+                        Button {
+                            id: button12
+                            visible: true
+                            text: root.seasonAnimeSelecionado.split(" ")[0]
                             anchors.fill: parent
-                            elide: Text.ElideNone
-                            font.bold: true
-                            wrapMode: Text.WordWrap
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            fontSizeMode: Text.Fit
-                            font.family: "Tahoma"
                             font.pixelSize: 20
+                            hoverEnabled: false
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button12.text
+                                elide: Text.ElideRight
+                                anchors.fill: parent
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                font.pointSize: 11
+                                font.family: "Tahoma"
+                                fontSizeMode: Text.Fit
+                                minimumPointSize: 11
+                                minimumPixelSize: 11
+                                font.bold: true
+                            }
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            focusPolicy: Qt.NoFocus
+                            font.bold: true
+                            flat: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
                         }
                     }
 
@@ -439,21 +758,53 @@ Item {
                         width: 95
                         height: 25
 
+
                         Rectangle {
-                            id: rectangle17
+                            id: rectangle18
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-
-                        Text {
-                            id: element19
-                            text: seasonAnimeSelecionado
+                        Button {
+                            id: button20
+                            visible: true
+                            text: seasonAnimeSelecionado.split(" ")[1]
                             anchors.fill: parent
-                            fontSizeMode: Text.Fit
-                            font.bold: true
-                            verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignHCenter
                             font.pixelSize: 20
+                            hoverEnabled: false
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button20.text
+                                elide: Text.ElideRight
+                                anchors.fill: parent
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                font.pointSize: 11
+                                font.family: "Tahoma"
+                                fontSizeMode: Text.Fit
+                                minimumPointSize: 11
+                                minimumPixelSize: 11
+                                font.bold: true
+                            }
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            focusPolicy: Qt.NoFocus
+                            font.bold: true
+                            flat: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
                         }
                     }
                 }
@@ -468,25 +819,53 @@ Item {
                         width: 95
                         height: 50
 
+
                         Rectangle {
-                            id: rectangle18
+                            id: rectangle19
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-
-                        Text {
-                            id: element16
-                            x: 0
-                            y: 0
+                        Button {
+                            id: button21
+                            visible: true
                             text: root.releaseAnimeSelecionado
-                            font.bold: true
-                            wrapMode: Text.WordWrap
                             anchors.fill: parent
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            fontSizeMode: Text.Fit
-                            font.family: "Tahoma"
                             font.pixelSize: 20
+                            hoverEnabled: false
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button21.text
+                                elide: Text.ElideRight
+                                anchors.fill: parent
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                font.pointSize: 11
+                                font.family: "Tahoma"
+                                fontSizeMode: Text.Fit
+                                minimumPointSize: 11
+                                minimumPixelSize: 11
+                                font.bold: true
+                            }
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            focusPolicy: Qt.NoFocus
+                            font.bold: true
+                            flat: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
                         }
                     }
                 }
@@ -497,29 +876,110 @@ Item {
                     height: 50
 
                     Item {
-                        id: element35
+                        id: element41
                         width: 95
-                        height: 50
-
+                        height: 25
                         Rectangle {
-                            id: rectangle19
+                            id: rectangle22
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
 
-                        Text {
-                            id: element17
+                        Button {
+                            id: button13
+                            visible: true
+                            text: root.episodiosAnimeSelecionado.split(" ")[0]
+                            anchors.fill: parent
+                            font.pixelSize: 20
+                            hoverEnabled: false
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button13.text
+                                elide: Text.ElideRight
+                                anchors.fill: parent
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                font.pointSize: 11
+                                font.family: "Tahoma"
+                                fontSizeMode: Text.Fit
+                                minimumPointSize: 11
+                                minimumPixelSize: 11
+                                font.bold: true
+                            }
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            focusPolicy: Qt.NoFocus
+                            font.bold: true
+                            flat: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
+                        }
+                    }
+
+                    Item {
+                        id: element42
+                        width: 95
+                        height: 25
+                        Rectangle {
+                            id: rectangle23
                             x: 0
                             y: 0
-                            text: root.episodiosAnimeSelecionado
-                            font.bold: true
-                            wrapMode: Text.WordWrap
+                            color: "#c7d6ff"
                             anchors.fill: parent
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            fontSizeMode: Text.Fit
-                            font.family: "Tahoma"
+                        }
+
+                        Button {
+                            id: button24
+                            visible: true
+                            text: root.episodiosAnimeSelecionado.split(" ")[1]
+                            anchors.fill: parent
                             font.pixelSize: 20
+                            hoverEnabled: false
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button24.text
+                                elide: Text.ElideRight
+                                anchors.fill: parent
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                font.pointSize: 11
+                                font.family: "Tahoma"
+                                fontSizeMode: Text.Fit
+                                minimumPointSize: 11
+                                minimumPixelSize: 11
+                                font.bold: true
+                            }
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            focusPolicy: Qt.NoFocus
+                            font.bold: true
+                            flat: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
                         }
                     }
                 }
@@ -534,24 +994,53 @@ Item {
                         width: 95
                         height: 50
 
+
                         Rectangle {
-                            id: rectangle20
+                            id: rectangle21
+                            x: 0
+                            y: 0
                             color: "#c7d6ff"
                             anchors.fill: parent
                         }
-
-                        Text {
-                            id: element18
-                            x: 0
-                            y: 0
+                        Button {
+                            id: button23
+                            visible: true
                             text: root.tipoAnimeSelecionado
-                            font.bold: true
-                            wrapMode: Text.WordWrap
                             anchors.fill: parent
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            fontSizeMode: Text.Fit
                             font.pixelSize: 20
+                            hoverEnabled: false
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button23.text
+                                elide: Text.ElideRight
+                                anchors.fill: parent
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                font.pointSize: 11
+                                font.family: "Tahoma"
+                                fontSizeMode: Text.Fit
+                                minimumPointSize: 11
+                                minimumPixelSize: 11
+                                font.bold: true
+                            }
+                            clip: false
+                            display: AbstractButton.TextOnly
+                            spacing: 0
+                            enabled: true
+                            focusPolicy: Qt.NoFocus
+                            font.bold: true
+                            flat: true
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitHeight: 40
+                                implicitWidth: 100
+                            }
                         }
                     }
                 }
@@ -567,23 +1056,38 @@ Item {
                     width: 666
                     height: 40
 
-                    Rectangle {
-                        id: rectangle4
-                        x: 0
-                        y: 0
-                        color: "#c7d6ff"
-                        anchors.fill: parent
-                    }
-
-                    Text {
-                        id: element3
-                        x: 0
-                        y: 0
+                    Button {
+                        id: button17
+                        visible: true
                         text: qsTr("Synopsis")
-                        font.family: "Tahoma"
-                        verticalAlignment: Text.AlignVCenter
                         anchors.fill: parent
                         font.pixelSize: 20
+                        focusPolicy: Qt.NoFocus
+                        contentItem: Text {
+                            opacity: enabled ? 1.0 : 0.3
+                            color: "#000000"
+                            text: button17.text
+                            elide: Text.ElideRight
+                            horizontalAlignment: Text.AlignHLeft
+                            verticalAlignment: Text.AlignVCenter
+                            wrapMode: Text.WordWrap
+                            font: button17.font
+                        }
+                        flat: true
+                        clip: false
+                        display: AbstractButton.TextOnly
+                        spacing: 0
+                        enabled: true
+                        background: Rectangle {
+                            opacity: enabled ? 1 : 0.3
+                            color: "#c7d6ff"
+                            radius: 2
+                            border.color: "#c7d6ff"
+                            border.width: 1
+                            implicitHeight: 40
+                            implicitWidth: 100
+                        }
+                        hoverEnabled: false
                     }
                 }
             }
@@ -598,25 +1102,38 @@ Item {
                     width: 666
                     height: 200
 
-                    Rectangle {
-                        id: rectangle5
-                        x: 0
-                        y: 0
-                        color: "#c7d6ff"
-                        anchors.fill: parent
-                    }
-
-                    Text {
-                        id: element4
-                        x: 0
-                        y: 0
+                    Button {
+                        id: button18
+                        visible: true
                         text: root.sinopseAnimeSelecionado
-                        fontSizeMode: Text.Fit
-                        wrapMode: Text.WordWrap
                         anchors.fill: parent
-                        font.family: "Tahoma"
-                        verticalAlignment: Text.AlignTop
                         font.pixelSize: 20
+                        focusPolicy: Qt.NoFocus
+                        contentItem: Text {
+                            opacity: enabled ? 1.0 : 0.3
+                            color: "#000000"
+                            text: button18.text
+                            elide: Text.ElideRight
+                            horizontalAlignment: Text.AlignHLeft
+                            verticalAlignment: Text.AlignTop
+                            wrapMode: Text.WordWrap
+                            font: button18.font
+                        }
+                        flat: true
+                        clip: false
+                        display: AbstractButton.TextOnly
+                        spacing: 0
+                        enabled: true
+                        background: Rectangle {
+                            opacity: enabled ? 1 : 0.3
+                            color: "#c7d6ff"
+                            radius: 2
+                            border.color: "#c7d6ff"
+                            border.width: 1
+                            implicitHeight: 40
+                            implicitWidth: 100
+                        }
+                        hoverEnabled: false
                     }
                 }
             }
@@ -679,7 +1196,6 @@ Item {
 
 /*##^##
 Designer {
-    D{i:0;formeditorZoom:0.6600000262260437}D{i:56;anchors_x:0;anchors_y:0}D{i:59;anchors_x:0;anchors_y:25}
-D{i:86;anchors_x:0;anchors_y:0}D{i:1;anchors_height:400;anchors_width:200}
+    D{i:0;formeditorZoom:0.6600000262260437}
 }
 ##^##*/

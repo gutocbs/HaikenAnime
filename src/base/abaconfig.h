@@ -8,6 +8,8 @@
 #include <QMetaEnum>
 #include <QFile>
 #include <QMap>
+#include <QDir>
+#include <QFile>
 
 #include <QVariant>
 #include <QVariantList>
@@ -34,9 +36,9 @@ public:
     void floadSettings();
 
     QVariant fgetService();
-    QVariant fgetUsername();
     QVariant fgetAuthCode();
     QVariant fgetDirectory();
+    QString fgetUsername();
     QString fgetPreferredTorrent();
     QString fgetPreferredTorrentPath();
     void fsaveAuthcode();
@@ -63,6 +65,8 @@ public:
     QString fgetPreferredSub();
     QString fgetPreferredQuality();
     QString fgetSaveFolder();
+    bool fsetDefaultTorrentSoftware();
+    bool fsetDeafultDownloadFolder();
 
 
 private:

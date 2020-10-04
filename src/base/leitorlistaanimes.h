@@ -44,7 +44,7 @@ public:
     QString fbuscaAnimePorIDERetornaTitulo(const QString &rid);
     QString fbuscaAnimePorIDERetornaLista(const QString &ridAnime);
     QString fprocuraIdNasListasRapido(const QString &rnomeAnime);
-    QString fprocuraAnimeNasListas(const QString &rnomeAnime);
+    QString fprocuraNomeRetornaID(const QString &rnomeAnime);
 
     QVector<anime*> retornaListaWatching();
     QVector<anime*> retornaListaCompleted();

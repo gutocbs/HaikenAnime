@@ -1,15 +1,18 @@
 import QtQuick 2.12
-import QtQuick.Window 2.12
+import QtQuick.Window 2.15
 import QtQuick.Controls 2.3
 
 Window {
     id: root
     visible: true
-    width: 1920
-    height: 1080
+    width: Screen.desktopAvaliableWidth
+//    width: 1366
+    height: Screen.desktopAvailableHeight
     visibility: "Maximized"
     color: "#9caef0"
-    title: qsTr("Hello World")
+    title: qsTr("Haiken anime")
+
+    property var escala: width/1920
 
     //Configurações de diretorios
     property var dirImagensGrandes: ""
@@ -54,6 +57,7 @@ Window {
     property var numeroAnosListas: 0
 
     property var configSelecionada: ""
+
 
     function getData(id, posicaoGrid){
         var listaIdTemp = idAnime
@@ -151,6 +155,8 @@ Window {
     Column {
         id: column
         anchors.fill: parent
+        transformOrigin: Item.TopLeft
+        scale: escala
 
         Row {
             id: row
@@ -169,7 +175,7 @@ Window {
 
         StackView {
             id: stackView
-            width: parent.width
+            width: 1920
             height: parent.height-187
             initialItem: "Home.qml"
             pushEnter: Transition {
@@ -208,6 +214,6 @@ Window {
 
 /*##^##
 Designer {
-    D{i:0;formeditorZoom:0.6600000262260437}D{i:1;anchors_x:0;anchors_y:266}D{i:2;anchors_height:187;anchors_width:1920}
+    D{i:0;formeditorZoom:0.25}D{i:1}D{i:2}
 }
 ##^##*/

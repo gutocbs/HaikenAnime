@@ -13,6 +13,7 @@
 #include "src/utilities/downloader.h"
 #include "src/base/leitorlistaanimes.h"
 #include "lib/anitomy/anitomy.h"
+#include "src/base/confusuario.h"
 
 class abaTorrent : public QObject
 {
@@ -43,6 +44,7 @@ private:
     anitomy::Anitomy anitomy;
     QPointer<leitorlistaanimes> cleitorListaAnimes;
     QPointer<abaConfig> cabaConfig;
+    QPointer<confUsuario> cconfPastasAnimes;
     QPointer<Downloader> downloaderTorrent;
     QVector<torrentinfo*> vlistaTorrents;
     QVector<int> vlistaAnimesBaixados;

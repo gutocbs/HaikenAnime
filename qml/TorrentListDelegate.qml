@@ -1,4 +1,4 @@
-import QtQuick 2.0
+import QtQuick 2.12
 import QtQuick.Controls 2.3
 
 Item {
@@ -61,18 +61,17 @@ Item {
                 width: parent.width
                 height: parent.height
 
-                Text {
+                Label {
                     id: nomeAnime
                     color: corFonte
                     text: animeName
-                    anchors.leftMargin: 5
+                    anchors.fill: parent
                     font.family: "Tahoma"
                     fontSizeMode: Text.Fit
-                    renderType: Text.NativeRendering
                     verticalAlignment: Text.AlignVCenter
                     wrapMode: Text.WordWrap
-                    anchors.fill: parent
-                    font.pixelSize: 12
+                    leftPadding: 10
+                    font.pointSize: 8
                 }
 
                 Rectangle {
@@ -93,18 +92,19 @@ Item {
                 id: element4
                 width: parent.width
                 height: parent.height
-                Text {
+
+                Label {
                     id: element3
-                    text: animeSub
                     color: corFonte
-                    horizontalAlignment: Text.AlignHCenter
-                    renderType: Text.NativeRendering
+                    text: animeSub
                     anchors.fill: parent
-                    fontSizeMode: Text.Fit
-                    font.pixelSize: 12
-                    wrapMode: Text.WordWrap
-                    verticalAlignment: Text.AlignVCenter
+                    horizontalAlignment: Text.AlignHCenter
                     font.family: "Tahoma"
+                    fontSizeMode: Text.Fit
+                    verticalAlignment: Text.AlignVCenter
+                    wrapMode: Text.WordWrap
+                    leftPadding: 10
+                    font.pointSize: 8
                 }
 
                 Rectangle {
@@ -125,20 +125,19 @@ Item {
                 id: element6
                 width: parent.width
                 height: parent.height
-                Text {
-                    id: element5
-                    text: animeResolution
+                Label {
+                    id: element13
                     color: corFonte
-                    horizontalAlignment: Text.AlignHCenter
-                    renderType: Text.NativeRendering
+                    text: animeResolution
                     anchors.fill: parent
-                    fontSizeMode: Text.Fit
-                    font.pixelSize: 12
-                    wrapMode: Text.WordWrap
-                    font.family: "Tahoma"
+                    horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
+                    wrapMode: Text.WordWrap
+                    leftPadding: 10
+                    font.pointSize: 8
+                    fontSizeMode: Text.Fit
+                    font.family: "Tahoma"
                 }
-
                 Rectangle {
                     id: rectangle3
                     color: "#00000000"
@@ -157,20 +156,20 @@ Item {
                 id: element8
                 width: parent.width
                 height: parent.height
-                Text {
-                    id: element7
-                    text: animeEpisode
-                    color: corFonte
-                    horizontalAlignment: Text.AlignHCenter
-                    renderType: Text.NativeRendering
-                    anchors.fill: parent
-                    fontSizeMode: Text.Fit
-                    font.pixelSize: 12
-                    wrapMode: Text.WordWrap
-                    font.family: "Tahoma"
-                    verticalAlignment: Text.AlignVCenter
-                }
 
+                Label {
+                    id: element14
+                    color: corFonte
+                    text: animeEpisode
+                    anchors.fill: parent
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    wrapMode: Text.WordWrap
+                    leftPadding: 10
+                    font.pointSize: 8
+                    fontSizeMode: Text.Fit
+                    font.family: "Tahoma"
+                }
                 Rectangle {
                     id: rectangle6
                     color: "#00000000"
@@ -189,21 +188,19 @@ Item {
                 id: element10
                 width: parent.width
                 height: parent.height
-                Text {
-                    id: element9
-                    text: animeFileName
-                    color: corFonte
-                    anchors.leftMargin: 5
-                    horizontalAlignment: Text.AlignLeft
-                    renderType: Text.NativeRendering
-                    anchors.fill: parent
-                    fontSizeMode: Text.Fit
-                    font.pixelSize: 12
-                    wrapMode: Text.WordWrap
-                    font.family: "Tahoma"
-                    verticalAlignment: Text.AlignVCenter
-                }
 
+                Label {
+                    id: element15
+                    color: corFonte
+                    text: animeFileName
+                    anchors.fill: parent
+                    verticalAlignment: Text.AlignVCenter
+                    wrapMode: Text.WordWrap
+                    leftPadding: 10
+                    font.pointSize: 8
+                    fontSizeMode: Text.Fit
+                    font.family: "Tahoma"
+                }
                 Rectangle {
                     id: rectangle4
                     color: "#00000000"
@@ -223,20 +220,18 @@ Item {
                 id: element12
                 width: parent.width
                 height: parent.height
-                Text {
-                    id: element11
-                    text: animeFileDescription
+                Label {
+                    id: element16
                     color: corFonte
-                    anchors.leftMargin: 5
-                    renderType: Text.NativeRendering
+                    text: animeFileDescription
                     anchors.fill: parent
-                    fontSizeMode: Text.Fit
-                    font.pixelSize: 12
-                    wrapMode: Text.WordWrap
-                    font.family: "Tahoma"
                     verticalAlignment: Text.AlignVCenter
+                    wrapMode: Text.WordWrap
+                    leftPadding: 10
+                    font.pointSize: 8
+                    fontSizeMode: Text.Fit
+                    font.family: "Tahoma"
                 }
-
                 Rectangle {
                     id: rectangle5
                     color: "#00000000"
@@ -252,9 +247,6 @@ Item {
 
 /*##^##
 Designer {
-    D{i:0;formeditorZoom:0.75}D{i:2;anchors_height:200;anchors_width:200}D{i:6;anchors_height:200;anchors_width:200}
-D{i:11;anchors_height:200;anchors_width:200}D{i:15;anchors_height:200;anchors_width:200}
-D{i:19;anchors_height:200;anchors_width:200}D{i:23;anchors_height:200;anchors_width:200}
-D{i:27;anchors_height:200;anchors_width:200}D{i:31;anchors_height:200;anchors_width:200}
+    D{i:0;formeditorZoom:1.100000023841858}
 }
 ##^##*/

@@ -7,9 +7,6 @@ Downloader::Downloader(QObject *parent) : QObject(parent)
 
 Downloader::~Downloader()
 {
-    while(dw->isBusy()){
-        qDebug() << "Waiting for workers";
-    }
     if(!m_workers.isEmpty()){
         qDeleteAll(m_workers);
         m_workers.clear();

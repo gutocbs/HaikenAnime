@@ -19,9 +19,9 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     cabaConfig = new abaConfig(this);
     cabaTorrent = new abaTorrent(this);
 
-    cclient->fselecionaClient("Anilist");
+    cclient->fselecionaClient(cabaConfig->instance()->fgetService());
     //cclient->frecebeAutorizacao(configurações->user, configurações->codigo)
-    cclient->frecebeAutorizacao("gutocbs", cabaConfig->instance()->fgetAuthCode());
+    cclient->frecebeAutorizacao(cabaConfig->instance()->fgetUsername(), cabaConfig->instance()->fgetAuthCode());
     cclient->fbaixaListas();
 
     cconfiguracoesUsuarioDiretorios->instance()->frecebeConfigs(cabaConfig->instance()->fgetDirectory().toStringList());
@@ -161,6 +161,7 @@ void MainClass::fconnectSuccess()
 
 void MainClass::fconnectFail()
 {
+    cclient->frecebeAutorizacao(cabaConfig->instance()->fgetUsername(), cabaConfig->instance()->fgetAuthCode());
     //If the connection fails, we will try to read the anime list and connect again in a few seconds
     if(!vlistaSelecionada.isEmpty())
         finfoAnimeSelecionado(vposicaoGridAnimeSelecionado);
@@ -371,7 +372,7 @@ void MainClass::finfoAnimeSelecionado(QVariant posicaoAnimeNaGrid)
         emit ssinopseAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vsinopse));
         emit sstatusAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vstatus));
         emit sseasonAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vseason));
-        emit smediaGloballAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vnotaMediaSite));
+        emit smediaGloballAnimeSelecionado(QVariant(QString::number(vlistaSelecionada[vindexAnimeSelecionado]->vnotaMediaSite.toFloat()/10, 'f', 2)));
         emit smediaPessoalAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vnotaMediaPessoal));
         emit sreleaseAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vdataEpisodio));
         if(vlistaSelecionada[vindexAnimeSelecionado]->vnumProximoEpisodioLancado == "" &&
@@ -379,9 +380,16 @@ void MainClass::finfoAnimeSelecionado(QVariant posicaoAnimeNaGrid)
             emit sepisodiosLancadosAnimeSelecionado(QVariant("-"));
         else if(vlistaSelecionada[vindexAnimeSelecionado]->vnumProximoEpisodioLancado.toInt() == 0)
             emit sepisodiosLancadosAnimeSelecionado(QVariant("All Episodes"));
-        else
-            emit sepisodiosLancadosAnimeSelecionado(QVariant(
-                QString::number(vlistaSelecionada[vindexAnimeSelecionado]->vnumProximoEpisodioLancado.toInt() - 1) + " Episodes"));
+        else{
+            if(vlistaSelecionada[vindexAnimeSelecionado]->vnumProximoEpisodioLancado.toInt() - 1 == 1)
+                emit sepisodiosLancadosAnimeSelecionado(QVariant(
+                    QString::number(vlistaSelecionada[vindexAnimeSelecionado]->vnumProximoEpisodioLancado.toInt() - 1) + " Episode"));
+            else if(vlistaSelecionada[vindexAnimeSelecionado]->vnumProximoEpisodioLancado.toInt() - 1 == 0)
+                emit sepisodiosLancadosAnimeSelecionado(QVariant("No Episodes"));
+            else
+                emit sepisodiosLancadosAnimeSelecionado(QVariant(
+                    QString::number(vlistaSelecionada[vindexAnimeSelecionado]->vnumProximoEpisodioLancado.toInt() - 1) + " Episodes"));
+        }
         emit sepisodiosAssistidosAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vnumEpisodiosAssistidos));
         emit sepisodiosTotaisAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vnumEpisodiosTotais));
         emit stipoAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vformato));
@@ -402,8 +410,8 @@ void MainClass::finfoAnimeSelecionado(QVariant posicaoAnimeNaGrid)
         else
             emit simagemAnimeSelecionado(QVariant(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensMedio+
                                      vlistaSelecionada[vindexAnimeSelecionado]->vid));
+        emit sidAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vid));
     }
-    emit sidAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vid));
     fmostraListaAnimes();
 }
 
@@ -799,7 +807,7 @@ void MainClass::fchecaAnimeAssistido()
                     c->fchecaStream(player, nomejanela);
                     QString nomeAnime = c->fretornaAnime();
                     QString episodio = c->fretornaEpisodio();
-                    QString vidAnime = cleitorListaAnimes->instance()->fprocuraAnimeNasListas(nomeAnime);
+                    QString vidAnime = cleitorListaAnimes->instance()->fprocuraNomeRetornaID(nomeAnime);
                     if(!vidAnime.isEmpty()){
                         emit sanimeReconhecidoID(QVariant(vidAnime), QVariant(nomeAnime), QVariant(episodio));
                         //Vai checar a cada 10 segundos, então tem que assistir dois minutos de anime pra contar. Assim, atualiza os curtas ao mesmo

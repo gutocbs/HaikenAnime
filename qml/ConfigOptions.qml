@@ -476,10 +476,6 @@ Item {
                 Item {
                     id: element13
                     height: parent.height
-                    Button {
-                        id: button4
-                        text: qsTr("Save Code")
-                    }
                 }
             }
             spacing: 4
@@ -502,9 +498,6 @@ Item {
                         onClicked: {
                             mainClass.fsetUsername(usernameText.text)
                             mainClass.fsaveConfig()
-                            console.log(configDiretorio.lowQuality)
-                            console.log(configDiretorio.detection)
-
 
                             //Fazer uma função que salva os settings de tudo
                             //Salva ConfDiretorio
