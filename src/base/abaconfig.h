@@ -26,9 +26,10 @@ class abaConfig : public QObject
 public:
     explicit abaConfig(QObject *parent = nullptr);
     static abaConfig* instance();
-    enum clients{ANILIST, MYANIMELIST, KITSU};
-    enum configs{DIRECTORY, LOWQUALITY, TORRENT, AUTODOWNLOAD, SAVEFOLDER, DOWNLOADEDLISTS, SUB, QUALITY, FEED,
-                 SPECIFICFEED};
+    enum clients {ANILIST, MYANIMELIST, KITSU};
+    enum configs {DIRECTORY, LOWQUALITY, TORRENT, AUTODOWNLOAD, SAVEFOLDER, DOWNLOADEDLISTS, SUB, QUALITY, FEED,
+                  SPECIFICFEED
+                 };
     Q_ENUM(clients)
     Q_ENUM(configs)
 

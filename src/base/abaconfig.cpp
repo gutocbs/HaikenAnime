@@ -40,14 +40,14 @@ void abaConfig::fsaveSettings()
     QVariantMap map;
     QVariantList directories;
     vanimesDirectory.sort();
-    foreach(QString dir, vanimesDirectory){
+    foreach(QString dir, vanimesDirectory) {
         directories.append(dir);
     }
     map[QString(vmetaEnumConfig.valueToKey(configs::DIRECTORY))] = QVariant(directories);
     QJsonDocument document = QJsonDocument::fromVariant(map);
 
     QFile larquivo("Configurações/userConfig.txt");
-    if(larquivo.open(QIODevice::WriteOnly)){
+    if(larquivo.open(QIODevice::WriteOnly)) {
         larquivo.write(document.toJson());
         larquivo.close();
     }
@@ -61,7 +61,7 @@ void abaConfig::floadSettings()
     QFile larquivo("Configurações/userConfig.txt");
     if(larquivo.size() == 0)
         return;
-    if(larquivo.open(QIODevice::ReadOnly)){
+    if(larquivo.open(QIODevice::ReadOnly)) {
         data = larquivo.readAll();
         larquivo.close();
     }
@@ -113,7 +113,7 @@ void abaConfig::fsetUsername(QVariant username)
 
 bool abaConfig::fsetDirectory(QVariant dirPath)
 {
-    if(!vanimesDirectory.contains(dirPath.toString())){
+    if(!vanimesDirectory.contains(dirPath.toString())) {
         vanimesDirectory.append(dirPath.toString());
         return true;
     }
@@ -122,7 +122,7 @@ bool abaConfig::fsetDirectory(QVariant dirPath)
 
 bool abaConfig::fremoveDirectory(QVariant dirPath)
 {
-    if(vanimesDirectory.contains(dirPath.toString())){
+    if(vanimesDirectory.contains(dirPath.toString())) {
         vanimesDirectory.removeOne(dirPath.toString());
         return true;
     }
@@ -137,7 +137,7 @@ void abaConfig::fsetHighQualityImages()
 void abaConfig::fsetDetection()
 {
     QStringList det = vsettings.value("confDir/detection").toStringList();
-    if(!vdirConfigMap.contains("detection") || (vdirConfigMap.contains("detection") && vdirConfigMap["detection"] != det)){
+    if(!vdirConfigMap.contains("detection") || (vdirConfigMap.contains("detection") && vdirConfigMap["detection"] != det)) {
         vdirConfigMap.insert("detection", det);
     }
 }
@@ -149,7 +149,7 @@ void abaConfig::fsetPlayers()
     players.removeAll("true");
     players.removeAll("false");
     players.removeAll("");
-    if(!vdirConfigMap.contains("players") || (vdirConfigMap.contains("players") && vdirConfigMap["players"] != players)){
+    if(!vdirConfigMap.contains("players") || (vdirConfigMap.contains("players") && vdirConfigMap["players"] != players)) {
         vdirConfigMap.insert("players", players);
     }
 }
@@ -174,7 +174,7 @@ void abaConfig::fsetGeneralFeed()
     QStringList generalFeed;
     generalFeed.append(vsettings.value("confTorrent/generalFeed").toString());
     if(!vtorConfigMap.contains("generalFeed") || (vtorConfigMap.contains("generalFeed") &&
-                                                  vtorConfigMap["generalFeed"] != generalFeed)){
+            vtorConfigMap["generalFeed"] != generalFeed)) {
         vtorConfigMap.insert("generalFeed", generalFeed);
     }
 }
@@ -189,7 +189,7 @@ void abaConfig::fsetSpecificFeed()
     QStringList specificFeed;
     specificFeed.append(vsettings.value("confTorrent/specificFeed").toString());
     if(!vtorConfigMap.contains("specificFeed") || (vtorConfigMap.contains("specificFeed") &&
-                                                  vtorConfigMap["specificFeed"] != specificFeed)){
+            vtorConfigMap["specificFeed"] != specificFeed)) {
         vtorConfigMap.insert("specificFeed", specificFeed);
     }
 }
@@ -234,17 +234,17 @@ bool abaConfig::fsetDefaultTorrentSoftware()
     exeTorrents.append("qbittorrent");
 
     //Checa se os softwares existem, e caso existam, os insere como software de escolha
-    for(int i = 0; i < nomeTorrents.size(); i++){
-        if(QFile::exists(settings.value("ProgramFilesDir").toString()+QDir::separator()+nomeTorrents.at(i)+QDir::separator()+exeTorrents.at(i))){
+    for(int i = 0; i < nomeTorrents.size(); i++) {
+        if(QFile::exists(settings.value("ProgramFilesDir").toString()+QDir::separator()+nomeTorrents.at(i)+QDir::separator()+exeTorrents.at(i))) {
             vtorConfigMap.insert("preferredTorrentPath",
                                  QStringList(settings.value("ProgramFilesDir").toString()+QDir::separator()+nomeTorrents.at(i)+
                                              QDir::separator()+exeTorrents.at(i)));
             return true;
         }
         else if(QFile::exists(settings.value("ProgramFilesDir (x86)").toString()+
-                              QDir::separator()+nomeTorrents.at(i)+QDir::separator()+exeTorrents.at(i))){
+                              QDir::separator()+nomeTorrents.at(i)+QDir::separator()+exeTorrents.at(i))) {
             vtorConfigMap.insert("preferredTorrentPath",QStringList(settings.value("ProgramFilesDir (x86)").toString()+
-                                                                    QDir::separator()+nomeTorrents.at(i)+QDir::separator()+exeTorrents.at(i)));
+                                 QDir::separator()+nomeTorrents.at(i)+QDir::separator()+exeTorrents.at(i)));
             return true;
         }
     }
@@ -254,7 +254,7 @@ bool abaConfig::fsetDefaultTorrentSoftware()
 bool abaConfig::fsetDeafultDownloadFolder()
 {
     QDir download(QDir::homePath() + QDir::separator() + "Downloads");
-    if(download.exists()){
+    if(download.exists()) {
         vtorConfigMap.insert("saveFolder", QStringList(download.path()));
         return true;
     }
@@ -265,32 +265,32 @@ void abaConfig::fsetTorrentOptions()
 {
     vautoDownloadTorrents = vsettings.value("confTorrent/autodownload").toBool();
     if(!vtorConfigMap.contains("autodownloadTimer") || (vtorConfigMap.contains("autodownloadTimer") &&
-            vtorConfigMap["autodownloadTimer"] != vsettings.value("confTorrent/autodownloadTimer").toStringList())){
+            vtorConfigMap["autodownloadTimer"] != vsettings.value("confTorrent/autodownloadTimer").toStringList())) {
         vtorConfigMap.insert("autodownloadTimer", vsettings.value("confTorrent/autodownloadTimer").toStringList());
     }
     QStringList config = vsettings.value("confTorrent/downloadLists").toStringList();
     config.removeDuplicates();
     config.removeAll("");
     if(!vtorConfigMap.contains("downloadLists") || (vtorConfigMap.contains("downloadLists") &&
-            vtorConfigMap["downloadLists"] != config)){
+            vtorConfigMap["downloadLists"] != config)) {
         vtorConfigMap.insert("downloadLists", config);
     }
     if(!vtorConfigMap.contains("preferredSub") || (vtorConfigMap.contains("preferredSub") &&
-            vtorConfigMap["preferredSub"] != vsettings.value("confTorrent/preferredSub").toStringList())){
+            vtorConfigMap["preferredSub"] != vsettings.value("confTorrent/preferredSub").toStringList())) {
         vtorConfigMap.insert("preferredSub", vsettings.value("confTorrent/preferredSub").toStringList());
     }
     if(!vtorConfigMap.contains("preferredQuality") || (vtorConfigMap.contains("preferredQuality") &&
-            vtorConfigMap["preferredQuality"] != vsettings.value("confTorrent/preferredQuality").toStringList())){
+            vtorConfigMap["preferredQuality"] != vsettings.value("confTorrent/preferredQuality").toStringList())) {
         vtorConfigMap.insert("preferredQuality", vsettings.value("confTorrent/preferredQuality").toStringList());
     }
     if(!vtorConfigMap.contains("preferredTorrent") || (vtorConfigMap.contains("preferredTorrent") &&
-            vtorConfigMap["preferredTorrent"] != vsettings.value("confTorrent/preferredTorrent").toStringList())){
+            vtorConfigMap["preferredTorrent"] != vsettings.value("confTorrent/preferredTorrent").toStringList())) {
         vtorConfigMap.insert("preferredTorrent", vsettings.value("confTorrent/preferredTorrent").toStringList());
     }
     if(!vtorConfigMap.contains("preferredTorrentPath") || (vtorConfigMap.contains("preferredTorrentPath") &&
-            vtorConfigMap["preferredTorrentPath"] != vsettings.value("confTorrent/preferredTorrentPath").toStringList())){
+            vtorConfigMap["preferredTorrentPath"] != vsettings.value("confTorrent/preferredTorrentPath").toStringList())) {
         //Checa se o registro não está enviando uma string vazia
-        if(!vsettings.value("confTorrent/saveFolder").toStringList().isEmpty()){
+        if(!vsettings.value("confTorrent/saveFolder").toStringList().isEmpty()) {
             //Checa se o programa existe no diretório
             QStringList saveFolderPath = vsettings.value("confTorrent/preferredTorrentPath").toString().split("/");
             saveFolderPath.pop_back();
@@ -298,33 +298,33 @@ void abaConfig::fsetTorrentOptions()
             //Checa se o caminho existe
             if(saveFolder.exists())
                 vtorConfigMap.insert("preferredTorrentPath", vsettings.value("confTorrent/preferredTorrentPath").toStringList());
-            else{
+            else {
                 if(!fsetDefaultTorrentSoftware())
                     qWarning() << "Error: Torrent software not founds";
             }
 
         }
-        else{
+        else {
             if(!fsetDefaultTorrentSoftware())
                 qWarning() << "Error: Torrent software not found";
         }
 
     }
     if(!vtorConfigMap.contains("saveFolder") || (vtorConfigMap.contains("saveFolder") &&
-            vtorConfigMap["saveFolder"] != vsettings.value("confTorrent/saveFolder").toStringList())){
+            vtorConfigMap["saveFolder"] != vsettings.value("confTorrent/saveFolder").toStringList())) {
         //Checa se o registro não está enviando para uma pasta vazia
-        if(!vsettings.value("confTorrent/saveFolder").toStringList().isEmpty()){
+        if(!vsettings.value("confTorrent/saveFolder").toStringList().isEmpty()) {
             QDir saveFolder(vsettings.value("confTorrent/saveFolder").toString());
             //Checa se o caminho existe
             if(saveFolder.exists())
                 vtorConfigMap.insert("saveFolder", vsettings.value("confTorrent/saveFolder").toStringList());
-            else{
+            else {
                 if(!fsetDeafultDownloadFolder())
                     qWarning() << "Error: Download folder not found";
             }
 
         }
-        else{
+        else {
             if(!fsetDeafultDownloadFolder())
                 qWarning() << "Error: Download folder not found";
         }
