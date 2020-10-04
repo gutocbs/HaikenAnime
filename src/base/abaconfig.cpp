@@ -25,6 +25,7 @@ abaConfig::abaConfig(QObject *parent) : QObject(parent)
 QVariant abaConfig::fgetAuthCode()
 {
     return vauthCode;
+//    return "";
 }
 
 QVariant abaConfig::fgetDirectory()
@@ -35,7 +36,6 @@ QVariant abaConfig::fgetDirectory()
 void abaConfig::fsaveSettings()
 {
     fsetHighQualityImages();
-
 
     QVariantMap map;
     QVariantList directories;
@@ -74,10 +74,23 @@ void abaConfig::floadSettings()
         vanimesDirectory.append(key.toString());
     }
 
+    fsetService(vsettings.value("service"));
     fsetGeneralFeed();
     fsetSpecificFeed();
     fsetTorrentOptions();
     fsetPlayers();
+}
+
+QVariant abaConfig::fgetService()
+{
+    return QString(vmetaEnumClient.valueToKey(vclientEscolhido));
+//    return "";
+}
+
+QString abaConfig::fgetUsername()
+{
+    return QString::fromStdString(vuser.toStdString());
+//    return "";
 }
 
 void abaConfig::fsetService(QVariant client)

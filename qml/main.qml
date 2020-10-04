@@ -6,6 +6,7 @@ Window {
     id: root
     visible: true
     width: Screen.desktopAvaliableWidth
+//    width: 1366
     height: Screen.desktopAvailableHeight
     visibility: "Maximized"
     color: "#9caef0"

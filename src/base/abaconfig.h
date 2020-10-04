@@ -36,9 +36,9 @@ public:
     void floadSettings();
 
     QVariant fgetService();
-    QVariant fgetUsername();
     QVariant fgetAuthCode();
     QVariant fgetDirectory();
+    QString fgetUsername();
     QString fgetPreferredTorrent();
     QString fgetPreferredTorrentPath();
     void fsaveAuthcode();

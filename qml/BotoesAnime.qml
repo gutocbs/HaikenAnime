@@ -219,20 +219,39 @@ Item {
                                 id: element8
                                 width: parent.width
                                 height: parent.height
-
-                                Label {
-                                    id: label2
-                                    x: 0
-                                    y: 0
-                                    width: parent.width-5
-                                    height: column12.width
+                                Button {
+                                    id: button
+                                    visible: true
                                     text: qsTr("Progresso")
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    renderType: Text.NativeRendering
-                                    horizontalAlignment: Text.AlignLeft
-                                    font.pointSize: 8
-                                    font.family: "Tahoma"
+                                    anchors.fill: parent
+                                    focusPolicy: Qt.NoFocus
+                                    spacing: 0
+                                    font.pixelSize: 11
+                                    display: AbstractButton.TextOnly
+                                    clip: false
+                                    hoverEnabled: false
+                                    enabled: true
+                                    flat: true
+                                    contentItem: Text {
+                                        text: button.text
+                                        font: button.font
+                                        opacity: enabled ? 1.0 : 0.3
+                                        color: "#000000"
+                                        horizontalAlignment: Text.AlignHLeft
+                                        verticalAlignment: Text.AlignVCenter
+                                        wrapMode: Text.WordWrap
+                                        elide: Text.ElideRight
+                                        anchors.fill: parent
+                                    }
+                                    background: Rectangle {
+                                        implicitWidth: 100
+                                        implicitHeight: 40
+                                        opacity: enabled ? 1 : 0.3
+                                        color: "#c7d6ff"
+                                        border.color: "#c7d6ff"
+                                        border.width: 1
+                                        radius: 2
+                                    }
                                 }
                             }
                         }
@@ -250,18 +269,39 @@ Item {
                         width: parent.width
                         height: parent.height
 
-                        Label {
-                            id: labelProgresso
-                            x: 0
-                            y: 7
-                            width: parent.width
-                            height: column12.width
+                        Button {
+                            id: button3
+                            visible: true
                             text: episodios
-                            anchors.verticalCenter: parent.verticalCenter
-                            verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignLeft
-                            font.pointSize: 8
-                            font.family: "Tahoma"
+                            anchors.fill: parent
+                            font.pixelSize: 12
+                            flat: true
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button3.text
+                                elide: Text.ElideRight
+                                anchors.fill: parent
+                                horizontalAlignment: Text.AlignHLeft
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                font: button3.font
+                            }
+                            clip: false
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitWidth: 100
+                                implicitHeight: 40
+                            }
+                            spacing: 0
+                            enabled: true
+                            focusPolicy: Qt.NoFocus
+                            display: AbstractButton.TextOnly
+                            hoverEnabled: false
                         }
                     }
                 }
@@ -378,19 +418,39 @@ Item {
                                 width: parent.width
                                 height: parent.height
 
-                                Label {
-                                    id: label1
-                                    x: 0
-                                    y: 0
-                                    width: parent.width-5
-                                    height: column12.width
+                                Button {
+                                    id: button2
+                                    visible: true
                                     text: qsTr("Nota")
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    verticalAlignment: Text.AlignVCenter
-                                    renderType: Text.NativeRendering
-                                    horizontalAlignment: Text.AlignLeft
-                                    font.pointSize: 8
-                                    font.family: "Tahoma"
+                                    anchors.fill: parent
+                                    font.pixelSize: 11
+                                    flat: true
+                                    contentItem: Text {
+                                        opacity: enabled ? 1.0 : 0.3
+                                        color: "#000000"
+                                        text: button2.text
+                                        elide: Text.ElideRight
+                                        anchors.fill: parent
+                                        horizontalAlignment: Text.AlignHLeft
+                                        verticalAlignment: Text.AlignVCenter
+                                        wrapMode: Text.WordWrap
+                                        font: button2.font
+                                    }
+                                    clip: false
+                                    background: Rectangle {
+                                        opacity: enabled ? 1 : 0.3
+                                        color: "#c7d6ff"
+                                        radius: 2
+                                        border.color: "#c7d6ff"
+                                        border.width: 1
+                                        implicitWidth: 100
+                                        implicitHeight: 40
+                                    }
+                                    spacing: 0
+                                    enabled: true
+                                    focusPolicy: Qt.NoFocus
+                                    display: AbstractButton.TextOnly
+                                    hoverEnabled: false
                                 }
                             }
                         }
@@ -407,18 +467,39 @@ Item {
                         width: parent.width
                         height: parent.height
 
-                        Label {
-                            id: labelNota
-                            x: 0
-                            y: 7
-                            width: parent.width
-                            height: column12.width
+                        Button {
+                            id: button5
+                            visible: true
                             text: nota
-                            anchors.verticalCenter: parent.verticalCenter
-                            verticalAlignment: Text.AlignVCenter
-                            horizontalAlignment: Text.AlignLeft
-                            font.pointSize: 8
-                            font.family: "Tahoma"
+                            anchors.fill: parent
+                            font.pixelSize: 12
+                            flat: true
+                            contentItem: Text {
+                                opacity: enabled ? 1.0 : 0.3
+                                color: "#000000"
+                                text: button5.text
+                                elide: Text.ElideRight
+                                anchors.fill: parent
+                                horizontalAlignment: Text.AlignHLeft
+                                verticalAlignment: Text.AlignVCenter
+                                wrapMode: Text.WordWrap
+                                font: button5.font
+                            }
+                            clip: false
+                            background: Rectangle {
+                                opacity: enabled ? 1 : 0.3
+                                color: "#c7d6ff"
+                                radius: 2
+                                border.color: "#c7d6ff"
+                                border.width: 1
+                                implicitWidth: 100
+                                implicitHeight: 40
+                            }
+                            spacing: 0
+                            enabled: true
+                            focusPolicy: Qt.NoFocus
+                            display: AbstractButton.TextOnly
+                            hoverEnabled: false
                         }
                     }
                 }
@@ -524,6 +605,12 @@ Item {
                         }
 
                         Column {
+                            id: column23
+                            width: 7
+                            height: parent.height
+                        }
+
+                        Column {
                             id: column13
                             x: column12.width+(parent.width/20)
                             width: parent.width-column12.width-(parent.width/20)
@@ -534,22 +621,58 @@ Item {
                                 width: parent.width
                                 height: parent.height
 
-                                Label {
-                                    id: label
-                                    x: 5
-                                    y: 45
-                                    width: parent.width-5
-                                    height: column12.width
+//                                Label {
+//                                    id: label
+//                                    x: 5
+//                                    y: 45
+//                                    width: parent.width-5
+//                                    height: column12.width
+//                                    text: qsTr("Mudar para Lista")
+//                                    font.pointSize: 8
+//                                    font.family: "Tahoma"
+//                                    verticalAlignment: Text.AlignVCenter
+//                                    renderType: Text.QtRendering
+//                                    horizontalAlignment: Text.AlignLeft
+//                                    anchors.verticalCenter: parent.verticalCenter
+//                                }
+
+                                Button {
+                                    id: button6
+                                    visible: true
                                     text: qsTr("Mudar para Lista")
-                                    font.pointSize: 8
-                                    font.family: "Tahoma"
-                                    verticalAlignment: Text.AlignVCenter
-                                    renderType: Text.NativeRendering
-                                    horizontalAlignment: Text.AlignLeft
-                                    anchors.verticalCenter: parent.verticalCenter
+                                    anchors.fill: parent
+                                    font.pixelSize: 11
+                                    flat: true
+                                    contentItem: Text {
+                                        opacity: enabled ? 1.0 : 0.3
+                                        color: "#000000"
+                                        text: button6.text
+                                        elide: Text.ElideRight
+                                        anchors.fill: parent
+                                        horizontalAlignment: Text.AlignHLeft
+                                        verticalAlignment: Text.AlignVCenter
+                                        wrapMode: Text.WordWrap
+                                        font: button6.font
+                                    }
+                                    clip: false
+                                    background: Rectangle {
+                                        opacity: enabled ? 1 : 0.3
+                                        color: "#c7d6ff"
+                                        radius: 2
+                                        border.color: "#c7d6ff"
+                                        border.width: 1
+                                        implicitWidth: 100
+                                        implicitHeight: 40
+                                    }
+                                    enabled: true
+                                    spacing: 0
+                                    hoverEnabled: false
+                                    display: AbstractButton.TextOnly
+                                    focusPolicy: Qt.NoFocus
                                 }
                             }
                         }
+
                     }
                 }
 
@@ -619,25 +742,9 @@ Item {
 
 /*##^##
 Designer {
-    D{i:0;formeditorZoom:1.5}D{i:1;anchors_height:152;anchors_width:578}D{i:9;anchors_height:36;anchors_width:175}
-D{i:8;anchors_height:36;anchors_width:175}D{i:7;anchors_height:36;anchors_width:175}
-D{i:10;anchors_height:36;anchors_width:175}D{i:15;anchors_height:36;anchors_width:36}
-D{i:14;anchors_height:36;anchors_width:36}D{i:13;anchors_height:36;anchors_width:175}
-D{i:16;anchors_height:200;anchors_width:200}D{i:22;anchors_height:200;anchors_width:200}
-D{i:20;anchors_height:36;anchors_width:36}D{i:19;anchors_height:400;anchors_width:200}
-D{i:23;anchors_height:400;anchors_width:200}D{i:30;anchors_height:400;anchors_width:69.45}
-D{i:33;anchors_height:400;anchors_width:200}D{i:27;anchors_height:400;anchors_width:200}
-D{i:36;anchors_height:400;anchors_width:200}D{i:34;anchors_height:400;anchors_width:200}
-D{i:39;anchors_height:400;anchors_width:200}D{i:42;anchors_height:400;anchors_width:200}
-D{i:38;anchors_height:400;anchors_width:69.45}D{i:25;anchors_height:400;anchors_width:200}
-D{i:50;anchors_height:400;anchors_width:69.45}D{i:53;anchors_height:400;anchors_width:200}
-D{i:51;anchors_height:23.427777777777777;anchors_width:66.76916666666666}D{i:47;anchors_height:400;anchors_width:200}
-D{i:46;anchors_height:400;anchors_width:200}D{i:56;anchors_height:400;anchors_width:200}
-D{i:54;anchors_height:400;anchors_width:200}D{i:59;anchors_height:400;anchors_width:200}
-D{i:64;anchors_height:23.427777777777777;anchors_width:66.76916666666666}D{i:58;anchors_height:400;anchors_width:69.45}
-D{i:57;anchors_height:23.427777777777777;anchors_width:66.76916666666666}D{i:45;anchors_height:400;anchors_width:200}
-D{i:70;anchors_height:23.427777777777777;anchors_width:66.76916666666666}D{i:71;anchors_height:23.427777777777777;anchors_width:66.76916666666666}
-D{i:67;anchors_height:400;anchors_width:200}D{i:79;anchors_height:23.427777777777777;anchors_width:66.76916666666666}
-D{i:65;anchors_height:23.427777777777777;anchors_width:66.76916666666666}D{i:2;anchors_height:400;anchors_width:200}
+    D{i:0;formeditorZoom:1.5}D{i:1}D{i:9}D{i:8}D{i:7}D{i:10}D{i:15}D{i:14}D{i:13}D{i:16}
+D{i:22}D{i:20}D{i:19}D{i:23}D{i:30}D{i:27}D{i:36}D{i:43}D{i:46}D{i:42}D{i:25}D{i:54}
+D{i:55}D{i:51}D{i:50}D{i:60}D{i:67}D{i:72}D{i:66}D{i:65}D{i:49}D{i:78}D{i:80}D{i:75}
+D{i:90}D{i:73}D{i:2}
 }
 ##^##*/
