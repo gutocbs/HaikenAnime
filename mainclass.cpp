@@ -43,9 +43,7 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     vordemLista = "";
     vjanelaAtual = janela::MAIN;
 
-    vtimerAutoRefresh = new QTimer(this);
     vtimerCountdown = new QTimer(this);
-    vtimerUpdateClient = new QTimer(this);
     vtimerChecaAssistindo = new QTimer(this);
     vtimerChecaAssistindo->setInterval(10000);
     vtimerChecaAssistindo->start();
@@ -72,10 +70,9 @@ void MainClass::fconnections()
     connect(cabaTorrent, &abaTorrent::sfimXML, this, &MainClass::storrentPronto);
     //Conecta o timer de checagem de animes com a função
     connect(vtimerChecaAssistindo, &QTimer::timeout, this, QOverload<>::of(&MainClass::fchecaAnimeAssistido));
-
-    connect(vtimerAutoRefresh, &QTimer::timeout, cclient, QOverload<>::of(&Client::fbaixaListas));
+    //Dá update no timer
     connect(vtimerCountdown, &QTimer::timeout, this, QOverload<>::of(&MainClass::fupdateTimer));
-    connect(vtimerUpdateClient, &QTimer::timeout, this, QOverload<>::of(&MainClass::fclientUpdate));
+
 }
 
 void MainClass::fdownloadCoverImages()
@@ -137,11 +134,7 @@ void MainClass::fconnectSuccess()
 
     //The auto-update timer starts
     time = QTime::fromString("10","m");
-    vtimerAutoRefresh->setInterval(600000);
-    vtimerUpdateClient->setInterval(30000);
     vtimerCountdown->setInterval(1000);
-    vtimerUpdateClient->start();
-    vtimerAutoRefresh->start();
     vtimerCountdown->start();
 
 
@@ -456,10 +449,9 @@ QVariant MainClass::fretornaEpisodioAnimeEncontrado(QVariant posicao)
     return QVariant("0");
 }
 
-///TODO
 QVariant MainClass::fretornaNomeUsuario()
 {
-    return QVariant("gutocbs");
+    return QVariant(cabaConfig->instance()->fgetUsername());
 }
 
 QVariant MainClass::fretornaPathAvatar()
@@ -469,9 +461,16 @@ QVariant MainClass::fretornaPathAvatar()
 
 void MainClass::fupdateTimer()
 {
-    if(time == QTime(0,0,0))
+    if(time == QTime(0,0,0)){
         time = QTime::fromString("10","m");
-    time = time.addSecs(-1);
+        cclient->fbaixaListas();
+    }
+    else
+        time = time.addSecs(-1);
+
+    if(time.second() == 30 || time.second() == 0)
+        fclientUpdate();
+
     emit stimer(QVariant(time.toString("mm:ss")));
 }
 

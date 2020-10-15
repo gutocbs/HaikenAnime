@@ -6,8 +6,9 @@ Window {
     id: root
     visible: true
     width: Screen.desktopAvaliableWidth
-//    width: 1366
-    height: Screen.desktopAvailableHeight
+
+    height: Screen.desktopAvailableHeight*(Screen.desktopAvaliableWidth/1920)
+
     visibility: "Maximized"
     color: "#9caef0"
     title: qsTr("Haiken anime")

@@ -189,10 +189,8 @@ private:
     QList<int> vlistaFilaSize;
     QMap<QStringList, QString> vlistaAcoes;
 
-    QTimer *vtimerAutoRefresh;
     QTimer *vtimerCountdown;
     QTimer *vtimerChecaAssistindo;
-    QTimer *vtimerUpdateClient;
     QTimer timerMaxClientRequests;
     QTime time;
 };

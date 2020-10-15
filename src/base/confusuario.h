@@ -45,7 +45,7 @@ private:
     FormataPalavras formatador;
 
     QVector<anime*> vlistaAnimes;
-    QVector<QString> vdiretorioAnimes;
+    QStringList vdiretorioAnimes;
 
     QMap<QString, QString> vdiretorioEspecificoAnime;
 
