@@ -33,10 +33,12 @@ public:
     bool fmudaNota(const QString &rid, const QString &rnota);
     bool fmudaProgresso(const QString &rid, const QString &rprogresso);
     bool fdeletedaLista(const QString &rid);
+    bool finsereNomeAlternativo(const QString &rid, const QStringList &rnome);
     void fdeletaListaAnimes();
-    void finsereNomeAlternativo(const QString &rid,const QStringList &rlistaNomesAlternativos);
     void fleListaIdsNomesAnos();
     void fsalvaListaIdsNomesAnos();
+    void fsalvaListaNomesAlternativos();
+    void fleListaNomesAlternativos();
 
     int fbuscaAnimePorIDERetornaPosicao(const QString &ridAnime);
     QString fbuscaAnimePorIDERetornaEpisodio(const QString &rid);
@@ -81,6 +83,8 @@ signals:
 private slots:
 
 private:
+    bool vlistaPronta;
+
     FormataPalavras formatador;
 
     QVector<anime*> vlistaWatching;
@@ -114,6 +118,7 @@ private:
     QHash<QString,QStringList> vHashNomeMangasPorId;
     QHash<QString,QStringList> vHashNomeNovelsPorId;
     QHash<int,QString> vHashSizeListasPorAno;
+    QHash<QString, QStringList> vlistaNomesAlternativos;
 };
 
 #endif // LEITORLISTAANIMES_H

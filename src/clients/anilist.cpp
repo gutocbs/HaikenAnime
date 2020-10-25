@@ -495,7 +495,7 @@ bool anilist::fexcluiAnime(int rid){
     query = lid.left(lid.indexOf("\n"));
     lid = query;
     //Cria string com o pedido de delete
-    QFile queryDelete(":/Anilist/qrc/Anilist/QueryDelete.txt");
+    QFile queryDelete(":/Anilist/qrc/Anilist/MutationDelete.txt");
     QTextStream queryDeleteStream(&queryDelete);
     if(!queryDelete.open(QIODevice::ReadOnly)){
         this->thread()->exit(0);

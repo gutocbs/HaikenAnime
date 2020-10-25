@@ -75,6 +75,9 @@ public slots:
     void fmudaProgresso(QVariant);
     void fmudaNota(QVariant);
     void fresetRequests();
+    void fadicionaNomeAlternativo(QVariant);
+    void fselecionaPastaespecificaAnime(QVariant);
+    void fremoveFromList();
 
     void fproximaPagina();
     void fanteriorPagina();

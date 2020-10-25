@@ -97,12 +97,32 @@ Item {
                     }
                 }
             }
+
             Row {
                 id: row2
                 y: 606
                 width: parent.width
                 height: 208
+
+
+                Column {
+                    id: column5
+                    width: parent.width-column4.width
+                    height: parent.height
+                }
+                Column {
+                    id: column4
+                    width: 417
+                    height: parent.height
+
+                    AnimeSupportButtons {
+                        id: animeSupportButtons
+                        anchors.fill: parent
+                        anchors.rightMargin: 7
+                    }
+                }
             }
+
         }
     }
 
@@ -111,11 +131,7 @@ Item {
 
 /*##^##
 Designer {
-    D{i:4;anchors_height:208;anchors_width:834;anchors_y:606}D{i:5;anchors_height:208;anchors_width:834;anchors_y:606}
-D{i:7;anchors_height:208;anchors_width:834;anchors_x:834;anchors_y:606}D{i:9;anchors_height:814;anchors_width:796;anchors_x:834;anchors_y:0}
-D{i:8;anchors_height:208;anchors_width:834;anchors_x:834;anchors_y:606}D{i:2;anchors_height:814;anchors_width:834;anchors_x:0;anchors_y:0}
-D{i:13;anchors_height:208;anchors_width:834;anchors_y:606}D{i:12;anchors_height:208;anchors_width:834;anchors_y:606}
-D{i:11;anchors_height:606;anchors_width:1086}D{i:10;anchors_height:814;anchors_width:1086;anchors_x:834;anchors_y:0}
-D{i:1;anchors_height:400;anchors_width:200}
+    D{i:0;formeditorZoom:0.6600000262260437}D{i:4}D{i:5}D{i:7}D{i:9}D{i:8}D{i:2}D{i:13}
+D{i:12}D{i:11}D{i:10}D{i:1}
 }
 ##^##*/

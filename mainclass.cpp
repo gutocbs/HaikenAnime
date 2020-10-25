@@ -1017,6 +1017,41 @@ void MainClass::fresetRequests()
     timerMaxClientRequests.singleShot(61000, this, &MainClass::fresetRequests);
 }
 
+void MainClass::fadicionaNomeAlternativo(QVariant animeNovoNome)
+{
+    //caso retorne true, colocar no AVISO
+    if(!animeNovoNome.toString().isEmpty())
+        cleitorListaAnimes->instance()->finsereNomeAlternativo(vlistaSelecionada[vindexAnimeSelecionado]->vid, animeNovoNome.toStringList());
+}
+
+void MainClass::fselecionaPastaespecificaAnime(QVariant dir)
+{
+    if(dir.toString() != ""){
+        cconfiguracoesUsuarioDiretorios->instance()->fselecionaPastaEspecificaAnime(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+                                                                                    dir.toString());
+    }
+}
+
+void MainClass::fremoveFromList()
+{
+//    cclient->fexcluiAnime(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt());
+    vordemLista = "";
+    QString lacao = "remove:" + vlistaSelecionada[vindexAnimeSelecionado]->vid;
+    QStringList lstringListAcao = lacao.split(':');
+    vlistaAcoes.insert(lstringListAcao, "null");
+    cleitorListaAnimes->instance()->fdeletedaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid);
+    vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+    if(vlistaSelecionada.size() > vindexAnimeSelecionado && vindexAnimeSelecionado != 0){
+        vindexAnimeSelecionado--;
+        if(vindexAnimeSelecionado < 12*(vpagina-1) && vpagina != 1){
+            vpagina--;
+        }
+    }
+    else
+        vindexAnimeSelecionado = -1;
+    finfoAnimeSelecionado(vposicaoGridAnimeSelecionado);
+}
+
 void MainClass::fmostraListaAnimes()
 {
     if(vlistaSelecionada.size() > 0+(12*(vpagina-1)))

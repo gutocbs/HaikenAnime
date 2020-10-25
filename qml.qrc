@@ -22,5 +22,7 @@
         <file>QML/TorrentPagina.qml</file>
         <file>QML/CustomFileDialogTorrent.qml</file>
         <file>QML/CustomFileDialogTorrentSaveFolder.qml</file>
+        <file>QML/AnimeSupportButtons.qml</file>
+        <file>QML/CustomFileDialogAnimeSupportButtonsFolder.qml</file>
     </qresource>
 </RCC>
