@@ -14,14 +14,10 @@ DownloaderWorker::DownloaderWorker(QObject *parent) : QObject(parent)
     //    cleitorlistaanimes->instance();
 }
 
-//DownloaderWorker::DownloaderWorker()
-//{
-//    m_busy = false;
-//    vmanager->deleteLater();
-//    vreply->deleteLater();
-//    vfile->deleteLater();
-
-//}
+DownloaderWorker::~DownloaderWorker()
+{
+    vreply->deleteLater();
+}
 
 bool DownloaderWorker::isBusy()
 {
@@ -58,6 +54,10 @@ void DownloaderWorker::ffinishedAvatar()
         if(vfile->isOpen())
             vfile->close();
     }
+    QFile *tempFile = vfile;
+    vfile = nullptr;
+    tempFile->deleteLater();
+
     vfileIsOpen = false;
     m_busy = false;
 }
@@ -153,6 +153,10 @@ void DownloaderWorker::ffinishedGeneralXML()
         if(vfile->isOpen())
             vfile->close();
     }
+    QFile *tempFile = vfile;
+    vfile = nullptr;
+    tempFile->deleteLater();
+
     vfileIsOpen = false;
     m_busy = false;
     emit finishedXML();
@@ -164,6 +168,10 @@ void DownloaderWorker::ffinishedSpecificXML()
         if(vfile->isOpen())
             vfile->close();
     }
+    QFile *tempFile = vfile;
+    vfile = nullptr;
+    tempFile->deleteLater();
+
     vfileIsOpen = false;
     m_busy = false;
     emit finishedSpecificXML();
@@ -175,6 +183,10 @@ void DownloaderWorker::ffinishedAnimeTorrent()
         if(vfile->isOpen())
             vfile->close();
     }
+    QFile *tempFile = vfile;
+    vfile = nullptr;
+    tempFile->deleteLater();
+
     vfileIsOpen = false;
     if(vreply)
         vreply->close();
@@ -237,6 +249,10 @@ void DownloaderWorker::ffinished()
         if(vfile->isOpen())
             vfile->close();
     }
+    QFile *tempFile = vfile;
+    vfile = nullptr;
+    tempFile->deleteLater();
+
     vfileIsOpen = false;
     if(vreply)
         vreply->close();
@@ -298,6 +314,10 @@ void DownloaderWorker::ffinishedBig()
         if(vfile->isOpen())
             vfile->close();
     }
+    QFile *tempFile = vfile;
+    vfile = nullptr;
+    tempFile->deleteLater();
+
     vfileIsOpen = false;
     if(vreply)
         vreply->close();

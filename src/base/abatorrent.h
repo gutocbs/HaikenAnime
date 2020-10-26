@@ -20,7 +20,6 @@ class abaTorrent : public QObject
     Q_OBJECT
 public:
     explicit abaTorrent(QObject *parent = nullptr);
-
     //Faz baixar a lista, ler o arquivo XML e montar a tabela
     void fRefreshControl();
     void fgetTorrentList();

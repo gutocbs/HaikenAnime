@@ -281,21 +281,22 @@ void abaTorrent::fdownloadTorrents()
         this->thread()->wait(700);
         QPointer<QProcess> lprocesso(new QProcess);
         QStringList argumentos;
-    //    if(cconfig->fretornaTorrentEscolhido() == "uTorrent"){
-    //        lprocesso->setProgram(QDir::homePath() + "/AppData/Roaming/uTorrent/uTorrent.exe");
-    //        argumentos.append("/DIRECTORY");
-    //        argumentos.append(cconfig->fretornaPastaSalvarAnimes() + "/" + torrent[vlistaDownload[0]]->vnomeAnime);
-    //        argumentos.append(QDir::currentPath() + "/Configurações/Temp/Torrents/" + torrent[vlistaDownload[0]]->vnomeTorrent +
-    //                ".torrent");
-    //    }
-        if(cabaConfig->instance()->fgetPreferredTorrentPath().contains("qbittorrent")){
+        if(cabaConfig->instance()->fgetPreferredTorrentPath().contains("uTorrent")){
+            lprocesso->setProgram(cabaConfig->instance()->fgetPreferredTorrentPath());
+            argumentos.append("/DIRECTORY");
+            argumentos.append(cabaConfig->instance()->fgetSaveFolder() + "/" +
+                              vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeAnime);
+            argumentos.append(QDir::currentPath() + "/Configurações/Temp/Torrents/" +
+                              vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeTorrent + ".torrent");
+        }
+        else if(cabaConfig->instance()->fgetPreferredTorrentPath().contains("qbittorrent")){
             lprocesso->setProgram(cabaConfig->instance()->fgetPreferredTorrentPath());
             argumentos.append("--add-paused=false");
             argumentos.append("--skip-dialog=true");
             argumentos.append("--save-path=" + cabaConfig->instance()->fgetSaveFolder() + "/" +
                               vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeAnime);
-            argumentos.append(QDir::currentPath() + "/Configurações/Temp/Torrents/" + vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeTorrent
-                    + ".torrent");
+            argumentos.append(QDir::currentPath() + "/Configurações/Temp/Torrents/" +
+                              vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeTorrent + ".torrent");
         }
         lprocesso->setArguments(argumentos);
         if(lprocesso->startDetached()){
