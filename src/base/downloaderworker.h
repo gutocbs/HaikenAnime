@@ -12,7 +12,7 @@
 #include <QFile>
 #include <QFileInfo>
 
-#include "src/base/leitorlistaanimes.h"
+#include "src/base/database.h"
 #include "src/base/confbase.h"
 #include "src/base/abaconfig.h"
 
@@ -59,9 +59,10 @@ private:
     bool m_busy;
     bool vfileIsOpen;
 
-    int vlista;
+//    int vlista;
     int vindexLista;
 
+    QString vlista;
     QString vlink;
     QString vsaveFilePath;
     QString vURLAvatar;
@@ -71,7 +72,8 @@ private:
     QFile *vfile;
 
     QVector<anime*> vlistaSelecionada;
-    QPointer<leitorlistaanimes> cleitorlistaanimes;
+    QPointer<anime> animeSelecionado;
+    QPointer<Database> cdatabase;
     QPointer<confBase> cconfBase;
 };
 

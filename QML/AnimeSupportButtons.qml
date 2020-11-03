@@ -103,7 +103,7 @@ Item {
                         x: 3
                         y: 45
                         width: parent.width-parent.width/20
-                        height: column12.width
+                        height: parent.width
                         text: qsTr("Confirm")
                         anchors.verticalCenter: parent.verticalCenter
                         onClicked: mainClass.fadicionaNomeAlternativo(inovoNome.text);
@@ -222,7 +222,7 @@ Item {
                         x: 3
                         y: 45
                         width: parent.width-parent.width/20
-                        height: column12.width
+                        height: parent.width
                         text: qsTr("Search")
                         anchors.verticalCenter: parent.verticalCenter
                         onClicked: stackViewSupportButtons.push("CustomFileDialogAnimeSupportButtonsFolder.qml")
@@ -298,7 +298,7 @@ Item {
                         x: 3
                         y: 45
                         width: parent.width-parent.width/20
-                        height: column12.width
+                        height: parent.width
                         text: qsTr("Remove")
                         anchors.verticalCenter: parent.verticalCenter
                         onClicked: mainClass.fremoveFromList();
@@ -314,8 +314,4 @@ Item {
 
 }
 
-/*##^##
-Designer {
-    D{i:9}D{i:1}
-}
-##^##*/
+

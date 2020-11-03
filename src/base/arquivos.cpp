@@ -3,7 +3,7 @@
 arquivos::arquivos(QObject *parent) : QObject(parent)
 {
 //    cconfUsuario = new confUsuario();
-    cleitorlistaanimes = new leitorlistaanimes();
+    cdatabase = new Database();
 }
 
 ///fcomparaDadosAnime(QString rfileName, QString rnomeAnime, QString rnomeAnimeIngles, QStringList rnomesAlternativosAnime,int repisodioAnime, int rtemporada)
@@ -155,15 +155,18 @@ int arquivos::fcomparaSeasons(QString rnome, int repisodio, int rtemporada)
         return vEpisodiosTotaisPorAnime[rnome];
 
     QString nomeAnimeTemp;
-
-    vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaWatching();
+    QPointer<anime> animeSelecionado;
+    vlistaSelecionada = cdatabase->instance()->returnAnimeList("CURRENT");
     for(int i = 0; i < vlistaSelecionada.size(); i++){
-        nomeAnimeTemp = formatador.fremoveTudo(vlistaSelecionada[i]->vnome);
-        if(rnome.compare(nomeAnimeTemp) == 0 && vlistaSelecionada[i]->vtemporada < rtemporada
-                && vlistaSelecionada[i]->vformato == "TV"){ //DUVIDA NISSO DA TV. SERÁ QUE OVAS CONTAM PRO INDEX DO HORRIBLE?
-            if(vlistaSelecionada[i]->vnumEpisodiosTotais.toInt() != 0){
-                if(lepisodiosTotais+vlistaSelecionada[i]->vnumEpisodiosTotais.toInt() < repisodio){
-                    lepisodiosTotais += vlistaSelecionada[i]->vnumEpisodiosTotais.toInt();
+        if(!cdatabase->instance()->fchecaDatabaseReady())
+            return 0;
+        animeSelecionado = cdatabase->instance()->fretornaAnimePorPosicao("CURRENT", i);
+        nomeAnimeTemp = formatador.fremoveTudo(animeSelecionado->vnome);
+        if(rnome.compare(nomeAnimeTemp) == 0 && animeSelecionado->vtemporada < rtemporada
+                && animeSelecionado->vformato == "TV"){
+            if(animeSelecionado->vnumEpisodiosTotais.toInt() != 0){
+                if(lepisodiosTotais+animeSelecionado->vnumEpisodiosTotais.toInt() < repisodio){
+                    lepisodiosTotais += animeSelecionado->vnumEpisodiosTotais.toInt();
                 }
                 else{
                     vEpisodiosTotaisPorAnime.insert(rnome,lepisodiosTotais);
@@ -173,14 +176,17 @@ int arquivos::fcomparaSeasons(QString rnome, int repisodio, int rtemporada)
         }
     }
 
-    vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaCompleted();
+    vlistaSelecionada = cdatabase->instance()->returnAnimeList("COMPLETED");
     for(int i = 0; i < vlistaSelecionada.size(); i++){
-        nomeAnimeTemp = formatador.fremoveTudo(vlistaSelecionada[i]->vnome);
-        if(rnome.compare(nomeAnimeTemp) == 0 && vlistaSelecionada[i]->vtemporada < rtemporada
-                && vlistaSelecionada[i]->vformato == "TV"){ //DUVIDA NISSO DA TV. SERÁ QUE OVAS CONTAM PRO INDEX DO HORRIBLE?
-            if(vlistaSelecionada[i]->vnumEpisodiosTotais.toInt() != 0){
-                if(lepisodiosTotais+vlistaSelecionada[i]->vnumEpisodiosTotais.toInt() < repisodio){
-                    lepisodiosTotais += vlistaSelecionada[i]->vnumEpisodiosTotais.toInt();
+        if(!cdatabase->instance()->fchecaDatabaseReady())
+            return 0;
+        animeSelecionado = cdatabase->instance()->fretornaAnimePorPosicao("COMPLETED", i);
+        nomeAnimeTemp = formatador.fremoveTudo(animeSelecionado->vnome);
+        if(rnome.compare(nomeAnimeTemp) == 0 && animeSelecionado->vtemporada < rtemporada
+                && animeSelecionado->vformato == "TV"){ //DUVIDA NISSO DA TV. SERÁ QUE OVAS CONTAM PRO INDEX DO HORRIBLE?
+            if(animeSelecionado->vnumEpisodiosTotais.toInt() != 0){
+                if(lepisodiosTotais+animeSelecionado->vnumEpisodiosTotais.toInt() < repisodio){
+                    lepisodiosTotais += animeSelecionado->vnumEpisodiosTotais.toInt();
                 }
                 else{
                     vEpisodiosTotaisPorAnime.insert(rnome,lepisodiosTotais);
@@ -190,14 +196,17 @@ int arquivos::fcomparaSeasons(QString rnome, int repisodio, int rtemporada)
         }
     }
 
-    vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaOnHold();
+    vlistaSelecionada = cdatabase->instance()->returnAnimeList("PAUSED");
     for(int i = 0; i < vlistaSelecionada.size(); i++){
-        nomeAnimeTemp = formatador.fremoveTudo(vlistaSelecionada[i]->vnome);
-        if(rnome.compare(nomeAnimeTemp) == 0 && vlistaSelecionada[i]->vtemporada < rtemporada
-                && vlistaSelecionada[i]->vformato == "TV"){ //DUVIDA NISSO DA TV. SERÁ QUE OVAS CONTAM PRO INDEX DO HORRIBLE?
-            if(vlistaSelecionada[i]->vnumEpisodiosTotais.toInt() != 0){
-                if(lepisodiosTotais+vlistaSelecionada[i]->vnumEpisodiosTotais.toInt() < repisodio){
-                    lepisodiosTotais += vlistaSelecionada[i]->vnumEpisodiosTotais.toInt();
+        if(!cdatabase->instance()->fchecaDatabaseReady())
+            return 0;
+        animeSelecionado = cdatabase->instance()->fretornaAnimePorPosicao("PAUSED", i);
+        nomeAnimeTemp = formatador.fremoveTudo(animeSelecionado->vnome);
+        if(rnome.compare(nomeAnimeTemp) == 0 && animeSelecionado->vtemporada < rtemporada
+                && animeSelecionado->vformato == "TV"){ //DUVIDA NISSO DA TV. SERÁ QUE OVAS CONTAM PRO INDEX DO HORRIBLE?
+            if(animeSelecionado->vnumEpisodiosTotais.toInt() != 0){
+                if(lepisodiosTotais+animeSelecionado->vnumEpisodiosTotais.toInt() < repisodio){
+                    lepisodiosTotais += animeSelecionado->vnumEpisodiosTotais.toInt();
                 }
                 else{
                     vEpisodiosTotaisPorAnime.insert(rnome,lepisodiosTotais);
@@ -207,14 +216,17 @@ int arquivos::fcomparaSeasons(QString rnome, int repisodio, int rtemporada)
         }
     }
 
-    vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaDropped();
+    vlistaSelecionada = cdatabase->instance()->returnAnimeList("DROPPED");
     for(int i = 0; i < vlistaSelecionada.size(); i++){
-        nomeAnimeTemp = formatador.fremoveTudo(vlistaSelecionada[i]->vnome);
-        if(rnome.compare(nomeAnimeTemp) == 0 && vlistaSelecionada[i]->vtemporada < rtemporada
-                && vlistaSelecionada[i]->vformato == "TV"){ //DUVIDA NISSO DA TV. SERÁ QUE OVAS CONTAM PRO INDEX DO HORRIBLE?
-            if(vlistaSelecionada[i]->vnumEpisodiosTotais.toInt() != 0){
-                if(lepisodiosTotais+vlistaSelecionada[i]->vnumEpisodiosTotais.toInt() < repisodio){
-                    lepisodiosTotais += vlistaSelecionada[i]->vnumEpisodiosTotais.toInt();
+        if(!cdatabase->instance()->fchecaDatabaseReady())
+            return 0;
+        animeSelecionado = cdatabase->instance()->fretornaAnimePorPosicao("DROPPED", i);
+        nomeAnimeTemp = formatador.fremoveTudo(animeSelecionado->vnome);
+        if(rnome.compare(nomeAnimeTemp) == 0 && animeSelecionado->vtemporada < rtemporada
+                && animeSelecionado->vformato == "TV"){ //DUVIDA NISSO DA TV. SERÁ QUE OVAS CONTAM PRO INDEX DO HORRIBLE?
+            if(animeSelecionado->vnumEpisodiosTotais.toInt() != 0){
+                if(lepisodiosTotais+animeSelecionado->vnumEpisodiosTotais.toInt() < repisodio){
+                    lepisodiosTotais += animeSelecionado->vnumEpisodiosTotais.toInt();
                 }
                 else{
                     vEpisodiosTotaisPorAnime.insert(rnome,lepisodiosTotais);
@@ -224,14 +236,17 @@ int arquivos::fcomparaSeasons(QString rnome, int repisodio, int rtemporada)
         }
     }
 
-    vlistaSelecionada = cleitorlistaanimes->instance()->retornaListaPlanToWatch();
+    vlistaSelecionada = cdatabase->instance()->returnAnimeList("PLANNING");
     for(int i = 0; i < vlistaSelecionada.size(); i++){
-        nomeAnimeTemp = formatador.fremoveTudo(vlistaSelecionada[i]->vnome);
-        if(rnome.compare(nomeAnimeTemp) == 0 && vlistaSelecionada[i]->vtemporada < rtemporada
-                && vlistaSelecionada[i]->vformato == "TV"){ //DUVIDA NISSO DA TV. SERÁ QUE OVAS CONTAM PRO INDEX DO HORRIBLE?
-            if(vlistaSelecionada[i]->vnumEpisodiosTotais.toInt() != 0){
-                if(lepisodiosTotais+vlistaSelecionada[i]->vnumEpisodiosTotais.toInt() < repisodio){
-                    lepisodiosTotais += vlistaSelecionada[i]->vnumEpisodiosTotais.toInt();
+        if(!cdatabase->instance()->fchecaDatabaseReady())
+            return 0;
+        animeSelecionado = cdatabase->instance()->fretornaAnimePorPosicao("PLANNING", i);
+        nomeAnimeTemp = formatador.fremoveTudo(animeSelecionado->vnome);
+        if(rnome.compare(nomeAnimeTemp) == 0 && animeSelecionado->vtemporada < rtemporada
+                && animeSelecionado->vformato == "TV"){ //DUVIDA NISSO DA TV. SERÁ QUE OVAS CONTAM PRO INDEX DO HORRIBLE?
+            if(animeSelecionado->vnumEpisodiosTotais.toInt() != 0){
+                if(lepisodiosTotais+animeSelecionado->vnumEpisodiosTotais.toInt() < repisodio){
+                    lepisodiosTotais += animeSelecionado->vnumEpisodiosTotais.toInt();
                 }
                 else{
                     vEpisodiosTotaisPorAnime.insert(rnome,lepisodiosTotais);

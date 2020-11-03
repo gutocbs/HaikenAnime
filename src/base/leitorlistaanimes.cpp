@@ -330,8 +330,8 @@ bool leitorlistaanimes::fleJson(){
                 lnovoAnime->vformato = lformato;
                 lnovoAnime->vdataEstreia = ldataEstreia;
                 lnovoAnime->vdataEpisodio = ldataEpisodioFinal;
-                lnovoAnime->vsiteAnilist = lsiteAnilist;
-                lnovoAnime->vstreamCrunchyroll = lstreamCrunchyroll;
+                lnovoAnime->vdatabaseSite = lsiteAnilist;
+                lnovoAnime->vstream = lstreamCrunchyroll;
                 lnovoAnime->vtemporada = ltemporadaAnime;
                 tempNomeAnime.clear();
                 if(lformato != "MANGA" && lformato != "NOVEL" && lformato != "ONE SHOT"){
@@ -829,12 +829,12 @@ QVector<anime*> leitorlistaanimes::fleListaAno(int ano)
                     ltemporadaAnime = 1;
 
                  lnotaMediaPessoal = "";
-                QPointer<anime> lnovoAnime(new anime);
 //                anime* lnovoAnime = new anime;
                 if(lnome == "?")
                     lnome = lnomeIngles;
                 else if (lnomeIngles == "?")
                     lnomeIngles = lnome;
+                QPointer<anime> lnovoAnime(new anime);
                 lnovoAnime->vnome = lnome;
                 lnovoAnime->vnomeIngles = lnomeIngles;
                 if(!lnomeAlternativo.isEmpty()){
@@ -882,8 +882,8 @@ QVector<anime*> leitorlistaanimes::fleListaAno(int ano)
                 lnovoAnime->vformato = lformato;
                 lnovoAnime->vdataEstreia = ldataEstreia;
                 lnovoAnime->vdataEpisodio = ldataEpisodioFinal;
-                lnovoAnime->vsiteAnilist = lsiteAnilist;
-                lnovoAnime->vstreamCrunchyroll = lstreamCrunchyroll;
+                lnovoAnime->vdatabaseSite = lsiteAnilist;
+                lnovoAnime->vstream = lstreamCrunchyroll;
                 lnovoAnime->vtemporada = ltemporadaAnime;
                 if(ldataEstreia.year() == ano){
                     vetorTemporario.append(lnovoAnime);
@@ -1212,8 +1212,8 @@ anime* leitorlistaanimes::fbuscaAnimeNoAno(int ano, const QString &rid)
                     lnovoAnime->vformato = lformato;
                     lnovoAnime->vdataEstreia = ldataEstreia;
                     lnovoAnime->vdataEpisodio = ldataEpisodioFinal;
-                    lnovoAnime->vsiteAnilist = lsiteAnilist;
-                    lnovoAnime->vstreamCrunchyroll = lstreamCrunchyroll;
+                    lnovoAnime->vdatabaseSite = lsiteAnilist;
+                    lnovoAnime->vstream = lstreamCrunchyroll;
                     lnovoAnime->vtemporada = ltemporadaAnime;
                     return lnovoAnime;
                 }
@@ -1509,117 +1509,122 @@ QString leitorlistaanimes::fprocuraNomeRetornaID(const QString &rnomeAnime)
         }
     }
     QStringList tempNomeAnime;
-    for(int i = 0; i < vlistaWatching.size(); i++){
-        if(formatador.fcomparaNomes(vlistaWatching[i]->vnome, rnomeAnime) ||
-                formatador.fcomparaNomes(vlistaWatching[i]->vnomeIngles, rnomeAnime)){
+    QVector<anime*> tempList = vlistaWatching;
+    for(int i = 0; i < tempList.size(); i++){
+        if(formatador.fcomparaNomes(tempList[i]->vnome, rnomeAnime) ||
+                formatador.fcomparaNomes(tempList[i]->vnomeIngles, rnomeAnime)){
             tempNomeAnime.append(rnomeAnime);
-            if(!vHashNomeAnimesPorId.contains(vlistaWatching[i]->vid))
-                vHashNomeAnimesPorId.insert(vlistaWatching[i]->vid, tempNomeAnime);
+            if(!vHashNomeAnimesPorId.contains(tempList[i]->vid))
+                vHashNomeAnimesPorId.insert(tempList[i]->vid, tempNomeAnime);
             else
-                vHashNomeAnimesPorId[vlistaWatching[i]->vid].append(tempNomeAnime);
-            return vlistaWatching[i]->vid;
+                vHashNomeAnimesPorId[tempList[i]->vid].append(tempNomeAnime);
+            return tempList[i]->vid;
         }
-        else if(!vlistaWatching[i]->vnomeAlternativo.isEmpty()){
-            for(int w = 0; w < vlistaWatching[i]->vnomeAlternativo.size(); w++){
-                if(formatador.fcomparaNomes(vlistaWatching[i]->vnomeAlternativo.at(w), rnomeAnime)){
+        else if(!tempList[i]->vnomeAlternativo.isEmpty()){
+            for(int w = 0; w < tempList[i]->vnomeAlternativo.size(); w++){
+                if(formatador.fcomparaNomes(tempList[i]->vnomeAlternativo.at(w), rnomeAnime)){
                     tempNomeAnime.append(rnomeAnime);
-                    if(!vHashNomeAnimesPorId.contains(vlistaWatching[i]->vid))
-                        vHashNomeAnimesPorId.insert(vlistaWatching[i]->vid, tempNomeAnime);
+                    if(!vHashNomeAnimesPorId.contains(tempList[i]->vid))
+                        vHashNomeAnimesPorId.insert(tempList[i]->vid, tempNomeAnime);
                     else
-                        vHashNomeAnimesPorId[vlistaWatching[i]->vid].append(tempNomeAnime);
-                    return vlistaWatching[i]->vid;
+                        vHashNomeAnimesPorId[tempList[i]->vid].append(tempNomeAnime);
+                    return tempList[i]->vid;
                 }
             }
         }
     }
-    for(int i = 0; i < vlistaPlanToWatch.size(); i++){
-        if(formatador.fcomparaNomes(vlistaPlanToWatch[i]->vnome, rnomeAnime) ||
-                formatador.fcomparaNomes(vlistaPlanToWatch[i]->vnomeIngles, rnomeAnime)){
+    tempList = vlistaPlanToWatch;
+    for(int i = 0; i < tempList.size(); i++){
+        if(formatador.fcomparaNomes(tempList[i]->vnome, rnomeAnime) ||
+                formatador.fcomparaNomes(tempList[i]->vnomeIngles, rnomeAnime)){
             tempNomeAnime.append(rnomeAnime);
-            if(!vHashNomeAnimesPorId.contains(vlistaPlanToWatch[i]->vid))
-                vHashNomeAnimesPorId.insert(vlistaPlanToWatch[i]->vid, tempNomeAnime);
+            if(!vHashNomeAnimesPorId.contains(tempList[i]->vid))
+                vHashNomeAnimesPorId.insert(tempList[i]->vid, tempNomeAnime);
             else
-                vHashNomeAnimesPorId[vlistaPlanToWatch[i]->vid].append(tempNomeAnime);
-            return vlistaPlanToWatch[i]->vid;
+                vHashNomeAnimesPorId[tempList[i]->vid].append(tempNomeAnime);
+            return tempList[i]->vid;
         }
-        else if(!vlistaPlanToWatch[i]->vnomeAlternativo.isEmpty()){
-            for(int w = 0; w < vlistaPlanToWatch[i]->vnomeAlternativo.size(); w++){
-                if(formatador.fcomparaNomes(vlistaPlanToWatch[i]->vnomeAlternativo.at(w), rnomeAnime)){
+        else if(!tempList[i]->vnomeAlternativo.isEmpty()){
+            for(int w = 0; w < tempList[i]->vnomeAlternativo.size(); w++){
+                if(formatador.fcomparaNomes(tempList[i]->vnomeAlternativo.at(w), rnomeAnime)){
                     tempNomeAnime.append(rnomeAnime);
-                    if(!vHashNomeAnimesPorId.contains(vlistaPlanToWatch[i]->vid))
-                        vHashNomeAnimesPorId.insert(vlistaPlanToWatch[i]->vid, tempNomeAnime);
+                    if(!vHashNomeAnimesPorId.contains(tempList[i]->vid))
+                        vHashNomeAnimesPorId.insert(tempList[i]->vid, tempNomeAnime);
                     else
-                        vHashNomeAnimesPorId[vlistaPlanToWatch[i]->vid].append(tempNomeAnime);
-                    return vlistaPlanToWatch[i]->vid;
+                        vHashNomeAnimesPorId[tempList[i]->vid].append(tempNomeAnime);
+                    return tempList[i]->vid;
                 }
             }
         }
     }
-    for(int i = 0; i < vlistaOnHold.size(); i++){
-        if(formatador.fcomparaNomes(vlistaOnHold[i]->vnome, rnomeAnime) ||
-                formatador.fcomparaNomes(vlistaOnHold[i]->vnomeIngles, rnomeAnime)){
+    tempList = vlistaOnHold;
+    for(int i = 0; i < tempList.size(); i++){
+        if(formatador.fcomparaNomes(tempList[i]->vnome, rnomeAnime) ||
+                formatador.fcomparaNomes(tempList[i]->vnomeIngles, rnomeAnime)){
             tempNomeAnime.append(rnomeAnime);
-            if(!vHashNomeAnimesPorId.contains(vlistaOnHold[i]->vid))
-                vHashNomeAnimesPorId.insert(vlistaOnHold[i]->vid, tempNomeAnime);
+            if(!vHashNomeAnimesPorId.contains(tempList[i]->vid))
+                vHashNomeAnimesPorId.insert(tempList[i]->vid, tempNomeAnime);
             else
-                vHashNomeAnimesPorId[vlistaOnHold[i]->vid].append(tempNomeAnime);
-            return vlistaOnHold[i]->vid;
+                vHashNomeAnimesPorId[tempList[i]->vid].append(tempNomeAnime);
+            return tempList[i]->vid;
         }
-        else if(!vlistaOnHold[i]->vnomeAlternativo.isEmpty()){
-            for(int w = 0; w < vlistaOnHold[i]->vnomeAlternativo.size(); w++){
-                if(formatador.fcomparaNomes(vlistaOnHold[i]->vnomeAlternativo.at(w), rnomeAnime)){
+        else if(!tempList[i]->vnomeAlternativo.isEmpty()){
+            for(int w = 0; w < tempList[i]->vnomeAlternativo.size(); w++){
+                if(formatador.fcomparaNomes(tempList[i]->vnomeAlternativo.at(w), rnomeAnime)){
                     tempNomeAnime.append(rnomeAnime);
-                    if(!vHashNomeAnimesPorId.contains(vlistaOnHold[i]->vid))
-                        vHashNomeAnimesPorId.insert(vlistaOnHold[i]->vid, tempNomeAnime);
+                    if(!vHashNomeAnimesPorId.contains(tempList[i]->vid))
+                        vHashNomeAnimesPorId.insert(tempList[i]->vid, tempNomeAnime);
                     else
-                        vHashNomeAnimesPorId[vlistaOnHold[i]->vid].append(tempNomeAnime);
-                    return vlistaOnHold[i]->vid;
+                        vHashNomeAnimesPorId[tempList[i]->vid].append(tempNomeAnime);
+                    return tempList[i]->vid;
                 }
             }
         }
     }
-    for(int i = 0; i < vlistaDropped.size(); i++){
-        if(formatador.fcomparaNomes(vlistaDropped[i]->vnome, rnomeAnime) ||
-                formatador.fcomparaNomes(vlistaDropped[i]->vnomeIngles, rnomeAnime)){
+    tempList = vlistaDropped;
+    for(int i = 0; i < tempList.size(); i++){
+        if(formatador.fcomparaNomes(tempList[i]->vnome, rnomeAnime) ||
+                formatador.fcomparaNomes(tempList[i]->vnomeIngles, rnomeAnime)){
             tempNomeAnime.append(rnomeAnime);
-            if(!vHashNomeAnimesPorId.contains(vlistaDropped[i]->vid))
-                vHashNomeAnimesPorId.insert(vlistaDropped[i]->vid, tempNomeAnime);
+            if(!vHashNomeAnimesPorId.contains(tempList[i]->vid))
+                vHashNomeAnimesPorId.insert(tempList[i]->vid, tempNomeAnime);
             else
-                vHashNomeAnimesPorId[vlistaDropped[i]->vid].append(tempNomeAnime);
-            return vlistaDropped[i]->vid;
+                vHashNomeAnimesPorId[tempList[i]->vid].append(tempNomeAnime);
+            return tempList[i]->vid;
         }
-        else if(!vlistaDropped[i]->vnomeAlternativo.isEmpty()){
-            for(int w = 0; w < vlistaDropped[i]->vnomeAlternativo.size(); w++){
-                if(formatador.fcomparaNomes(vlistaDropped[i]->vnomeAlternativo.at(w), rnomeAnime)){
+        else if(!tempList[i]->vnomeAlternativo.isEmpty()){
+            for(int w = 0; w < tempList[i]->vnomeAlternativo.size(); w++){
+                if(formatador.fcomparaNomes(tempList[i]->vnomeAlternativo.at(w), rnomeAnime)){
                     tempNomeAnime.append(rnomeAnime);
-                    if(!vHashNomeAnimesPorId.contains(vlistaDropped[i]->vid))
-                        vHashNomeAnimesPorId.insert(vlistaDropped[i]->vid, tempNomeAnime);
+                    if(!vHashNomeAnimesPorId.contains(tempList[i]->vid))
+                        vHashNomeAnimesPorId.insert(tempList[i]->vid, tempNomeAnime);
                     else
-                        vHashNomeAnimesPorId[vlistaDropped[i]->vid].append(tempNomeAnime);
-                    return vlistaDropped[i]->vid;
+                        vHashNomeAnimesPorId[tempList[i]->vid].append(tempNomeAnime);
+                    return tempList[i]->vid;
                 }
             }
         }
     }
-    for(int i = 0; i < vlistaCompleted.size(); i++){
-        if(formatador.fcomparaNomes(vlistaCompleted[i]->vnome, rnomeAnime) ||
-                formatador.fcomparaNomes(vlistaCompleted[i]->vnomeIngles, rnomeAnime)){
+    tempList = vlistaCompleted;
+    for(int i = 0; i < tempList.size(); i++){
+        if(formatador.fcomparaNomes(tempList[i]->vnome, rnomeAnime) ||
+                formatador.fcomparaNomes(tempList[i]->vnomeIngles, rnomeAnime)){
             tempNomeAnime.append(rnomeAnime);
-            if(!vHashNomeAnimesPorId.contains(vlistaCompleted[i]->vid))
-                vHashNomeAnimesPorId.insert(vlistaCompleted[i]->vid, tempNomeAnime);
+            if(!vHashNomeAnimesPorId.contains(tempList[i]->vid))
+                vHashNomeAnimesPorId.insert(tempList[i]->vid, tempNomeAnime);
             else
-                vHashNomeAnimesPorId[vlistaCompleted[i]->vid].append(tempNomeAnime);
-            return vlistaCompleted[i]->vid;
+                vHashNomeAnimesPorId[tempList[i]->vid].append(tempNomeAnime);
+            return tempList[i]->vid;
         }
-        else if(!vlistaCompleted[i]->vnomeAlternativo.isEmpty()){
-            for(int w = 0; w < vlistaCompleted[i]->vnomeAlternativo.size(); w++){
-                if(formatador.fcomparaNomes(vlistaCompleted[i]->vnomeAlternativo.at(w), rnomeAnime)){
+        else if(!tempList[i]->vnomeAlternativo.isEmpty()){
+            for(int w = 0; w < tempList[i]->vnomeAlternativo.size(); w++){
+                if(formatador.fcomparaNomes(tempList[i]->vnomeAlternativo.at(w), rnomeAnime)){
                     tempNomeAnime.append(rnomeAnime);
-                    if(!vHashNomeAnimesPorId.contains(vlistaCompleted[i]->vid))
-                        vHashNomeAnimesPorId.insert(vlistaCompleted[i]->vid, tempNomeAnime);
+                    if(!vHashNomeAnimesPorId.contains(tempList[i]->vid))
+                        vHashNomeAnimesPorId.insert(tempList[i]->vid, tempNomeAnime);
                     else
-                        vHashNomeAnimesPorId[vlistaCompleted[i]->vid].append(tempNomeAnime);
-                    return vlistaCompleted[i]->vid;
+                        vHashNomeAnimesPorId[tempList[i]->vid].append(tempNomeAnime);
+                    return tempList[i]->vid;
                 }
             }
         }

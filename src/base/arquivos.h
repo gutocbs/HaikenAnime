@@ -13,6 +13,7 @@
 #include <QLoggingCategory> //Cria classe de log
 
 #include "src/base/anime.h"
+#include "src/base/database.h"
 #include "src/base/confusuario.h"
 #include "src/utilities/logger.h"
 #include "src/utilities/formatapalavras.h"
@@ -33,7 +34,7 @@ public slots:
 
 private:
     QPointer<confUsuario> cconfUsuario;
-    QPointer<leitorlistaanimes> cleitorlistaanimes;
+    QPointer<Database> cdatabase;
     QVector<anime*> vlistaSelecionada;
     FormataPalavras formatador;
     QHash<QString,int> vEpisodiosTotaisPorAnime;

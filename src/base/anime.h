@@ -32,8 +32,8 @@ public:
     QString vlista; //Esse atributo será usado para a função de busca e para função de mudar a lista do anime
     QString vformato; //Usado pra organizar a lista
     QString vdataEpisodio;
-    QString vstreamCrunchyroll;
-    QString vsiteAnilist;
+    QString vstream;
+    QString vdatabaseSite;
     QDate vdataEstreia;
     bool vfinalizado;
     int vtemporada;

@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QDebug>
 #include <QVector> //Cria a lista de animes
-#include <QFile> //Abre arquivo do anilist/taiga para leitura
+#include <QFile> //Abre arquivo do anilist
 #include <QTextStream> //Lê linhas do arquivo
 #include <QPointer> // Crio o ponteiro pro anime
 #include <QDateTime> //Data que lança o episódio

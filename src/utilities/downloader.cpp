@@ -8,7 +8,9 @@ Downloader::Downloader(QObject *parent) : QObject(parent)
 Downloader::~Downloader()
 {
     if(!m_workers.isEmpty()){
-        qDeleteAll(m_workers);
+        foreach(DownloaderWorker* dw, m_workers){
+            dw->deleteLater();
+        }
         m_workers.clear();
     }
 }

@@ -7,11 +7,11 @@
 MainClass::MainClass(QObject *parent) : QObject(parent)
 {
     vmetaEnumLista = QMetaEnum::fromType<lista>();
-    vmetaEnumTipo = QMetaEnum::fromType<leitorlistaanimes::type>();
+    vmetaEnumTipo = QMetaEnum::fromType<Database::type>();
     //Cria todas as variáveis
     cconfiguracoesDiretoriosPadrao = new confBase(nullptr);
-    cleitorListaAnimes = new leitorlistaanimes(nullptr);
-//    cleitorListaAnimes->instance();
+    cdatabase = new Database(nullptr);
+//    cdatabase->instance();
     cconfiguracoesUsuarioDiretorios = new confUsuario(nullptr);
     carquivos = new arquivos(this);
     cclient = new Client(this);
@@ -26,8 +26,8 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
 
     cconfiguracoesUsuarioDiretorios->instance()->frecebeConfigs(cabaConfig->instance()->fgetDirectory().toStringList());
 
-    cleitorListaAnimes->instance()->fleJson();
-    vlistaSelecionada = cleitorListaAnimes->instance()->retornaListaWatching();
+    cdatabase->instance()->freadDatabaseFile();
+    vlistaSelecionada = cdatabase->instance()->returnAnimeList("CURRENT");
 
 
     cconfiguracoesDiretoriosPadrao->instance()->fcriaDiretoriosBase();
@@ -39,7 +39,7 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     vcontadorAssistindoEpisodio = 0;
     vrateLimitRequests = 0;
     vlistaAtual = enumlistaToQString(lista::CURRENT);
-    vtipoAtual = leitorlistaanimes::type::ANIME;
+    vtipoAtual = Database::type::ANIME;
     vordemLista = "";
     vjanelaAtual = janela::MAIN;
 
@@ -58,7 +58,7 @@ MainClass::~MainClass()
         tthreadDiretorios.wait();
     }
     cconfiguracoesDiretoriosPadrao->deleteLater();
-    cleitorListaAnimes->deleteLater();
+    cdatabase->deleteLater();
     cconfiguracoesUsuarioDiretorios->deleteLater();
 }
 
@@ -120,9 +120,9 @@ void MainClass::fconnectSuccess()
         tthreadDiretorios.requestInterruption();
     //    cconfiguracoesUsuarioDiretorios->instance()->thread()->requestInterruption();
     if(!vlistaSelecionada.isEmpty())
-        cleitorListaAnimes->instance()->fdeletaListaAnimes();
-    cleitorListaAnimes->instance()->fleJson();
-    vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+        cdatabase->instance()->fdeletaListaAnimes();
+    cdatabase->instance()->freadDatabaseFile();
+    vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
 
     //We need to check if the list got empy before reading it
     if(vlistaSelecionada.size() < vindexAnimeSelecionado){
@@ -174,7 +174,7 @@ void MainClass::fclientUpdate()
         return;
     QString nome;
     foreach (QStringList key, vlistaAcoes.keys()) {
-        nome = cleitorListaAnimes->instance()->fbuscaAnimePorIDERetornaTitulo(key.at(1));
+        nome = cdatabase->instance()->fbuscaIDRetornaTitulo(key.at(1));
         if(vrateLimitRequests == 90)
             return;
         else if(key.at(0) == "nota"){
@@ -321,9 +321,10 @@ void MainClass::fbotaoBusca(QVariant search)
     if(vjanelaAtual == janela::MAIN){
         if(!searchText.isEmpty()){
             qDebug() << "Searching " << searchText;
-            vlistaSelecionada = cleitorListaAnimes->instance()->fbuscaLista(searchText.simplified(), vtipoAtual);
+            vlistaSelecionada = cdatabase->instance()->returnSearchList(searchText.simplified(), vtipoAtual);
             if(!vlistaSelecionada.isEmpty()){
                 vlistaAtual = enumlistaToQString(lista::SEARCH);
+                fdownloadCoverImages();
                 vindexAnimeSelecionado = 0;
                 vpagina = 1;
     //            ui->NumPagina->setText("Busca  - " + QString::number(vlistaSelecionada.size()) +
@@ -333,7 +334,7 @@ void MainClass::fbotaoBusca(QVariant search)
             }
             else{
                 qDebug() << searchText << " not found!";
-                vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+                vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
             }
         }
     }
@@ -492,7 +493,7 @@ void MainClass::fordemLista(QVariant ordem)
         vordemLista = QString("c" + ordem.toString());
 
     //Change the old list to the new
-    vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+    vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
     //Check if the list is empty for some reason
     if(!vlistaSelecionada.isEmpty()){
         vindexAnimeSelecionado = 0;
@@ -506,18 +507,18 @@ void MainClass::fabreSite(QVariant data)
     bool ok;
     data.toInt(&ok);
     if(ok){
-        QDesktopServices::openUrl(QUrl(vlistaSelecionada[vindexAnimeSelecionado]->vsiteAnilist));
+        QDesktopServices::openUrl(QUrl(vlistaSelecionada[vindexAnimeSelecionado]->vdatabaseSite));
     }
 }
 
 void MainClass::fselecionaTipoAnime()
 {
     //Check if it is already the right type
-    if(vtipoAtual != leitorlistaanimes::type::ANIME){
-        vtipoAtual = leitorlistaanimes::type::ANIME;
+    if(vtipoAtual != Database::type::ANIME){
+        vtipoAtual = Database::type::ANIME;
         vlistaAtual = enumlistaToQString(lista::CURRENT);
         //Change the old list to the new
-        vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+        vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
         //Check if the list is empty for some reason
         if(!vlistaSelecionada.isEmpty()){
             vindexAnimeSelecionado = 0;
@@ -531,11 +532,11 @@ void MainClass::fselecionaTipoAnime()
 void MainClass::fselecionaTipoManga()
 {
     //Check if it is already the right type
-    if(vtipoAtual != leitorlistaanimes::type::MANGA){
-        vtipoAtual = leitorlistaanimes::type::MANGA;
+    if(vtipoAtual != Database::type::MANGA){
+        vtipoAtual = Database::type::MANGA;
         vlistaAtual = enumlistaToQString(lista::CURRENT);
         //Change the old list to the new
-        vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+        vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
         //Check if the list is empty for some reason
         if(!vlistaSelecionada.isEmpty()){
             vindexAnimeSelecionado = 0;
@@ -549,11 +550,11 @@ void MainClass::fselecionaTipoManga()
 void MainClass::fselecionaTipoNovel()
 {
     //Check if it is already the right type
-    if(vtipoAtual != leitorlistaanimes::type::NOVEL){
-        vtipoAtual = leitorlistaanimes::type::NOVEL;
+    if(vtipoAtual != Database::type::NOVEL){
+        vtipoAtual = Database::type::NOVEL;
         vlistaAtual = enumlistaToQString(lista::CURRENT);
         //Change the old list to the new
-        vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+        vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
         //Check if the list is empty for some reason
         if(!vlistaSelecionada.isEmpty()){
             vindexAnimeSelecionado = 0;
@@ -568,8 +569,8 @@ void MainClass::fselecionaTipoSeason(QVariant data)
 {
     vanoBuscaAnimes = data.toInt();
     vlistaAtual = QString::number(vanoBuscaAnimes);
-    vtipoAtual = leitorlistaanimes::type::SEASON;
-    vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+    vtipoAtual = Database::type::SEASON;
+    vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
     if(!vlistaSelecionada.isEmpty()){
         vindexAnimeSelecionado = 0;
         vpagina = 1;
@@ -582,12 +583,12 @@ void MainClass::fselecionaTipoSeason(QVariant data)
 void MainClass::fselecionaListaCurrent()
 {
     switch (vtipoAtual) {
-    case leitorlistaanimes::type::SEASON:
+    case Database::type::SEASON:
         if(vlistaAtual.compare(enumlistaToQString(lista::WINTER)
                                +QString::number(vanoBuscaAnimes), Qt::CaseInsensitive) != 0){
             vlistaAtual = enumlistaToQString(lista::WINTER)+QString::number(vanoBuscaAnimes);
             //Change the old list to the new
-            vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
             //Check if the list is empty for some reason
             if(!vlistaSelecionada.isEmpty()){
                 vindexAnimeSelecionado = 0;
@@ -602,7 +603,7 @@ void MainClass::fselecionaListaCurrent()
         if(vlistaAtual.compare(enumlistaToQString(lista::CURRENT), Qt::CaseInsensitive) != 0){
             vlistaAtual = enumlistaToQString(lista::CURRENT);
             //Change the old list to the new
-            vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
             //Check if the list is empty for some reason
             if(!vlistaSelecionada.isEmpty()){
                 vindexAnimeSelecionado = 0;
@@ -618,12 +619,12 @@ void MainClass::fselecionaListaCurrent()
 void MainClass::fselecionaListaCompleted()
 {
     switch (vtipoAtual) {
-    case leitorlistaanimes::type::SEASON:
+    case Database::type::SEASON:
         if(vlistaAtual.compare(enumlistaToQString(lista::SPRING)
                                +QString::number(vanoBuscaAnimes), Qt::CaseInsensitive) != 0){
             vlistaAtual = enumlistaToQString(lista::SPRING)+QString::number(vanoBuscaAnimes);
             //Change the old list to the new
-            vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
             //Check if the list is empty for some reason
             if(!vlistaSelecionada.isEmpty()){
                 vindexAnimeSelecionado = 0;
@@ -638,7 +639,7 @@ void MainClass::fselecionaListaCompleted()
         if(vlistaAtual.compare(enumlistaToQString(lista::COMPLETED), Qt::CaseInsensitive) != 0){
             vlistaAtual = enumlistaToQString(lista::COMPLETED);
             //Change the old list to the new
-            vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
             //Check if the list is empty for some reason
             if(!vlistaSelecionada.isEmpty()){
                 vindexAnimeSelecionado = 0;
@@ -654,12 +655,12 @@ void MainClass::fselecionaListaCompleted()
 void MainClass::fselecionaListaPaused()
 {
     switch (vtipoAtual) {
-    case leitorlistaanimes::type::SEASON:
+    case Database::type::SEASON:
         if(vlistaAtual.compare(enumlistaToQString(lista::SUMMER)
                                +QString::number(vanoBuscaAnimes), Qt::CaseInsensitive) != 0){
             vlistaAtual = enumlistaToQString(lista::SUMMER)+QString::number(vanoBuscaAnimes);
             //Change the old list to the new
-            vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
             //Check if the list is empty for some reason
             if(!vlistaSelecionada.isEmpty()){
                 vindexAnimeSelecionado = 0;
@@ -674,7 +675,7 @@ void MainClass::fselecionaListaPaused()
         if(vlistaAtual.compare(enumlistaToQString(lista::PAUSED), Qt::CaseInsensitive) != 0){
             vlistaAtual = enumlistaToQString(lista::PAUSED);
             //Change the old list to the new
-            vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
             //Check if the list is empty for some reason
             if(!vlistaSelecionada.isEmpty()){
                 vindexAnimeSelecionado = 0;
@@ -690,12 +691,12 @@ void MainClass::fselecionaListaPaused()
 void MainClass::fselecionaListaDropped()
 {
     switch (vtipoAtual) {
-    case leitorlistaanimes::type::SEASON:
+    case Database::type::SEASON:
         if(vlistaAtual.compare(enumlistaToQString(lista::FALL)
                                +QString::number(vanoBuscaAnimes), Qt::CaseInsensitive) != 0){
             vlistaAtual = enumlistaToQString(lista::FALL)+QString::number(vanoBuscaAnimes);
             //Change the old list to the new
-            vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
             //Check if the list is empty for some reason
             if(!vlistaSelecionada.isEmpty()){
                 vindexAnimeSelecionado = 0;
@@ -710,7 +711,7 @@ void MainClass::fselecionaListaDropped()
         if(vlistaAtual.compare(enumlistaToQString(lista::DROPPED), Qt::CaseInsensitive) != 0){
             vlistaAtual = enumlistaToQString(lista::DROPPED);
             //Change the old list to the new
-            vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
             //Check if the list is empty for some reason
             if(!vlistaSelecionada.isEmpty()){
                 vindexAnimeSelecionado = 0;
@@ -729,7 +730,7 @@ void MainClass::fselecionaListaPlanning()
     if(vlistaAtual.compare(enumlistaToQString(lista::PLANNING), Qt::CaseInsensitive) != 0){
         vlistaAtual = enumlistaToQString(lista::PLANNING);
         //Change the old list to the new
-        vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+        vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
         //Check if the list is empty for some reason
         if(!vlistaSelecionada.isEmpty()){
             vindexAnimeSelecionado = 0;
@@ -764,7 +765,7 @@ void MainClass::fabrePastaAnime()
 
 void MainClass::fabreStream()
 {
-    QDesktopServices::openUrl(QUrl(vlistaSelecionada[vindexAnimeSelecionado]->vstreamCrunchyroll));
+    QDesktopServices::openUrl(QUrl(vlistaSelecionada[vindexAnimeSelecionado]->vstream));
 }
 
 void MainClass::frefresh()
@@ -806,7 +807,7 @@ void MainClass::fchecaAnimeAssistido()
                     c->fchecaStream(player, nomejanela);
                     QString nomeAnime = c->fretornaAnime();
                     QString episodio = c->fretornaEpisodio();
-                    QString vidAnime = cleitorListaAnimes->instance()->fprocuraNomeRetornaID(nomeAnime);
+                    QString vidAnime = cdatabase->instance()->fbuscaNomeRetornaID(nomeAnime);
                     if(!vidAnime.isEmpty()){
                         emit sanimeReconhecidoID(QVariant(vidAnime), QVariant(nomeAnime), QVariant(episodio));
                         //Vai checar a cada 10 segundos, então tem que assistir dois minutos de anime pra contar. Assim, atualiza os curtas ao mesmo
@@ -836,31 +837,31 @@ void MainClass::fAumentaProgressoID(const QString &ridAnime, const QString &epis
     //A função vai rodar tudo em uma lista temporária e dar refresh na lista atual, pra mudar o progresso
     //Para isso, é preciso ter a posição e a lista do anime salvas
     QString llistaAtual = vlistaSelecionada[vindexAnimeSelecionado]->vlista;
-    int lposicao = cleitorListaAnimes->instance()->fbuscaAnimePorIDERetornaPosicao(ridAnime);
-    QString llistaAnimeAssistindo = cleitorListaAnimes->instance()->fbuscaAnimePorIDERetornaLista(ridAnime);
+    int lposicao = cdatabase->instance()->fbuscaIDRetornaPosicao(ridAnime);
+    QString llistaAnimeAssistindo = cdatabase->instance()->fbuscaIDRetornaLista(ridAnime);
     QVector<anime*> listaTemp;
     //Checa se o ID do anime existe em alguma lista
     if(llistaAnimeAssistindo.isEmpty())
         return;
     //Olha todas as listas, exceto completed. Não tem sentido aumentar o progresso de algo já completo.
     if(llistaAnimeAssistindo.compare("Watching",Qt::CaseInsensitive) == 0){
-        listaTemp = cleitorListaAnimes->instance()->retornaListaWatching();
+        listaTemp = cdatabase->instance()->returnAnimeList("CURRENT");
     }
     else if(llistaAnimeAssistindo.compare("On Hold",Qt::CaseInsensitive) == 0){
-        listaTemp = cleitorListaAnimes->instance()->retornaListaOnHold();
+        listaTemp = cdatabase->instance()->returnAnimeList("PAUSED");
     }
     else if(llistaAnimeAssistindo.compare("Dropped",Qt::CaseInsensitive) == 0){
-        listaTemp = cleitorListaAnimes->instance()->retornaListaDropped();
+        listaTemp = cdatabase->instance()->returnAnimeList("DROPPED");
     }
     else if(llistaAnimeAssistindo.compare("Plan to Watch",Qt::CaseInsensitive) == 0){
-        listaTemp = cleitorListaAnimes->instance()->retornaListaPlanToWatch();
+        listaTemp = cdatabase->instance()->returnAnimeList("PLANNING");
     }
     else{
         bool ok;
         //Checa se a lista é um número válido, pro caso das listas anuais
         llistaAnimeAssistindo.toInt(&ok);
         if(ok){
-            listaTemp = cleitorListaAnimes->instance()->fleListaAno(llistaAnimeAssistindo.toInt());
+            listaTemp = cdatabase->instance()->returnAnimeYearlyList(llistaAnimeAssistindo.toInt());
         }
     }
     //Checa se a lista obtida está vazia
@@ -877,7 +878,7 @@ void MainClass::fAumentaProgressoID(const QString &ridAnime, const QString &epis
             if(listaTemp[lposicao]->vnumEpisodiosAssistidos.toInt() < lepisodiosTotais){
                 listaTemp[lposicao]->vnumEpisodiosAssistidos =
                         QString::number(listaTemp[lposicao]->vnumEpisodiosAssistidos.toInt()+1);
-                cleitorListaAnimes->instance()->fmudaProgresso(listaTemp[i]->vid,
+                cdatabase->instance()->fmudaProgresso(listaTemp[i]->vid,
                                                listaTemp[i]->vnumEpisodiosAssistidos);
                 finfoAnimeSelecionado(vposicaoGridAnimeSelecionado);
                 QString lacao = "progresso:" + listaTemp[lposicao]->vid;
@@ -888,35 +889,35 @@ void MainClass::fAumentaProgressoID(const QString &ridAnime, const QString &epis
                         listaTemp[lposicao]->vnumEpisodiosTotais.toInt()){
                     listaTemp[lposicao]->vlista = "Completed";
                     cclient->fmudaLista(listaTemp[lposicao]->vid.toInt(), "COMPLETED");
-                    cleitorListaAnimes->instance()->fmudaLista(listaTemp[lposicao]->vid,
-                                                   listaTemp[lposicao]->vlista, leitorlistaanimes::type::ANIME);
+                    cdatabase->instance()->fmudaLista(listaTemp[lposicao]->vid,
+                                                   listaTemp[lposicao]->vlista, Database::type::ANIME);
                 }
                 //Caso esteja vendo um anime de, por exemplo, plan to watch, manda pra lista watching
                 //Se estiver vendo um anime que não está na lista, ele é adicionado em Watching também.
                 else if((llistaAnimeAssistindo.compare("Completed",Qt::CaseInsensitive) != 0)){
                     listaTemp[lposicao]->vlista = "Watching";
                     cclient->fmudaLista(listaTemp[lposicao]->vid.toInt(), "CURRENT");
-                    cleitorListaAnimes->instance()->fmudaLista(listaTemp[lposicao]->vid,
-                                                   listaTemp[lposicao]->vlista, leitorlistaanimes::type::ANIME);
+                    cdatabase->instance()->fmudaLista(listaTemp[lposicao]->vid,
+                                                   listaTemp[lposicao]->vlista, Database::type::ANIME);
                 }
             }
         }
     }
     //Aqui rola o refresh depois de ter mudado a lista temporária
     if(llistaAnimeAssistindo.compare("On Hold",Qt::CaseInsensitive) == 0){
-        vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, "PAUSED", leitorlistaanimes::type::ANIME);
+        vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, "PAUSED", Database::type::ANIME);
     }
     else if(llistaAnimeAssistindo.compare("Dropped",Qt::CaseInsensitive) == 0){
-        vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, "DROPPED", leitorlistaanimes::type::ANIME);
+        vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, "DROPPED", Database::type::ANIME);
     }
     else if(llistaAnimeAssistindo.compare("Plan to Watch",Qt::CaseInsensitive) == 0){
-        vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, "PLANNING", leitorlistaanimes::type::ANIME);
+        vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, "PLANNING", Database::type::ANIME);
     }
     else if(llistaAnimeAssistindo.compare("Completed",Qt::CaseInsensitive) == 0){
-        vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, "COMPLETED", leitorlistaanimes::type::ANIME);
+        vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, "COMPLETED", Database::type::ANIME);
     }
     else{
-        vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, "CURRENT", leitorlistaanimes::type::ANIME);
+        vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, "CURRENT", Database::type::ANIME);
     }
     if(llistaAtual.compare(llistaAnimeAssistindo, Qt::CaseInsensitive) == 0){
         if(vlistaSelecionada.size() > vindexAnimeSelecionado && vindexAnimeSelecionado != 0){
@@ -938,7 +939,7 @@ void MainClass::fmudaProgresso(QVariant progresso)
         if(vlistaSelecionada[vindexAnimeSelecionado]->vnumEpisodiosAssistidos.toInt() > 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vnumEpisodiosAssistidos =
                     QString::number(vlistaSelecionada[vindexAnimeSelecionado]->vnumEpisodiosAssistidos.toInt()-1);
-            cleitorListaAnimes->instance()->fmudaProgresso(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaProgresso(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vnumEpisodiosAssistidos);
             finfoAnimeSelecionado(vposicaoGridAnimeSelecionado);
             QString lacao = "progresso:" + vlistaSelecionada[vindexAnimeSelecionado]->vid;
@@ -957,7 +958,7 @@ void MainClass::fmudaProgresso(QVariant progresso)
         if(vlistaSelecionada[vindexAnimeSelecionado]->vnumEpisodiosAssistidos.toInt() < lepisodiosTotais){
             vlistaSelecionada[vindexAnimeSelecionado]->vnumEpisodiosAssistidos =
                     QString::number(vlistaSelecionada[vindexAnimeSelecionado]->vnumEpisodiosAssistidos.toInt()+1);
-            cleitorListaAnimes->instance()->fmudaProgresso(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaProgresso(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vnumEpisodiosAssistidos);
             finfoAnimeSelecionado(vposicaoGridAnimeSelecionado);
             QString lacao = "progresso:" + vlistaSelecionada[vindexAnimeSelecionado]->vid;
@@ -971,7 +972,7 @@ void MainClass::fmudaProgresso(QVariant progresso)
             else if((vlistaSelecionada[vindexAnimeSelecionado]->vlista.compare("Completed",Qt::CaseInsensitive) != 0)){
                 vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Watchig";
                 cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "CURRENT");
-                cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+                cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                                vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
             }
         }
@@ -985,7 +986,7 @@ void MainClass::fmudaNota(QVariant nota)
             vlistaSelecionada[vindexAnimeSelecionado]->vnotaMediaPessoal =
                     QString::number(vlistaSelecionada[vindexAnimeSelecionado]->vnotaMediaPessoal.toInt()-1);
             emit smediaPessoalAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vnotaMediaPessoal));
-            cleitorListaAnimes->instance()->fmudaNota(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaNota(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vnotaMediaPessoal);
             finfoAnimeSelecionado(vposicaoGridAnimeSelecionado);
             QString lacao = "nota:" + vlistaSelecionada[vindexAnimeSelecionado]->vid;
@@ -999,7 +1000,7 @@ void MainClass::fmudaNota(QVariant nota)
             vlistaSelecionada[vindexAnimeSelecionado]->vnotaMediaPessoal =
                     QString::number(vlistaSelecionada[vindexAnimeSelecionado]->vnotaMediaPessoal.toInt()+1);
             emit smediaPessoalAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vnotaMediaPessoal));
-            cleitorListaAnimes->instance()->fmudaNota(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaNota(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vnotaMediaPessoal);
             finfoAnimeSelecionado(vposicaoGridAnimeSelecionado);
             QString lacao = "nota:" + vlistaSelecionada[vindexAnimeSelecionado]->vid;
@@ -1020,7 +1021,7 @@ void MainClass::fadicionaNomeAlternativo(QVariant animeNovoNome)
 {
     //caso retorne true, colocar no AVISO
     if(!animeNovoNome.toString().isEmpty())
-        cleitorListaAnimes->instance()->finsereNomeAlternativo(vlistaSelecionada[vindexAnimeSelecionado]->vid, animeNovoNome.toStringList());
+        cdatabase->instance()->finsereNomeAlternativo(vlistaSelecionada[vindexAnimeSelecionado]->vid, animeNovoNome.toStringList());
 }
 
 void MainClass::fselecionaPastaespecificaAnime(QVariant dir)
@@ -1038,8 +1039,8 @@ void MainClass::fremoveFromList()
     QString lacao = "remove:" + vlistaSelecionada[vindexAnimeSelecionado]->vid;
     QStringList lstringListAcao = lacao.split(':');
     vlistaAcoes.insert(lstringListAcao, "null");
-    cleitorListaAnimes->instance()->fdeletedaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid);
-    vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+    cdatabase->instance()->fdeletedaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid);
+    vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
     if(vlistaSelecionada.size() > vindexAnimeSelecionado && vindexAnimeSelecionado != 0){
         vindexAnimeSelecionado--;
         if(vindexAnimeSelecionado < 12*(vpagina-1) && vpagina != 1){
@@ -1127,135 +1128,135 @@ void MainClass::fmudaListaAnime(QVariant rnewListVariant)
     if(rnewList.compare(vlistaAtual, Qt::CaseInsensitive) == 0)
         return;
     switch (vtipoAtual) {
-    case leitorlistaanimes::type::ANIME:
+    case Database::type::ANIME:
         if(rnewList.compare("CURRENT") == 0){
             //Change the anime info
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Watching";
             //Update anime client
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "CURRENT");
             //Update local variables
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         else if(rnewList.compare("COMPLETED") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Completed";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "COMPLETED");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         else if(rnewList.compare("PAUSED") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "On Hold";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "PAUSED");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         else if(rnewList.compare("DROPPED") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Dropped";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "DROPPED");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         else if(rnewList.compare("PLANNING") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Plan to Watch";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "PLANNING");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         break;
-    case leitorlistaanimes::type::MANGA:
+    case Database::type::MANGA:
         if(rnewList.compare("CURRENT") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Reading(Manga)";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "CURRENT");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         else if(rnewList.compare("COMPLETED") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Completed(Manga)";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "COMPLETED");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         else if(rnewList.compare("PAUSED") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "On Hold(Manga)";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "PAUSED");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         else if(rnewList.compare("DROPPED") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Dropped(Manga)";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "DROPPED");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         else if(rnewList.compare("PLANNING") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Plan to Read(Manga)";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "PLANNING");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         break;
-    case leitorlistaanimes::type::NOVEL:
+    case Database::type::NOVEL:
         if(rnewList.compare("CURRENT") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Reading(Novel)";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "CURRENT");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         else if(rnewList.compare("COMPLETED") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Completed(Novel)";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "COMPLETED");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         else if(rnewList.compare("PAUSED") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "On Hold(Novel)";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "PAUSED");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         else if(rnewList.compare("DROPPED") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Dropped(Novel)";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "DROPPED");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         else if(rnewList.compare("PLANNING") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Plan to Read(Novel)";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "PLANNING");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
                                            vlistaSelecionada[vindexAnimeSelecionado]->vlista, vtipoAtual);
         }
         break;
-    case leitorlistaanimes::type::SEASON:
+    case Database::type::SEASON:
         if(rnewList.compare("CURRENT") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Watching";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "CURRENT");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
-                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, leitorlistaanimes::type::ANIME);
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, Database::type::ANIME);
         }
         else if(rnewList.compare("COMPLETED") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Completed";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "COMPLETED");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
-                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, leitorlistaanimes::type::ANIME);
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, Database::type::ANIME);
         }
         else if(rnewList.compare("PAUSED") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "On Hold";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "PAUSED");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
-                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, leitorlistaanimes::type::ANIME);
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, Database::type::ANIME);
         }
         else if(rnewList.compare("DROPPED") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Dropped";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "DROPPED");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
-                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, leitorlistaanimes::type::ANIME);
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, Database::type::ANIME);
         }
         else if(rnewList.compare("PLANNING") == 0){
             vlistaSelecionada[vindexAnimeSelecionado]->vlista = "Plan to Read";
             cclient->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid.toInt(), "PLANNING");
-            cleitorListaAnimes->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
-                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, leitorlistaanimes::type::ANIME);
+            cdatabase->instance()->fmudaLista(vlistaSelecionada[vindexAnimeSelecionado]->vid,
+                                           vlistaSelecionada[vindexAnimeSelecionado]->vlista, Database::type::ANIME);
         }
         break;
     default:
@@ -1263,7 +1264,7 @@ void MainClass::fmudaListaAnime(QVariant rnewListVariant)
     }
 
     //Update de GUI with the new, change, lists
-    vlistaSelecionada = cleitorListaAnimes->instance()->sortLista(vordemLista, vlistaAtual, vtipoAtual);
+    vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
     if(vlistaSelecionada.size() > vindexAnimeSelecionado && vindexAnimeSelecionado != 0){
         vindexAnimeSelecionado--;
         if(vindexAnimeSelecionado < 12*(vpagina-1) && vpagina != 1){

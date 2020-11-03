@@ -14,7 +14,7 @@
 #include <QVariant>
 #include <QVariantList>
 
-#include "src/base/leitorlistaanimes.h"
+#include "src/base/database.h"
 #include "src/base/anime.h"
 #include "src/base/confbase.h"
 #include "src/base/arquivos.h"
@@ -158,7 +158,7 @@ private:
     void fdownloadCoverImages();
 
     //Classes
-    leitorlistaanimes *cleitorListaAnimes;
+    Database *cdatabase;
     confBase *cconfiguracoesDiretoriosPadrao;
     arquivos *carquivos;
     confUsuario *cconfiguracoesUsuarioDiretorios;
@@ -179,7 +179,7 @@ private:
 
     QString vordemLista;
     QString vlistaAtual;
-    leitorlistaanimes::type vtipoAtual;
+    Database::type vtipoAtual;
     janela vjanelaAtual;
 
     QMetaEnum vmetaEnumLista;

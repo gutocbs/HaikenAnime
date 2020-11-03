@@ -4,6 +4,7 @@ abaTorrent::abaTorrent(QObject *parent) : QObject(parent)
 {
     downloaderTorrent = new Downloader;
     downloaderTorrent->fsetWorker();
+    cdatabase = new Database();
 }
 
 void abaTorrent::fRefreshControl()
@@ -112,13 +113,13 @@ void abaTorrent::freadTorrentList()
                     lid = vHashDeNomeEId[lnomeAnime];
                 else
 //                    lid = cleitor->fprocuraAnimeNasListas(lnomeAnime);
-                    lid = cleitorListaAnimes->instance()->fprocuraIdNasListasRapido(lnomeAnime);
+                    lid = cdatabase->instance()->fbuscaIDRapido(lnomeAnime);
                 if(!vHashDeNomeEId.contains(lnomeAnime))
                     vHashDeNomeEId.insert(lnomeAnime,lid);
 
-                lepisodiosAssistidos = cleitorListaAnimes->instance()->fbuscaAnimePorIDERetornaEpisodio(lid);
-                lista = cleitorListaAnimes->instance()->fbuscaAnimePorIDERetornaLista(lid);
-                lposicaoAnimeNaLista = cleitorListaAnimes->instance()->fbuscaAnimePorIDERetornaPosicao(lid);
+                lepisodiosAssistidos = cdatabase->instance()->fbuscaIDRetornaEpisodio(lid);
+                lista = cdatabase->instance()->fbuscaIDRetornaLista(lid);
+                lposicaoAnimeNaLista = cdatabase->instance()->fbuscaIDRetornaPosicao(lid);
             }
             if(stream.name() == "link") {
                 QString link = stream.readElementText();
@@ -214,7 +215,7 @@ void abaTorrent::freadTorrentList()
 
 void abaTorrent::fchangeTorrentState(int posicaTabela, bool checkState)
 {
-    if(vinfoTorrent.isEmpty() || vinfoTorrent.at(posicaTabela).toStringList().isEmpty())
+    if((vinfoTorrent.isEmpty() || vinfoTorrent.at(posicaTabela).toStringList().isEmpty()) && posicaTabela != -1)
         return;
     QList<QVariant> listaOrdenada = fgetTorrentInfo(vordemLista);
     QStringList tempList = vinfoTorrent.at(posicaTabela).toStringList();
@@ -278,7 +279,7 @@ void abaTorrent::fdownloadTorrents()
     int tamanhoLista = vlistaAnimesBaixados.size();
     for(int i = 0; i < tamanhoLista; i++){
         //É necessário ter um delay entre os inputs de comando
-        this->thread()->wait(700);
+        QThread::sleep(1);
         QPointer<QProcess> lprocesso(new QProcess);
         QStringList argumentos;
         if(cabaConfig->instance()->fgetPreferredTorrentPath().contains("uTorrent")){
@@ -300,7 +301,7 @@ void abaTorrent::fdownloadTorrents()
         }
         lprocesso->setArguments(argumentos);
         if(lprocesso->startDetached()){
-            QString id = cleitorListaAnimes->instance()->fprocuraNomeRetornaID(vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeAnime);
+            QString id = cdatabase->instance()->fbuscaNomeRetornaID(vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeAnime);
             cconfPastasAnimes->instance()->fselecionaPastaEspecificaAnime(id, cabaConfig->instance()->fgetSaveFolder() +
                                                                           "/" + vlistaTorrents[vlistaAnimesBaixados[0]]->vnomeAnime);
             qDebug() << "Download started successfully!";
@@ -312,7 +313,7 @@ void abaTorrent::fdownloadTorrents()
 
 QVariant abaTorrent::fgetSingleTorrentInfo(int posicaTabela)
 {
-    if(vinfoTorrent.isEmpty() || vinfoTorrent.size() < posicaTabela)
+    if((vinfoTorrent.isEmpty() || vinfoTorrent.size() < posicaTabela) && posicaTabela != -1)
         return 0;
     return vinfoTorrent.at(posicaTabela).toStringList();
 }
@@ -332,14 +333,14 @@ int abaTorrent::fcheckPriority(torrentinfo* rtorrent)
         return 0;
 
     //Checa se o episódio já foi assistido, e caso já tenha a prioridade é 0
-    if(cleitorListaAnimes->instance()->fbuscaAnimePorIDERetornaEpisodio(vHashDeNomeEId[rtorrent->vnomeAnime]) >=
+    if(cdatabase->instance()->fbuscaIDRetornaEpisodio(vHashDeNomeEId[rtorrent->vnomeAnime]) >=
             rtorrent->vepisodioAnime)
         return 0;
 
     //Checa se o episódio já foi baixado, e caso já tiver sido, a prioridade é 0
     //Se ele não tiver sido baixado, a função irá retornar uma string vazia
     QPointer<arquivos> carquivos(new arquivos);
-    if(!carquivos->fprocuraEpisodioEspecifico(cleitorListaAnimes->instance()->fretornaAnimePorID
+    if(!carquivos->fprocuraEpisodioEspecifico(cdatabase->instance()->fretornaAnimePorID
                                              (vHashDeNomeEId[rtorrent->vnomeAnime]), rtorrent->vepisodioAnime.toInt()).isEmpty()){
         return 0;
     }

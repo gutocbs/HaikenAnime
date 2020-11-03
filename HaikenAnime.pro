@@ -42,6 +42,7 @@ HEADERS += \
     src/base/arquivos.h \
     src/base/confbase.h \
     src/base/confusuario.h \
+    src/base/database.h \
     src/base/downloaderworker.h \
     src/base/leitorlistaanimes.h \
     src/base/torrentinfo.h \
@@ -77,6 +78,7 @@ SOURCES += \
     src/base/arquivos.cpp \
     src/base/confbase.cpp \
     src/base/confusuario.cpp \
+    src/base/database.cpp \
     src/base/downloaderworker.cpp \
     src/base/leitorlistaanimes.cpp \
     src/clients/anilist.cpp \
