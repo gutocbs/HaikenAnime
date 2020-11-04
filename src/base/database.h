@@ -21,6 +21,7 @@ class Database : public QObject
 
 public:
     explicit Database(QObject *parent = nullptr);
+    ~Database();
     static Database *instance();
     enum type{ANIME, MANGA, NOVEL, SEASON};
     Q_ENUM(type)

@@ -54,9 +54,7 @@ void DownloaderWorker::ffinishedAvatar()
         if(vfile->isOpen())
             vfile->close();
     }
-    QFile *tempFile = vfile;
     vfile = nullptr;
-    tempFile->deleteLater();
 
     vfileIsOpen = false;
     m_busy = false;
@@ -153,9 +151,7 @@ void DownloaderWorker::ffinishedGeneralXML()
         if(vfile->isOpen())
             vfile->close();
     }
-    QFile *tempFile = vfile;
     vfile = nullptr;
-    tempFile->deleteLater();
 
     vfileIsOpen = false;
     m_busy = false;
@@ -168,9 +164,7 @@ void DownloaderWorker::ffinishedSpecificXML()
         if(vfile->isOpen())
             vfile->close();
     }
-    QFile *tempFile = vfile;
     vfile = nullptr;
-    tempFile->deleteLater();
 
     vfileIsOpen = false;
     m_busy = false;
@@ -183,9 +177,7 @@ void DownloaderWorker::ffinishedAnimeTorrent()
         if(vfile->isOpen())
             vfile->close();
     }
-    QFile *tempFile = vfile;
     vfile = nullptr;
-    tempFile->deleteLater();
 
     vfileIsOpen = false;
     if(vreply)
@@ -251,9 +243,7 @@ void DownloaderWorker::ffinished()
         if(vfile->isOpen())
             vfile->close();
     }
-    QFile *tempFile = vfile;
     vfile = nullptr;
-    tempFile->deleteLater();
 
     vfileIsOpen = false;
     if(vreply)
@@ -317,9 +307,7 @@ void DownloaderWorker::ffinishedBig()
         if(vfile->isOpen())
             vfile->close();
     }
-    QFile *tempFile = vfile;
     vfile = nullptr;
-    tempFile->deleteLater();
 
     vfileIsOpen = false;
     if(vreply)

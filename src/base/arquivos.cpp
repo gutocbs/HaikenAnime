@@ -52,11 +52,22 @@ bool arquivos::fcomparaDadosAnime(QString rfileName, const QString &rnomeAnime, 
 }
 
 QString arquivos::fprocuraEpisodio(anime *ranimeBuscado){
+    //Checa se o anime pode ser lido
+    if(!cdatabase->instance()->fchecaDatabaseReady())
+        return "";
+
+    QString nome = ranimeBuscado->vnome;
+    QString nomeIngles = ranimeBuscado->vnomeIngles;
+    QStringList nomesAlternativos = ranimeBuscado->vnomeAlternativo;
+    int numEpisodiosAssistidos = ranimeBuscado->vnumEpisodiosAssistidos.toInt();
+    int temporada = ranimeBuscado->vtemporada;
+    int id = ranimeBuscado->vid.toInt();
+
     //Verifica se a função retorna um valor que não está vazio, ou seja
     //Se existe uma pasta com o nome do anime
-    if(!cconfUsuario->instance()->fretornaDiretorioEspecifico(ranimeBuscado->vid.toInt()).isEmpty()){
+    if(!cconfUsuario->instance()->fretornaDiretorioEspecifico(id).isEmpty()){
         //Começa a iterar a pasta em busca das pastas de animes
-        QDirIterator lit(cconfUsuario->instance()->fretornaDiretorioEspecifico(ranimeBuscado->vid.toInt()), QDirIterator::Subdirectories);
+        QDirIterator lit(cconfUsuario->instance()->fretornaDiretorioEspecifico(id), QDirIterator::Subdirectories);
         while(lit.hasNext()){
             QFile lfile(lit.next());
             QFileInfo lchecaSeArquivoOuPasta(lfile.fileName());
@@ -64,8 +75,8 @@ QString arquivos::fprocuraEpisodio(anime *ranimeBuscado){
             if(lchecaSeArquivoOuPasta.isFile() == true && (lfile.fileName().endsWith("mkv", Qt::CaseInsensitive) ||
                                                            lfile.fileName().endsWith("mp4", Qt::CaseInsensitive))){
                 //Compara o nome do anime e o número do episódio
-                if(fcomparaDadosAnime(lit.fileName(), ranimeBuscado->vnome, ranimeBuscado->vnomeIngles, ranimeBuscado->vnomeAlternativo,
-                                           ranimeBuscado->vnumEpisodiosAssistidos.toInt(), ranimeBuscado->vtemporada))
+                if(fcomparaDadosAnime(lit.fileName(), nome, nomeIngles, nomesAlternativos,
+                                           numEpisodiosAssistidos, temporada))
                     return lfile.fileName();
             }
         }
@@ -81,8 +92,8 @@ QString arquivos::fprocuraEpisodio(anime *ranimeBuscado){
                 if(lchecaSeArquivoOuPasta.isFile() == true && (lfile.fileName().endsWith("mkv", Qt::CaseInsensitive) ||
                                                                lfile.fileName().endsWith("mp4", Qt::CaseInsensitive))){
                     //Compara o nome do anime e o número do episódio
-                    if(fcomparaDadosAnime(lit.fileName(), ranimeBuscado->vnome, ranimeBuscado->vnomeIngles, ranimeBuscado->vnomeAlternativo,
-                                               ranimeBuscado->vnumEpisodiosAssistidos.toInt(), ranimeBuscado->vtemporada))
+                    if(fcomparaDadosAnime(lit.fileName(), nome, nomeIngles, nomesAlternativos,
+                                               numEpisodiosAssistidos, temporada))
                         return lfile.fileName();
                 }
             }
@@ -93,11 +104,21 @@ QString arquivos::fprocuraEpisodio(anime *ranimeBuscado){
 
 ///anime* animebuscado, int episodioBuscado
 QString arquivos::fprocuraEpisodioEspecifico(anime *ranimeBuscado, int rEpisodioBuscado){
+    //Checa se o anime pode ser lido
+    if(!cdatabase->instance()->fchecaDatabaseReady())
+        return "";
+
+    QString nome = ranimeBuscado->vnome;
+    QString nomeIngles = ranimeBuscado->vnomeIngles;
+    QStringList nomesAlternativos = ranimeBuscado->vnomeAlternativo;
+    int temporada = ranimeBuscado->vtemporada;
+    int id = ranimeBuscado->vid.toInt();
+
     //Verifica se a função retorna um valor que não está vazio, ou seja
     //Se existe uma pasta com o nome do anime
-    if(!cconfUsuario->instance()->fretornaDiretorioEspecifico(ranimeBuscado->vid.toInt()).isEmpty()){
+    if(!cconfUsuario->instance()->fretornaDiretorioEspecifico(id).isEmpty()){
         //Começa a iterar a pasta em busca das pastas de animes
-        QDirIterator lit(cconfUsuario->instance()->fretornaDiretorioEspecifico(ranimeBuscado->vid.toInt()), QDirIterator::Subdirectories);
+        QDirIterator lit(cconfUsuario->instance()->fretornaDiretorioEspecifico(id), QDirIterator::Subdirectories);
         while(lit.hasNext()){
             QFile lfile(lit.next());
             QFileInfo lchecaSeArquivoOuPasta(lfile.fileName());
@@ -105,8 +126,8 @@ QString arquivos::fprocuraEpisodioEspecifico(anime *ranimeBuscado, int rEpisodio
             if(lchecaSeArquivoOuPasta.isFile() == true && (lfile.fileName().endsWith("mkv", Qt::CaseInsensitive) ||
                                                            lfile.fileName().endsWith("mp4", Qt::CaseInsensitive))){
                 //Compara o nome do anime e o número do episódio
-                if(fcomparaDadosAnime(lit.fileName(), ranimeBuscado->vnome, ranimeBuscado->vnomeIngles, ranimeBuscado->vnomeAlternativo,
-                                           rEpisodioBuscado-1, ranimeBuscado->vtemporada))
+                if(fcomparaDadosAnime(lit.fileName(), nome, nomeIngles, nomesAlternativos,
+                                           rEpisodioBuscado-1, temporada))
                     return lfile.fileName();
             }
         }
@@ -122,8 +143,8 @@ QString arquivos::fprocuraEpisodioEspecifico(anime *ranimeBuscado, int rEpisodio
                 if(lchecaSeArquivoOuPasta.isFile() == true && (lfile.fileName().endsWith("mkv", Qt::CaseInsensitive) ||
                                                                lfile.fileName().endsWith("mp4", Qt::CaseInsensitive))){
                     //Compara o nome do anime e o número do episódio
-                    if(fcomparaDadosAnime(lit.fileName(), ranimeBuscado->vnome, ranimeBuscado->vnomeIngles, ranimeBuscado->vnomeAlternativo,
-                                               rEpisodioBuscado-1, ranimeBuscado->vtemporada))
+                    if(fcomparaDadosAnime(lit.fileName(), nome, nomeIngles, nomesAlternativos,
+                                               rEpisodioBuscado-1, temporada))
                         return lfile.fileName();
                 }
             }

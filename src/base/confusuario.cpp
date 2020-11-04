@@ -116,7 +116,6 @@ void confUsuario::fselecionaPastaEspecificaAnime(const QString &ridAnime, const 
     fsalvaPastasArquivos();
 }
 
-//Aparentemente nunca entra aqui
 void confUsuario::fsetupListasPraBusca()
 {
     if(vlista == 0){

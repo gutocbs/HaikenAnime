@@ -26,6 +26,7 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
 
     cconfiguracoesUsuarioDiretorios->instance()->frecebeConfigs(cabaConfig->instance()->fgetDirectory().toStringList());
 
+    cdatabase->instance()->fcarregaIdNomeAno();
     cdatabase->instance()->freadDatabaseFile();
     vlistaSelecionada = cdatabase->instance()->returnAnimeList("CURRENT");
 
@@ -42,6 +43,10 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     vtipoAtual = Database::type::ANIME;
     vordemLista = "";
     vjanelaAtual = janela::MAIN;
+
+
+    cconfiguracoesUsuarioDiretorios->instance()->fgetThread(tthreadDiretorios);
+    cconfiguracoesUsuarioDiretorios->instance()->moveToThread(&tthreadDiretorios);
 
     vtimerCountdown = new QTimer(this);
     vtimerChecaAssistindo = new QTimer(this);
@@ -146,8 +151,6 @@ void MainClass::fconnectSuccess()
 
     //After, will look for anime episodes in your computer
     if(!tthreadDiretorios.isRunning()){
-        cconfiguracoesUsuarioDiretorios->instance()->fgetThread(tthreadDiretorios);
-        cconfiguracoesUsuarioDiretorios->instance()->moveToThread(&tthreadDiretorios);
         tthreadDiretorios.start();
     }
 }
@@ -160,8 +163,6 @@ void MainClass::fconnectFail()
         finfoAnimeSelecionado(vposicaoGridAnimeSelecionado);
     //After, will look for anime episodes in your computer
     if(!tthreadDiretorios.isRunning()){
-        cconfiguracoesUsuarioDiretorios->instance()->fgetThread(tthreadDiretorios);
-        cconfiguracoesUsuarioDiretorios->instance()->moveToThread(&tthreadDiretorios);
         tthreadDiretorios.start();
     }
 
