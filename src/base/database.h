@@ -133,7 +133,8 @@ private:
 
     //Listas mistas
     QVector<anime*> vlistaBusca;
-    QVector<anime*> llistaTemp;
+    QVector<anime*> vlistaTemp;
+    QVector<anime*> vlistaAno;
 
     //Hashs de busca
     QHash<QString,QString> vhashListaAnimesPorId;

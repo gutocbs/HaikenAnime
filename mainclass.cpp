@@ -361,7 +361,7 @@ void MainClass::finfoAnimeSelecionado(QVariant posicaoAnimeNaGrid)
     if(ok)
         vindexAnimeSelecionado = 12*(vpagina-1)+vposicaoGridAnimeSelecionado;
 
-    if(vlistaSelecionada.size() > vindexAnimeSelecionado){
+    if(vlistaSelecionada.size() > vindexAnimeSelecionado && cdatabase->instance()->fchecaDatabaseReady()){
         emit snomeAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vnome));
         emit snomeAlternativoAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vnomeIngles));
         emit ssinopseAnimeSelecionado(QVariant(vlistaSelecionada[vindexAnimeSelecionado]->vsinopse));
@@ -777,7 +777,7 @@ void MainClass::frefresh()
 void MainClass::fchecaAnimeAssistido()
 {
     //Crio uma variável da lib Robot para monitorar as janelas abertas
-    Robot::Window *llistaJanelas = new Robot::Window;
+    QScopedPointer<Robot::Window> llistaJanelas(new Robot::Window);
     QString nomejanela;
     //Pego o nome de todos os players selecionados nas configurações para reconhecimento
     QStringList lplayers = cabaConfig->instance()->fgetPlayers();
@@ -821,7 +821,6 @@ void MainClass::fchecaAnimeAssistido()
                             return;
                         else
                             vcontadorAssistindoEpisodio++;
-                        delete llistaJanelas;
                         return;
                     }
                 }
@@ -830,7 +829,6 @@ void MainClass::fchecaAnimeAssistido()
     }
     vcontadorAssistindoEpisodio = 0;
     emit sanimeReconhecidoID(QVariant(""), QVariant(""), QVariant(""));
-    delete llistaJanelas;
 }
 
 void MainClass::fAumentaProgressoID(const QString &ridAnime, const QString &episodioAnime)

@@ -14,6 +14,7 @@ Database::~Database()
 {
     fsalvaIdNomeAno();
     fdeletaListaAnimes();
+    qDeleteAll(vlistaAno);
 }
 
 Database *Database::instance()
@@ -308,10 +309,11 @@ QVector<anime *> Database::returnAnimeYearlyList(int ano)
        vlistaAnimeSeasonSummer.clear();
     if(!vlistaAnimeSeasonSpring.isEmpty())
         vlistaAnimeSeasonSpring.clear();
-    QVector<anime*> vetorTemporario;
+    if(!vlistaAno.isEmpty())
+        qDeleteAll(vlistaAno);
     QFile lleJson("Configurações/Temp/Lists/animeList"+QString::number(ano)+".txt");
     if(lleJson.size() == 0)
-        return vetorTemporario;
+        return vlistaAno;
     if(!vhashSizeListasPorAno.contains(ano))
         vhashSizeListasPorAno.insert(ano, QString::number(lleJson.size()));
 
@@ -451,7 +453,7 @@ QVector<anime *> Database::returnAnimeYearlyList(int ano)
                 tempNomeAnime.append(lnovoAnime->vnomeAlternativo);
 
                 if(ldataEstreia.year() == ano){
-                    vetorTemporario.append(lnovoAnime);
+                    vlistaAno.append(lnovoAnime);
                     if(lseason.compare("Winter") == 0)
                         vlistaAnimeSeasonWinter.append(lnovoAnime);
                     else if(lseason.compare("Spring") == 0)
@@ -470,7 +472,7 @@ QVector<anime *> Database::returnAnimeYearlyList(int ano)
                     vhashNomeAnimesPorId.insert(lnovoAnime->vid, tempNomeAnime);
                 }
                 if(!vhashPosicaoAnimesPorId.contains(lnovoAnime->vid))
-                    vhashPosicaoAnimesPorId.insert(lnovoAnime->vid, vetorTemporario.size()-1);
+                    vhashPosicaoAnimesPorId.insert(lnovoAnime->vid, vlistaAno.size()-1);
                 if(!vhashListaAnimesPorId.contains(lnovoAnime->vid))
                     vhashListaAnimesPorId.insert(lnovoAnime->vid, QString::number(ano));
 
@@ -498,7 +500,7 @@ QVector<anime *> Database::returnAnimeYearlyList(int ano)
         }
         lleJson.close();
     }
-    return vetorTemporario;
+    return vlistaAno;
 }
 
 anime *Database::fbuscaAnimeNoAno(int ano, const QString &rid)
@@ -1977,114 +1979,114 @@ QVector<anime *> Database::returnSortList(const QString &rordem, QString rlista,
 {
     if(rtipo == type::ANIME){
         if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaAnimeWatching;
+            vlistaTemp = vlistaAnimeWatching;
         else if(rlista.compare("COMPLETED", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaAnimeCompleted;
+            vlistaTemp = vlistaAnimeCompleted;
         else if(rlista.compare("PAUSED", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaAnimeOnHold;
+            vlistaTemp = vlistaAnimeOnHold;
         else if(rlista.compare("DROPPED", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaAnimeDropped;
+            vlistaTemp = vlistaAnimeDropped;
         else if(rlista.compare("PLANNING", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaAnimePlanToWatch;
+            vlistaTemp = vlistaAnimePlanToWatch;
         else if(rlista == "busca")
-            llistaTemp = vlistaBusca;
+            vlistaTemp = vlistaBusca;
     }
     else if(rtipo == type::MANGA){
         if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaMangaReading;
+            vlistaTemp = vlistaMangaReading;
         else if(rlista.compare("COMPLETED", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaMangaCompleted;
+            vlistaTemp = vlistaMangaCompleted;
         else if(rlista.compare("PAUSED", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaMangaOnHold;
+            vlistaTemp = vlistaMangaOnHold;
         else if(rlista.compare("DROPPED", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaMangaDropped;
+            vlistaTemp = vlistaMangaDropped;
         else if(rlista.compare("PLANNING", Qt::CaseInsensitive) == 0)
-                llistaTemp = vlistaMangaPlanToRead;
+                vlistaTemp = vlistaMangaPlanToRead;
         else if(rlista == "busca")
-            llistaTemp = vlistaBusca;
+            vlistaTemp = vlistaBusca;
     }
     else if(rtipo == type::NOVEL){
         if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaNovelReading;
+            vlistaTemp = vlistaNovelReading;
         else if(rlista.compare("COMPLETED", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaNovelCompleted;
+            vlistaTemp = vlistaNovelCompleted;
         else if(rlista.compare("PAUSED", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaNovelOnHold;
+            vlistaTemp = vlistaNovelOnHold;
         else if(rlista.compare("DROPPED", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaNovelDropped;
+            vlistaTemp = vlistaNovelDropped;
         else if(rlista.compare("PLANNING", Qt::CaseInsensitive) == 0)
-            llistaTemp = vlistaNovelPlanToRead;
+            vlistaTemp = vlistaNovelPlanToRead;
         else if(rlista == "busca")
-            llistaTemp = vlistaBusca;
+            vlistaTemp = vlistaBusca;
     }
     else if(rtipo == type::SEASON){
         if(rlista.contains("WINTER", Qt::CaseInsensitive))
-            llistaTemp = vlistaAnimeSeasonWinter;
+            vlistaTemp = vlistaAnimeSeasonWinter;
         else if(rlista.contains("SPRING", Qt::CaseInsensitive))
-            llistaTemp = vlistaAnimeSeasonSpring;
+            vlistaTemp = vlistaAnimeSeasonSpring;
         else if(rlista.contains("SUMMER", Qt::CaseInsensitive))
-            llistaTemp = vlistaAnimeSeasonSummer;
+            vlistaTemp = vlistaAnimeSeasonSummer;
         else if(rlista.contains("FALL", Qt::CaseInsensitive))
-            llistaTemp = vlistaAnimeSeasonFall;
+            vlistaTemp = vlistaAnimeSeasonFall;
         else
-            llistaTemp = returnAnimeYearlyList(rlista.toInt());
+            vlistaTemp = returnAnimeYearlyList(rlista.toInt());
     }
     else
-        llistaTemp.clear();
+        vlistaTemp.clear();
 
 
     if(!rordem.isEmpty())
     {
         if(rordem.startsWith("c")){
             if(rordem.contains("nome", Qt::CaseInsensitive)){
-                std::sort(llistaTemp.begin(),llistaTemp.end(),[](anime* a, anime* b)->bool{
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
                     return a->vnome < b->vnome ;});
             }
             else if(rordem.contains("data", Qt::CaseInsensitive)){
-                std::sort(llistaTemp.begin(),llistaTemp.end(),[](anime* a, anime* b)->bool{
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
                     return a->vdataEstreia < b->vdataEstreia ;});
             }
             else if(rordem.contains("progresso", Qt::CaseInsensitive)){
-                std::sort(llistaTemp.begin(),llistaTemp.end(),[](anime* a, anime* b)->bool{return
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{return
                             a->vnumEpisodiosAssistidos.toInt()
                             < b->vnumEpisodiosAssistidos.toInt() ;});
             }
             else if(rordem.contains("nota", Qt::CaseInsensitive)){
-                std::sort(llistaTemp.begin(),llistaTemp.end(),[](anime* a, anime* b)->bool{
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
                     return a->vnotaMediaPessoal.toInt()
                             < b->vnotaMediaPessoal.toInt() ;});
             }
             else if(rordem.contains("formato", Qt::CaseInsensitive)){
-                std::sort(llistaTemp.begin(),llistaTemp.end(),[](anime* a, anime* b)->bool{
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
                     return a->vformato < b->vformato ;});
             }
         }
         else{
             if(rordem.contains("nome", Qt::CaseInsensitive)){
-                std::sort(llistaTemp.begin(),llistaTemp.end(),[](anime* a, anime* b)->bool{
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
                     return a->vnome > b->vnome ;});
             }
             else if(rordem.contains("data", Qt::CaseInsensitive)){
-                std::sort(llistaTemp.begin(),llistaTemp.end(),[](anime* a, anime* b)->bool{
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
                     return a->vdataEstreia > b->vdataEstreia ;});
             }
             else if(rordem.contains("progresso", Qt::CaseInsensitive)){
-                std::sort(llistaTemp.begin(),llistaTemp.end(),[](anime* a, anime* b)->bool{return
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{return
                             static_cast<float>(a->vnumEpisodiosAssistidos.toInt())
                             > static_cast<float>(b->vnumEpisodiosAssistidos.toInt()) ;});
             }
             else if(rordem.contains("nota", Qt::CaseInsensitive)){
-                std::sort(llistaTemp.begin(),llistaTemp.end(),[](anime* a, anime* b)->bool{
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
                     return a->vnotaMediaPessoal.toInt()
                             > b->vnotaMediaPessoal.toInt() ;});
             }
             else if(rordem.contains("formato", Qt::CaseInsensitive)){
-                std::sort(llistaTemp.begin(),llistaTemp.end(),[](anime* a, anime* b)->bool{
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
                     return a->vformato > b->vformato ;});
             }
         }
     }
-    return llistaTemp;
+    return vlistaTemp;
 }
 
 QString Database::fbuscaIDRapido(const QString &rnomeAnime)
@@ -2628,6 +2630,8 @@ QString Database::limpaDataProximoEpisodio(QString linha)
 {
     if(linha.contains("?"))
         linha = "Not      Airing";
+    else
+        linha = "";
     return linha;
 }
 

@@ -6,6 +6,7 @@
 #include <QList>
 #include <QHash>
 #include <QPointer>
+#include <QScopedPointer>
 
 #include "src/base/torrentinfo.h"
 #include "src/base/abaconfig.h"

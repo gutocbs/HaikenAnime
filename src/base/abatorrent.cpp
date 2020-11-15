@@ -280,7 +280,7 @@ void abaTorrent::fdownloadTorrents()
     for(int i = 0; i < tamanhoLista; i++){
         //É necessário ter um delay entre os inputs de comando
         QThread::sleep(1);
-        QPointer<QProcess> lprocesso(new QProcess);
+        QScopedPointer<QProcess> lprocesso(new QProcess);
         QStringList argumentos;
         if(cabaConfig->instance()->fgetPreferredTorrentPath().contains("uTorrent")){
             lprocesso->setProgram(cabaConfig->instance()->fgetPreferredTorrentPath());
@@ -339,7 +339,7 @@ int abaTorrent::fcheckPriority(torrentinfo* rtorrent)
 
     //Checa se o episódio já foi baixado, e caso já tiver sido, a prioridade é 0
     //Se ele não tiver sido baixado, a função irá retornar uma string vazia
-    QPointer<arquivos> carquivos(new arquivos);
+    QScopedPointer<arquivos> carquivos(new arquivos);
     if(!carquivos->fprocuraEpisodioEspecifico(cdatabase->instance()->fretornaAnimePorID
                                              (vHashDeNomeEId[rtorrent->vnomeAnime]), rtorrent->vepisodioAnime.toInt()).isEmpty()){
         return 0;

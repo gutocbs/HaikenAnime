@@ -154,10 +154,9 @@ QString arquivos::fprocuraEpisodioEspecifico(anime *ranimeBuscado, int rEpisodio
 }
 
 bool arquivos::fabreEpisodio(const QByteArray &rcaminhoArquivo){
-    QDesktopServices *abreEpisodio = new QDesktopServices;
+    QScopedPointer<QDesktopServices> abreEpisodio(new QDesktopServices);
     if(!rcaminhoArquivo.isEmpty()){
         abreEpisodio->openUrl(QUrl("file:///"+rcaminhoArquivo,QUrl::TolerantMode));
-        delete abreEpisodio;
         return true;
     }
     return false;
