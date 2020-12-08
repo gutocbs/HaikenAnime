@@ -82,7 +82,9 @@ void MainClass::fconnections()
 
 void MainClass::fdownloadCoverImages()
 {
-    if(!vlistaFilaLista.contains(vlistaAtual)){
+    if(!vlistaFilaLista.contains(vlistaAtual) && !vlistaAtual.contains("Fall", Qt::CaseInsensitive)
+        && !vlistaAtual.contains("Winter", Qt::CaseInsensitive) && !vlistaAtual.contains("Summer", Qt::CaseInsensitive)
+        && !vlistaAtual.contains("Spring", Qt::CaseInsensitive)){
         vlistaFilaLista.append(vlistaAtual);
         vlistaFilaTipo.append(enumtipoToQString(vtipoAtual));
         vlistaFilaSize.append(vlistaSelecionada.size());

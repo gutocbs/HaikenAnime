@@ -310,7 +310,7 @@ QVector<anime *> Database::returnAnimeYearlyList(int ano)
     if(!vlistaAnimeSeasonSpring.isEmpty())
         vlistaAnimeSeasonSpring.clear();
     if(!vlistaAno.isEmpty())
-        qDeleteAll(vlistaAno);
+       vlistaAno.clear();
     QFile lleJson("Configurações/Temp/Lists/animeList"+QString::number(ano)+".txt");
     if(lleJson.size() == 0)
         return vlistaAno;
@@ -710,6 +710,14 @@ anime *Database::fretornaAnimePorPosicao(const QString &lista, int posicao)
         return vlistaAnimeCompleted[posicao];
     else if(lista.compare("SEARCH", Qt::CaseInsensitive) == 0 && vlistaAnimeCompleted.size() > posicao)
         return vlistaBusca[posicao];
+    else{
+        bool ok;
+        //Checa se a lista é um número válido
+        lista.toInt(&ok);
+        if(ok && vlistaAno.size() > posicao){
+            return vlistaAno[posicao];
+        }
+    }
 
     return new anime;
 }

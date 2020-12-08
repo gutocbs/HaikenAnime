@@ -152,9 +152,10 @@ bool anilist::fgetListasAnoSeason()
 }
 
 bool anilist::fgetListaAno(const QString &rano){
-    if(QFile::exists("Configurações/Temp/Lists/animeList"+rano+".txt") && rano != QString::number(QDate::currentDate().year())){
+    if(QFile::exists("Configurações/Temp/Lists/animeList"+rano+".txt") && rano.toInt() < QDate::currentDate().year())
         return true;
-    }
+    else if(QFile::exists("Configurações/Temp/Lists/animeList"+rano+".txt") && rano.toInt() == QDate::currentDate().year() && QDate::currentDate().month() > 10)
+        return true;
     //Cria o pedido em javascript
     QNetworkRequest lrequest(graphqlUrl);
     lrequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
