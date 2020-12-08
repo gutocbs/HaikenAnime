@@ -93,7 +93,7 @@ void MainClass::fdownloadCoverImages()
     if(cdownloader->isBusy() && !vlistaFilaTipo.isEmpty()){
         QTimer::singleShot(5000, this, &MainClass::fdownloadCoverImages);
     }
-    else{
+    else if(!vlistaFilaTipo.isEmpty()){
         cdownloader->setListAndType(vlistaFilaLista.takeFirst(), vlistaFilaTipo.takeFirst());
     //    cdownloader->setListAndType(vlistaFilaLista.first(), vlistaFilaTipo.first());
         for(int i = 0; i < vlistaFilaSize.first(); i++){
