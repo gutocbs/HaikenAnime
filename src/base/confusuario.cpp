@@ -9,7 +9,7 @@ confUsuario::confUsuario(QObject *parent) : QObject(parent)
 {
     vterminouChecagem = false;
     vlista = 0;
-    cleitorlistaanimes = new leitorlistaanimes();
+    cdatabase = new Database();
 //    vdiretorioAnimes.append("E:/Animes/");
     //    vdiretorioAnimes.append("E:/Downloads/");
 }
@@ -58,8 +58,8 @@ void confUsuario::fbuscaDiretoriosAnimes(){
             if(!vtemporada.isEmpty())
                 lfileName.append(QString(" " + vtemporada));
 
-            //Pega o nome de cada diretorio e divide, pegando apenas o nome do anime
-            idAnime = cleitorlistaanimes->instance()->fprocuraNomeRetornaID(lfileName);
+            //Checa se o diretório tem o nome de um anime das listas
+            idAnime = cdatabase->instance()->fbuscaNomeRetornaID(lfileName);
             if(!idAnime.isEmpty())
                 vdiretorioEspecificoAnime.insert(idAnime, lfile.fileName());
         }
@@ -116,7 +116,6 @@ void confUsuario::fselecionaPastaEspecificaAnime(const QString &ridAnime, const 
     fsalvaPastasArquivos();
 }
 
-//Aparentemente nunca entra aqui
 void confUsuario::fsetupListasPraBusca()
 {
     if(vlista == 0){
@@ -124,11 +123,9 @@ void confUsuario::fsetupListasPraBusca()
             this->thread()->exit(0);
             return;
         }
-        vlistaAnimes = cleitorlistaanimes->instance()->retornaListaWatching();
         vlista++;
         qDebug() << "Searching for animes in your computer";
-        if(!vlistaAnimes.isEmpty())
-            fbuscaDiretoriosAnimes();
+        fbuscaDiretoriosAnimes();
     }
     else if(vlista == 1){
         if(this->thread()->isInterruptionRequested()){
@@ -137,7 +134,7 @@ void confUsuario::fsetupListasPraBusca()
         }
         vlista = 0;
         fsalvaPastasArquivos();
-        cleitorlistaanimes->instance()->fcarregaListaAnoEmThread();
+        cdatabase->instance()->fcarregaListaAnoEmThread();
         emit schecouPastas();
         vterminouChecagem = true;
         qDebug() << "All animes in the computer were found";

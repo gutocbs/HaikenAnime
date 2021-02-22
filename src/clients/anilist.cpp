@@ -152,9 +152,10 @@ bool anilist::fgetListasAnoSeason()
 }
 
 bool anilist::fgetListaAno(const QString &rano){
-    if(QFile::exists("Configurações/Temp/Lists/animeList"+rano+".txt") && rano != QString::number(QDate::currentDate().year())){
+    if(QFile::exists("Configurações/Temp/Lists/animeList"+rano+".txt") && rano.toInt() < QDate::currentDate().year())
         return true;
-    }
+    else if(QFile::exists("Configurações/Temp/Lists/animeList"+rano+".txt") && rano.toInt() == QDate::currentDate().year() && QDate::currentDate().month() > 10)
+        return true;
     //Cria o pedido em javascript
     QNetworkRequest lrequest(graphqlUrl);
     lrequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
@@ -495,7 +496,7 @@ bool anilist::fexcluiAnime(int rid){
     query = lid.left(lid.indexOf("\n"));
     lid = query;
     //Cria string com o pedido de delete
-    QFile queryDelete(":/Anilist/qrc/Anilist/QueryDelete.txt");
+    QFile queryDelete(":/Anilist/qrc/Anilist/MutationDelete.txt");
     QTextStream queryDeleteStream(&queryDelete);
     if(!queryDelete.open(QIODevice::ReadOnly)){
         this->thread()->exit(0);

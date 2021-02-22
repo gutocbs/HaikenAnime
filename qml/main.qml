@@ -5,9 +5,10 @@ import QtQuick.Controls 2.3
 Window {
     id: root
     visible: true
-    width: Screen.desktopAvaliableWidth
+//    property var tamanhoJanela: ScreenInfo.width
+    width: 1920
+    height: 1080*(1920/1920)
 
-    height: Screen.desktopAvailableHeight*(Screen.desktopAvaliableWidth/1920)
 
     visibility: "Maximized"
     color: "#9caef0"
@@ -89,44 +90,44 @@ Window {
     Connections{
         target: mainClass
 
-        onSdirImagensMedias: dirImagensMedias = data
-        onSdirImagensGrandes: dirImagensGrandes = data
-        onSidAnime1: getData(data,0)
-        onSidAnime2: getData(data,1)
-        onSidAnime3: getData(data,2)
-        onSidAnime4: getData(data,3)
-        onSidAnime5: getData(data,4)
-        onSidAnime6: getData(data,5)
-        onSidAnime7: getData(data,6)
-        onSidAnime8: getData(data,7)
-        onSidAnime9: getData(data,8)
-        onSidAnime10: getData(data,9)
-        onSidAnime11: getData(data,10)
-        onSidAnime12: getData(data,11)
+        function onSdirImagensMedias(data){ dirImagensMedias = data}
+        function onSdirImagensGrandes(data){ dirImagensGrandes = data}
+        function onSidAnime1(data){ getData(data,0)}
+        function onSidAnime2(data){ getData(data,1)}
+        function onSidAnime3(data){ getData(data,2)}
+        function onSidAnime4(data){ getData(data,3)}
+        function onSidAnime5(data){ getData(data,4)}
+        function onSidAnime6(data){ getData(data,5)}
+        function onSidAnime7(data){ getData(data,6)}
+        function onSidAnime8(data){ getData(data,7)}
+        function onSidAnime9(data){ getData(data,8)}
+        function onSidAnime10(data){ getData(data,9)}
+        function onSidAnime11(data){ getData(data,10)}
+        function onSidAnime12(data){ getData(data,11)}
 
-        onSidAnimeSelecionado: idAnimeSelecionado = data
-        onSnomeAnimeSelecionado: nomeAnimeSelecionado = data
-        onSnomeAlternativoAnimeSelecionado: nomeAlternativoAnimeSelecionado = data
-        onSsinopseAnimeSelecionado: sinopseAnimeSelecionado = data
-        onSstatusAnimeSelecionado: statusAnimeSelecionado = data
-        onSseasonAnimeSelecionado: seasonAnimeSelecionado = data
-        onSmediaGloballAnimeSelecionado: mediaGlobalAnimeSelecionado = data
-        onSmediaPessoalAnimeSelecionado: mediaPessoalAnimeSelecionado = data
-        onSreleaseAnimeSelecionado: releaseAnimeSelecionado = data
-        onSepisodiosLancadosAnimeSelecionado: episodiosAnimeSelecionado = data
-        onSepisodiosTotaisAnimeSelecionado: episodiosTotaisAnimeSelecionado = data
-        onSepisodiosAssistidosAnimeSelecionado: episodiosAssistidosAnimeSelecionado = data
-        onStipoAnimeSelecionado: tipoAnimeSelecionado = data
-        onSproximoEpisodioAnimeSelecionado: {
+        function onSidAnimeSelecionado(data){ idAnimeSelecionado = data}
+        function onSnomeAnimeSelecionado(data){ nomeAnimeSelecionado = data}
+        function onSnomeAlternativoAnimeSelecionado(data){ nomeAlternativoAnimeSelecionado = data}
+        function onSsinopseAnimeSelecionado(data){ sinopseAnimeSelecionado = data}
+        function onSstatusAnimeSelecionado(data){ statusAnimeSelecionado = data}
+        function onSseasonAnimeSelecionado(data){ seasonAnimeSelecionado = data}
+        function onSmediaGloballAnimeSelecionado(data){ mediaGlobalAnimeSelecionado = data}
+        function onSmediaPessoalAnimeSelecionado(data){ mediaPessoalAnimeSelecionado = data}
+        function onSreleaseAnimeSelecionado(data){ releaseAnimeSelecionado = data}
+        function onSepisodiosLancadosAnimeSelecionado(data){ episodiosAnimeSelecionado = data}
+        function onSepisodiosTotaisAnimeSelecionado(data){ episodiosTotaisAnimeSelecionado = data}
+        function onSepisodiosAssistidosAnimeSelecionado(data){ episodiosAssistidosAnimeSelecionado = data}
+        function onStipoAnimeSelecionado(data){ tipoAnimeSelecionado = data}
+        function onSproximoEpisodioAnimeSelecionado(data){
             if(data)
                 proximoEpisodioAnimeSelecionado = "#1bd36a"
             else
                 proximoEpisodioAnimeSelecionado = "#d31b1b"
         }
 
-        onSimagemAnimeSelecionado: imagemAnimeSelecionado = data
-        onStimer: time = data
-        onSconnectGUI:{
+        function onSimagemAnimeSelecionado(data){ imagemAnimeSelecionado = data}
+        function onStimer(data){ time = data}
+        function onSconnectGUI(data){
             if(data === false){
                 slotMenus.enabled = false;
                 stackView.enabled = false
@@ -136,10 +137,10 @@ Window {
                 stackView.enabled = true;
             }
         }
-        onSbotaoHome: stackView.push("Home.qml")
-        onSbotaoConfig: stackView.push("ConfigPagina.qml")
-        onSbotaoTorrent: stackView.push("TorrentPagina.qml")
-        onSanimeReconhecidoID: {
+        function onSbotaoHome(data){ stackView.push("Home.qml")}
+        function onSbotaoConfig(data){ stackView.push("ConfigPagina.qml")}
+        function onSbotaoTorrent(data){ stackView.push("TorrentPagina.qml")}
+        function onSanimeReconhecidoID(data){
             idanimeReconhecido = dataId
             nomeAnimeReconhecido = dataNome
             episodiosAnimeReconhecido = dataEpisodio

@@ -12,6 +12,7 @@
 #include "src/utilities/singleton.h"
 
 #include "src/base/anime.h"
+#include "src/base/database.h"
 #include "lib/anitomy/anitomy.h"
 #include "src/base/leitorlistaanimes.h"
 #include "src/utilities/formatapalavras.h"
@@ -41,7 +42,7 @@ signals:
     void schecouPastas();
 
 private:
-    QPointer<leitorlistaanimes> cleitorlistaanimes;
+    QPointer<Database> cdatabase;
     FormataPalavras formatador;
 
     QVector<anime*> vlistaAnimes;

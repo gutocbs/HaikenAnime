@@ -196,7 +196,7 @@ void abaConfig::fsetSpecificFeed()
 
 QString abaConfig::fgetSpecificFeed()
 {
-    if(!vtorConfigMap["specificFeed"].first().isEmpty())
+    if(!vtorConfigMap["specificFeed"].isEmpty())
         return vtorConfigMap["specificFeed"].first();
     else
         return "";
@@ -204,21 +204,21 @@ QString abaConfig::fgetSpecificFeed()
 
 QString abaConfig::fgetPreferredTorrent()
 {
-    if(!vtorConfigMap["preferredTorrent"].first().isEmpty())
+    if(!vtorConfigMap["preferredTorrent"].isEmpty())
         return vtorConfigMap["preferredTorrent"].first();
     return "";
 }
 
 QString abaConfig::fgetPreferredTorrentPath()
 {
-    if(!vtorConfigMap["preferredTorrentPath"].first().isEmpty())
+    if(!vtorConfigMap["preferredTorrentPath"].isEmpty())
         return vtorConfigMap["preferredTorrentPath"].first();
     return "";
 }
 
 QString abaConfig::fgetSaveFolder()
 {
-    if(!vtorConfigMap["saveFolder"].first().isEmpty())
+    if(!vtorConfigMap["saveFolder"].isEmpty())
         return vtorConfigMap["saveFolder"].first();
     return "";
 }

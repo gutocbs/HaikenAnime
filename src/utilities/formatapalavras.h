@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QDebug>
+#include <QRegExp>
 
 #include "lib/anitomy/anitomy.h"
 

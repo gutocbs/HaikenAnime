@@ -22,8 +22,8 @@ bool FormataPalavras::fcomparaNomes(QString rnome1, QString rnome2)
         if(fremoveSeason(rnome1).compare(fremoveSeason(rnome2)) == 0)
             return true;
 
-        if(fremoveCaracteresEspeciais(rnome1).compare(fremoveCaracteresEspeciais(rnome2)) == 0)
-            return true;
+//        if(fremoveCaracteresEspeciais(rnome1).compare(fremoveCaracteresEspeciais(rnome2)) == 0)
+//            return true;
 
         if(fmudaCaracteresEspeciais(rnome1).compare(fmudaCaracteresEspeciais(rnome2)) == 0)
             return true;
@@ -79,7 +79,7 @@ bool FormataPalavras::fcomparaNomes(QString rnome1, QString rnome2)
 QString FormataPalavras::fremoveTudo(QString rpalavra)
 {
     rpalavra = fremovePontuacao(rpalavra);
-    rpalavra = fremoveCaracteresEspeciais(rpalavra);
+//    rpalavra = fremoveCaracteresEspeciais(rpalavra);
     rpalavra = fremoveSeason(rpalavra);
     rpalavra = fremoveNumeracao(rpalavra);
     rpalavra = fremoveNumeracaoRomana(rpalavra);
@@ -92,14 +92,7 @@ QString FormataPalavras::fremoveTudo(QString rpalavra)
 QString FormataPalavras::fremovePontuacao(QString rpalavra)
 {
     rpalavra = rpalavra.toLower();
-    rpalavra.remove("...");
-    rpalavra.remove(".");
-    rpalavra.remove(",");
-    rpalavra.remove("?");
-    rpalavra.remove("!");
-    rpalavra.remove(";");
-    rpalavra.remove("¿");
-    rpalavra.remove("¡");
+    rpalavra.remove(QRegExp("[^\\w\\s]"));
     rpalavra = rpalavra.simplified();
     return rpalavra;
 }
@@ -119,11 +112,7 @@ QString FormataPalavras::fremoveCaracteresEspeciais(QString rpalavra)
 QString FormataPalavras::fmudaCaracteresEspeciais(QString rpalavra)
 {
     rpalavra = rpalavra.toLower();
-    rpalavra.replace("☆", "-");
-    rpalavra.replace("△", "-");
-    rpalavra.replace("♥", "-");
-    rpalavra.replace("○", "-");
-    rpalavra.replace("…", "-");
+    rpalavra.replace(QRegExp("[^\\x00-\\x7F]+"), "-");
     rpalavra = rpalavra.simplified();
     return rpalavra;
 }
@@ -131,25 +120,8 @@ QString FormataPalavras::fmudaCaracteresEspeciais(QString rpalavra)
 QString FormataPalavras::fremoveSeason(QString rpalavra)
 {
     rpalavra = rpalavra.toLower();
-    QString rpalavraTemp;// = rpalavra;
-    for(int i = 0; i < 10; i++){
-        rpalavraTemp = rpalavra;
-        rpalavraTemp.replace(QString::number(i),"x");
-        if(rpalavraTemp.contains("season x"))
-            rpalavra.replace("season " + QString::number(i), QString::number(i));
-        else if(rpalavraTemp.contains("seasonx"))
-                rpalavra.replace("season" + QString::number(i), QString::number(i));
-        else if(rpalavraTemp.contains("sx"))
-                rpalavra.replace("s" + QString::number(i), QString::number(i));
-        else if(rpalavraTemp.contains("xst season") || rpalavraTemp.contains("xnd season") ||
-                rpalavraTemp.contains("xrd season") || rpalavraTemp.contains("xth season")){
-            rpalavra.remove("st");
-            rpalavra.remove("nd");
-            rpalavra.remove("rd");
-            rpalavra.remove("th");
-            rpalavra.replace(QString::number(i) + " season", QString::number(i));
-        }
-    }
+    if(rpalavra.contains(QRegExp("((season)+\\s*\\d|(s\\d))|\\d\\w{2}\\s(season)")))
+        rpalavra.remove(QRegExp("(st|nd|rd|th)\\sseason|season\\s*|s(?![a-z])"));
     rpalavra = rpalavra.simplified();
     return rpalavra;
 }
@@ -174,16 +146,7 @@ QString FormataPalavras::fmudaNumeracaoArabePraRomana(QString rpalavra)
 QString FormataPalavras::fremoveNumeracao(QString rpalavra)
 {
     rpalavra = rpalavra.toLower();
-    rpalavra.remove("1");
-    rpalavra.remove("2");
-    rpalavra.remove("3");
-    rpalavra.remove("4");
-    rpalavra.remove("5");
-    rpalavra.remove("6");
-    rpalavra.remove("7");
-    rpalavra.remove("8");
-    rpalavra.remove("9");
-    rpalavra.remove("10");
+    rpalavra.remove(QRegExp("\\d"));
     rpalavra = rpalavra.simplified();
     return rpalavra;
 
@@ -246,16 +209,7 @@ QString FormataPalavras::fmudaNumeracaoRomanaPraSeason(QString rpalavra)
 QString FormataPalavras::fremoveNumeracaoRomana(QString rpalavra)
 {
     rpalavra = rpalavra.toLower();
-    rpalavra.remove(" viii");
-    rpalavra.remove(" iii");
-    rpalavra.remove(" vii");
-    rpalavra.remove(" ii");
-    rpalavra.remove(" iv");
-    rpalavra.remove(" ix");
-    rpalavra.remove(" vi");
-    rpalavra.remove(" v");
-    rpalavra.remove(" x");
-    rpalavra.remove(" i");
+    rpalavra.remove(QRegExp("i*v*i*x*i*"));
     rpalavra = rpalavra.simplified();
     return rpalavra;
 }
@@ -263,24 +217,7 @@ QString FormataPalavras::fremoveNumeracaoRomana(QString rpalavra)
 QString FormataPalavras::fremoveCaracteresExtras(QString rpalavra)
 {
     rpalavra = rpalavra.toLower();
-    rpalavra.replace("@", " ");
-    rpalavra.replace("#", " ");
-    rpalavra.replace("$", " ");
-    rpalavra.replace("%", " ");
-    rpalavra.replace("&", " ");
-    rpalavra.replace("*", " ");
-    rpalavra.replace("(", " ");
-    rpalavra.replace(")", " ");
-    rpalavra.replace(">", " ");
-    rpalavra.replace("<", " ");
-    rpalavra.replace("/", " ");
-    rpalavra.replace("\\", " ");
-    rpalavra.replace("+", " ");
-    rpalavra.replace("-", " ");
-    rpalavra.replace("_", " ");
-    rpalavra.replace("=", " ");
-    rpalavra.replace(":", " ");
-    rpalavra.replace("|", " ");
+    rpalavra.replace(QRegExp("[^\\w\\d\\s]"), " ");
     rpalavra = rpalavra.simplified();
     return rpalavra;
 

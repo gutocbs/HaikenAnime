@@ -6,12 +6,13 @@
 #include <QList>
 #include <QHash>
 #include <QPointer>
+#include <QScopedPointer>
 
 #include "src/base/torrentinfo.h"
 #include "src/base/abaconfig.h"
 #include "src/base/arquivos.h"
 #include "src/utilities/downloader.h"
-#include "src/base/leitorlistaanimes.h"
+#include "src/base/database.h"
 #include "lib/anitomy/anitomy.h"
 #include "src/base/confusuario.h"
 
@@ -41,7 +42,7 @@ signals:
 
 private:
     anitomy::Anitomy anitomy;
-    QPointer<leitorlistaanimes> cleitorListaAnimes;
+    QPointer<Database> cdatabase;
     QPointer<abaConfig> cabaConfig;
     QPointer<confUsuario> cconfPastasAnimes;
     QPointer<Downloader> downloaderTorrent;

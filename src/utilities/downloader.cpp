@@ -7,10 +7,6 @@ Downloader::Downloader(QObject *parent) : QObject(parent)
 
 Downloader::~Downloader()
 {
-    if(!m_workers.isEmpty()){
-        qDeleteAll(m_workers);
-        m_workers.clear();
-    }
 }
 
 void Downloader::fsetWorker()
