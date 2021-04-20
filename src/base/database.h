@@ -8,6 +8,7 @@
 #include <QTextStream> //Lê linhas do arquivo
 #include <QPointer> // Crio o ponteiro pro anime
 #include <QDateTime> //Data que lança o episódio
+#include <QRegExp>
 
 #include "src/utilities/singleton.h"
 
@@ -25,21 +26,34 @@ public:
     static Database *instance();
     enum type{ANIME, MANGA, NOVEL, SEASON};
     Q_ENUM(type)
+    enum list{CURRENT, COMPLETED, PAUSED, DROPPED, PLANNING, SEARCH, WINTER, SUMMER, FALL, SPRING};
+    Q_ENUM(list)
+    enum tipoHash{LISTA, POSICAO, NOME, NOMEALTERNATIVO};
+    Q_ENUM(tipoHash)
 
+///Classe parente
+    bool comparaNomes(QString nomeOficial, QString nomeIngles, QStringList nomesAlternativos, QString nomeBuscado);
+    void insereNomesHashNomeAnimesPorId(QString id, QStringList nomes);
+///Classe de leitura
     bool freadDatabaseFile();
+    bool freadDatabaseFile2();
     bool fchecaDatabaseReady();
     void finsereDataHashId(QString tipo, QString lista, QString id, QStringList nomes);
+    void insereDataHashPosicao(type tipo, QString id, int posicao);
     void fcarregaListaAnoEmThread();
 
     //return functions
-    QVector<anime*> returnAnimeList(QString list);
-    QVector<anime*> returnAnimeYearlyList(int ano);
-    QVector<anime*> returnAnimeSeasonalList(QString list);
-    QVector<anime*> returnMangaList(QString list);
-    QVector<anime*> returnNovelList(QString list);
-    QVector<anime*> returnSearchList(const QString &rnome, type rtipoMidia);
-    QVector<anime*> returnSortList(const QString &rordem, QString rlista, type type);
+    QVector<anime*> returnList(QString lista, enum type tipo, QString argumento = "");
+    QVector<anime*> returnAnimeList(QString lista, QString argumento = "");
+    QVector<anime*> returnMangaList(QString lista, QString argumento = "");
+    QVector<anime*> returnNovelList(QString lista, QString argumento = "");
+    QVector<anime*> returnAnimeSeasonalList(QString lista);
+    QVector<anime*> returnSortList(const QString &rordem, QString lista, type type);
 
+    QVector<anime*> returnAnimeYearlyList(int ano);
+    QVector<anime*> returnSearchList(const QString &rnome, type rtipoMidia);
+
+    ///Classe de busca
     //funções de buscas
     QString fbuscaIDRapido(const QString &rnomeAnime);
     QString fbuscaIDRetornaLista(const QString &ridAnime);
@@ -52,6 +66,12 @@ public:
     anime* fretornaAnimePorID(const QString &rid);
     anime* fretornaAnimePorPosicao(const QString &rlista, int posicao);
 
+    QHash<QString, int> retornaHash(tipoHash tipoHash, type tipoMidia, int valorInt = 0);
+    QHash<QString, QString> retornaHash(tipoHash tipoHash, type tipoMidia, QString valorQString = "");
+    QHash<QString, QStringList> retornaHash(tipoHash tipoHash, type tipoMidia, QStringList valorQStringList = QStringList());
+
+
+    ///Classe de gerenciamento
     //Funções de anime
     bool fmudaLista(const QString &rid, const QString &rlista, type rtipo);
     bool fmudaNota(const QString &rid, const QString &rnota);
@@ -66,6 +86,7 @@ public:
     void fsalvaListaNomesAlternativos();
     void fleListaNomesAlternativos();
 
+    ///Classe de limpeza
     //Limpa arquivo
     QString limpaNull(QString linha);
     QString limpaImagem(QString linha);
@@ -92,6 +113,16 @@ public:
     QString limpaScoreGeral(QString linha);
     QString limpaLista(QString linha);
     QDate setDataEstreia(QString ano, QString mes, QString season);
+
+    ///Classe de gerenciamento
+    //Funções de checagem e inserção
+    QStringList limpaStringList(QString);
+    QString updateStatus(QString);
+    bool insereAnimeLista(QStringList, QString);
+    bool updateAnimeInfo(QStringList, QString);
+    bool updateAnime(QStringList, QString);
+    bool updateManga(QStringList, QString);
+    bool updateNovel(QStringList, QString);
 
 signals:
     void sAnimeAdicionadoNaLista(QString);
@@ -135,6 +166,7 @@ private:
     QVector<anime*> vlistaBusca;
     QVector<anime*> vlistaTemp;
     QVector<anime*> vlistaAno;
+    QVector<int> vidEntrada;
 
     //Hashs de busca
     QHash<QString,QString> vhashListaAnimesPorId;

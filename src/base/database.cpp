@@ -22,8 +22,28 @@ Database *Database::instance()
     return  Singleton<Database>::instance(Database::createInstance);
 }
 
-bool Database::freadDatabaseFile()
+bool Database::comparaNomes(QString nomeOficial, QString nomeIngles, QStringList nomesAlternativos, QString nomeBuscado)
 {
+    if(formatador.fcomparaNomes(nomeOficial, nomeBuscado) || formatador.fcomparaNomes(nomeIngles, nomeBuscado))
+        return true;
+    foreach(QString nomeAlternativo, nomesAlternativos){
+        if(formatador.fcomparaNomes(nomeAlternativo, nomeBuscado))
+            return true;
+    }
+    return false;
+}
+
+void Database::insereNomesHashNomeAnimesPorId(QString id, QStringList nomes)
+{
+    if(!vhashNomeAnimesPorId.contains(id))
+        vhashNomeAnimesPorId.insert(id, nomes);
+    else
+        vhashNomeAnimesPorId[id].append(nomes);
+}
+
+bool Database::freadDatabaseFile2()
+{
+//    freadDatabaseFile2();
     vdatabaseReady = false;
 
     //Checa se arquivo pode ser lido
@@ -161,6 +181,9 @@ bool Database::freadDatabaseFile()
                 lnovoAnime->vdatabaseSite = ldatabaseSite;
                 lnovoAnime->vstream = lstream;
                 lnovoAnime->vtemporada = ltemporadaAnime;
+
+                vidEntrada.append(lid.toInt());
+
                 tempNomeAnime.clear();
 
                 tempNomeAnime.append(lnovoAnime->vnome);
@@ -292,6 +315,657 @@ bool Database::freadDatabaseFile()
 
     vdatabaseReady = true;
     return true;
+}
+
+bool Database::freadDatabaseFile()
+{
+    vdatabaseReady = false;
+    QVector<int> idUpdate;
+
+    //Checa se arquivo pode ser lido
+    QFile listAnimesArquivo("Configurações/Temp/animeList.txt");
+    if(listAnimesArquivo.size() == 0)
+        return false;
+    if(!listAnimesArquivo.open(QIODevice::ReadOnly))
+        return false;
+
+    //Começa a ler o arquivo de database
+    QString data = listAnimesArquivo.readAll();
+    listAnimesArquivo.close();
+
+    data.replace("{\n    \"data\": {\n        \"Page\": {\n            \"mediaList\": [\n                {\n                    ","");
+    data.replace("]            }        }    }","");
+    data.replace("},                {","");
+    QStringList animeListData = data.split("\"media\": {");
+    animeListData.removeFirst();
+
+    QString idAnime;
+    foreach(QString singleAnimeData, animeListData){
+        QStringList infoAnime = limpaStringList(singleAnimeData);
+
+        foreach(QString data, infoAnime){
+            if(data.contains("\"id\"")){
+                idAnime = data.remove("\"id\":").remove(",").simplified();
+                break;
+            }
+        }
+
+        idUpdate.append(idAnime.toInt());
+        updateAnimeInfo(infoAnime,idAnime);
+    }
+
+//    foreach(int id, vidEntrada){
+//        if(!idUpdate.contains(id))
+//            fdeletedaLista(QString::number(id));
+//    }
+
+    vdatabaseReady = true;
+    return true;
+}
+
+
+QStringList Database::limpaStringList(QString singleAnimeData)
+{
+    QStringList lista = singleAnimeData.split(QRegExp("\\\n\\s*"));
+    lista.removeDuplicates();
+    lista.removeOne("");
+    lista.removeOne("\"coverImage\": {");
+    lista.removeOne("},");
+    lista.removeOne("\"startDate\": {");
+    lista.removeOne("{");
+    lista.removeOne("}");
+    lista.removeOne("],");
+    lista.removeOne("\"streamingEpisodes\": [\",");
+    lista.removeOne("\"site\": \"Crunchyroll\",");
+    lista.removeOne("\"title\": {");
+
+    return lista;
+}
+
+bool Database::updateAnimeInfo(QStringList singleAnimeData, QString idAnime)
+{
+    if(vidEntrada.contains(idAnime.toInt())){
+        if(vhashListaAnimesPorId.contains(idAnime))
+            updateAnime(singleAnimeData, idAnime);
+        else if(vhashListaMangasPorId.contains(idAnime))
+            updateManga(singleAnimeData, idAnime);
+        else if(vhashListaNovelsPorId.contains(idAnime))
+            updateNovel(singleAnimeData, idAnime);
+    }
+    else
+        insereAnimeLista(singleAnimeData, idAnime);
+    return true;
+}
+
+bool Database::insereAnimeLista(QStringList singleAnimeData, QString idAnime)
+{
+    QString notaMediaSite;
+    QString season;
+    QString status;
+    QString ano;
+    QString mes;
+    QString chapters;
+    QString volumes;
+    QString dataEpisodioFinal;
+    QDate dataEpisodioConvertida;
+    QTime horaLancamentoEpisodio;
+    int temporadaAnime = 1; //Todas as temporadas começam como 1
+    QStringList todosOsNomes;
+
+    anime* lnovoAnime = new anime(this);
+    lnovoAnime->vid = idAnime;
+    foreach(QString data, singleAnimeData){
+        if(data.contains("\"large\":"))
+            lnovoAnime->vLinkImagemMedia = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\\\"*")).trimmed();
+        else if(data.contains("\"description\":"))
+            lnovoAnime->vsinopse = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).remove(QRegExp("(\\\\r|\\\\n|\\|<br>)*")).remove("\\n").remove("\\").trimmed();
+        else if(data.contains("\"episodes\":"))
+            lnovoAnime->vnumEpisodiosTotais = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"format\":"))
+            lnovoAnime->vformato = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"url\":"))
+            lnovoAnime->vstream = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).left(data.lastIndexOf("episode-")).trimmed();
+        else if(data.contains("\"chapters\":"))
+            chapters = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"volumes\":"))
+            volumes = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"siteUrl\":"))
+            lnovoAnime->vdatabaseSite = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"nextAiringEpisode\":")){
+            lnovoAnime->vdataEpisodio = data.remove(QRegExp("\\{?\\\"\\w*\\\"\\:\\s\\\"?\\{?")).remove(QRegExp("\"?,$")).trimmed();
+            if(lnovoAnime->vdataEpisodio.compare("null") == 0)
+                lnovoAnime->vdataEpisodio = '-';
+        }
+        else if(data.contains("\"airingAt\":"))
+            lnovoAnime->vdataEpisodio.append(limpaAiring(data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed(),
+                                                 dataEpisodioConvertida, horaLancamentoEpisodio));
+        else if(data.contains("\"episode\":"))
+            lnovoAnime->vnumProximoEpisodioLancado = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"chapters\":"))
+            chapters = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"volumes\":"))
+            volumes = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"season\":"))
+            lnovoAnime->vSeasonSemAno = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"month\":"))
+            mes = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"year\":")){
+            ano = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+            lnovoAnime->vdataEstreia = setDataEstreia(ano, mes, season);
+        }
+        else if(data.contains("\"status\":")){
+            if(lnovoAnime->vnotaMediaPessoal.compare("") == 0)
+                lnovoAnime->vstatus = limpaStatus(data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed(),
+                                              dataEpisodioFinal, dataEpisodioConvertida, horaLancamentoEpisodio);
+            else
+                lnovoAnime->vlista = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\\\"*")).trimmed();
+        }
+        else if(data.contains("\"english\":"))
+            lnovoAnime->vnomeIngles = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"romaji\":")){
+            lnovoAnime->vnome = limpaNomeRomaji(data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed(), temporadaAnime);
+            if(lnovoAnime->vnome == "?")
+                lnovoAnime->vnome = lnovoAnime->vnomeIngles;
+            else if (lnovoAnime->vnomeIngles == "?")
+                lnovoAnime->vnomeIngles = lnovoAnime->vnome;
+        }
+        else if(data.contains("\"progress\":"))
+            lnovoAnime->vnumEpisodiosAssistidos = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"averageScore\":")){
+            notaMediaSite = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+            if(!notaMediaSite.isEmpty())
+                lnovoAnime->vnotaMediaSite = notaMediaSite;
+            else
+                lnovoAnime->vnotaMediaSite = "-";
+        }
+        else if(data.contains("\"score\""))
+            lnovoAnime->vnotaMediaPessoal = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(!data.contains("\"id\"") && !data.contains("\"synonyms\"") && !data.contains("\"streamingEpisodes\"")){ //Nomes alternativos
+            lnovoAnime->vnomeAlternativo.append(data.remove(QRegExp("\"?,$")).trimmed());
+        }
+    }
+    lnovoAnime->vseason = lnovoAnime->vSeasonSemAno + " " + ano;
+    lnovoAnime->vtemporada = temporadaAnime;
+
+    todosOsNomes.clear();
+    todosOsNomes.append(lnovoAnime->vnome);
+    todosOsNomes.append(lnovoAnime->vnomeIngles);
+    todosOsNomes.append(lnovoAnime->vnomeAlternativo);
+
+    if(lnovoAnime->vformato != "MANGA" && lnovoAnime->vformato != "NOVEL" && lnovoAnime->vformato != "ONE SHOT" && lnovoAnime->vformato != "ONE_SHOT"){
+        if(lnovoAnime->vlista == "CURRENT"){
+            lnovoAnime->vlista = "Watching";
+            vlistaAnimeWatching.append(lnovoAnime);
+            finsereDataHashId("anime", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        else if(lnovoAnime->vlista == "COMPLETED"){
+            lnovoAnime->vlista = "Completed";
+            vlistaAnimeCompleted.append(lnovoAnime);
+            finsereDataHashId("anime", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        else if(lnovoAnime->vlista == "PLANNING"){
+            lnovoAnime->vlista = "Plan to Watch";
+            vlistaAnimePlanToWatch.append(lnovoAnime);
+            finsereDataHashId("anime", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        else if(lnovoAnime->vlista == "DROPPED"){
+            lnovoAnime->vlista = "Dropped";
+            vlistaAnimeDropped.append(lnovoAnime);
+            finsereDataHashId("anime", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        else if(lnovoAnime->vlista == "PAUSED"){
+            lnovoAnime->vlista = "On Hold";
+            vlistaAnimeOnHold.append(lnovoAnime);
+            finsereDataHashId("anime", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        sAnimeAdicionadoNaLista(lnovoAnime->vid);
+        if(!vhashListaAnimesPorId.contains(lnovoAnime->vid))
+            vhashListaAnimesPorId.insert(lnovoAnime->vid, lnovoAnime->vlista);
+        else if(vhashListaAnimesPorId[lnovoAnime->vid] != lnovoAnime->vlista)
+            vhashListaAnimesPorId.insert(lnovoAnime->vid, lnovoAnime->vlista);
+    }
+    else if(lnovoAnime->vformato == "MANGA" || lnovoAnime->vformato == "ONE SHOT" || lnovoAnime->vformato == "ONE_SHOT"){
+        if(lnovoAnime->vstatus.contains("Air", Qt::CaseInsensitive))
+            lnovoAnime->vstatus.replace("Air","Releas");
+        lnovoAnime->vnumEpisodiosTotais = chapters;
+        if(lnovoAnime->vlista == "CURRENT"){
+            lnovoAnime->vlista = "Reading(Manga)";
+            vlistaMangaReading.append(lnovoAnime);
+            finsereDataHashId("manga", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        else if(lnovoAnime->vlista == "COMPLETED"){
+            lnovoAnime->vlista = "Completed(Manga)";
+            vlistaMangaCompleted.append(lnovoAnime);
+            finsereDataHashId("manga", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        else if(lnovoAnime->vlista == "PLANNING"){
+            lnovoAnime->vlista = "Plan to Read(Manga)";
+            vlistaMangaPlanToRead.append(lnovoAnime);
+            finsereDataHashId("manga", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        else if(lnovoAnime->vlista == "DROPPED"){
+            lnovoAnime->vlista = "Dropped(Manga)";
+            vlistaMangaDropped.append(lnovoAnime);
+            finsereDataHashId("manga", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        else if(lnovoAnime->vlista == "PAUSED"){
+            lnovoAnime->vlista = "On Hold(Manga)";
+            vlistaMangaOnHold.append(lnovoAnime);
+            finsereDataHashId("manga", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        sMangaAdicionadoNaLista(lnovoAnime->vid);
+        if(!vhashListaMangasPorId.contains(lnovoAnime->vid))
+            vhashListaMangasPorId.insert(lnovoAnime->vid, lnovoAnime->vlista);
+    }
+    else if(lnovoAnime->vformato == "NOVEL"){
+        lnovoAnime->vnumEpisodiosTotais = volumes;
+        if(lnovoAnime->vlista == "CURRENT"){
+            lnovoAnime->vlista = "Reading(Novel)";
+            vlistaNovelReading.append(lnovoAnime);
+            finsereDataHashId("novel", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        else if(lnovoAnime->vlista == "COMPLETED"){
+            lnovoAnime->vlista = "Completed(Novel)";
+            vlistaNovelCompleted.append(lnovoAnime);
+            finsereDataHashId("novel", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        else if(lnovoAnime->vlista == "PLANNING"){
+            lnovoAnime->vlista = "Plan to Read(Novel)";
+            vlistaNovelPlanToRead.append(lnovoAnime);
+            finsereDataHashId("novel", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        else if(lnovoAnime->vlista == "DROPPED"){
+            lnovoAnime->vlista = "Dropped(Novel)";
+            vlistaNovelDropped.append(lnovoAnime);
+            finsereDataHashId("novel", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        else if(lnovoAnime->vlista == "PAUSED"){
+            lnovoAnime->vlista = "On Hold(Novel)";
+            vlistaNovelOnHold.append(lnovoAnime);
+            finsereDataHashId("novel", lnovoAnime->vlista, lnovoAnime->vid, todosOsNomes);
+        }
+        sNovelAdicionadoNaLista(lnovoAnime->vid);
+        if(!vhashListaNovelsPorId.contains(lnovoAnime->vid))
+            vhashListaNovelsPorId.insert(lnovoAnime->vid, lnovoAnime->vlista);
+    }
+    vidEntrada.append(lnovoAnime->vid.toInt());
+    return true;
+}
+
+bool Database::updateAnime(QStringList singleAnimeData, QString idAnime)
+{
+    QString season;
+    QString nota;
+    QString progresso;
+    QString status;
+    QString notaMedia;
+    QString airAt;
+    QString episodios;
+    foreach(QString data, singleAnimeData){
+        if(data.contains("\"season\""))
+            season = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"status\""))
+            status = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"score\""))
+            nota = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"progress\""))
+            progresso = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"averageScore\""))
+            notaMedia = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"airingAt\""))
+            airAt = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"episodes\""))
+            episodios = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+    }
+    QString llista = fbuscaIDRetornaLista(idAnime);
+    int lposicao = fbuscaIDRetornaPosicao(idAnime);
+    if(lposicao == -1)
+        return false;
+
+
+    if(llista.compare("Watching", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("Watching") != 0)
+            fmudaLista(idAnime, status, type::ANIME);
+    }
+    else if(llista.compare("Completed", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("Completed") != 0)
+            fmudaLista(idAnime, status, type::ANIME);
+    }
+    else if(llista.compare("On Hold", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("On Hold") != 0)
+            fmudaLista(idAnime, status, type::ANIME);
+    }
+    else if(llista.compare("Dropped", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("Dropped") != 0)
+            fmudaLista(idAnime, status, type::ANIME);
+    }
+    else if(llista.compare("Plan to Watch", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("Plan to Watch") != 0)
+            fmudaLista(idAnime, status, type::ANIME);
+    }
+
+    return true;
+}
+
+bool Database::updateManga(QStringList singleAnimeData, QString idAnime)
+{
+    QString season;
+    QString nota;
+    QString progresso;
+    QString status;
+    QString notaMedia;
+    QString airAt;
+    QString episodios;
+    foreach(QString data, singleAnimeData){
+        if(data.contains("\"season\""))
+            season = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"status\""))
+            status = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"score\""))
+            nota = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"progress\""))
+            progresso = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"averageScore\""))
+            notaMedia = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"airingAt\""))
+            airAt = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"episodes\""))
+            episodios = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+    }
+    QString llista = fbuscaIDRetornaLista(idAnime);
+    int lposicao = fbuscaIDRetornaPosicao(idAnime);
+    if(lposicao == -1)
+        return false;
+
+    /////////////////////////Manga
+    else if(llista.compare("Reading(Manga)", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("Reading(Manga)") != 0)
+            fmudaLista(idAnime, status, type::MANGA);
+    }
+    else if(llista.compare("Completed(Manga)", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("Completed(Manga)") != 0)
+            fmudaLista(idAnime, status, type::MANGA);
+    }
+    else if(llista.compare("Dropped(Manga)", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("Dropped(Manga)") != 0)
+            fmudaLista(idAnime, status, type::MANGA);
+    }
+    else if(llista.compare("On Hold(Manga)", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("On Hold(Manga)") != 0)
+            fmudaLista(idAnime, status, type::MANGA);
+    }
+    else if(llista.compare("Plan to Read(Manga)", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("Plan to Read(Manga)") != 0)
+            fmudaLista(idAnime, status, type::MANGA);
+    }
+
+    return true;
+}
+
+bool Database::updateNovel(QStringList singleAnimeData, QString idAnime)
+{
+    QString season;
+    QString nota;
+    QString progresso;
+    QString status;
+    QString notaMedia;
+    QString airAt;
+    QString episodios;
+    foreach(QString data, singleAnimeData){
+        if(data.contains("\"season\""))
+            season = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"status\""))
+            status = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"score\""))
+            nota = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"progress\""))
+            progresso = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"averageScore\""))
+            notaMedia = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"airingAt\""))
+            airAt = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+        else if(data.contains("\"episodes\""))
+            episodios = data.remove(QRegExp("\"\\w*\":\\s\"?")).remove(QRegExp("\"?,$")).trimmed();
+    }
+    QString llista = fbuscaIDRetornaLista(idAnime);
+    int lposicao = fbuscaIDRetornaPosicao(idAnime);
+    if(lposicao == -1)
+        return false;
+
+
+    /////////////////////////NOVEL
+    else if(llista.compare("Reading(Novel)", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("Reading(Novel)") != 0)
+            fmudaLista(idAnime, status, type::NOVEL);
+    }
+    else if(llista.compare("Completed(Novel)", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("Completed(Novel)") != 0)
+            fmudaLista(idAnime, status, type::NOVEL);
+    }
+    else if(llista.compare("Dropped(Novel)", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("Dropped(Novel)") != 0)
+            fmudaLista(idAnime, status, type::NOVEL);
+    }
+    else if(llista.compare("On Hold(Novel)", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("On Hold(Novel)") != 0)
+            fmudaLista(idAnime, status, type::NOVEL);
+    }
+    else if(llista.compare("Plan to Read(Novel)", Qt::CaseInsensitive) == 0){
+        if(vlistaAnimeWatching[lposicao]->vseason.compare(season) != 0)
+            vlistaAnimeWatching[lposicao]->vseason = season;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaPessoal.compare(nota) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaPessoal = nota;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos.compare(progresso) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = progresso;
+        if(vlistaAnimeWatching[lposicao]->vnotaMediaSite.compare(notaMedia) != 0)
+            vlistaAnimeWatching[lposicao]->vnotaMediaSite = notaMedia;
+        if(vlistaAnimeWatching[lposicao]->vdataEpisodio.compare(airAt) != 0)
+            vlistaAnimeWatching[lposicao]->vdataEpisodio = airAt;
+        if(vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais.compare(episodios) != 0)
+            vlistaAnimeWatching[lposicao]->vnumEpisodiosTotais = episodios;
+        status = updateStatus(status);
+        if(status.compare("Plan to Read(Novel)") != 0)
+            fmudaLista(idAnime, status, type::NOVEL);
+    }
+    return true;
+}
+
+
+QString Database::updateStatus(QString statusVelho)
+{
+    if(statusVelho.compare("CURRENT") == 0)
+        return "Watching";
+    else if(statusVelho.compare("COMPLETED") == 0)
+        return "Completed";
+    else if(statusVelho.compare("PAUSED") == 0)
+        return "On Hold";
+    else if(statusVelho.compare("DROPPED") == 0)
+        return "Dropped";
+    else if(statusVelho.compare("PLANNING") == 0)
+        return "Plan to Watch";
+    return "";
 }
 
 bool Database::fchecaDatabaseReady()
@@ -720,6 +1394,51 @@ anime *Database::fretornaAnimePorPosicao(const QString &lista, int posicao)
     }
 
     return new anime;
+}
+
+QHash<QString, int> Database::retornaHash(Database::tipoHash tipoHash, Database::type tipoMidia, int valorInt)
+{
+    if(!vdatabaseReady)
+        return QHash<QString,int>();
+    if(tipoHash == POSICAO){
+        if(tipoMidia == ANIME)
+            return vhashPosicaoAnimesPorId;
+        else if(tipoMidia == MANGA)
+            return vhashPosicaoMangasPorId;
+        else if(tipoMidia == NOVEL)
+            return vhashPosicaoNovelsPorId;
+    }
+    return QHash<QString,int>();
+}
+
+QHash<QString, QString> Database::retornaHash(Database::tipoHash tipoHash, Database::type tipoMidia, QString valorQString)
+{
+    if(!vdatabaseReady)
+        return QHash<QString,QString>();
+    if(tipoHash == LISTA){
+        if(tipoMidia == ANIME)
+            return vhashListaAnimesPorId;
+        else if(tipoMidia == MANGA)
+            return vhashListaMangasPorId;
+        else if(tipoMidia == NOVEL)
+            return vhashListaNovelsPorId;
+    }
+    return QHash<QString,QString>();
+}
+
+QHash<QString, QStringList> Database::retornaHash(Database::tipoHash tipoHash, Database::type tipoMidia, QStringList valorQStringList)
+{
+    if(!vdatabaseReady)
+        return QHash<QString, QStringList>();
+    if(tipoHash == NOME){
+        if(tipoMidia == ANIME)
+            return vhashNomeAnimesPorId;
+        else if(tipoMidia == MANGA)
+            return vhashNomeMangasPorId;
+        else if(tipoMidia == NOVEL)
+            return vhashNomeNovelsPorId;
+    }
+    return vlistaNomesAlternativos;
 }
 
 bool Database::fmudaLista(const QString &rid, const QString &rlista, Database::type rtipo)
@@ -1275,23 +1994,23 @@ bool Database::fmudaProgresso(const QString &rid, const QString &rprogresso)
     //Checa se a lista é um número válido
     llista.toInt(&ok);
 
-    if(llista.compare("Watching", Qt::CaseInsensitive) == 0){
+    if(llista.compare("Watching", Qt::CaseInsensitive) == 0 && lposicao){
         vlistaAnimeWatching[lposicao]->vnumEpisodiosAssistidos = rprogresso;
         return true;
     }
-    else if(llista.compare("Completed", Qt::CaseInsensitive) == 0){
+    else if(llista.compare("Completed", Qt::CaseInsensitive) == 0 && lposicao <= vlistaAnimeCompleted.size()-1){
         vlistaAnimeCompleted[lposicao]->vnumEpisodiosAssistidos = rprogresso;
         return true;
     }
-    else if(llista.compare("On Hold", Qt::CaseInsensitive) == 0){
+    else if(llista.compare("On Hold", Qt::CaseInsensitive) == 0 && lposicao <= vlistaAnimeOnHold.size()-1){
         vlistaAnimeOnHold[lposicao]->vnumEpisodiosAssistidos = rprogresso;
         return true;
     }
-    else if(llista.compare("Dropped", Qt::CaseInsensitive) == 0){
+    else if(llista.compare("Dropped", Qt::CaseInsensitive) == 0 && lposicao <= vlistaAnimeDropped.size()-1){
         vlistaAnimeDropped[lposicao]->vnumEpisodiosAssistidos = rprogresso;
         return true;
     }
-    else if(llista.compare("Plan to Watch", Qt::CaseInsensitive) == 0){
+    else if(llista.compare("Plan to Watch", Qt::CaseInsensitive) == 0 && lposicao <= vlistaAnimePlanToWatch.size()-1){
         vlistaAnimePlanToWatch[lposicao]->vnumEpisodiosAssistidos = rprogresso;
         return true;
     }
@@ -1781,6 +2500,11 @@ void Database::finsereDataHashId(QString tipo, QString lista, QString id, QStrin
     }
 }
 
+void Database::insereDataHashPosicao(Database::type tipo, QString id, int posicao)
+{
+    return;
+}
+
 void Database::fcarregaListaAnoEmThread()
 {
     //Essa função serve para saber se os animes do ano x já estão salvos na lista de ids.
@@ -1793,70 +2517,92 @@ void Database::fcarregaListaAnoEmThread()
     }
 }
 
-QVector<anime *> Database::returnAnimeList(QString list)
+QVector<anime *> Database::returnList(QString lista, type tipo, QString argumento)
 {
-    if(list.compare("CURRENT", Qt::CaseInsensitive) == 0)
-        return vlistaAnimeWatching;
-    else if(list.compare("COMPLETED", Qt::CaseInsensitive) == 0)
-        return vlistaAnimeCompleted;
-    else if(list.compare("PLANNING", Qt::CaseInsensitive) == 0)
-        return vlistaAnimePlanToWatch;
-    else if(list.compare("DROPPED", Qt::CaseInsensitive) == 0)
-        return vlistaAnimeDropped;
-    else if(list.compare("PAUSED", Qt::CaseInsensitive) == 0)
-        return vlistaAnimeOnHold;
-    else if(list.compare("SEARCH", Qt::CaseInsensitive) == 0)
-        return vlistaBusca;
+    if(!vdatabaseReady)
+        return vlistaTemp;
+    if(tipo == MANGA)
+        return returnMangaList(lista);
+    else if(tipo == NOVEL)
+        return returnNovelList(lista);
+    else if(tipo == SEASON)
+        return returnAnimeSeasonalList(lista);
     else
-        return vlistaAnimeWatching;
+        return returnAnimeList(lista, argumento);
 }
 
-QVector<anime *> Database::returnAnimeSeasonalList(QString list)
+QVector<anime *> Database::returnAnimeList(QString lista, QString argumento)
 {
-    if(list.compare("WINTER", Qt::CaseInsensitive) == 0)
+    if(lista.compare("CURRENT") == 0)
+        return vlistaAnimeWatching;
+    else if(lista.compare("COMPLETED") == 0)
+        return vlistaAnimeCompleted;
+    else if(lista.compare("PLANNING") == 0)
+        return vlistaAnimePlanToWatch;
+    else if(lista.compare("DROPPED") == 0)
+        return vlistaAnimeDropped;
+    else if(lista.compare("PAUSED") == 0)
+        return vlistaAnimeOnHold;
+    else if(lista.compare("SEARCH") == 0 && !argumento.isEmpty())
+        return returnSearchList(argumento, ANIME);
+    else{
+        bool ok;
+        //Checa se a lista é um número válido
+        lista.toInt(&ok);
+        if(ok){
+            return returnAnimeYearlyList(lista.toInt());
+        }
+        return vlistaAnimeWatching;
+    }
+}
+
+QVector<anime *> Database::returnAnimeSeasonalList(QString season)
+{
+    if(season.compare("WINTER") == 0)
         return vlistaAnimeSeasonWinter;
-    else if(list.compare("SUMMER", Qt::CaseInsensitive) == 0)
+    else if(season.compare("SUMMER") == 0)
         return vlistaAnimeSeasonSummer;
-    else if(list.compare("FALL", Qt::CaseInsensitive) == 0)
+    else if(season.compare("FALL") == 0)
         return vlistaAnimeSeasonFall;
-    else if(list.compare("SPRING", Qt::CaseInsensitive) == 0)
+    else if(season.compare("SPRING") == 0)
         return vlistaAnimeSeasonSpring;
     else
         return vlistaAnimeSeasonWinter;
 }
 
-QVector<anime *> Database::returnMangaList(QString list)
+QVector<anime *> Database::returnMangaList(QString lista, QString argumento)
 {
-    if(list.compare("CURRENT", Qt::CaseInsensitive) == 0)
+    if(lista.compare("CURRENT") == 0)
         return vlistaMangaReading;
-    else if(list.compare("COMPLETED", Qt::CaseInsensitive) == 0)
+    else if(lista.compare("COMPLETED") == 0)
         return vlistaMangaCompleted;
-    else if(list.compare("PLANNING", Qt::CaseInsensitive) == 0)
+    else if(lista.compare("PLANNING") == 0)
         return vlistaMangaPlanToRead;
-    else if(list.compare("DROPPED", Qt::CaseInsensitive) == 0)
+    else if(lista.compare("DROPPED") == 0)
         return vlistaMangaDropped;
-    else if(list.compare("PAUSED", Qt::CaseInsensitive) == 0)
+    else if(lista.compare("PAUSED") == 0)
         return vlistaMangaOnHold;
-    else if(list.compare("SEARCH", Qt::CaseInsensitive) == 0)
-        return vlistaBusca;
+    else if(lista.compare("SEARCH") == 0 && !argumento.isEmpty())
+        return returnSearchList(argumento, MANGA);
     else
         return vlistaMangaReading;
+
 }
 
-QVector<anime *> Database::returnNovelList(QString list)
+QVector<anime *> Database::returnNovelList(QString lista, QString argumento)
 {
-    if(list.compare("CURRENT", Qt::CaseInsensitive) == 0)
+    if(lista == "CURRENT")
         return vlistaNovelReading;
-    else if(list.compare("COMPLETED", Qt::CaseInsensitive) == 0)
+    else if(lista == "COMPLETED")
         return vlistaNovelCompleted;
-    else if(list.compare("PLANNING", Qt::CaseInsensitive) == 0)
+    else if(lista == "PLANNING")
         return vlistaNovelPlanToRead;
-    else if(list.compare("DROPPED", Qt::CaseInsensitive) == 0)
+    else if(lista == "DROPPED")
         return vlistaNovelDropped;
-    else if(list.compare("PAUSED", Qt::CaseInsensitive) == 0)
+    else if(lista == "PAUSED")
         return vlistaNovelOnHold;
-    else if(list.compare("SEARCH", Qt::CaseInsensitive) == 0)
-        return vlistaBusca;
+    else if(lista.compare("SEARCH") == 0 && !argumento.isEmpty())
+        return returnSearchList(argumento, NOVEL);
     else
         return vlistaNovelReading;
 }
@@ -1983,115 +2729,39 @@ QVector<anime *> Database::returnSearchList(const QString &rnome, Database::type
     return vlistaBusca;
 }
 
-QVector<anime *> Database::returnSortList(const QString &rordem, QString rlista, type rtipo)
+QVector<anime *> Database::returnSortList(const QString &rordem, QString lista, type rtipo)
 {
-    if(rtipo == type::ANIME){
-        if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaAnimeWatching;
-        else if(rlista.compare("COMPLETED", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaAnimeCompleted;
-        else if(rlista.compare("PAUSED", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaAnimeOnHold;
-        else if(rlista.compare("DROPPED", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaAnimeDropped;
-        else if(rlista.compare("PLANNING", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaAnimePlanToWatch;
-        else if(rlista == "busca")
-            vlistaTemp = vlistaBusca;
-    }
-    else if(rtipo == type::MANGA){
-        if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaMangaReading;
-        else if(rlista.compare("COMPLETED", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaMangaCompleted;
-        else if(rlista.compare("PAUSED", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaMangaOnHold;
-        else if(rlista.compare("DROPPED", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaMangaDropped;
-        else if(rlista.compare("PLANNING", Qt::CaseInsensitive) == 0)
-                vlistaTemp = vlistaMangaPlanToRead;
-        else if(rlista == "busca")
-            vlistaTemp = vlistaBusca;
-    }
-    else if(rtipo == type::NOVEL){
-        if(rlista.compare("CURRENT", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaNovelReading;
-        else if(rlista.compare("COMPLETED", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaNovelCompleted;
-        else if(rlista.compare("PAUSED", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaNovelOnHold;
-        else if(rlista.compare("DROPPED", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaNovelDropped;
-        else if(rlista.compare("PLANNING", Qt::CaseInsensitive) == 0)
-            vlistaTemp = vlistaNovelPlanToRead;
-        else if(rlista == "busca")
-            vlistaTemp = vlistaBusca;
-    }
-    else if(rtipo == type::SEASON){
-        if(rlista.contains("WINTER", Qt::CaseInsensitive))
-            vlistaTemp = vlistaAnimeSeasonWinter;
-        else if(rlista.contains("SPRING", Qt::CaseInsensitive))
-            vlistaTemp = vlistaAnimeSeasonSpring;
-        else if(rlista.contains("SUMMER", Qt::CaseInsensitive))
-            vlistaTemp = vlistaAnimeSeasonSummer;
-        else if(rlista.contains("FALL", Qt::CaseInsensitive))
-            vlistaTemp = vlistaAnimeSeasonFall;
-        else
-            vlistaTemp = returnAnimeYearlyList(rlista.toInt());
-    }
-    else
-        vlistaTemp.clear();
-
+    vlistaTemp = returnList(lista, rtipo);
 
     if(!rordem.isEmpty())
     {
         if(rordem.startsWith("c")){
-            if(rordem.contains("nome", Qt::CaseInsensitive)){
+            if(rordem.contains("nome", Qt::CaseInsensitive))
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{ return a->vnome < b->vnome; });
+            else if(rordem.contains("data", Qt::CaseInsensitive))
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{ return a->vdataEstreia < b->vdataEstreia;});
+            else if(rordem.contains("progresso", Qt::CaseInsensitive))
                 std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
-                    return a->vnome < b->vnome ;});
-            }
-            else if(rordem.contains("data", Qt::CaseInsensitive)){
+                    return a->vnumEpisodiosAssistidos.toInt() < b->vnumEpisodiosAssistidos.toInt() ;});
+            else if(rordem.contains("nota", Qt::CaseInsensitive))
                 std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
-                    return a->vdataEstreia < b->vdataEstreia ;});
-            }
-            else if(rordem.contains("progresso", Qt::CaseInsensitive)){
-                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{return
-                            a->vnumEpisodiosAssistidos.toInt()
-                            < b->vnumEpisodiosAssistidos.toInt() ;});
-            }
-            else if(rordem.contains("nota", Qt::CaseInsensitive)){
-                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
-                    return a->vnotaMediaPessoal.toInt()
-                            < b->vnotaMediaPessoal.toInt() ;});
-            }
-            else if(rordem.contains("formato", Qt::CaseInsensitive)){
-                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
-                    return a->vformato < b->vformato ;});
-            }
+                    return a->vnotaMediaPessoal.toInt() < b->vnotaMediaPessoal.toInt() ;});
+            else if(rordem.contains("formato", Qt::CaseInsensitive))
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{ return a->vformato < b->vformato ;});
         }
         else{
-            if(rordem.contains("nome", Qt::CaseInsensitive)){
+            if(rordem.contains("nome", Qt::CaseInsensitive))
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{ return a->vnome > b->vnome ;});
+            else if(rordem.contains("data", Qt::CaseInsensitive))
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{ return a->vdataEstreia > b->vdataEstreia ;});
+            else if(rordem.contains("progresso", Qt::CaseInsensitive))
                 std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
-                    return a->vnome > b->vnome ;});
-            }
-            else if(rordem.contains("data", Qt::CaseInsensitive)){
+                    return static_cast<float>(a->vnumEpisodiosAssistidos.toInt()) > static_cast<float>(b->vnumEpisodiosAssistidos.toInt()) ;});
+            else if(rordem.contains("nota", Qt::CaseInsensitive))
                 std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
-                    return a->vdataEstreia > b->vdataEstreia ;});
-            }
-            else if(rordem.contains("progresso", Qt::CaseInsensitive)){
-                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{return
-                            static_cast<float>(a->vnumEpisodiosAssistidos.toInt())
-                            > static_cast<float>(b->vnumEpisodiosAssistidos.toInt()) ;});
-            }
-            else if(rordem.contains("nota", Qt::CaseInsensitive)){
-                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
-                    return a->vnotaMediaPessoal.toInt()
-                            > b->vnotaMediaPessoal.toInt() ;});
-            }
-            else if(rordem.contains("formato", Qt::CaseInsensitive)){
-                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{
-                    return a->vformato > b->vformato ;});
-            }
+                    return a->vnotaMediaPessoal.toInt()> b->vnotaMediaPessoal.toInt() ;});
+            else if(rordem.contains("formato", Qt::CaseInsensitive))
+                std::sort(vlistaTemp.begin(),vlistaTemp.end(),[](anime* a, anime* b)->bool{ return a->vformato > b->vformato ;});
         }
     }
     return vlistaTemp;
@@ -2100,10 +2770,8 @@ QVector<anime *> Database::returnSortList(const QString &rordem, QString rlista,
 QString Database::fbuscaIDRapido(const QString &rnomeAnime)
 {
     foreach(QString key, vhashNomeAnimesPorId.keys()){
-        for(int i = 0; i < vhashNomeAnimesPorId[key].size(); i++){
-            if(vhashNomeAnimesPorId[key].at(i) == rnomeAnime)
-                return key;
-        }
+        if(vhashNomeAnimesPorId[key].contains(rnomeAnime))
+            return key;
     }
     return "";
 }
@@ -2718,9 +3386,6 @@ QString Database::limpaYear(QString linha, QString season)
 
 QString Database::limpaStatus(QString linha, QString &dataEpisodioFinal, QDate &ldataEpisodioConvertida, QTime &lhoraLancamentoEpisodio)
 {
-    linha.remove("\",");
-    linha.remove("\"");
-    linha.remove("status: ");
     linha = linha.trimmed();
     if(linha == "FINISHED")
         linha = "Finished Airing";
