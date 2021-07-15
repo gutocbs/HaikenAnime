@@ -17,7 +17,6 @@
 #include "src/base/confusuario.h"
 #include "src/utilities/logger.h"
 #include "src/utilities/formatapalavras.h"
-#include "src/utilities/arquivoanime.h"
 #include "lib/anitomy/anitomy.h"
 
 class arquivos : public QObject
@@ -27,7 +26,7 @@ public:
     explicit arquivos(QObject *parent = nullptr);
     QString fprocuraEpisodio(anime*);
     QString fprocuraEpisodioEspecifico(anime*, int);
-    bool fcomparaDadosAnime(ArquivoAnime*);
+    bool fcomparaDadosAnime(QString, const QString &rnomeAnime, QString, const QStringList &rnomesAlternativosAnime, int, int);
     bool fabreEpisodio(const QByteArray &rcaminhoArquivo);
     int fcomparaSeasons(QString, int, int);
 

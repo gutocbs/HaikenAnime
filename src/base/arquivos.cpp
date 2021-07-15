@@ -9,29 +9,22 @@ arquivos::arquivos(QObject *parent) : QObject(parent)
 ///fcomparaDadosAnime(QString rfileName, QString rnomeAnime, QString rnomeAnimeIngles, QStringList rnomesAlternativosAnime,int repisodioAnime, int rtemporada)
 ///Compara o arquivo com o anime a ser assistido. Caso for o episódio seguinte ao último assistido, retorna true.
 ///Caso seja um episódio inferior ou além do próximo que deve ser visto, retorna false.
-/**
- * Compara o arquivo com o anime a ser assistido.
- * Caso for o episódio seguinte ao último assistido, retorna true.
- * Caso seja um episódio inferior ou além do próximo que deve ser visto, retorna false.
- * @param contem os dados do anime buscado.
- * @return true ou false.
- */
-bool arquivos::fcomparaDadosAnime(ArquivoAnime* animeBuscado){
-
+bool arquivos::fcomparaDadosAnime(QString rfileName, const QString &rnomeAnime, QString rnomeAnimeIngles, const QStringList &rnomesAlternativosAnime,
+                                  int repisodioAnime, int rtemporada){
     //Anitomy é uma classe linda que separa os elementos de uma string
     anitomy::Anitomy lanitomy;
-    lanitomy.Parse(animeBuscado->nomeArquivo.toStdWString());
+    lanitomy.Parse(rfileName.toStdWString());
     const auto& lelements = lanitomy.elements();
     //Usamos isso para pegar o número do episódio e o nome do anime a partir do nome do arquivo
-    animeBuscado->nomeArquivo = QString::fromStdWString(lelements.get(anitomy::kElementAnimeTitle));
+    rfileName = QString::fromStdWString(lelements.get(anitomy::kElementAnimeTitle));
     QString vtemporada = QString::fromStdWString(lelements.get(anitomy::kElementAnimeSeason));
     if(!vtemporada.isEmpty())
-        animeBuscado->nomeArquivo.append(QString(" " + vtemporada));
+        rfileName.append(QString(" " + vtemporada));
     int lepisodioAnime = QString::fromStdWString(lelements.get(anitomy::kElementEpisodeNumber)).toInt();
 
     int repisodiosTotais = 0;
-    if(animeBuscado->temporada != 1)
-        repisodiosTotais = fcomparaSeasons(animeBuscado->nome,lepisodioAnime, animeBuscado->temporada);
+    if(rtemporada != 1)
+        repisodiosTotais = fcomparaSeasons(rnomeAnime,lepisodioAnime, rtemporada);
     //Alguns animes, normalmente filmes e ovas, não tem número de episódio, sendo lido como episódio 0
     //Por esse motivo, é dado o número 1 como número de episódio, assim o programa consegue reconhecer como episódio não visto
     if(lepisodioAnime == 0)
@@ -39,21 +32,18 @@ bool arquivos::fcomparaDadosAnime(ArquivoAnime* animeBuscado){
 
     //Episódios totais é a variável que conta todos os episódios do anime, em todas as seasons. Caso algum sub coloque, por exemplo
     //One Piece episódio 201, ele ainda vai ser lido e saberemos qual o episódio/temporada certa.
-    if(formatador.fcomparaNomes(animeBuscado->nomeArquivo,animeBuscado->nome)
-            && (lepisodioAnime == animeBuscado->episodio+1 ||
-                lepisodioAnime - repisodiosTotais == animeBuscado->episodio+1)){
+    if(formatador.fcomparaNomes(rfileName,rnomeAnime) && (lepisodioAnime == repisodioAnime+1 ||
+                                                                   lepisodioAnime - repisodiosTotais == repisodioAnime+1)){
         return true;
     }
-    else if(formatador.fcomparaNomes(animeBuscado->nomeArquivo, animeBuscado->nomeIngles)
-            && (lepisodioAnime == animeBuscado->episodio+1 ||
-                lepisodioAnime - repisodiosTotais == animeBuscado->episodio+1)){
+    else if(formatador.fcomparaNomes(rfileName, std::move(rnomeAnimeIngles)) && (lepisodioAnime == repisodioAnime+1 ||
+            lepisodioAnime - repisodiosTotais == repisodioAnime+1)){
         return true;
     }
     else{
-        for(int i = 0; i < animeBuscado->nomesAlternativos.size(); i++){
-            if(formatador.fcomparaNomes(animeBuscado->nomeArquivo,animeBuscado->nomesAlternativos.at(i))
-                    && (lepisodioAnime == animeBuscado->episodio+1 ||
-                        lepisodioAnime - repisodiosTotais == animeBuscado->episodio+1)){
+        for(int i = 0; i < rnomesAlternativosAnime.size(); i++){
+            if(formatador.fcomparaNomes(rfileName,rnomesAlternativosAnime.at(i)) && (lepisodioAnime == repisodioAnime+1 ||
+                                        lepisodioAnime - repisodiosTotais == repisodioAnime+1)){
                 return true;
             }
         }
@@ -65,7 +55,12 @@ QString arquivos::fprocuraEpisodio(anime *ranimeBuscado){
     //Checa se o anime pode ser lido
     if(!cdatabase->instance()->fchecaDatabaseReady())
         return "";
-    QPointer<ArquivoAnime> animeBuscado(new ArquivoAnime(ranimeBuscado));
+
+    QString nome = ranimeBuscado->vnome;
+    QString nomeIngles = ranimeBuscado->vnomeIngles;
+    QStringList nomesAlternativos = ranimeBuscado->vnomeAlternativo;
+    int numEpisodiosAssistidos = ranimeBuscado->vnumEpisodiosAssistidos.toInt();
+    int temporada = ranimeBuscado->vtemporada;
     int id = ranimeBuscado->vid.toInt();
 
     //Verifica se a função retorna um valor que não está vazio, ou seja
@@ -79,9 +74,9 @@ QString arquivos::fprocuraEpisodio(anime *ranimeBuscado){
             //Checa se o que foi encontrado é um arquivo ou uma pasta e, no caso de ser um arquivo, se é um arquivo de vídeo
             if(lchecaSeArquivoOuPasta.isFile() == true && (lfile.fileName().endsWith("mkv", Qt::CaseInsensitive) ||
                                                            lfile.fileName().endsWith("mp4", Qt::CaseInsensitive))){
-                animeBuscado->nomeArquivo = lit.fileName();
                 //Compara o nome do anime e o número do episódio
-                if(fcomparaDadosAnime(animeBuscado))
+                if(fcomparaDadosAnime(lit.fileName(), nome, nomeIngles, nomesAlternativos,
+                                           numEpisodiosAssistidos, temporada))
                     return lfile.fileName();
             }
         }
@@ -96,9 +91,9 @@ QString arquivos::fprocuraEpisodio(anime *ranimeBuscado){
                 //Checa se o que foi encontrado é um arquivo ou uma pasta e, no caso de ser um arquivo, se é um arquivo de vídeo
                 if(lchecaSeArquivoOuPasta.isFile() == true && (lfile.fileName().endsWith("mkv", Qt::CaseInsensitive) ||
                                                                lfile.fileName().endsWith("mp4", Qt::CaseInsensitive))){
-                    animeBuscado->nomeArquivo = lit.fileName();
                     //Compara o nome do anime e o número do episódio
-                    if(fcomparaDadosAnime(animeBuscado))
+                    if(fcomparaDadosAnime(lit.fileName(), nome, nomeIngles, nomesAlternativos,
+                                               numEpisodiosAssistidos, temporada))
                         return lfile.fileName();
                 }
             }
@@ -113,7 +108,10 @@ QString arquivos::fprocuraEpisodioEspecifico(anime *ranimeBuscado, int rEpisodio
     if(!cdatabase->instance()->fchecaDatabaseReady())
         return "";
 
-    QPointer<ArquivoAnime> animeBuscado(new ArquivoAnime(ranimeBuscado, rEpisodioBuscado-1));
+    QString nome = ranimeBuscado->vnome;
+    QString nomeIngles = ranimeBuscado->vnomeIngles;
+    QStringList nomesAlternativos = ranimeBuscado->vnomeAlternativo;
+    int temporada = ranimeBuscado->vtemporada;
     int id = ranimeBuscado->vid.toInt();
 
     //Verifica se a função retorna um valor que não está vazio, ou seja
@@ -127,9 +125,9 @@ QString arquivos::fprocuraEpisodioEspecifico(anime *ranimeBuscado, int rEpisodio
             //Checa se o que foi encontrado é um arquivo ou uma pasta e, no caso de ser um arquivo, se é um arquivo de vídeo
             if(lchecaSeArquivoOuPasta.isFile() == true && (lfile.fileName().endsWith("mkv", Qt::CaseInsensitive) ||
                                                            lfile.fileName().endsWith("mp4", Qt::CaseInsensitive))){
-                animeBuscado->nomeArquivo = lit.fileName();
                 //Compara o nome do anime e o número do episódio
-                if(fcomparaDadosAnime(animeBuscado))
+                if(fcomparaDadosAnime(lit.fileName(), nome, nomeIngles, nomesAlternativos,
+                                           rEpisodioBuscado-1, temporada))
                     return lfile.fileName();
             }
         }
@@ -144,9 +142,9 @@ QString arquivos::fprocuraEpisodioEspecifico(anime *ranimeBuscado, int rEpisodio
                 //Checa se o que foi encontrado é um arquivo ou uma pasta e, no caso de ser um arquivo, se é um arquivo de vídeo
                 if(lchecaSeArquivoOuPasta.isFile() == true && (lfile.fileName().endsWith("mkv", Qt::CaseInsensitive) ||
                                                                lfile.fileName().endsWith("mp4", Qt::CaseInsensitive))){
-                    animeBuscado->nomeArquivo = lit.fileName();
                     //Compara o nome do anime e o número do episódio
-                    if(fcomparaDadosAnime(animeBuscado))
+                    if(fcomparaDadosAnime(lit.fileName(), nome, nomeIngles, nomesAlternativos,
+                                               rEpisodioBuscado-1, temporada))
                         return lfile.fileName();
                 }
             }
