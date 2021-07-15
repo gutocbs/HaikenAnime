@@ -139,6 +139,7 @@ signals:
 
     void sdirImagensGrandes(QVariant data);
     void sdirImagensMedias(QVariant data);
+    void sdirImagensPequenas(QVariant data);
 
     void sconnectGUI(QVariant data);
     void stimer(QVariant data);

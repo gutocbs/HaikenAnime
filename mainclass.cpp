@@ -126,8 +126,8 @@ void MainClass::fconnectSuccess()
     if(tthreadDiretorios.isRunning())
         tthreadDiretorios.requestInterruption();
     //    cconfiguracoesUsuarioDiretorios->instance()->thread()->requestInterruption();
-    if(!vlistaSelecionada.isEmpty())
-        cdatabase->instance()->fdeletaListaAnimes();
+//    if(!vlistaSelecionada.isEmpty())
+//        cdatabase->instance()->fdeletaListaAnimes();
     cdatabase->instance()->freadDatabaseFile();
     vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
 
@@ -355,6 +355,7 @@ void MainClass::fbotaoDownloadTorrents()
 
 void MainClass::finfoAnimeSelecionado(QVariant posicaoAnimeNaGrid)
 {
+//    emit sdirImagensPequenas(QVariant(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensPequenas));
     emit sdirImagensMedias(QVariant(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensMedio));
     emit sdirImagensGrandes(QVariant(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes));
 

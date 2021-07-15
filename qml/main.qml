@@ -19,6 +19,7 @@ Window {
     //Configurações de diretorios
     property var dirImagensGrandes: ""
     property var dirImagensMedias: ""
+    property var dirImagensPequenas: ""
 
     //Id dos animes
     property var idAnime: ["null","null","null","null","null","null","null","null","null","null","null","null"]
@@ -89,7 +90,7 @@ Window {
 
     Connections{
         target: mainClass
-
+        function onSdirImagensPequenas(data){ dirImagensPequenas = data}
         function onSdirImagensMedias(data){ dirImagensMedias = data}
         function onSdirImagensGrandes(data){ dirImagensGrandes = data}
         function onSidAnime1(data){ getData(data,0)}
