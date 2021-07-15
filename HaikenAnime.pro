@@ -36,17 +36,28 @@ HEADERS += \
     lib/robotlib/Size.h \
     lib/robotlib/Window.h \
     mainclass.h \
+    src/base/Anime/animemanager.h \
+    src/base/Anime/animesearchmanager.h \
     src/base/abaconfig.h \
     src/base/abatorrent.h \
     src/base/anime.h \
+    src/base/animesearchmanager.h \
+    src/base/classeb.h \
+    src/base/classec.h \
+    src/base/databasemanager.h \
+    src/base/databasesearch.h \
     src/base/arquivos.h \
     src/base/confbase.h \
     src/base/confusuario.h \
     src/base/database.h \
     src/base/downloaderworker.h \
+    src/base/interfaceA.h \
     src/base/leitorlistaanimes.h \
     src/base/torrentinfo.h \
     src/clients/anilist.h \
+    src/utilities/Enums.h \
+    src/utilities/Interfaces/IMediaManager.h \
+    src/utilities/Interfaces/ISearchManager.h \
     src/utilities/arquivoanime.h \
     src/utilities/call_once.h \
     src/utilities/client.h \
@@ -74,16 +85,22 @@ SOURCES += \
     lib/robotlib/Window.cc \
     main.cpp \
     mainclass.cpp \
+    src/base/Anime/animemanager.cpp \
+    src/base/Anime/animesearchmanager.cpp \
     src/base/abaconfig.cpp \
     src/base/abatorrent.cpp \
+    src/base/animesearchmanager.cpp \
     src/base/arquivos.cpp \
+    src/base/classeb.cpp \
+    src/base/classec.cpp \
     src/base/confbase.cpp \
     src/base/confusuario.cpp \
     src/base/database.cpp \
+    src/base/databasemanager.cpp \
+    src/base/databasesearch.cpp \
     src/base/downloaderworker.cpp \
     src/base/leitorlistaanimes.cpp \
     src/clients/anilist.cpp \
-    src/utilities/arquivoanime.cpp \
     src/utilities/client.cpp \
     src/utilities/downloader.cpp \
     src/utilities/formatapalavras.cpp \
