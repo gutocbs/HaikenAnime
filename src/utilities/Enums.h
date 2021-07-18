@@ -18,18 +18,26 @@ public:
     Q_ENUM(orderType)
     virtual ~Enums() = 0;
 
-    static mediaList QStringToEnum(QString enumName){
-        if(enumName.compare(enumToQString(mediaList::CURRENT))) return mediaList::CURRENT;
-        else if(enumName.compare(enumToQString(mediaList::COMPLETED))) return mediaList::COMPLETED;
-        else if(enumName.compare(enumToQString(mediaList::PAUSED))) return mediaList::PAUSED;
-        else if(enumName.compare(enumToQString(mediaList::DROPPED))) return mediaList::DROPPED;
-        else if(enumName.compare(enumToQString(mediaList::PLANNING))) return mediaList::PLANNING;
+    static hashList QStringToHashList(QString enumName){
+        if(enumName.compare(enumHashListToQString(hashList::LISTA))) return hashList::LISTA;
+        else if(enumName.compare(enumHashListToQString(hashList::POSICAO))) return hashList::POSICAO;
+        else if(enumName.compare(enumHashListToQString(hashList::NOME))) return hashList::NOME;
+        else if(enumName.compare(enumHashListToQString(hashList::NOMEALTERNATIVO))) return hashList::NOMEALTERNATIVO;
+        return hashList::LISTA;
+    }
+    static mediaList QStringToMediaList(QString enumName){
+        if(enumName.compare(enumMediaListToQString(mediaList::CURRENT))) return mediaList::CURRENT;
+        else if(enumName.compare(enumMediaListToQString(mediaList::COMPLETED))) return mediaList::COMPLETED;
+        else if(enumName.compare(enumMediaListToQString(mediaList::PAUSED))) return mediaList::PAUSED;
+        else if(enumName.compare(enumMediaListToQString(mediaList::DROPPED))) return mediaList::DROPPED;
+        else if(enumName.compare(enumMediaListToQString(mediaList::PLANNING))) return mediaList::PLANNING;
         return mediaList::CURRENT;
     }
-    static QString enumToQString(hashList enumName){
+
+    static QString enumHashListToQString(hashList enumName){
         return QMetaEnum::fromType<hashList>().valueToKey(enumName);
     }
-    static QString enumToQString(mediaList enumName){
+    static QString enumMediaListToQString(mediaList enumName){
         return QMetaEnum::fromType<mediaList>().valueToKey(enumName);
     }
 
