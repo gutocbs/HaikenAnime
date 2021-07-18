@@ -11,9 +11,9 @@ class AnimeListManager : public IMediaListManager
 public:
     static AnimeListManager *instance();
 
-    QHash<QString, int> getHash(Enums::hashList, int valorInt);
-    QHash<QString, QString> getHash(Enums::hashList, QString valorQString);
-    QHash<QString, QStringList> getHash(Enums::hashList, QStringList valorQStringList);
+    QHash<QString, int> getHashMediaIndexById();
+    QHash<QString, QString> getHashMediaListById();
+    QHash<QString, QStringList> getHashMediaNamesById(Enums::hashList);
     void addToHash(QString id, int index);
     void addToHash(QString id, QString mediaList);
     void addToHash(QString id, QStringList mediaNames, Enums::hashList hashList);

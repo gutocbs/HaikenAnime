@@ -28,17 +28,17 @@ QVector<Media*> AnimeSearchManager::searchMedia(const QString &rnome)
     mediaListSearch.clear();
 //    if(!vdatabaseReady)
 //        return mediaListSearch;
-    QHash<QString, QStringList> hashMediaNameById = animeManager.getHash(Enums::NOME, QStringList());
-    QHash<QString, QString> hashMediaListById = animeManager.getHash(Enums::LISTA, "");
-    QHash<QString, int> hashMediaIndexById = animeManager.getHash(Enums::POSICAO, 0);
-    QVector<Media*> tempList;
-    foreach(QString key, hashMediaNameById.keys()){
+    QHash<QString, QStringList> hashMediaNameById = animeManager.getHashMediaNamesById(Enums::NOME);
+    QHash<QString, QString> hashMediaListById = animeManager.getHashMediaListById();
+    QHash<QString, int> hashMediaIndexById = animeManager.getHashMediaIndexById();
+    QHash<QString, QStringList>::iterator iterator;
+    for (iterator = hashMediaNameById.begin(); iterator != hashMediaNameById.end(); ++iterator){
 //        if(!vdatabaseReady)
 //            return mediaListSearch;
-        for(int i = 0; i < hashMediaNameById[key].size(); i++){
-            if(hashMediaNameById[key].at(i).contains(rnome, Qt::CaseInsensitive)){
-                QString list = hashMediaListById[key];
-                int pos = hashMediaIndexById[key];
+        for(int i = 0; i < hashMediaNameById[iterator.key()].size(); i++){
+            if(hashMediaNameById[iterator.key()].at(i).contains(rnome, Qt::CaseInsensitive)){
+                QString list = hashMediaListById[iterator.key()];
+                int pos = hashMediaIndexById[iterator.key()];
                 if(pos == -1)
                     break;
                 else if(list.compare(Enums::enumMediaListToQString(Enums::CURRENT), Qt::CaseInsensitive) == 0){
@@ -66,7 +66,7 @@ QVector<Media*> AnimeSearchManager::searchMedia(const QString &rnome)
                     //Checa se a list é um número válido
                     list.toInt(&ok);
                     if(ok){
-                        mediaListSearch.append(fbuscaAnimeNoAno(list.toInt(), key));
+                        mediaListSearch.append(fbuscaAnimeNoAno(list.toInt(), iterator.key()));
                     }
                     break;
                 }
@@ -84,18 +84,19 @@ void AnimeSearchManager::appendToList(QVector<Media*> &mediaList, Enums::mediaLi
 
 QString AnimeSearchManager::buscaIDRapido(const QString &rnomeAnime)
 {
-    //TODO - Especificar hash buscada
-    QHash<QString, QString> hashBuscada = animeManager.getHash(hashList, "");
-    foreach(QString key, hashBuscada.keys()){
-        if(hashBuscada[key].contains(rnomeAnime))
-            return key;
+    QHash<QString, QString> hashBuscada = animeManager.getHashMediaListById();
+
+    QHash<QString, QString>::iterator iterator;
+    for (iterator = hashBuscada.begin(); iterator != hashBuscada.end(); ++iterator){
+        if(hashBuscada[iterator.key()].contains(rnomeAnime))
+            return iterator.key();
     }
     return "";
 }
 
 QString AnimeSearchManager::getMediaListNameFromId(const QString &idAnime)
 {
-    QHash<QString, QString> hashBuscada = animeManager.getHash(hashList, "");
+    QHash<QString, QString> hashBuscada = animeManager.getHashMediaListById();
     if(hashBuscada.contains(idAnime))
         return hashBuscada[idAnime];
     return "CURRENT";
@@ -103,7 +104,7 @@ QString AnimeSearchManager::getMediaListNameFromId(const QString &idAnime)
 
 int AnimeSearchManager::getMediaListIndexFromId(const QString &idAnime)
 {
-    QHash<QString, int> hashIndex = animeManager.getHash(hashList, 0);
+    QHash<QString, int> hashIndex = animeManager.getHashMediaIndexById();
     QString list = getMediaListNameFromId(idAnime);
 
     if(hashIndex.contains(idAnime)){
@@ -111,8 +112,8 @@ int AnimeSearchManager::getMediaListIndexFromId(const QString &idAnime)
         //Checa se o a posição do anime na lista está correta. Caso esteja errada, insere na posição certa.
         if(animeMedia->vid.compare(idAnime) != 0){
             Enums::mediaList listEnum = Enums::QStringToMediaList(list);
-            animeManager.addToHashList(idAnime, listEnum, Enums::POSICAO);
-            hashIndex = animeManager.getHash(hashList, 0);
+            animeManager.addToHashList(idAnime, listEnum, Enums::hashList::POSICAO);
+            hashIndex = animeManager.getHashMediaIndexById();
         }
         return hashIndex[idAnime];
     }
@@ -171,10 +172,11 @@ QString AnimeSearchManager::getMediaTitleFromId(const QString &idAnime)
 
 QString AnimeSearchManager::getIdFromMediaTitle(const QString &mediaTitle)
 {
-    QHash<QString, QStringList> hashNome = animeManager.getHash(hashList, QStringList(mediaTitle));
-    foreach(QString key, hashNome.keys()){
-        if(hashNome[key].contains(mediaTitle))
-            return key;
+    QHash<QString, QStringList> hashNome = animeManager.getHashMediaNamesById(Enums::hashList::NOME);
+    QHash<QString, QStringList>::iterator iterator;
+    for (iterator = hashNome.begin(); iterator != hashNome.end(); ++iterator){
+        if(hashNome[iterator.key()].contains(mediaTitle))
+            return iterator.key();
     }
 
     QVector<Media*> tempList;
@@ -184,8 +186,8 @@ QString AnimeSearchManager::getIdFromMediaTitle(const QString &mediaTitle)
         if(!tempList.isEmpty()){
             for(int i = 0; i < tempList.size(); i++){
                 if(animeManager.compareMedia(tempList[i]->vnome, tempList[i]->vnomeIngles, tempList[i]->vnomeAlternativo, mediaTitle)){
-                    animeManager.addToHash(tempList[i]->vid, QStringList(tempList[i]->vnomeAlternativo), Enums::NOMEALTERNATIVO);
-                    animeManager.addToHash(tempList[i]->vid, QStringList(mediaTitle), Enums::NOMEALTERNATIVO);
+                    animeManager.addToHash(tempList[i]->vid, QStringList(tempList[i]->vnomeAlternativo), Enums::hashList::NOMEALTERNATIVO);
+                    animeManager.addToHash(tempList[i]->vid, QStringList(mediaTitle), Enums::hashList::NOMEALTERNATIVO);
                     animeManager.addToHash(tempList[i]->vid, list);
                     animeManager.addToHash(tempList[i]->vid, i);
                     return tempList[i]->vid;
