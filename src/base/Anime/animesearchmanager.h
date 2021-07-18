@@ -14,9 +14,10 @@ signals:
 
     // ISearchManager interface
 public:
-    int getListIndexFromId(const QString &ridAnime);
+    virtual QVector<anime*> searchMedia(const QString &rnome) = 0;
+    int getMediaListIndexFromId(const QString &ridAnime);
     QString buscaIDRapido(const QString &rnomeAnime);
-    QString getListFromId(const QString &ridAnime);
+    QString getMediaListNameFromId(const QString &ridAnime);
     QString getMediaEpisodeFromId(const QString &rid);
     QString getMediaScoreFromId(const QString &rid);
     QString getMediaTitleFromId(const QString &rid);
@@ -26,10 +27,11 @@ public:
     QPointer<anime> getMediaFromListIndex(const QString &rlista, int posicao);
     QVector<anime*> getMediaListFromId(const QString &id);
     void loadListNames();
+    void appendToList(QVector<anime *> &mediaList, Enums::mediaList list, int position);
+    QVector<anime *> getMediaList(const QString &listName);
 
 private:
     AnimeManager animeManager;
-
 };
 
 #endif // ANIMESEARCHMANAGER_H
