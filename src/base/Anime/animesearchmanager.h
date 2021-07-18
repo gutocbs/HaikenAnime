@@ -9,7 +9,7 @@ class AnimeSearchManager : public ISearchManager
 {
 
 public:
-    virtual QVector<anime*> searchMedia(const QString &rnome) = 0;
+    virtual QVector<Media*> searchMedia(const QString &rnome) = 0;
     int getMediaListIndexFromId(const QString &ridAnime);
     QString buscaIDRapido(const QString &rnomeAnime);
     QString getMediaListNameFromId(const QString &ridAnime);
@@ -17,13 +17,13 @@ public:
     QString getMediaScoreFromId(const QString &rid);
     QString getMediaTitleFromId(const QString &rid);
     QString getIdFromMediaTitle(const QString &rid);
-    QPointer<anime> fbuscaAnimeNoAno(int, const QString &rid);
-    QPointer<anime> getMediaFromId(const QString &rid);
-    QPointer<anime> getMediaFromListIndex(const QString &rlista, int posicao);
-    QVector<anime*> getMediaListFromId(const QString &id);
+    QPointer<Media> fbuscaAnimeNoAno(int, const QString &rid);
+    QPointer<Media> getMediaFromId(const QString &rid);
+    QPointer<Media> getMediaFromListIndex(const QString &rlista, int posicao);
+    QVector<Media*> getMediaListFromId(const QString &id);
     void loadListNames();
-    void appendToList(QVector<anime *> &mediaList, Enums::mediaList list, int position);
-    QVector<anime *> getMediaList(const QString &listName);
+    void appendToList(QVector<Media*> &mediaList, Enums::mediaList list, int position);
+    QVector<Media*> getMediaList(const QString &listName);
 
 private:
     AnimeListManager animeManager;

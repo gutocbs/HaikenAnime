@@ -17,21 +17,21 @@ void AnimeSearchManager::loadListNames()
     listNames.append("PAUSED");
 }
 
-QVector<anime *> AnimeSearchManager::getMediaList(const QString &listName){
+QVector<Media*> AnimeSearchManager::getMediaList(const QString &listName){
     Enums::mediaList listEnum = Enums::QStringToMediaList(listName);
     return animeManager.getMediaList(listEnum);
 }
 
-QVector<anime *> AnimeSearchManager::searchMedia(const QString &rnome)
+QVector<Media*> AnimeSearchManager::searchMedia(const QString &rnome)
 {
-    QVector<anime*> mediaListSearch = animeManager.getMediaList(Enums::SEARCH);
+    QVector<Media*> mediaListSearch = animeManager.getMediaList(Enums::SEARCH);
     mediaListSearch.clear();
 //    if(!vdatabaseReady)
 //        return mediaListSearch;
     QHash<QString, QStringList> hashMediaNameById = animeManager.getHash(Enums::NOME, QStringList());
     QHash<QString, QString> hashMediaListById = animeManager.getHash(Enums::LISTA, "");
     QHash<QString, int> hashMediaIndexById = animeManager.getHash(Enums::POSICAO, 0);
-    QVector<anime*> tempList;
+    QVector<Media*> tempList;
     foreach(QString key, hashMediaNameById.keys()){
 //        if(!vdatabaseReady)
 //            return mediaListSearch;
@@ -76,8 +76,8 @@ QVector<anime *> AnimeSearchManager::searchMedia(const QString &rnome)
     return mediaListSearch;
 }
 
-void AnimeSearchManager::appendToList(QVector<anime*> &mediaList, Enums::mediaList list, int position){
-    QVector<anime*> tempList = animeManager.getMediaList(list);
+void AnimeSearchManager::appendToList(QVector<Media*> &mediaList, Enums::mediaList list, int position){
+    QVector<Media*> tempList = animeManager.getMediaList(list);
     if(tempList.size() > position)
         mediaList.append(tempList[position]);
 }
@@ -107,7 +107,7 @@ int AnimeSearchManager::getMediaListIndexFromId(const QString &idAnime)
     QString list = getMediaListNameFromId(idAnime);
 
     if(hashIndex.contains(idAnime)){
-        QPointer<anime> animeMedia = getMediaFromId(idAnime);
+        QPointer<Media> animeMedia = getMediaFromId(idAnime);
         //Checa se o a posição do anime na lista está correta. Caso esteja errada, insere na posição certa.
         if(animeMedia->vid.compare(idAnime) != 0){
             Enums::mediaList listEnum = Enums::QStringToMediaList(list);
@@ -119,35 +119,35 @@ int AnimeSearchManager::getMediaListIndexFromId(const QString &idAnime)
     return -1;
 }
 
-QPointer<anime> AnimeSearchManager::getMediaFromId(const QString &idAnime){
+QPointer<Media> AnimeSearchManager::getMediaFromId(const QString &idAnime){
     QString lista = getMediaListNameFromId(idAnime);
     int listIndex = getMediaListIndexFromId(idAnime);
     if(listIndex == -1)
         return nullptr;
 
-    QVector<anime*> tempList = getMediaList(lista);
+    QVector<Media*> tempList = getMediaList(lista);
     if(tempList.size() > listIndex)
         return tempList[listIndex];
 
     return nullptr;
 }
 
-QVector<anime*> AnimeSearchManager::getMediaListFromId(const QString &idAnime){
+QVector<Media*> AnimeSearchManager::getMediaListFromId(const QString &idAnime){
     QString lista = getMediaListNameFromId(idAnime);
     int listIndex = getMediaListIndexFromId(idAnime);
     if(listIndex == -1)
-        return QVector<anime*>();
+        return QVector<Media*>();
 
-    QVector<anime*> tempList = getMediaList(lista);
+    QVector<Media*> tempList = getMediaList(lista);
     if(tempList.size() > listIndex)
         return tempList;
 
-    return QVector<anime*>();
+    return QVector<Media*>();
 }
 
 QString AnimeSearchManager::getMediaEpisodeFromId(const QString &idAnime)
 {
-    QPointer<anime> anime = getMediaFromId(idAnime);
+    QPointer<Media> anime = getMediaFromId(idAnime);
     if(!anime.isNull())
         return anime->vnumEpisodiosAssistidos;
     return "0";
@@ -155,7 +155,7 @@ QString AnimeSearchManager::getMediaEpisodeFromId(const QString &idAnime)
 
 QString AnimeSearchManager::getMediaScoreFromId(const QString &idAnime)
 {
-    QPointer<anime> anime = getMediaFromId(idAnime);
+    QPointer<Media> anime = getMediaFromId(idAnime);
     if(!anime.isNull())
         return anime->vnotaMediaPessoal;
     return "0";
@@ -163,7 +163,7 @@ QString AnimeSearchManager::getMediaScoreFromId(const QString &idAnime)
 
 QString AnimeSearchManager::getMediaTitleFromId(const QString &idAnime)
 {
-    QPointer<anime> anime = getMediaFromId(idAnime);
+    QPointer<Media> anime = getMediaFromId(idAnime);
     if(!anime.isNull())
         return anime->vnome;
     return "0";
@@ -177,7 +177,7 @@ QString AnimeSearchManager::getIdFromMediaTitle(const QString &mediaTitle)
             return key;
     }
 
-    QVector<anime*> tempList;
+    QVector<Media*> tempList;
     foreach(QString list, listNames){
         tempList = getMediaList(list);
         //Checa se a lista não está vazia

@@ -36,6 +36,7 @@ HEADERS += \
     lib/robotlib/Size.h \
     lib/robotlib/Window.h \
     mainclass.h \
+    src/DTO/media.h \
     src/base/Anime/animelistmanager.h \
     src/base/Anime/animemanager.h \
     src/base/Anime/animesearchmanager.h \

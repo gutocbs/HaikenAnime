@@ -19,12 +19,12 @@ public:
     void addToHash(QString id, QStringList mediaNames, Enums::hashList hashList);
     void addToHashList(QString mediaId, Enums::mediaList mediaList, Enums::hashList hashList);
 
-    QVector<anime *> getMediaList(Enums::mediaList mediaList, QString searchArgument = "");
-    QVector<anime *> getSortList(Enums::mediaOrder order, Enums::orderType orderType, Enums::mediaList mediaList);
-    QVector<anime *> getAnimeYearlyList(int ano);
+    QVector<Media*> getMediaList(Enums::mediaList mediaList, QString searchArgument = "");
+    QVector<Media*> getSortList(Enums::mediaOrder order, Enums::orderType orderType, Enums::mediaList mediaList);
+    QVector<Media*> getAnimeYearlyList(int ano);
 
     bool compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle);
-    bool addMedia(anime *mediaObject, Enums::mediaList);
+    bool addMedia(Media *mediaObject, Enums::mediaList);
 };
 
 #endif // ANIMELISTMANAGER_H
