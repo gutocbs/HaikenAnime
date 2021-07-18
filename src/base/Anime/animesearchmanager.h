@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include "src/utilities/Interfaces/ISearchManager.h"
-#include "src/base/Anime/animemanager.h"
+#include "src/base/Anime/animelistmanager.h"
 
 class AnimeSearchManager : public ISearchManager
 {
@@ -26,7 +26,7 @@ public:
     QVector<anime *> getMediaList(const QString &listName);
 
 private:
-    AnimeManager animeManager;
+    AnimeListManager animeManager;
 };
 
 #endif // ANIMESEARCHMANAGER_H

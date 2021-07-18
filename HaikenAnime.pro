@@ -85,7 +85,7 @@ SOURCES += \
     lib/robotlib/Window.cc \
     main.cpp \
     mainclass.cpp \
-    src/base/Anime/animeListManager.cpp \
+    src/base/Anime/animelistmanager.cpp \
     src/base/Anime/animemanager.cpp \
     src/base/Anime/animesearchmanager.cpp \
     src/base/abaconfig.cpp \
