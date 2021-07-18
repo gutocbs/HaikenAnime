@@ -36,6 +36,7 @@ HEADERS += \
     lib/robotlib/Size.h \
     lib/robotlib/Window.h \
     mainclass.h \
+    src/base/Anime/animelistmanager.h \
     src/base/Anime/animemanager.h \
     src/base/Anime/animesearchmanager.h \
     src/base/abaconfig.h \
@@ -44,8 +45,6 @@ HEADERS += \
     src/base/animesearchmanager.h \
     src/base/classeb.h \
     src/base/classec.h \
-    src/base/databasemanager.h \
-    src/base/databasesearch.h \
     src/base/arquivos.h \
     src/base/confbase.h \
     src/base/confusuario.h \
@@ -56,6 +55,7 @@ HEADERS += \
     src/base/torrentinfo.h \
     src/clients/anilist.h \
     src/utilities/Enums.h \
+    src/utilities/Interfaces/IMediaListManager.h \
     src/utilities/Interfaces/IMediaManager.h \
     src/utilities/Interfaces/ISearchManager.h \
     src/utilities/arquivoanime.h \
@@ -85,6 +85,7 @@ SOURCES += \
     lib/robotlib/Window.cc \
     main.cpp \
     mainclass.cpp \
+    src/base/Anime/animeListManager.cpp \
     src/base/Anime/animemanager.cpp \
     src/base/Anime/animesearchmanager.cpp \
     src/base/abaconfig.cpp \
@@ -96,8 +97,6 @@ SOURCES += \
     src/base/confbase.cpp \
     src/base/confusuario.cpp \
     src/base/database.cpp \
-    src/base/databasemanager.cpp \
-    src/base/databasesearch.cpp \
     src/base/downloaderworker.cpp \
     src/base/leitorlistaanimes.cpp \
     src/clients/anilist.cpp \
