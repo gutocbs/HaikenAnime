@@ -7,12 +7,7 @@
 
 class AnimeSearchManager : public ISearchManager
 {
-public:
 
-signals:
-
-
-    // ISearchManager interface
 public:
     virtual QVector<anime*> searchMedia(const QString &rnome) = 0;
     int getMediaListIndexFromId(const QString &ridAnime);

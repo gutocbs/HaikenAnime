@@ -18,7 +18,7 @@ void AnimeSearchManager::loadListNames()
 }
 
 QVector<anime *> AnimeSearchManager::getMediaList(const QString &listName){
-    Enums::mediaList listEnum = Enums::QStringToEnum(listName);
+    Enums::mediaList listEnum = Enums::QStringToMediaList(listName);
     return animeManager.getMediaList(listEnum);
 }
 
@@ -41,23 +41,23 @@ QVector<anime *> AnimeSearchManager::searchMedia(const QString &rnome)
                 int pos = hashMediaIndexById[key];
                 if(pos == -1)
                     break;
-                else if(list.compare(Enums::enumToQString(Enums::CURRENT), Qt::CaseInsensitive) == 0){
+                else if(list.compare(Enums::enumMediaListToQString(Enums::CURRENT), Qt::CaseInsensitive) == 0){
                     appendToList(mediaListSearch, Enums::CURRENT, pos);
                     break;
                 }
-                else if(list.compare(Enums::enumToQString(Enums::PLANNING), Qt::CaseInsensitive) == 0){
+                else if(list.compare(Enums::enumMediaListToQString(Enums::PLANNING), Qt::CaseInsensitive) == 0){
                     appendToList(mediaListSearch, Enums::PLANNING, pos);
                     break;
                 }
-                else if(list.compare(Enums::enumToQString(Enums::PAUSED), Qt::CaseInsensitive) == 0){
+                else if(list.compare(Enums::enumMediaListToQString(Enums::PAUSED), Qt::CaseInsensitive) == 0){
                     appendToList(mediaListSearch, Enums::PAUSED, pos);
                     break;
                 }
-                else if(list.compare(Enums::enumToQString(Enums::DROPPED), Qt::CaseInsensitive) == 0){
+                else if(list.compare(Enums::enumMediaListToQString(Enums::DROPPED), Qt::CaseInsensitive) == 0){
                     appendToList(mediaListSearch, Enums::DROPPED, pos);
                     break;
                 }
-                else if(list.compare(Enums::enumToQString(Enums::COMPLETED), Qt::CaseInsensitive) == 0){
+                else if(list.compare(Enums::enumMediaListToQString(Enums::COMPLETED), Qt::CaseInsensitive) == 0){
                     appendToList(mediaListSearch, Enums::COMPLETED, pos);
                     break;
                 }
@@ -110,7 +110,7 @@ int AnimeSearchManager::getMediaListIndexFromId(const QString &idAnime)
         QPointer<anime> animeMedia = getMediaFromId(idAnime);
         //Checa se o a posição do anime na lista está correta. Caso esteja errada, insere na posição certa.
         if(animeMedia->vid.compare(idAnime) != 0){
-            Enums::mediaList listEnum = Enums::QStringToEnum(list);
+            Enums::mediaList listEnum = Enums::QStringToMediaList(list);
             animeManager.addToHashList(idAnime, listEnum, Enums::POSICAO);
             hashIndex = animeManager.getHash(hashList, 0);
         }
@@ -182,11 +182,13 @@ QString AnimeSearchManager::getIdFromMediaTitle(const QString &mediaTitle)
         tempList = getMediaList(list);
         //Checa se a lista não está vazia
         if(!tempList.isEmpty()){
-            foreach(anime* anime, tempList){
-                if(animeManager.compareMedia(anime->vnome, anime->vnomeIngles, anime->vnomeAlternativo, mediaTitle)){
-                    insereNomesHashNomeAnimesPoidAnime(anime->vid, QStringList(mediaTitle));
-                    animeManager.addToHashList(anime->vid, listEnum, Enums::POSICAO);
-                    return anime->vid;
+            for(int i = 0; i < tempList.size(); i++){
+                if(animeManager.compareMedia(tempList[i]->vnome, tempList[i]->vnomeIngles, tempList[i]->vnomeAlternativo, mediaTitle)){
+                    animeManager.addToHash(tempList[i]->vid, QStringList(tempList[i]->vnomeAlternativo), Enums::NOMEALTERNATIVO);
+                    animeManager.addToHash(tempList[i]->vid, QStringList(mediaTitle), Enums::NOMEALTERNATIVO);
+                    animeManager.addToHash(tempList[i]->vid, list);
+                    animeManager.addToHash(tempList[i]->vid, i);
+                    return tempList[i]->vid;
                 }
             }
         }
