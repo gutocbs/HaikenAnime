@@ -39,7 +39,8 @@ HEADERS += \
     src/DTO/media.h \
     src/base/Anime/animelistmanager.h \
     src/base/Anime/animemanager.h \
-    src/base/Anime/animesearchmanager.h \
+    src/base/Anime/media.h \
+    src/base/Anime/mediasearchmanager.h \
     src/base/abaconfig.h \
     src/base/abatorrent.h \
     src/base/anime.h \
@@ -58,7 +59,7 @@ HEADERS += \
     src/utilities/Enums.h \
     src/utilities/Interfaces/IMediaListManager.h \
     src/utilities/Interfaces/IMediaManager.h \
-    src/utilities/Interfaces/ISearchManager.h \
+    src/utilities/Interfaces/IMediaSearchManager.h \
     src/utilities/arquivoanime.h \
     src/utilities/call_once.h \
     src/utilities/client.h \
@@ -88,7 +89,8 @@ SOURCES += \
     mainclass.cpp \
     src/base/Anime/animelistmanager.cpp \
     src/base/Anime/animemanager.cpp \
-    src/base/Anime/animesearchmanager.cpp \
+    src/base/Anime/media.cpp \
+    src/base/Anime/mediasearchmanager.cpp \
     src/base/abaconfig.cpp \
     src/base/abatorrent.cpp \
     src/base/animesearchmanager.cpp \

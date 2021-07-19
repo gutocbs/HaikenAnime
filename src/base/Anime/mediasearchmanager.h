@@ -1,16 +1,17 @@
-#ifndef ANIMESEARCHMANAGER_H
-#define ANIMESEARCHMANAGER_H
+#ifndef MEDIASEARCHMANAGER_H
+#define MEDIASEARCHMANAGER_H
 
 #include <QObject>
 #include <QPointer>
-#include "src/utilities/Interfaces/ISearchManager.h"
+#include "src/utilities/Interfaces/IMediaSearchManager.h"
 #include "src/base/Anime/animelistmanager.h"
 
-class AnimeSearchManager : public QObject, public ISearchManager
+class MediaSearchManager : public QObject, public IMediaSearchManager
 {
     Q_OBJECT
 public:
-    explicit AnimeSearchManager(QObject *parent = nullptr);
+    explicit MediaSearchManager(QObject *parent = nullptr, IMediaListManager* mediaListManager = nullptr);
+    void setMediaListManager(IMediaListManager *mediaListManager);
     QVector<Media*> searchMedia(const QString &rnome);
     int getMediaListIndexFromId(const QString &ridAnime);
     QString buscaIDRapido(const QString &rnomeAnime);
@@ -28,7 +29,7 @@ public:
     QVector<Media*> getMediaList(const QString &listName);
 
 private:
-    QPointer<AnimeListManager> animeListManager;
+    QPointer<IMediaListManager> mediaListManager;
 };
 
-#endif // ANIMESEARCHMANAGER_H
+#endif // MEDIASEARCHMANAGER_H

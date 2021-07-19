@@ -25,8 +25,8 @@
 #include "src/base/abatorrent.h"
 #include "lib/robotlib/Robot.h"
 #include "src/utilities/playerrecognition.h"
-#include "src/base/Anime/animesearchmanager.h"
-#include "src/utilities/Interfaces/ISearchManager.h"
+#include "src/base/Anime/mediasearchmanager.h"
+#include "src/utilities/Interfaces/IMediaSearchManager.h"
 
 class MainClass : public QObject
 {

@@ -2,15 +2,14 @@
 #define ANIMELISTMANAGER_H
 
 #include <QObject>
+#include "src/DTO/media.h"
 #include "src/utilities/Interfaces/IMediaListManager.h"
 #include "src/utilities/formatapalavras.h"
 
-class AnimeListManager : public QObject, public IMediaListManager
+class AnimeListManager : public IMediaListManager
 {
     Q_OBJECT
-    static AnimeListManager *createInstance();
 public:
-    static AnimeListManager *instance();
     explicit AnimeListManager(QObject *parent = nullptr);
 
     QHash<QString, int> getHashMediaIndexById();

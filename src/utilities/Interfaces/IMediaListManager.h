@@ -7,10 +7,10 @@
 #include <QPointer>
 #include "src/utilities/Enums.h"
 #include "src/DTO/media.h"
-#include "src/utilities/singleton.h"
 
-class IMediaListManager{
+class IMediaListManager : public QObject{
 public:
+    using QObject::QObject;
     virtual QHash<QString, int> getHashMediaIndexById() = 0;
     virtual QHash<QString, QString> getHashMediaListById() = 0;
     virtual QHash<QString, QStringList> getHashMediaNamesById(Enums::hashList) = 0;

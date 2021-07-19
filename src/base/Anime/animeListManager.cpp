@@ -1,20 +1,6 @@
 #include "animelistmanager.h"
 
-//AnimeListManager::AnimeListManager(QObject *parent) : QObject(parent)
-//{
-
-//}
-AnimeListManager *AnimeListManager::createInstance()
-{
-    return new AnimeListManager();
-}
-
-AnimeListManager *AnimeListManager::instance()
-{
-    return  Singleton<AnimeListManager>::instance(AnimeListManager::createInstance);
-}
-
-AnimeListManager::AnimeListManager(QObject *parent) : QObject(parent)
+AnimeListManager::AnimeListManager(QObject *parent) : IMediaListManager(parent)
 {
 
 }
@@ -237,8 +223,6 @@ bool AnimeListManager::removeMedia(Media* media, Enums::mediaList mediaList)
     }
     return true;
 }
-
-
 
 void AnimeListManager::addToHashList(QString mediaId, Enums::mediaList mediaList, Enums::hashList hashList)
 {

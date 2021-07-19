@@ -1,14 +1,17 @@
-#ifndef ISEARCHMANAGER_H
-#define ISEARCHMANAGER_H
+#ifndef IMEDIASEARCHMANAGER_H
+#define IMEDIASEARCHMANAGER_H
 
 #include <QObject>
 #include <QPointer>
 #include <QVector>
 #include "src/utilities/Enums.h"
 #include "src/DTO/media.h"
+#include "src/utilities/Interfaces/IMediaListManager.h"
 
-class ISearchManager{
+class IMediaSearchManager : public QObject{
 public:
+    using QObject::QObject;
+    virtual void setMediaListManager(IMediaListManager* mediaListManager);
     virtual QVector<Media*> searchMedia(const QString &rnome) = 0;
     virtual int getMediaListIndexFromId(const QString &ridAnime) = 0;
     virtual QString buscaIDRapido(const QString &rnomeAnime) = 0;
@@ -32,4 +35,4 @@ protected:
     QStringList listNames;
 };
 
-#endif // ISEARCHMANAGER_H
+#endif // IMEDIASEARCHMANAGER_H

@@ -2,18 +2,24 @@
 
 AnimeManager::AnimeManager(QObject *parent) : QObject(parent)
 {
-    animeSearchManager = new AnimeSearchManager();
 }
 
-//Pega o anime e salva em um novo objeto
-//Salva o anime na lista nova
-//Remove o anime da lista antiga
+void AnimeManager::setMediaSearchManager(IMediaSearchManager *mediaSearchManager)
+{
+    this->mediaSearchManager = mediaSearchManager;
+}
+
+void AnimeManager::setMediaListManager(IMediaListManager *mediaListManager)
+{
+    this->mediaListManager = mediaListManager;
+}
+
 bool AnimeManager::updateMediaList(const QString &mediaId, Enums::mediaList newList)
 {
-    int index = animeSearchManager->getMediaListIndexFromId(mediaId);
+    int index = mediaSearchManager->getMediaListIndexFromId(mediaId);
     if(index == -1)
         return false;
-    QString currentList = animeSearchManager->getMediaListNameFromId(mediaId);
+    QString currentList = mediaSearchManager->getMediaListNameFromId(mediaId);
 
     //Checa se a lista é um número válido
     bool ok;
@@ -22,14 +28,14 @@ bool AnimeManager::updateMediaList(const QString &mediaId, Enums::mediaList newL
     QPointer<Media> tempMedia(new Media);
     if(!ok){
         Enums::mediaList mediaList = Enums::QStringToMediaList(currentList);
-        tempMedia = animeListManager->instance()->getMediaByIndex(mediaList, index);
+        tempMedia = mediaListManager->getMediaByIndex(mediaList, index);
         if(tempMedia.isNull())
             return false;
 
         tempMedia->vlista = Enums::enumMediaListToQString(newList);
-        animeListManager->instance()->addMedia(tempMedia, newList);
-        animeListManager->instance()->addToHash(tempMedia->vid, Enums::enumMediaListToQString(newList));
-        animeListManager->instance()->removeMedia(tempMedia, mediaList);
+        mediaListManager->addMedia(tempMedia, newList);
+        mediaListManager->addToHash(tempMedia->vid, Enums::enumMediaListToQString(newList));
+        mediaListManager->removeMedia(tempMedia, mediaList);
     }
     //oK, no caso, pega listas por ano
     else{
@@ -38,8 +44,8 @@ bool AnimeManager::updateMediaList(const QString &mediaId, Enums::mediaList newL
         if(tempMedia.isNull())
             return false;
         tempMedia->vlista = Enums::enumMediaListToQString(newList);
-        animeListManager->instance()->addMedia(tempMedia, newList);
-        animeListManager->instance()->addToHash(tempMedia->vid, Enums::enumMediaListToQString(newList));
+        mediaListManager->addMedia(tempMedia, newList);
+        mediaListManager->addToHash(tempMedia->vid, Enums::enumMediaListToQString(newList));
     }
     return true;
 }
