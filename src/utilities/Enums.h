@@ -19,18 +19,18 @@ public:
     virtual ~Enums() = 0;
 
     static hashList QStringToHashList(QString enumName){
-        if(enumName.compare(enumHashListToQString(hashList::LISTA))) return hashList::LISTA;
-        else if(enumName.compare(enumHashListToQString(hashList::POSICAO))) return hashList::POSICAO;
-        else if(enumName.compare(enumHashListToQString(hashList::NOME))) return hashList::NOME;
-        else if(enumName.compare(enumHashListToQString(hashList::NOMEALTERNATIVO))) return hashList::NOMEALTERNATIVO;
+        if(enumName.compare(enumHashListToQString(hashList::LISTA)) == 0) return hashList::LISTA;
+        else if(enumName.compare(enumHashListToQString(hashList::POSICAO)) == 0) return hashList::POSICAO;
+        else if(enumName.compare(enumHashListToQString(hashList::NOME)) == 0) return hashList::NOME;
+        else if(enumName.compare(enumHashListToQString(hashList::NOMEALTERNATIVO)) == 0) return hashList::NOMEALTERNATIVO;
         return hashList::LISTA;
     }
     static mediaList QStringToMediaList(QString enumName){
-        if(enumName.compare(enumMediaListToQString(mediaList::CURRENT))) return mediaList::CURRENT;
-        else if(enumName.compare(enumMediaListToQString(mediaList::COMPLETED))) return mediaList::COMPLETED;
-        else if(enumName.compare(enumMediaListToQString(mediaList::PAUSED))) return mediaList::PAUSED;
-        else if(enumName.compare(enumMediaListToQString(mediaList::DROPPED))) return mediaList::DROPPED;
-        else if(enumName.compare(enumMediaListToQString(mediaList::PLANNING))) return mediaList::PLANNING;
+        if(enumName.compare(enumMediaListToQString(mediaList::CURRENT)) == 0) return mediaList::CURRENT;
+        else if(enumName.compare(enumMediaListToQString(mediaList::COMPLETED)) == 0) return mediaList::COMPLETED;
+        else if(enumName.compare(enumMediaListToQString(mediaList::PAUSED)) == 0) return mediaList::PAUSED;
+        else if(enumName.compare(enumMediaListToQString(mediaList::DROPPED)) == 0) return mediaList::DROPPED;
+        else if(enumName.compare(enumMediaListToQString(mediaList::PLANNING)) == 0) return mediaList::PLANNING;
         return mediaList::CURRENT;
     }
 
