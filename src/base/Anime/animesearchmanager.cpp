@@ -8,6 +8,11 @@
 //    return id;
 //}
 
+AnimeSearchManager::AnimeSearchManager(QObject *parent) : QObject(parent)
+{
+    animeListManager = new AnimeListManager();
+}
+
 void AnimeSearchManager::loadListNames()
 {
     listNames.append("CURRENT");
@@ -19,18 +24,18 @@ void AnimeSearchManager::loadListNames()
 
 QVector<Media*> AnimeSearchManager::getMediaList(const QString &listName){
     Enums::mediaList listEnum = Enums::QStringToMediaList(listName);
-    return animeManager.getMediaList(listEnum);
+    return animeListManager->instance()->getMediaList(listEnum);
 }
 
 QVector<Media*> AnimeSearchManager::searchMedia(const QString &rnome)
 {
-    QVector<Media*> mediaListSearch = animeManager.getMediaList(Enums::SEARCH);
+    QVector<Media*> mediaListSearch = animeListManager->instance()->getMediaList(Enums::SEARCH);
     mediaListSearch.clear();
 //    if(!vdatabaseReady)
 //        return mediaListSearch;
-    QHash<QString, QStringList> hashMediaNameById = animeManager.getHashMediaNamesById(Enums::NOME);
-    QHash<QString, QString> hashMediaListById = animeManager.getHashMediaListById();
-    QHash<QString, int> hashMediaIndexById = animeManager.getHashMediaIndexById();
+    QHash<QString, QStringList> hashMediaNameById = animeListManager->instance()->getHashMediaNamesById(Enums::NOME);
+    QHash<QString, QString> hashMediaListById = animeListManager->instance()->getHashMediaListById();
+    QHash<QString, int> hashMediaIndexById = animeListManager->instance()->getHashMediaIndexById();
     QHash<QString, QStringList>::iterator iterator;
     for (iterator = hashMediaNameById.begin(); iterator != hashMediaNameById.end(); ++iterator){
 //        if(!vdatabaseReady)
@@ -77,14 +82,14 @@ QVector<Media*> AnimeSearchManager::searchMedia(const QString &rnome)
 }
 
 void AnimeSearchManager::appendToList(QVector<Media*> &mediaList, Enums::mediaList list, int position){
-    QVector<Media*> tempList = animeManager.getMediaList(list);
+    QVector<Media*> tempList = animeListManager->instance()->getMediaList(list);
     if(tempList.size() > position)
         mediaList.append(tempList[position]);
 }
 
 QString AnimeSearchManager::buscaIDRapido(const QString &rnomeAnime)
 {
-    QHash<QString, QString> hashBuscada = animeManager.getHashMediaListById();
+    QHash<QString, QString> hashBuscada = animeListManager->instance()->getHashMediaListById();
 
     QHash<QString, QString>::iterator iterator;
     for (iterator = hashBuscada.begin(); iterator != hashBuscada.end(); ++iterator){
@@ -96,7 +101,7 @@ QString AnimeSearchManager::buscaIDRapido(const QString &rnomeAnime)
 
 QString AnimeSearchManager::getMediaListNameFromId(const QString &idAnime)
 {
-    QHash<QString, QString> hashBuscada = animeManager.getHashMediaListById();
+    QHash<QString, QString> hashBuscada = animeListManager->instance()->getHashMediaListById();
     if(hashBuscada.contains(idAnime))
         return hashBuscada[idAnime];
     return "CURRENT";
@@ -104,7 +109,7 @@ QString AnimeSearchManager::getMediaListNameFromId(const QString &idAnime)
 
 int AnimeSearchManager::getMediaListIndexFromId(const QString &idAnime)
 {
-    QHash<QString, int> hashIndex = animeManager.getHashMediaIndexById();
+    QHash<QString, int> hashIndex = animeListManager->instance()->getHashMediaIndexById();
     QString list = getMediaListNameFromId(idAnime);
 
     if(hashIndex.contains(idAnime)){
@@ -112,8 +117,8 @@ int AnimeSearchManager::getMediaListIndexFromId(const QString &idAnime)
         //Checa se o a posição do anime na lista está correta. Caso esteja errada, insere na posição certa.
         if(animeMedia->vid.compare(idAnime) != 0){
             Enums::mediaList listEnum = Enums::QStringToMediaList(list);
-            animeManager.addToHashList(idAnime, listEnum, Enums::hashList::POSICAO);
-            hashIndex = animeManager.getHashMediaIndexById();
+            animeListManager->instance()->addToHashList(idAnime, listEnum, Enums::hashList::POSICAO);
+            hashIndex = animeListManager->instance()->getHashMediaIndexById();
         }
         return hashIndex[idAnime];
     }
@@ -172,7 +177,7 @@ QString AnimeSearchManager::getMediaTitleFromId(const QString &idAnime)
 
 QString AnimeSearchManager::getIdFromMediaTitle(const QString &mediaTitle)
 {
-    QHash<QString, QStringList> hashNome = animeManager.getHashMediaNamesById(Enums::hashList::NOME);
+    QHash<QString, QStringList> hashNome = animeListManager->instance()->getHashMediaNamesById(Enums::hashList::NOME);
     QHash<QString, QStringList>::iterator iterator;
     for (iterator = hashNome.begin(); iterator != hashNome.end(); ++iterator){
         if(hashNome[iterator.key()].contains(mediaTitle))
@@ -185,11 +190,11 @@ QString AnimeSearchManager::getIdFromMediaTitle(const QString &mediaTitle)
         //Checa se a lista não está vazia
         if(!tempList.isEmpty()){
             for(int i = 0; i < tempList.size(); i++){
-                if(animeManager.compareMedia(tempList[i]->vnome, tempList[i]->vnomeIngles, tempList[i]->vnomeAlternativo, mediaTitle)){
-                    animeManager.addToHash(tempList[i]->vid, QStringList(tempList[i]->vnomeAlternativo), Enums::hashList::NOMEALTERNATIVO);
-                    animeManager.addToHash(tempList[i]->vid, QStringList(mediaTitle), Enums::hashList::NOMEALTERNATIVO);
-                    animeManager.addToHash(tempList[i]->vid, list);
-                    animeManager.addToHash(tempList[i]->vid, i);
+                if(animeListManager->instance()->compareMedia(tempList[i]->vnome, tempList[i]->vnomeIngles, tempList[i]->vnomeAlternativo, mediaTitle)){
+                    animeListManager->instance()->addToHash(tempList[i]->vid, QStringList(tempList[i]->vnomeAlternativo), Enums::hashList::NOMEALTERNATIVO);
+                    animeListManager->instance()->addToHash(tempList[i]->vid, QStringList(mediaTitle), Enums::hashList::NOMEALTERNATIVO);
+                    animeListManager->instance()->addToHash(tempList[i]->vid, list);
+                    animeListManager->instance()->addToHash(tempList[i]->vid, i);
                     return tempList[i]->vid;
                 }
             }

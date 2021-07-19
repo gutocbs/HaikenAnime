@@ -2,14 +2,16 @@
 #define ANIMESEARCHMANAGER_H
 
 #include <QObject>
+#include <QPointer>
 #include "src/utilities/Interfaces/ISearchManager.h"
 #include "src/base/Anime/animelistmanager.h"
 
-class AnimeSearchManager : public ISearchManager
+class AnimeSearchManager : public QObject, public ISearchManager
 {
-
+    Q_OBJECT
 public:
-    virtual QVector<Media*> searchMedia(const QString &rnome) = 0;
+    explicit AnimeSearchManager(QObject *parent = nullptr);
+    QVector<Media*> searchMedia(const QString &rnome);
     int getMediaListIndexFromId(const QString &ridAnime);
     QString buscaIDRapido(const QString &rnomeAnime);
     QString getMediaListNameFromId(const QString &ridAnime);
@@ -26,7 +28,7 @@ public:
     QVector<Media*> getMediaList(const QString &listName);
 
 private:
-    AnimeListManager animeManager;
+    QPointer<AnimeListManager> animeListManager;
 };
 
 #endif // ANIMESEARCHMANAGER_H

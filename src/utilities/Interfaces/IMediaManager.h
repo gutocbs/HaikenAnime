@@ -6,16 +6,13 @@
 #include "src/base/anime.h"
 #include "src/utilities/singleton.h"
 
-class IMediaManager : QObject{
-    Q_OBJECT
+class IMediaManager{
 public:
-
-    virtual QHash<QString, int> getHash(Enums::hashList, int valorInt = 0) = 0;
-    bool fmudaLista(const QString &rid, const QString &rlista, type rtipo);
-    bool fmudaNota(const QString &rid, const QString &rnota);
-    bool fmudaProgresso(const QString &rid, const QString &rprogresso);
-    bool fdeletedaLista(const QString &rid);
-    bool finsereNomeAlternativo(const QString &rid, const QStringList &rnome);
+    virtual bool updateMediaList(const QString &mediaId, Enums::mediaList newList) = 0;
+    virtual bool updateScore(const QString &mediaId, const QString &newScore) = 0;
+    virtual bool updateProgress(const QString &mediaId, const QString &mediaProgress) = 0;
+    virtual bool deleteFromList(const QString &mediaId) = 0;
+    virtual bool insertCustomName(const QString &mediaId, const QStringList &mediaTitle) = 0;
 
     //TODO - Funções de get da midia - Ex: Get Name
 };

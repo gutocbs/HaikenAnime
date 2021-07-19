@@ -7,9 +7,7 @@
 #include "src/utilities/Enums.h"
 #include "src/DTO/media.h"
 
-class ISearchManager : QObject{
-    Q_OBJECT
-
+class ISearchManager{
 public:
     virtual QVector<Media*> searchMedia(const QString &rnome) = 0;
     virtual int getMediaListIndexFromId(const QString &ridAnime) = 0;

@@ -14,6 +14,11 @@ AnimeListManager *AnimeListManager::instance()
     return  Singleton<AnimeListManager>::instance(AnimeListManager::createInstance);
 }
 
+AnimeListManager::AnimeListManager(QObject *parent) : QObject(parent)
+{
+
+}
+
 QHash<QString, int> AnimeListManager::getHashMediaIndexById()
 {
 //    if(!vdatabaseReady)
@@ -28,11 +33,11 @@ QHash<QString, QString> AnimeListManager::getHashMediaListById()
     return hashMediaListById;
 }
 
-QHash<QString, QStringList> AnimeListManager::getHashMediaNamesById(Enums::hashList hashList)
+QHash<QString, QStringList> AnimeListManager::getHashMediaNamesById(Enums::hashList mediaList)
 {
 //    if(!vdatabaseReady)
 //        return QHash<QString, QStringList>();
-    switch(hashList){
+    switch(mediaList){
     case Enums::LISTA:
         break;
     case Enums::POSICAO:
@@ -161,6 +166,14 @@ QVector<Media*> AnimeListManager::getSortList(Enums::mediaOrder order, Enums::or
     return tempList;
 }
 
+QPointer<Media> AnimeListManager::getMediaByIndex(Enums::mediaList mediaList, int index)
+{
+    QVector<Media*> mediaVector = getMediaList(mediaList);
+    if(mediaVector.count() > index)
+        return mediaVector.at(index);
+    return nullptr;
+}
+
 bool AnimeListManager::compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle)
 {
     if(FormataPalavras::fcomparaNomes(oficialTitle, searchedTitle) || FormataPalavras::fcomparaNomes(englishTitle, searchedTitle))
@@ -170,6 +183,59 @@ bool AnimeListManager::compareMedia(QString oficialTitle, QString englishTitle, 
             return true;
     }
     return false;
+}
+
+bool AnimeListManager::addMedia(Media *mediaObject, Enums::mediaList mediaList)
+{
+    switch (mediaList) {
+    case Enums::mediaList::CURRENT:
+        mediaListCurrent.append(mediaObject);
+        hashMediaIndexById.insert(mediaObject->vid, mediaListCurrent.indexOf(mediaListCurrent.last()));
+        break;
+    case Enums::mediaList::COMPLETED:
+        mediaListCompleted.append(mediaObject);
+        hashMediaIndexById.insert(mediaObject->vid, mediaListCompleted.indexOf(mediaListCompleted.last()));
+        break;
+    case Enums::mediaList::PAUSED:
+        mediaListPaused.append(mediaObject);
+        hashMediaIndexById.insert(mediaObject->vid, mediaListPaused.indexOf(mediaListPaused.last()));
+        break;
+    case Enums::mediaList::DROPPED:
+        mediaListDropped.append(mediaObject);
+        hashMediaIndexById.insert(mediaObject->vid, mediaListDropped.indexOf(mediaListDropped.last()));
+        break;
+    case Enums::mediaList::PLANNING:
+        mediaListPlanning.append(mediaObject);
+        hashMediaIndexById.insert(mediaObject->vid, mediaListPlanning.indexOf(mediaListPlanning.last()));
+        break;
+    default:
+        return false;
+    }
+    return true;
+}
+
+bool AnimeListManager::removeMedia(Media* media, Enums::mediaList mediaList)
+{
+    switch (mediaList) {
+    case Enums::mediaList::CURRENT:
+        mediaListCurrent.removeOne(media);
+        break;
+    case Enums::mediaList::COMPLETED:
+        mediaListCompleted.removeOne(media);
+        break;
+    case Enums::mediaList::PAUSED:
+        mediaListPaused.removeOne(media);
+        break;
+    case Enums::mediaList::DROPPED:
+        mediaListDropped.removeOne(media);
+        break;
+    case Enums::mediaList::PLANNING:
+        mediaListPlanning.removeOne(media);
+        break;
+    default:
+        return false;
+    }
+    return true;
 }
 
 

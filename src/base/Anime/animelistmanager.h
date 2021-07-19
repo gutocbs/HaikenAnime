@@ -5,15 +5,17 @@
 #include "src/utilities/Interfaces/IMediaListManager.h"
 #include "src/utilities/formatapalavras.h"
 
-class AnimeListManager : public IMediaListManager
+class AnimeListManager : public QObject, public IMediaListManager
 {
+    Q_OBJECT
     static AnimeListManager *createInstance();
 public:
     static AnimeListManager *instance();
+    explicit AnimeListManager(QObject *parent = nullptr);
 
     QHash<QString, int> getHashMediaIndexById();
     QHash<QString, QString> getHashMediaListById();
-    QHash<QString, QStringList> getHashMediaNamesById(Enums::hashList);
+    QHash<QString, QStringList> getHashMediaNamesById(Enums::hashList mediaList);
     void addToHash(QString id, int index);
     void addToHash(QString id, QString mediaList);
     void addToHash(QString id, QStringList mediaNames, Enums::hashList hashList);
@@ -22,9 +24,11 @@ public:
     QVector<Media*> getMediaList(Enums::mediaList mediaList, QString searchArgument = "");
     QVector<Media*> getSortList(Enums::mediaOrder order, Enums::orderType orderType, Enums::mediaList mediaList);
     QVector<Media*> getAnimeYearlyList(int ano);
+    QPointer<Media> getMediaByIndex(Enums::mediaList mediaList, int index);
 
     bool compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle);
     bool addMedia(Media *mediaObject, Enums::mediaList);
+    bool removeMedia(Media* media, Enums::mediaList mediaList);
 };
 
 #endif // ANIMELISTMANAGER_H
