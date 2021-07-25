@@ -20,7 +20,7 @@
 #include "src/base/Anime/animemanager.h"
 
 //TODO - Fazer singleton
-//TODO - Funções de ler arquivos secundários (nomes alternativos, pastas onde os animes estão, animes por ano etc)
+//TODO - Funções de ler arquivos secundários (nomes alternativos, animes por ano etc)
 class MediaLoader : public QObject
 {
     Q_OBJECT
