@@ -8,7 +8,7 @@
 #include "src/base/Anime/mediasearchmanager.h"
 #include "src/base/Anime/animelistmanager.h"
 
-class AnimeManager : public QObject, public IMediaManager
+class AnimeManager : public IMediaManager
 {
 public:
     explicit AnimeManager(QObject *parent = nullptr);

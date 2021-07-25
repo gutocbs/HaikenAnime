@@ -1,6 +1,6 @@
 #include "animemanager.h"
 
-AnimeManager::AnimeManager(QObject *parent) : QObject(parent)
+AnimeManager::AnimeManager(QObject *parent) : IMediaManager(parent)
 {
 }
 
@@ -52,20 +52,118 @@ bool AnimeManager::updateMediaList(const QString &mediaId, Enums::mediaList newL
 
 bool AnimeManager::updateScore(const QString &mediaId, const QString &newScore)
 {
-
+    QString list = mediaSearchManager->getMediaListNameFromId(mediaId);
+    int index = mediaSearchManager->getMediaListIndexFromId(mediaId);
+    if(index == -1)
+        return false;
+    bool ok;
+    //Checa se a lista é um número válido
+    list.toInt(&ok);
+    Enums::mediaList mediaList = Enums::CURRENT;
+    if(list.compare(Enums::enumMediaListToQString(Enums::CURRENT), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::CURRENT;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::COMPLETED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::COMPLETED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::PAUSED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::PAUSED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::DROPPED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::DROPPED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::PLANNING), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::PLANNING;
+    else if(ok){
+        QPointer<anime> lnovoAnime(new anime);
+        //TODO - Implementar função de busca por ano
+//        lnovoAnime = fbuscaAnimeNoAno(list.toInt(), mediaId);
+//        lnovoAnime->vnotaMediaPessoal = newScore;
+//        return true;
+    }
+    QVector<Media*> mediaListVector = mediaListManager->getMediaList(mediaList);
+    mediaListVector[index]->vnotaMediaPessoal = newScore;
+    return true;
 }
 
 bool AnimeManager::updateProgress(const QString &mediaId, const QString &mediaProgress)
 {
-
+    QString list = mediaSearchManager->getMediaListNameFromId(mediaId);
+    int index = mediaSearchManager->getMediaListIndexFromId(mediaId);
+    if(index == -1)
+        return false;
+    bool ok;
+    //Checa se a lista é um número válido
+    list.toInt(&ok);
+    Enums::mediaList mediaList = Enums::CURRENT;
+    if(list.compare(Enums::enumMediaListToQString(Enums::CURRENT), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::CURRENT;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::COMPLETED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::COMPLETED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::PAUSED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::PAUSED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::DROPPED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::DROPPED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::PLANNING), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::PLANNING;
+    else if(ok){
+        QPointer<anime> lnovoAnime(new anime);
+        //TODO - Implementar função de busca por ano
+//        lnovoAnime = fbuscaAnimeNoAno(list.toInt(), mediaId);
+//        lnovoAnime->vnotaMediaPessoal = newScore;
+//        return true;
+    }
+    QVector<Media*> mediaListVector = mediaListManager->getMediaList(mediaList);
+    mediaListVector[index]->vnumEpisodiosAssistidos = mediaProgress;
+    return true;
 }
 
 bool AnimeManager::deleteFromList(const QString &mediaId)
 {
-
+    QString list = mediaSearchManager->getMediaListNameFromId(mediaId);
+    int index = mediaSearchManager->getMediaListIndexFromId(mediaId);
+    if(index == -1)
+        return false;
+    Enums::mediaList mediaList = Enums::CURRENT;
+    if(list.compare(Enums::enumMediaListToQString(Enums::CURRENT), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::CURRENT;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::COMPLETED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::COMPLETED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::PAUSED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::PAUSED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::DROPPED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::DROPPED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::PLANNING), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::PLANNING;
+    QVector<Media*> mediaListVector = mediaListManager->getMediaList(mediaList);
+    mediaListManager->removeMedia(mediaListVector[index], mediaList);
+    return true;
 }
 
 bool AnimeManager::insertCustomName(const QString &mediaId, const QStringList &mediaTitle)
 {
-
+    QString list = mediaSearchManager->getMediaListNameFromId(mediaId);
+    int index = mediaSearchManager->getMediaListIndexFromId(mediaId);
+    if(index == -1)
+        return false;
+    bool ok;
+    //Checa se a lista é um número válido
+    list.toInt(&ok);
+    Enums::mediaList mediaList = Enums::CURRENT;
+    if(list.compare(Enums::enumMediaListToQString(Enums::CURRENT), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::CURRENT;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::COMPLETED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::COMPLETED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::PAUSED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::PAUSED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::DROPPED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::DROPPED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::PLANNING), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::PLANNING;
+    else if(ok){
+        QPointer<anime> lnovoAnime(new anime);
+        //TODO - Implementar função de busca por ano
+//        lnovoAnime = fbuscaAnimeNoAno(list.toInt(), mediaId);
+//        lnovoAnime->vnotaMediaPessoal = newScore;
+//        return true;
+    }
+    QVector<Media*> mediaListVector = mediaListManager->getMediaList(mediaList);
+    mediaListVector[index]->vnomeAlternativo.append(mediaTitle);
+    return true;
 }
