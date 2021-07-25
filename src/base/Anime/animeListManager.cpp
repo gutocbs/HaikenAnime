@@ -152,6 +152,11 @@ QVector<Media*> AnimeListManager::getSortList(Enums::mediaOrder order, Enums::or
     return tempList;
 }
 
+QVector<Media *> AnimeListManager::getAnimeYearlyList(int ano)
+{
+
+}
+
 QPointer<Media> AnimeListManager::getMediaByIndex(Enums::mediaList mediaList, int index)
 {
     QVector<Media*> mediaVector = getMediaList(mediaList);
@@ -162,12 +167,12 @@ QPointer<Media> AnimeListManager::getMediaByIndex(Enums::mediaList mediaList, in
 
 bool AnimeListManager::compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle)
 {
-    if(FormataPalavras::fcomparaNomes(oficialTitle, searchedTitle) || FormataPalavras::fcomparaNomes(englishTitle, searchedTitle))
-        return true;
-    foreach(QString alternativeTitle, alternativeTitles){
-        if(FormataPalavras::fcomparaNomes(alternativeTitle, searchedTitle))
-            return true;
-    }
+//    if(FormataPalavras::fcomparaNomes(oficialTitle, searchedTitle) || FormataPalavras::fcomparaNomes(englishTitle, searchedTitle))
+//        return true;
+//    foreach(QString alternativeTitle, alternativeTitles){
+//        if(FormataPalavras::fcomparaNomes(alternativeTitle, searchedTitle))
+//            return true;
+//    }
     return false;
 }
 

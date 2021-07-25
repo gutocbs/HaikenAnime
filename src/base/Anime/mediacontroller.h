@@ -1,5 +1,5 @@
-#ifndef ANIME_H
-#define ANIME_H
+#ifndef MEDIACONTROLLER_H
+#define MEDIACONTROLLER_H
 
 #include <QObject>
 #include <QPointer>
@@ -9,13 +9,13 @@
 #include "src/base/Anime/animemanager.h"
 #include "src/utilities/singleton.h"
 
-class Anime : public QObject
+class MediaController : public QObject
 {
     Q_OBJECT
-    static Anime *createInstance();
+    static MediaController *createInstance();
 public:
-    explicit Anime(QObject *parent = nullptr);
-    static Anime *instance();
+    explicit MediaController(QObject *parent = nullptr);
+    static MediaController *instance();
     void initializeMedia();
     QPointer<IMediaListManager> getMediaListManager();
     QPointer<IMediaSearchManager> getMediaSearchManager();
@@ -29,4 +29,4 @@ private:
     QPointer<IMediaManager> mediaManager;
 };
 
-#endif // ANIME_H
+#endif // MEDIACONTROLLER_H

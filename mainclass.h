@@ -27,6 +27,7 @@
 #include "src/utilities/playerrecognition.h"
 #include "src/base/Anime/mediasearchmanager.h"
 #include "src/utilities/Interfaces/IMediaSearchManager.h"
+#include "src/base/Anime/medialoader.h"
 
 class MainClass : public QObject
 {

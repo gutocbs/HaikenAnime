@@ -8,7 +8,7 @@
 //    return id;
 //}
 
-MediaSearchManager::MediaSearchManager(QObject *parent, IMediaListManager* mediaListManager) : QObject(parent)
+MediaSearchManager::MediaSearchManager(QObject *parent, IMediaListManager* mediaListManager) : IMediaSearchManager(parent)
 {
     this->mediaListManager = mediaListManager;
 }
@@ -142,6 +142,11 @@ QPointer<Media> MediaSearchManager::getMediaFromId(const QString &idAnime){
     return nullptr;
 }
 
+QPointer<Media> MediaSearchManager::getMediaFromListIndex(const QString &rlista, int posicao)
+{
+
+}
+
 QVector<Media*> MediaSearchManager::getMediaListFromId(const QString &idAnime){
     QString lista = getMediaListNameFromId(idAnime);
     int listIndex = getMediaListIndexFromId(idAnime);
@@ -205,4 +210,9 @@ QString MediaSearchManager::getIdFromMediaTitle(const QString &mediaTitle)
         }
     }
     return "0";
+}
+
+QPointer<Media> MediaSearchManager::fbuscaAnimeNoAno(int, const QString &rid)
+{
+
 }

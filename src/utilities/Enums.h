@@ -33,11 +33,21 @@ public:
         else if(enumName.compare(enumMediaListToQString(mediaList::PLANNING)) == 0) return mediaList::PLANNING;
         return mediaList::CURRENT;
     }
+    static mediaType QStringToMediaType(QString enumName){
+        if(enumName.compare(enumMediaTypeToQString(mediaType::ANIME)) == 0) return mediaType::ANIME;
+        else if(enumName.compare(enumMediaTypeToQString(mediaType::MANGA)) == 0) return mediaType::MANGA;
+        else if(enumName.compare(enumMediaTypeToQString(mediaType::NOVEL)) == 0) return mediaType::NOVEL;
+        else if(enumName.compare("ONE SHOT") == 0) return mediaType::MANGA;
+        return mediaType::ANIME;
+    }
 
     static QString enumHashListToQString(hashList enumName){
         return QMetaEnum::fromType<hashList>().valueToKey(enumName);
     }
     static QString enumMediaListToQString(mediaList enumName){
+        return QMetaEnum::fromType<mediaList>().valueToKey(enumName);
+    }
+    static QString enumMediaTypeToQString(mediaType enumName){
         return QMetaEnum::fromType<mediaList>().valueToKey(enumName);
     }
 

@@ -39,15 +39,12 @@ HEADERS += \
     src/DTO/media.h \
     src/base/Anime/animelistmanager.h \
     src/base/Anime/animemanager.h \
-    src/base/Anime/meadialoader.h \
-    src/base/Anime/media.h \
+    src/base/Anime/mediacontroller.h \
+    src/base/Anime/medialoader.h \
     src/base/Anime/mediasearchmanager.h \
     src/base/abaconfig.h \
     src/base/abatorrent.h \
     src/base/anime.h \
-    src/base/animesearchmanager.h \
-    src/base/classeb.h \
-    src/base/classec.h \
     src/base/arquivos.h \
     src/base/confbase.h \
     src/base/confusuario.h \
@@ -90,15 +87,12 @@ SOURCES += \
     mainclass.cpp \
     src/base/Anime/animelistmanager.cpp \
     src/base/Anime/animemanager.cpp \
-    src/base/Anime/meadialoader.cpp \
-    src/base/Anime/media.cpp \
+    src/base/Anime/mediacontroller.cpp \
+    src/base/Anime/medialoader.cpp \
     src/base/Anime/mediasearchmanager.cpp \
     src/base/abaconfig.cpp \
     src/base/abatorrent.cpp \
-    src/base/animesearchmanager.cpp \
     src/base/arquivos.cpp \
-    src/base/classeb.cpp \
-    src/base/classec.cpp \
     src/base/confbase.cpp \
     src/base/confusuario.cpp \
     src/base/database.cpp \

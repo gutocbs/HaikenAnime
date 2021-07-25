@@ -1,5 +1,5 @@
-#ifndef MEADIALOADER_H
-#define MEADIALOADER_H
+#ifndef MEDIALOADER_H
+#define MEDIALOADER_H
 
 #include <QObject>
 #include <QDebug>
@@ -19,15 +19,16 @@
 #include "src/base/Anime/mediasearchmanager.h"
 #include "src/base/Anime/animemanager.h"
 
-class MeadiaLoader : public QObject
+class MediaLoader : public QObject
 {
     Q_OBJECT
 public:
-    explicit MeadiaLoader(QObject *parent = nullptr);
+    explicit MediaLoader(QObject *parent = nullptr, IMediaListManager *mediaListManager = nullptr);
     bool loadMediaFromFile();
     QString getQStringValueFromKey(QString objectName, QString key = "");
     QStringList getQStringListValuesFromKey(QString objectName, QString key = "");
     int getNumberValueFromKey(QString objectName, QString key = "");
+    int getNumberChapters(Enums::mediaType mediaType);
     bool fchecaDatabaseReady();
     void finsereDataHashId(QString tipo, QString lista, QString id, QStringList nomes);
     void insereDataHashPosicao(Enums::mediaType type, QString id, int posicao);
@@ -41,4 +42,4 @@ private:
     QPointer<IMediaManager> mediaManager;
 };
 
-#endif // MEADIALOADER_H
+#endif // MEDIALOADER_H
