@@ -39,6 +39,7 @@ HEADERS += \
     src/DTO/media.h \
     src/base/Anime/animelistmanager.h \
     src/base/Anime/animemanager.h \
+    src/base/Anime/meadialoader.h \
     src/base/Anime/media.h \
     src/base/Anime/mediasearchmanager.h \
     src/base/abaconfig.h \
@@ -89,6 +90,7 @@ SOURCES += \
     mainclass.cpp \
     src/base/Anime/animelistmanager.cpp \
     src/base/Anime/animemanager.cpp \
+    src/base/Anime/meadialoader.cpp \
     src/base/Anime/media.cpp \
     src/base/Anime/mediasearchmanager.cpp \
     src/base/abaconfig.cpp \
@@ -110,5 +112,6 @@ SOURCES += \
     src/utilities/playerrecognition.cpp
 
 RESOURCES += \
+    Mocks.qrc \
     qml.qrc \
     queries.qrc

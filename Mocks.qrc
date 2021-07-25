@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/Anilist">
+        <file>qrc/Mocks/Anilist/MediaListMock.json</file>
+    </qresource>
+</RCC>

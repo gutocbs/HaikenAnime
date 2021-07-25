@@ -1,0 +1,2500 @@
+{
+    "data": {
+        "Page": {
+            "mediaList": [
+                {
+                    "media": {
+                        "averageScore": 86,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx100388-s5QVETlAZrPa.jpg"
+                        },
+                        "description": "Nature made Ash Lynx beautiful; nurture made him a cold ruthless killer. A runaway brought up as the adopted heir and sex toy of \"Papa\" Dino Golzine, Ash, now at the rebellious age of seventeen, forsakes the kingdom held out by the devil who raised him. But the hideous secret that drove Ash's older brother mad in Iraq has suddenly fallen into Papa's insatiably ambitious hands--and it's exactly the wrong time for Eiji Okamura, a pure-hearted young photographer from Japan, to make Ash Lynx's acquaintance... \n<br><br>\n(Source: Viz Media)",
+                        "episodes": 24,
+                        "format": "TV",
+                        "id": 100388,
+                        "nextAiringEpisode": null,
+                        "season": "SUMMER",
+                        "siteUrl": "https://anilist.co/anime/100388",
+                        "startDate": {
+                            "month": 7,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "香蕉鱼"
+                        ],
+                        "title": {
+                            "english": "BANANA FISH",
+                            "romaji": "BANANA FISH"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 24,
+                    "score": 9,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 70,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx100401-frKNiXOnRKdu.jpg"
+                        },
+                        "description": "A tranquil tale about two boys from very different upbringings. On one hand you have Kai, born as the son of a prostitute, who's been playing the abandoned piano in the forest near his home ever since he was young. And on the other you have Shuuhei, practically breast-fed by the piano as the son of a family of prestigious pianists. Yet it is their common bond with the piano that eventually intertwines their paths in life.<br><br>\n\n(Source: KEFI)",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 100401,
+                        "nextAiringEpisode": null,
+                        "season": "SPRING",
+                        "siteUrl": "https://anilist.co/anime/100401",
+                        "startDate": {
+                            "month": 4,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "Piano Forest",
+                            "The Perfect World of Kai",
+                            "El Bosque del Piano",
+                            "יער הפסנתר",
+                            "بيانو"
+                        ],
+                        "title": {
+                            "english": "Forest of Piano",
+                            "romaji": "Piano no Mori (TV)"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 74,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx100402-eDxanr9DiBuV.jpg"
+                        },
+                        "description": "Minato played Japanese archery in middle school, but after a certain incident, he ran away from the sport. In high school, Minato meets new friends, and together as part of their school's archery club they aim to win the prefectural tournament.<br><br>\n\n(Source: Anime News Network)",
+                        "episodes": 13,
+                        "format": "TV",
+                        "id": 100402,
+                        "nextAiringEpisode": null,
+                        "season": "FALL",
+                        "siteUrl": "https://anilist.co/anime/100402",
+                        "startDate": {
+                            "month": 10,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-1-the-young-man-on-the-shooting-range-778234"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-2-at-wits-end-778235"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-3-just-as-they-met-778236"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-4-a-poor-fit-778237"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-5-a-frequent-messenger-778238"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-6-the-reason-for-shooting-778239"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-7-reunion-778240"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-8-taking-aim-778241"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-9-an-unshown-hand-778242"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-10-linked-heart-778243"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-11-the-pain-of-empty-release-778244"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-12-five-arrows-778245"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-13-irreplaceable-778246"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/tsurune/episode-14-dangerous-shoot-783501"
+                            }
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "Tsurune",
+                            "romaji": "Tsurune: Kazemai Koukou Kyuudou-bu"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PAUSED"
+                },
+                {
+                    "media": {
+                        "averageScore": 67,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx100483-fzseZYJnQTLI.jpg"
+                        },
+                        "description": "Kogarashi Fuyuzora is a \"hands on\" psychic. Ever since the day he got possessed by an evil ghost, he has been burdened with debt. Needing a cheap room to rent, he winds up at a haunted hot springs inn, Yuragi Inn, where only incredibly beautiful girls reside. Amongst the residents is a ghost, Yuuna, who cannot move on to the spirit world. Despite the resistance from the current tenants that are all girls, Kogarashi manages to start his new life at Yuragi Inn.<br>\n<br>\n(Source: Crunchyroll)",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 100483,
+                        "nextAiringEpisode": null,
+                        "season": "SUMMER",
+                        "siteUrl": "https://anilist.co/anime/100483",
+                        "startDate": {
+                            "month": 7,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/yuuna-and-the-haunted-hot-springs/episode-1-the-yuragi-inns-yuuna-775165"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/yuuna-and-the-haunted-hot-springs/episode-2-yuuna-and-the-hot-spring-ping-pong-775166"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/yuuna-and-the-haunted-hot-springs/episode-3-yuuna-goes-to-school-775167"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/yuuna-and-the-haunted-hot-springs/episode-4-watching-youkai-sagiri-and-yaya-are-cautious-775168"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/yuuna-and-the-haunted-hot-springs/episode-5-yuunas-body-measurements-nonkos-crunch-time-775169"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/yuuna-and-the-haunted-hot-springs/episode-6-ms-nakais-secret-adventure-a-sweet-day-off-with-yuuna-775170"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/yuuna-and-the-haunted-hot-springs/episode-7-yuunas-mysterious-disapppearance-775171"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/yuuna-and-the-haunted-hot-springs/episode-8-oboro-stops-at-nothing-775172"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/yuuna-and-the-haunted-hot-springs/episode-9-chisaki-of-the-yuragi-inn-775173"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/yuuna-and-the-haunted-hot-springs/episode-10-the-overly-aggressive-sagiri-the-seaside-school-and-kogarashi-775174"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/yuuna-and-the-haunted-hot-springs/episode-11-dancing-cheek-to-cheek-with-yuuna-sagiri-and-the-final-exam-775175"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/yuuna-and-the-haunted-hot-springs/episode-12-yuuna-and-the-haunted-hot-springs-and-775176"
+                            }
+                        ],
+                        "synonyms": [
+                            "Yuragisou no Yuuna-san",
+                            "Yuuna of Yuragi Manor",
+                            "Yunas Geisterhaus",
+                            "Yûna de la pension Yuragi"
+                        ],
+                        "title": {
+                            "english": "Yuuna and the Haunted Hot Springs",
+                            "romaji": "Yuragi-sou no Yuuna-san"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 75,
+                        "chapters": 77,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/nx100488-uv5LnHQActEY.jpg"
+                        },
+                        "description": "Seowoo, president of the film club, is standing outside in the rain, a welcome break from the noisy and chaotic bar behind her, when a girl with orange hair stumbles out the doors and practically into her arms. Then she begins singing “Dancing in the Rain” while... dancing in the rain. It’s a minute encounter, really, but Seowoo has seen the greatest romances bloom from the smallest moments in the movies. So when Hayoung shows up to join the film club, Seowoo – who’s not even sure what she herself is feeling – finds her heart skipping a beat.<br>\n<br>\n(Source: Lezhin)",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 100488,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/100488",
+                        "startDate": {
+                            "month": 8,
+                            "year": 2017
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "Blooming Sequence",
+                            "romaji": "Blooming Sequence"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 67,
+                        "chapters": 48,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx100494-CFGaajGY1MEf.jpg"
+                        },
+                        "description": "Niito Nemuko, nicknamed Neeko, is 23 years old and still unable to find a job. This is her everyday life as she struggles with the fact that she's basically just a NEET.\n<br><br>\n<i>Note: Chapter count includes 9 extras.</i>",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 100494,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/100494",
+                        "startDate": {
+                            "month": 6,
+                            "year": 2017
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "Neeko wa Tsuraiyo",
+                            "Niiko wa Tsurai yo",
+                            "It's Tough Being Neeko"
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "Neeko wa Tsurai yo"
+                        },
+                        "volumes": 6
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "CURRENT"
+                },
+                {
+                    "media": {
+                        "averageScore": 64,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx100526-Hw6U34Hw2TDb.jpg"
+                        },
+                        "description": "Hikari Tsutsui has never been popular, his one real friend is an even worse otaku than he is, and the only girls he's known are the two-dimensional women from his manga and video games. Until, that is, he's sent to help clean the pool as punishment and is partnered with the school's resident \"bad girl\", the very real, very three-dimensional Iroha Igarashi. Brash, beautiful, and known for her promiscuous behavior, Iroha is loathed by other girls but loved by the guys. And yet, inexplicably, she not only seems to be interested in Hikari, but proposes that they enter into a relationship! Unable to resist, Hikari agrees, but there's one big catch - Iroha's moving away in six months, so no matter what happens between them, in half a year Hikari's guaranteed to lose his REAL GIRL!<br><br>\n\n(Source: Sentai Filmworks)",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 100526,
+                        "nextAiringEpisode": null,
+                        "season": "SPRING",
+                        "siteUrl": "https://anilist.co/anime/100526",
+                        "startDate": {
+                            "month": 4,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "3D Girlfriend",
+                            "Three D Kanojo Real Girl"
+                        ],
+                        "title": {
+                            "english": "Real Girl",
+                            "romaji": "3D Kanojo: Real Girl"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 10,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 54,
+                        "chapters": 13,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/nx100534-UBtLhHgTfif0.jpg"
+                        },
+                        "description": "What if you could become young again? What will this young teacher do when this spirit offers her the ability to become a child again and live her love with her young pupil? What must she sacrifice to feel love for the very first time?\n",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 100534,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/100534",
+                        "startDate": {
+                            "month": 11,
+                            "year": 2015
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "My Misconduct"
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "Watashi no Fushidara"
+                        },
+                        "volumes": 2
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 69,
+                        "chapters": 17,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/nx100634-mBTaXxhbhlF9.jpg"
+                        },
+                        "description": "A collection of oneshots about monster girls, wives and more!\n<br><br>\n<u>Volume 1:</u><br>\n1. <b>Heart-wringing Yamanba-sensei</b> by HATTORI Mitsuru<br>\n2. <b>The Youth of Haruse, The Dullahan</b> by Rishin<br>\n3. <b>An Odd Pair for Life</b> by Amatou<br>\n4. <b>Our Mascot Cat</b> by gum<br>\n5. <b>Rise up! Mandragora-senpai!</b> by Yugo<br>\n6. <b>A Human, a Tiger, and a Wizard</b> by TAKAHO Tadachika<br>\n7. <b>I'm Dating a Vampire</b> by KAGA Mitsuki<br>\n8. <b>A Life in the Shadow</b> by solopipB\n<br><br>\n<u>Volume 2:</u><br>\n1. <b>Wankomplex</b> by Mintarou<br>\n2. <b>Living with a Fox</b> by Amatou<br>\n3. <b>My Sluggish Wife Leannán-san</b> by NISHIZONO Fumiko<br>\n4. <b>The Dullahan Haruse and Her Friends</b> by Rishin<br>\n5. <b>Legend of the Ogres</b> by HIYAMA Daisuke<br>\n<i>The series Peter Grill to Kenja no Jikan was based off of this oneshot.</i><br>\n6. <b>Good Luck, Shitori-chan!</b> by TAKAHO Tadachika<br>\n7. <b>Soul-Sucking Demon</b> by Rage<br>\n8. <b>The Yearning of the Forgotten Bones</b> by solopipB\n",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 100634,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/100634",
+                        "startDate": {
+                            "month": 12,
+                            "year": 2016
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "Jingai no Yome to Ichaicha Suru: Anthology Comic"
+                        },
+                        "volumes": 2
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 66,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx100645-NJW4S7M0LvDc.jpg"
+                        },
+                        "description": "The romantic comedy follows the everyday life of an extremely tsundere boy named Atsuhiro \"Akkun\" Kagari and his girlfriend Non \"Nontan\" Katagiri. Akkun's behavior is harsh towards Nontan with verbal abuse and neglect, but he actually is head-over-heels for her and habitually acts like a stalker by tailing her or eavesdropping. Nontan is oblivious to Akkun's stalker ways, and thinks his actions are cute.\n<br><br>\n(Source: Anime News Network)",
+                        "episodes": 25,
+                        "format": "TV_SHORT",
+                        "id": 100645,
+                        "nextAiringEpisode": null,
+                        "season": "SPRING",
+                        "siteUrl": "https://anilist.co/anime/100645",
+                        "startDate": {
+                            "month": 4,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-1-the-boyfriends-true-nature-768713"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-2-the-accustomed-girlfriend-768715"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-3-number-of-chews-768717"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-4-the-beginning-of-it-all-768719"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-5-under-the-umbrella-together-768721"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-6-the-parents-768723"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-7-irie-san-768725"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-8-his-own-way-of-studying-768727"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-9-matsuo-and-chiho-768729"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-10-beach-time-768731"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-11-the-night-of-the-festival-768733"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-12-candy-apple-hammer-768735"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-13-memories-768737"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-14-halloween-774650"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-15-wishes-apathy-and-supremacy-774651"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-16-matsuo-countermeasures-774652"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-17-akkuns-sleepover-774653"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-18-christmas-774654"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-19-happy-new-year-774655"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-20-clean-up-activities-774656"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-21-honest-words-774657"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-22-startline-774658"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-23-green-onion-plushie-774659"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-24-hate-774660"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/my-sweet-tyrant/episode-25-my-sweet-tyrant-774661"
+                            }
+                        ],
+                        "synonyms": [
+                            "Akkun and His Girlfriend"
+                        ],
+                        "title": {
+                            "english": "My Sweet Tyrant",
+                            "romaji": "Akkun to Kanojo"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 9,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 72,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx100749-7Tptl7EAMAWH.jpg"
+                        },
+                        "description": "One day, Kun’s mother brings home a new family member. For the four-year-old boy, joy quickly turns to disappointment when the little sister replaces her brother as the center of attention.  The boy can’t bring himself to accept her as his sister.  But things turn magical when, with a mysterious garden as his gateway, the boy encounters his mother as a little girl and his great-grandfather as a young man, and has a series of surprising adventures with his older sister from the future. These experiences change how he sees the world and help him grow into the big brother he was meant to be.\n<br><br>\n(Source: GKIDS)",
+                        "episodes": 1,
+                        "format": "MOVIE",
+                        "id": 100749,
+                        "nextAiringEpisode": null,
+                        "season": "SUMMER",
+                        "siteUrl": "https://anilist.co/anime/100749",
+                        "startDate": {
+                            "month": 7,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "Mirai of the Future",
+                            "Miraï, ma petite sœur"
+                        ],
+                        "title": {
+                            "english": "Mirai",
+                            "romaji": "Mirai no Mirai"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 10,
+                    "status": "DROPPED"
+                },
+                {
+                    "media": {
+                        "averageScore": 50,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx100762-erCb6yxKQ6Qc.jpg"
+                        },
+                        "description": "When Natsuno Hanabi went back to her hometown to study in high school, she thought that she will have a new wonderful life. But Tachibanakan, the dormitory she was going to live in, was not what she expected.",
+                        "episodes": 12,
+                        "format": "TV_SHORT",
+                        "id": 100762,
+                        "nextAiringEpisode": null,
+                        "season": "SPRING",
+                        "siteUrl": "https://anilist.co/anime/100762",
+                        "startDate": {
+                            "month": 4,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/love-to-lie-angle/episode-1-new-life-768471"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/love-to-lie-angle/episode-2-secret-place-768473"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/love-to-lie-angle/episode-3-spying-and-sleeping-together-768475"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/love-to-lie-angle/episode-4-trials-and-toilets-768477"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/love-to-lie-angle/episode-5-summer-clothes-and-closets-768479"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/love-to-lie-angle/episode-6-welcome-party-and-water-gun-768481"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/love-to-lie-angle/episode-7-meteor-shower-and-a-bucket-768483"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/love-to-lie-angle/episode-8-fish-and-a-kiss-768485"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/love-to-lie-angle/episode-9-a-cold-and-memories-768487"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/love-to-lie-angle/episode-10-hot-springs-and-ping-pong-768489"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/love-to-lie-angle/episode-11-summer-festival-768491"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/love-to-lie-angle/episode-12-here-at-tachibanakan-768493"
+                            }
+                        ],
+                        "synonyms": [
+                            "Tachibanakan Triangle"
+                        ],
+                        "title": {
+                            "english": "Love To-LIE-Angle",
+                            "romaji": "Tachibanakan to Lie Angle"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 12,
+                    "score": 6,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 74,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/nx100801-94JFvdg8Sk9c.jpg"
+                        },
+                        "description": "Nanoha and Chidori are best friends. They're also dating, but it's a secret, so don't tell anyone!",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 100801,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/100801",
+                        "startDate": {
+                            "month": 11,
+                            "year": 2017
+                        },
+                        "status": "RELEASING",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "A Storm of Flowers",
+                            "Nanoha to Chidori"
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "Hana ni Arashi"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "CURRENT"
+                },
+                {
+                    "media": {
+                        "averageScore": 84,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx100815-cZbnM9Bjth8W.png"
+                        },
+                        "description": "Third season of the Monogatari Series, part 5/5. Contains the arc Koyomi Reverse from the Zoku Owarimonogatari light novel.\n<br></br>\nThe morning after high school graduation, Koyomi is standing in front of the mirror above the sink to wash his face when he suddenly feels like his reflection is staring back at him. He instinctively reaches for the mirror, and upon touching it, his fingers sink in... When he comes to, Koyomi finds himself in a world where everything appears to be reversed.\n<br><br>\n(Source: Aniplex)\n<br><br>\n<em>Zoku Owarimonogatari premiered in Japan theaters in November 2018. It was later released as a 6-part OVA on Blu-ray/DVD from February to March 2019.</em>",
+                        "episodes": 6,
+                        "format": "OVA",
+                        "id": 100815,
+                        "nextAiringEpisode": null,
+                        "season": "WINTER",
+                        "siteUrl": "https://anilist.co/anime/100815",
+                        "startDate": {
+                            "month": 2,
+                            "year": 2019
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "Continued End Tale"
+                        ],
+                        "title": {
+                            "english": "Zoku Owarimonogatari",
+                            "romaji": "Zoku Owarimonogatari"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 6,
+                    "score": 9,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 63,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/nx100843-HxQyZDJWovl2.jpg"
+                        },
+                        "description": "A god of a different world had abruptly appeared in Kamiya Yato's classroom and forcibly summoned the entire class to his world... except for him—because he was sleeping in a seat in the corner of the class, the round summoning magic circle didn't reach him—and he ended up staying here on Earth, but with brand-new skills.<br>\n<br>\nAfter he made it through a whole year full of police interviews and journalism reports, he finally became a high school student, but the quiet days he had hoped for were far from over—be it terrorists who decide to occupy his school or even monsters from different world, one by one new incidents take place in the town he lives in...<br>\n<br>\nWill a boy without any motivation be able to save the world?\n",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 100843,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/100843",
+                        "startDate": {
+                            "month": 12,
+                            "year": 2017
+                        },
+                        "status": "RELEASING",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "My Entire Class Was Summoned to Another World Except for Me"
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "Class ga Isekai Shoukan sareta Naka Ore dake Nokotta n desu ga"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "CURRENT"
+                },
+                {
+                    "media": {
+                        "averageScore": 77,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx100855-r8cXwdCschnX.jpg"
+                        },
+                        "description": "The story revolves around the delicious, beautiful cuisine that the Emiya family enjoy from day to day, no matter what the season is.\n<br><br>\n(Source: Anime News Network)",
+                        "episodes": 13,
+                        "format": "ONA",
+                        "id": 100855,
+                        "nextAiringEpisode": null,
+                        "season": "WINTER",
+                        "siteUrl": "https://anilist.co/anime/100855",
+                        "startDate": {
+                            "month": 12,
+                            "year": 2017
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-1-toshikoshi-soba-761413"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-2-salmon-mushroom-and-butter-baked-in-foil-761795"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-3-spring-chirashizushi-761797"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-4-spring-greens-and-bacon-sandwich-761799"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-5-bamboo-shoot-gratin-770209"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-6-first-hamburg-steak-770211"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-7-refreshing-and-easy-to-eat-chilled-ochazuke-770213"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-8-tohsakas-gomoku-fried-rice-776017"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-9-taste-of-autumn-casters-training-in-japanese-dish-cooking-776018"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-10-fried-chicken-yummy-even-when-its-cold-776019"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-11-special-fluffy-gooey-omelet-rice-778391"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-12-one-pan-roast-beef-778392"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/todays-menu-for-the-emiya-family/episode-13-hot-hot-hot-pot-780424"
+                            }
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "Today's Menu for the Emiya Family",
+                            "romaji": "Emiya-san Chi no Kyou no Gohan"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 81,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx100922-ltoQa6rosUyP.png"
+                        },
+                        "description": "A new life begins for Kitahara Iori as he begins his college career near the ocean in Izu city, full of excitement for his new life. He will be moving into his Uncle's diving store \"Grand Blue.\" There he finds the beautiful ocean, beautiful women, and men that love diving and alcohol. Will Iori be able to live his dream college life?",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 100922,
+                        "nextAiringEpisode": null,
+                        "season": "SUMMER",
+                        "siteUrl": "https://anilist.co/anime/100922",
+                        "startDate": {
+                            "month": 7,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "Grand Blue Dreaming",
+                            "romaji": "Grand Blue"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 12,
+                    "score": 9,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 63,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/nx100930-2SFmnilPnybj.jpg"
+                        },
+                        "description": "The plot centers on the titular Tsubaki Kunoichi, the best student in her school, and a curiosity that she cannot reveal.\n<br><br>\n<i>Nominated for the Tsugimanga 2020 Award in the Manga Category.<i>",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 100930,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/100930",
+                        "startDate": {
+                            "month": 1,
+                            "year": 2018
+                        },
+                        "status": "RELEASING",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "Inside Tsubaki Kunoichi's Heart"
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "Kunoichi Tsubaki no Mune no Uchi"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "CURRENT"
+                },
+                {
+                    "media": {
+                        "averageScore": 68,
+                        "chapters": 24,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx100962-Q6TtnDwf31Pe.jpg"
+                        },
+                        "description": "Fujimino Daisuke was often pushed around by his tomboy childhood friend Hino Matsuri but several years later, they meet each other again in college where Daisuke discovers that Matsuri has developed into quite a lovely young woman. But despite that, much to Daisuke's dismay, she has also retained most of the tomboy personality that made her a little difficult to get along with in the past.",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 100962,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/100962",
+                        "startDate": {
+                            "month": 1,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "I Want to Get Along with My Childhood Friend",
+                            "My childhood friend whom I spent my youth with is now a gorgeous woman"
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "Osananajimi ni Najimitai"
+                        },
+                        "volumes": 3
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 59,
+                        "chapters": 49,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/100973-3fay1yXuM8p1.jpg"
+                        },
+                        "description": "Misuzu Hara is a 24-year-old high school teacher who, four years earlier, endured a traumatic experience at the hands of Hayafuji, the then-boyfriend of her best friend Minako. She has never forgotten the experience, but she has kept it secret from Minako to protect their engagement, and has rationalized it to herself as having occurred to her due to her being a woman, even if it has continued to negatively impact her emotional well-being.\n<br><br>\n(Source: Anime News Network)<br><br>\n<i>Notes: Nominated to the 22nd Annual Tezuka Osamu Cultural Prize.</i>",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 100973,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/100973",
+                        "startDate": {
+                            "month": 8,
+                            "year": 2013
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "Teacher's White Lie",
+                            "En proie au silence"
+                        ],
+                        "title": {
+                            "english": "Sensei's Pious Lie",
+                            "romaji": "Sensei no Shiroi Uso"
+                        },
+                        "volumes": 8
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 82,
+                        "chapters": 123,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx100991-iAa5tfGjInDf.png"
+                        },
+                        "description": "Lights! Camera! ACTION! Kei Yonagi wants to be an actress! But an already-difficult dream to achieve has become much harder since her father left and her mother died. She's now taking care of her two little siblings on her own.<br><br>Without much money left, will she have to give up her dream?!<br>\n<br>\n(Source: MANGA Plus)",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 100991,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/100991",
+                        "startDate": {
+                            "month": 1,
+                            "year": 2018
+                        },
+                        "status": "CANCELLED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "ACT-AGE",
+                            "romaji": "Act-Age"
+                        },
+                        "volumes": 12
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 79,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101001-UERCW0UGi0P7.jpg"
+                        },
+                        "description": "The story revolves around three classmates who play traditional hand, board and card games. Kasumi is smart, serious, and is good at games, but hates them because she always lost to her older sister and was forced to do chores while growing up. She is also extremely bad at English. Olivia is a beautiful girl of American descent, but was raised in Japan, and she only pretends to be bad at Japanese. Hanako is a girl who wears her hair in pigtails and has a bright personality, but still can't manage to become the kind of normal person she wants to be. <br><br>(Source: Anime News Network, edited)",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 101001,
+                        "nextAiringEpisode": null,
+                        "season": "SUMMER",
+                        "siteUrl": "https://anilist.co/anime/101001",
+                        "startDate": {
+                            "month": 7,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/asobi-asobase-workshop-of-fun-/episode-1-equivalent-exchange-cheap-thrills-pleasure-seekers-the-kind-pervert-788755"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/asobi-asobase-workshop-of-fun-/episode-2-killing-time-friendship-game-the-witch-trials-non-title-match-788756"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/asobi-asobase-workshop-of-fun-/episode-3-a-battle-that-must-be-won-puppets-betting-my-life-788758"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/asobi-asobase-workshop-of-fun-/episode-4-lower-body-lasers-pots-and-kettles-illegal-occupation-butt-play-788760"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/asobi-asobase-workshop-of-fun-/episode-5-devilish-taste-loaded-questions-maedas-curse-sex-ed-788762"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/asobi-asobase-workshop-of-fun-/episode-6-asterisk-studying-for-exams-a-new-look-spirited-combat-again-788764"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/asobi-asobase-workshop-of-fun-/episode-7-phantom-thieves-pass-club-woman-of-terror-weirdo-go-boobie-tragedy-788766"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/asobi-asobase-workshop-of-fun-/episode-8-gotta-catch-em-all-divine-revelation-the-evil-sugoroku-788768"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/asobi-asobase-workshop-of-fun-/episode-9-troubles-of-a-fake-foreigner-a-dutchey-wife-genetic-engineering-788770"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/asobi-asobase-workshop-of-fun-/episode-10-heart-go-boing-boing-hanakos-trial-of-shame-secret-of-the-dong-film-production-788772"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/asobi-asobase-workshop-of-fun-/episode-11-goodbye-student-council-president-oka-ken-witch-project-face-of-mass-destruction-788773"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/asobi-asobase-workshop-of-fun-/episode-12-daniel-bra-meeting-fairy-tale-battle-royale-paper-wars-788775"
+                            }
+                        ],
+                        "synonyms": [
+                            "Asobi Asobase: Workshop of Fun",
+                            "游戏3人娘",
+                            "来玩游戏吧"
+                        ],
+                        "title": {
+                            "english": "Asobi Asobase - workshop of fun -",
+                            "romaji": "Asobi Asobase"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 12,
+                    "score": 8,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 60,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101002-tBiVbnDLzfb6.jpg"
+                        },
+                        "description": "The omnibus manga tells a series of short stories about conversations young women have while waiting at railroad crossings.\n<br><br>\n(Source: Anime News Network)",
+                        "episodes": 12,
+                        "format": "TV_SHORT",
+                        "id": 101002,
+                        "nextAiringEpisode": null,
+                        "season": "SPRING",
+                        "siteUrl": "https://anilist.co/anime/101002",
+                        "startDate": {
+                            "month": 4,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/crossing-time/episode-1-their-youth-769203"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/crossing-time/episode-2-majima-eriko-is-sexy-769205"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/crossing-time/episode-3-together-with-sensei-769207"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/crossing-time/episode-4-sns-siblings-769209"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/crossing-time/episode-5-goth-ordeals-769211"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/crossing-time/episode-6-mr-hassaku-and-i-769213"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/crossing-time/episode-7-railroad-crossing-poet-769215"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/crossing-time/episode-8-sns-siblings-2-769217"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/crossing-time/episode-9-heart-of-the-city-train-part-1-769219"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/crossing-time/episode-10-heart-of-the-city-train-part-2-769221"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/crossing-time/episode-11-majima-eriko-is-sexy-part-2-769223"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/crossing-time/episode-12-their-youth-part-2-769225"
+                            }
+                        ],
+                        "synonyms": [
+                            "Fumikirijikan"
+                        ],
+                        "title": {
+                            "english": "Crossing Time",
+                            "romaji": "Fumikiri Jikan"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 8,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 66,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101013-hFT0b0mqC1oY.jpg"
+                        },
+                        "description": "The story follows Kohane Hatoya, a 1st year high school student who is a bit clumsy and scared of heights but who has a very bubbly and outgoing personality. Kohane decides to join the cheerleading club to try to make friends and overcome her weaknesses.<br><br>\n\n(Source: Crunchyroll)",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 101013,
+                        "nextAiringEpisode": null,
+                        "season": "FALL",
+                        "siteUrl": "https://anilist.co/anime/101013",
+                        "startDate": {
+                            "month": 10,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/anima-yell/episode-1-my-first-time-cheerleading-777791"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/anima-yell/episode-2-cute-yet-cool-777792"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/anima-yell/episode-3-the-cheer-association-cheering-for-love-777793"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/anima-yell/episode-4-lets-cheer-up-777794"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/anima-yell/episode-5-arm-motions-with-a-smile-777795"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/anima-yell/episode-6-super-exciting-double-base-thigh-stand-777796"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/anima-yell/episode-7-the-one-on-top-is-scared-of-heights-777797"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/anima-yell/episode-8-senpai-and-me-777798"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/anima-yell/episode-9-the-captain-is-chosen-five-person-cheer-squad-777799"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/anima-yell/episode-10-socks-and-summer-training-camp-777800"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/anima-yell/episode-11-exciting-shoulder-straddle-777801"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/anima-yell/episode-12-one-for-all-all-for-one-777802"
+                            }
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "Anima Yell!"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 67,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101014-kQ7jEy8J1qO6.png"
+                        },
+                        "description": "Momo Minamoto is a high school girl living an ordinary life in Sorasaki City – until she is recruited to join a private information agency called “Tsukikage”.<br>\n<br>\nAs it turns out, Tsukikage is actually a spy organization whose mission is to protect the peace and preserve justice from behind the scenes. The girls use secret tools and use specially created spices which enhance their abilities. Through Tsukikage’s mentoring system, the girls not only grow stronger, but closer. Together, they train their hearts and minds as weapons to fight against evil.<br>\n<br>\nThe metropolis of Sorasaki is being infiltrated by a criminal organization called “Mouryo”. Momo must work together with her friends to protect her family, friends and local residents against Mouryo’s evil forces.<br>\n<br>\n(Source: Pony Canyon USA)",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 101014,
+                        "nextAiringEpisode": null,
+                        "season": "FALL",
+                        "siteUrl": "https://anilist.co/anime/101014",
+                        "startDate": {
+                            "month": 10,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "RELEASE THE SPYCE",
+                            "romaji": "RELEASE THE SPYCE"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 53,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101037-l2DxHlElh6nb.jpg"
+                        },
+                        "description": "The story of Chichibi de Buchichi follows Karuko, a young woman who is scheduled to have an arranged marriage meeting. However, Karuko can't forget a fateful encounter that she had with a young man in Chichibu many years ago, and she believes that if she returns to visit the scenes of their pleasant memories together, that the two of them will surely be reunited...<br>\n<br>\n(Source: Crunchyroll)",
+                        "episodes": 1,
+                        "format": "ONA",
+                        "id": 101037,
+                        "nextAiringEpisode": null,
+                        "season": "WINTER",
+                        "siteUrl": "https://anilist.co/anime/101037",
+                        "startDate": {
+                            "month": 3,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "Chichibu de Buchichi"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 67,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101045-byKzyG0rZD8b.jpg"
+                        },
+                        "description": "Tachibana Kentarou is a high school badminton coach who has a lot more enthusiasm than some of the members of his very small team. One day, he meets the quiet-voiced student Hanesaki Ayano, who is effortlessly physically capable and experienced in badminton. He tries to recruit her, but she seems to have no interest in the sport at all. Due to a series of circumstances, she eventually ends up joining the team. Coach Tachibana is determined that with her on board, they'll be champions!\n<br><br>\n(Source: MangaHelpers)",
+                        "episodes": 13,
+                        "format": "TV",
+                        "id": 101045,
+                        "nextAiringEpisode": null,
+                        "season": "SUMMER",
+                        "siteUrl": "https://anilist.co/anime/101045",
+                        "startDate": {
+                            "month": 7,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-1-incredible-talent-789051"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-2-meats-the-best-after-a-workout-789052"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-3-she-was-perfect-789054"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-4-im-lost-right-now-too-789056"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-5-youre-not-alone-789058"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-6-its-our-last-summer-you-know-789059"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-7-ill-mop-the-floor-with-her-789062"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-8-the-badminton-i-want-to-play-789063"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-9-what-i-want-us-to-be-is-not-friends-789066"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-10-the-backhand-grip-is-like-this-789068"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-11-because-i-love-badminton-789069"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-12-step-forward-already-789073"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hanebado/episode-13-on-the-other-side-of-that-net-789744"
+                            }
+                        ],
+                        "synonyms": [
+                            "Hanebado! - The Badminton Play of Ayano Hanesaki!",
+                            "Hanebad!"
+                        ],
+                        "title": {
+                            "english": "HANEBADO!",
+                            "romaji": "Hanebado!"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 13,
+                    "score": 7,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 63,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101103-TO2rpvciD2dW.jpg"
+                        },
+                        "description": "Jiang Xiaobai starts his first ever job as an editor. His new work partner, writer Tong Li, however, continually gives him a hard time. Then one day, he learns that Tong Li is a long-lost friend from his childhood. Gradually, their past is revealed.\n",
+                        "episodes": 12,
+                        "format": "ONA",
+                        "id": 101103,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/anime/101103",
+                        "startDate": {
+                            "month": 11,
+                            "year": 2017
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "I'm Jiang Xiaobai: Another Me In This World",
+                            "I'm Joybo - Find Another Me -",
+                            "我是江小白 第1季"
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "Wo Shi Jiang Xiaobai: Shijie Shang de Lingyi Ge Wo"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 8,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 63,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101123-3SzWQNaV6PTi.jpg"
+                        },
+                        "description": "The science-fiction action story follows girls who fight with weird entities nicknamed \"mushi\" (bugs) and survive in a world of red fog. \n<br><br>\n(Source: Anime News Network)\nBased on Tatsuki's winning entry from the '24th 3D Anime Contest' in 2012 of the same name.",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 101123,
+                        "nextAiringEpisode": null,
+                        "season": "WINTER",
+                        "siteUrl": "https://anilist.co/anime/101123",
+                        "startDate": {
+                            "month": 1,
+                            "year": 2019
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "kemurikusa.",
+                            "romaji": "Kemurikusa"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 76,
+                        "chapters": 144,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx101159-195HTNgdH6iE.png"
+                        },
+                        "description": "The last thing Sooha wants in her life is a man. She’s sick of her mother calling about boyfriend problems, of friends trying to set her up on dates, of girls waiting for their Prince Charming. But when a broke and homeless man offers to keep house in exchange for temporary housing, Sooha finds herself saying yes to a man for the first time in her life. After all, who wouldn’t want to come home to warm homemade dinners, clean sheets, and freshly ironed clothes?<br><br>\n(Source: Lezhin)",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 101159,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/101159",
+                        "startDate": {
+                            "month": 6,
+                            "year": 2017
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "The Lady and Her Butler",
+                            "romaji": "Agassiwa Ureongchonggak"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 73,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101166-aF8tzfuui6Bp.jpg"
+                        },
+                        "description": "Living above the legendary dungeons of Orario ought to be enough danger for anyone, and in his short time as a member of the goddess Hestia's familia, Bell Cranel has experienced more perils and pitfalls than most. So, when Bell unexpectedly wins a free trip, is it too much to hope that he might have actually won a real vacation? Of course it is! Inexplicably chosen as the champion of Hestia's friend, the goddess Artemis, Bell quickly finds himself up to his neck in ruins and monsters as yet another epic quest begins. And where Bell goes, can the ever-jealous Hestia be far behind?<br>\n<br>\n(Source: Sentai Filmworks)",
+                        "episodes": 1,
+                        "format": "MOVIE",
+                        "id": 101166,
+                        "nextAiringEpisode": null,
+                        "season": "WINTER",
+                        "siteUrl": "https://anilist.co/anime/101166",
+                        "startDate": {
+                            "month": 2,
+                            "year": 2019
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "DanMachi: Arrow of the Orion"
+                        ],
+                        "title": {
+                            "english": "Is It Wrong to Try to Pick Up Girls in a Dungeon?: Arrow of the Orion",
+                            "romaji": "Dungeon ni Deai wo Motomeru no wa Machigatteiru Darou ka: Orion no Ya"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "DROPPED"
+                },
+                {
+                    "media": {
+                        "averageScore": 81,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/nx101177-FjjD5UWB3C3t.png"
+                        },
+                        "description": "First comes marriage, then comes an earthbound love that is out of this world! From the day his parents named him, Nasa Yuzaki has been destined for outer space…or so he believes. But while trying to join the space program, he is thrown for a loop when an accident introduces him to Tsukasa, a mysterious girl with strange powers. Is she an alien, a moon goddess or something else? Since she insists on marrying him, Nasa has plenty of chances to find out!\n<br><br>\n(Source: Viz Media)\n<br><br>\n<i>Notes: The 16th volume includes the 4 chapter prequel \"FLY ME TO THE MOON\".<i>",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 101177,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/101177",
+                        "startDate": {
+                            "month": 2,
+                            "year": 2018
+                        },
+                        "status": "RELEASING",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "Tonikaku Cawaii",
+                            "Generally Cute"
+                        ],
+                        "title": {
+                            "english": "Fly Me to the Moon",
+                            "romaji": "Tonikaku Kawaii"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "CURRENT"
+                },
+                {
+                    "media": {
+                        "averageScore": 85,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101215-8TTRNAYJnPMW.png"
+                        },
+                        "description": "They may have just won their most coveted karuta tournament, but members of the Mizusawa karuta team still have a long way to go. Each member chases their dreams, and with a win under their collective belt, those dreams are closer in reach than ever. Chihaya Ayase is determined to challenge Wakamiya Shinobu and win the title of Queen, and Taichi Mashima is ready to take on Arata Wataya now that he’s made it into the most elite of karuta players — but an unexpected revelation will deal these karuta players a hand none of them saw coming.<br><br>(Source: Sentai Filmworks)",
+                        "episodes": 24,
+                        "format": "TV",
+                        "id": 101215,
+                        "nextAiringEpisode": null,
+                        "season": "FALL",
+                        "siteUrl": "https://anilist.co/anime/101215",
+                        "startDate": {
+                            "month": 10,
+                            "year": 2019
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-1-now-the-flower-blooms-585274"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-2-the-red-that-is-585412"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-3-from-the-crystal-white-snow-585414"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-4-a-whirlwind-of-flower-petals-descends-585416"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-5-the-sight-of-a-midnight-moon-585418"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-6-now-bloom-inside-the-nine-fold-palace-585420"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-7-but-for-autumns-coming-585422"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-8-the-sounds-of-the-waterfall-585424"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-9-but-i-cannot-hide-585426"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-10-exchange-hellos-and-goodbyes-585428"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-11-the-sky-is-the-road-home-585430"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-12-sets-these-forbidden-fields-aglow-585432"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-13-for-you-i-head-out-587566"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-14-for-there-is-no-one-else-out-here-587568"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-15-as-though-pearls-have-been-strung-across-the-autumn-plain-587570"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-16-the-autumn-leaves-of-mount-ogura-587572"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-17-world-offers-no-escape-587574"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-18-the-plum-blossoms-still-smell-the-same-587576"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-19-as-the-years-pass-587578"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-20-the-cresting-waves-almost-look-like-clouds-in-the-skies-587580"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-21-as-my-sleeves-are-wet-with-dew-587582"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-22-just-as-my-beauty-has-faded-587584"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-23-the-night-is-nearly-past-587586"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-24-nobody-wishes-to-see-the-beautiful-cherry-blossoms-587588"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/chihayafuru/episode-25-moonlight-clear-and-bright-589654"
+                            }
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "Chihayafuru 3",
+                            "romaji": "Chihayafuru 3"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 24,
+                    "score": 9,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 69,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101231-8X1CanhPk9iw.jpg"
+                        },
+                        "description": "Anthology film for three short stories. <br> \nThe three shorts in the anthology are titled \"Hidamari no Choushoku\" (Sunny Breakfast), \"Chiisana Fashion Show\" (A Small Fashion Show), and \"Shanghai Koi\" (Shanghai Love), and all three will be set in three different Chinese cities. <br>\n<br>\nThe theme of the three stories are food, clothing, and shelter. \"Hidamari no Choushoku\" is about a youth working in Beijing and a grandmother in his hometown. \"Chiisana Fashion Show\" is about sisters living in Guangzhou. \"Shanghai Koi\" is set in 1990s Shanghai and is a homage to Byousoku 5 Centimeter (5 Centimeters Per Second).",
+                        "episodes": 3,
+                        "format": "MOVIE",
+                        "id": 101231,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/anime/101231",
+                        "startDate": {
+                            "month": 8,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "肆式青春",
+                            "Si Shi Qing Chun"
+                        ],
+                        "title": {
+                            "english": "Flavors of Youth",
+                            "romaji": "Shikioriori"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 3,
+                    "score": 8,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 81,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/nx101233-ipG2rYitNxyd.jpg"
+                        },
+                        "description": "He was the fiercest member of the yakuza, a man who left countless underworld legends in his wake. They called him “the Immortal Dragon.” But one day he walked away from it all to travel another path—the path of the househusband! The curtain rises on this cozy yakuza comedy!\n<br><br>\n(Source: Viz Media)",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 101233,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/101233",
+                        "startDate": {
+                            "month": 2,
+                            "year": 2018
+                        },
+                        "status": "RELEASING",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "The Way of the House Husband",
+                            "La Via del Grembiule",
+                            "Gokushufudo: El Yakuza Amo de Casa",
+                            "Yakuza w fartuszku. Kodeks perfekcyjnego pana domu",
+                            "Gokushufudou: The Way of the House Husband",
+                            "Yakuza goes Hausmann",
+                            "La voie du tablier",
+                            "Ev Erkeğinin Yolu"
+                        ],
+                        "title": {
+                            "english": "The Way of the Househusband",
+                            "romaji": "Gokushufudou"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 75,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101249-NafhTVQfsxmC.jpg"
+                        },
+                        "description": "The narrator and protagonist is ten-year-old Aoyama. A serious student, he has already acquired a broad knowledge of the world and the universe, and he keeps notebooks in which he records day-to-day observations from his studies, explorations, and experiments. In May, some Adélie penguins appear in the town where he lives. They are captured and hauled away by truck, but then they vanish into thin air while being transported. Aoyama talks about the penguins with a young woman who works at the dentist’s office and who has been a friend to him. The woman is referred to only as Onee-san. When Onee-san tosses a soda can one day, it turns into a penguin. Meanwhile, Aoyama’s classmate Uchida has secretly been keeping a penguin, but it hasn’t touched its food for three weeks. When Aoyama and Uchida take it with them on the train, it disappears. Another classmate, a girl named Hamamoto who often plays chess with Aoyama, discovers a strange spherical object in a field on the edge of town. The three classmates name the sphere “Ocean,” and begin keeping a log of their observations of it. Aoyama soon concludes that there is a relationship between the swelling and shrinking of “Ocean” and Onee-san’s state of health.\n<br><br>\n(Source: Official Website)",
+                        "episodes": 1,
+                        "format": "MOVIE",
+                        "id": 101249,
+                        "nextAiringEpisode": null,
+                        "season": "SUMMER",
+                        "siteUrl": "https://anilist.co/anime/101249",
+                        "startDate": {
+                            "month": 8,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "Penguin Highway",
+                            "romaji": "Penguin Highway"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 10,
+                    "status": "DROPPED"
+                },
+                {
+                    "media": {
+                        "averageScore": null,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/nx101258-7ckNNKiW6zuE.jpg"
+                        },
+                        "description": "Yariba Eiji (29 years old with intimidating eyes), a corporate slave whose only hobbies are video games and manga, gets through life by spending his time off relaxing at net cafes.<br>\nOne day, he happens upon Minamisato Karen (a 15 year old high school girl) and ends up scolding her. This leads to her warming up to the 29 year old Eiji...! Not only that, Eiji's little sister (a lazy middle schooler), childhood friend (a nosy ex-girlfriend), and his subordinate (a cool and serious girl) are also becoming interested in him.<br>\nLove is coming at him from every direction!\n<br><br>\nJuggling between his work and his newly developed ventures into romance, will Eiji's peaceful days ever return?\n",
+                        "episodes": null,
+                        "format": "NOVEL",
+                        "id": 101258,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/101258",
+                        "startDate": {
+                            "month": 6,
+                            "year": 2016
+                        },
+                        "status": "RELEASING",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "29 to JK"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 64,
+                        "chapters": 29,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/nx101259-xOtht7sBeE8i.jpg"
+                        },
+                        "description": "Yariba Eiji (29 years old with intimidating eyes), a corporate slave whose only hobbies are video games and manga, gets through life by spending his time off relaxing at net cafes.<br>\nOne day, he happens upon Minamisato Karen (a 15 year old high school girl) and ends up scolding her. This leads to her warming up to the 29 year old Eiji...! Not only that, Eiji's little sister (a lazy middle schooler), childhood friend (a nosy ex-girlfriend), and his subordinate (a cool and serious girl) are also becoming interested in him.<br>\nLove is coming at him from every direction!\n<br><br>\nJuggling between his work and his newly developed ventures into romance, will Eiji's peaceful days ever return?\n",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 101259,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/101259",
+                        "startDate": {
+                            "month": 9,
+                            "year": 2017
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "Nijuukyuu to Jeikei"
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "29 to JK"
+                        },
+                        "volumes": 6
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 67,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101283-YpZqD7wrzWui.jpg"
+                        },
+                        "description": "There is an urban legend that children tell one another about a shinigami that can release people from the pain they may be suffering. This \"Angel of Death\" has a name—Boogiepop. And the legends are true. Boogiepop is real.\n<br><br>\n(Source: Seven Seas Entertainment)",
+                        "episodes": 18,
+                        "format": "TV",
+                        "id": 101283,
+                        "nextAiringEpisode": null,
+                        "season": "WINTER",
+                        "siteUrl": "https://anilist.co/anime/101283",
+                        "startDate": {
+                            "month": 1,
+                            "year": 2019
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-1-boogiepop-and-others-1-780854"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-2-boogiepop-and-others-2-780855"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-3-boogiepop-and-others-3-780856"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-4-vs-imaginator-1-780857"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-5-vs-imaginator-2-780858"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-6-vs-imaginator-3-780859"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-7-vs-imaginator-4-780860"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-8-vs-imaginator-5-780861"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-9-vs-imaginator-6-780862"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-10-boogiepop-at-dawn-1-780863"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-11-boogiepop-at-dawn-2-782360"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-12-boogiepop-at-dawn-3-782361"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-13-boogiepop-at-dawn-4-782362"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-14-overdrive-the-king-of-distortion-1-782413"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-15-overdrive-the-king-of-distortion-2-782414"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-16-overdrive-the-king-of-distortion-3-782415"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-17-overdrive-the-king-of-distortion-4-782416"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/boogiepop-and-others/episode-18-overdrive-the-king-of-distortion-5-782417"
+                            }
+                        ],
+                        "synonyms": [
+                            "Boogiepop wa Warawanai (2019)"
+                        ],
+                        "title": {
+                            "english": "Boogiepop and Others",
+                            "romaji": "Boogiepop wa Warawanai"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 73,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101310-w1PLPsyg0XHr.jpg"
+                        },
+                        "description": "Grigio Academy Boarding School. The students that attend this school come from two countries, and reside in their own dormitories. Inazuka and Persia are leaders of rival dorms, but in secret they love each other. Now, they have to keep their relationship a secret from their dorm mates or else bad things will happen to them.\n",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 101310,
+                        "nextAiringEpisode": null,
+                        "season": "FALL",
+                        "siteUrl": "https://anilist.co/anime/101310",
+                        "startDate": {
+                            "month": 10,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "To LOVE, or not to LOVE"
+                        ],
+                        "title": {
+                            "english": "Boarding School Juliet",
+                            "romaji": "Kishuku Gakkou no Juliet"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 12,
+                    "score": 7,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 73,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/manga/cover/medium/bx101315-8qNFN4mJRYO2.jpg"
+                        },
+                        "description": "Seto is a completely ordinary and somewhat boring high school student. Yet, for whatever reason, his errant gyaru classmate Anjou just won't leave him alone!\n<br><br>\nThe serious Seto and energetic Anjou make a contrasting duo, but Anjou doesn't seem to mind, as she has too much fun teasing him. On the other hand, Seto has a hard time dealing with all of her endless antics; little does he realize that his humorous reactions are precisely the reason Anjou enjoys his company. But... just how much of her flirting is merely an act?<br><br>\n<i>Note: This is a serialisation of the web comic originally self-published on Pixiv.</i>",
+                        "episodes": null,
+                        "format": "MANGA",
+                        "id": 101315,
+                        "nextAiringEpisode": null,
+                        "season": null,
+                        "siteUrl": "https://anilist.co/manga/101315",
+                        "startDate": {
+                            "month": 8,
+                            "year": 2017
+                        },
+                        "status": "RELEASING",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "Anjou-san",
+                            "Yancha Gal's Anjou-san",
+                            "Anjou, A Naughty Girl"
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "Yancha Gal no Anjou-san"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "CURRENT"
+                },
+                {
+                    "media": {
+                        "averageScore": 73,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101316-dtbVXtek4IPg.png"
+                        },
+                        "description": "In Nagasaki, a descendant of mages, 17-year-old Hitomi lost her sense of color at a young age and grew up lacking emotion. Her grandmother Kohaku, a great mage, sends Hitomi to the past, to the year 2018. There, she spends time with a 17-year-old Kohaku and friends from club activities.<br><br>\n\n(Source: Anime News Network)",
+                        "episodes": 13,
+                        "format": "TV",
+                        "id": 101316,
+                        "nextAiringEpisode": null,
+                        "season": "FALL",
+                        "siteUrl": "https://anilist.co/anime/101316",
+                        "startDate": {
+                            "month": 10,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "So Many Colors In The Future What A Wonderful World",
+                            "Iroduku",
+                            "IRODUKU: O Mundo em Cores",
+                            "IRODUKU: Le Monde en couleur"
+                        ],
+                        "title": {
+                            "english": "IRODUKU: The World in Colors",
+                            "romaji": "Irozuku Sekai no Ashita kara"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 13,
+                    "score": 7,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 65,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101317-WZpZb6FNXF29.jpg"
+                        },
+                        "description": "Living in a ninja residence tucked away in a corner of a futuristic city is Rikka, the eldest daughter of a Ninja clan, who looks up to her father—a researcher—very much.\nCarrying on with her life normally, Rikka's home came suddenly under attack one day. Driven into a corner, what would she do to overcome this crisis?\nRip darkness to pieces and become \"BLACK\"!<br><br>\n\n(Source: Official website)",
+                        "episodes": 1,
+                        "format": "MOVIE",
+                        "id": 101317,
+                        "nextAiringEpisode": null,
+                        "season": "FALL",
+                        "siteUrl": "https://anilist.co/anime/101317",
+                        "startDate": {
+                            "month": 10,
+                            "year": 2019
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/blackfox/blackfox-blackfox-789392"
+                            }
+                        ],
+                        "synonyms": [
+                            "Black Fox",
+                            "ブラックフォックス"
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "BLACKFOX"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "DROPPED"
+                },
+                {
+                    "media": {
+                        "averageScore": 70,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101345-lHRKxtalYUm4.jpg"
+                        },
+                        "description": "Ryo Saeba is a sniper and private eye (\"sweeper\") based in Tokyo's Shinjuku Ward, who possesses unrivaled marksmanship and an over-the-top obsession for the opposite sex. He and his partner Kaori Makimura serve as bodyguards and perform other duties for his clients. Their latest client is Ai Shindo, a model who's being attacked by mysterious people and unknowingly holds the key to a vast city-wide conspiracy.\n<br><br>\n(Source: Anime News Network)",
+                        "episodes": 1,
+                        "format": "MOVIE",
+                        "id": 101345,
+                        "nextAiringEpisode": null,
+                        "season": "WINTER",
+                        "siteUrl": "https://anilist.co/anime/101345",
+                        "startDate": {
+                            "month": 2,
+                            "year": 2019
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "Gekijouban City Hunter",
+                            "Nicky Larson Private Eyes",
+                            "City Hunter: Private Eyes"
+                        ],
+                        "title": {
+                            "english": null,
+                            "romaji": "City Hunter: Shinjuku Private Eyes"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "DROPPED"
+                },
+                {
+                    "media": {
+                        "averageScore": 80,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101347-2J2p8qJpxpfZ.jpg"
+                        },
+                        "description": "Dororo, a young orphan thief, meets Hyakkimaru, a powerful ronin. Hyakkimaru's father, a greedy feudal lord, had made a pact with 12 demons, offering his yet-unborn son's body parts in exchange for great power. Thus, Hyakkimaru - who was born without arms, legs, eyes, ears, a nose or a mouth - was abandoned in a river as a baby. Rescued and raised by Dr. Honma, who equips him with artificial limbs and teaches him sword-fighting techniques, Hyakkimaru discovers that each time he slays a demon, a piece of his body is restored. Now, he roams the war-torn countryside in search of demons.",
+                        "episodes": 24,
+                        "format": "TV",
+                        "id": 101347,
+                        "nextAiringEpisode": null,
+                        "season": "WINTER",
+                        "siteUrl": "https://anilist.co/anime/101347",
+                        "startDate": {
+                            "month": 1,
+                            "year": 2019
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "Dororo",
+                            "romaji": "Dororo"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 24,
+                    "score": 8,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 59,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101360-2JEYeXhqz0WH.jpg"
+                        },
+                        "description": "A group of girls living in a small city gather to enact a ritual. They are the “Crystal Radio Research Society”.<br>\n<br>\nThe sweet and cheery Asuka Tsuchimiya brought this group together with her friends from school.<br>\n<br>\nThe ritual was merely an urban legend, but events coalesce and what started as play becomes much more... <br><br>\n\n(Source: Pony Canyon USA)",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 101360,
+                        "nextAiringEpisode": null,
+                        "season": "FALL",
+                        "siteUrl": "https://anilist.co/anime/101360",
+                        "startDate": {
+                            "month": 10,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "The Girl in Twilight",
+                            "romaji": "Akanesasu Shoujo"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 12,
+                    "score": 6,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 68,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101361-q4sHpCRgkhYQ.jpg"
+                        },
+                        "description": "Imperial Capital, 1930.<br>\nA strange group of people carrying musical instrument cases landed on Tokyo station.<br>\nThey are called the “Jaegers”, who came to hunt vampires.<br>\nAmongst them, there stood a young man with striking serenity and unusual aura.<br>\nHis name is Yuliy, a werewolf whose home village was destroyed by vampires.<br>\nYuliy and the Jaegers engage in deadly battle over a mysterious holy arc only known as “The Arc of Sirius”.<br>\nWhat truth awaits them at the end…?<br>\nWith eternal affinity and spiral of conspiracy entwine, the highly anticipated action-thriller anime begins!<br><br>\n\n(Source: Official Website)",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 101361,
+                        "nextAiringEpisode": null,
+                        "season": "SUMMER",
+                        "siteUrl": "https://anilist.co/anime/101361",
+                        "startDate": {
+                            "month": 7,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                            "Sirius"
+                        ],
+                        "title": {
+                            "english": "Sirius the Jaeger",
+                            "romaji": "Tenrou: Sirius the Jaeger"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 68,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx101371-36M9Eu65MKlU.jpg"
+                        },
+                        "description": "Due to a strange incident, Akari is rescued by a vampire girl named Sophie Twilight, and Akari becomes interested in her.<br><br>\n\n(Source: Anime News Network)",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 101371,
+                        "nextAiringEpisode": null,
+                        "season": "FALL",
+                        "siteUrl": "https://anilist.co/anime/101371",
+                        "startDate": {
+                            "month": 10,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/ms-vampire-who-lives-in-my-neighborhood/episode-1-ordinary-citizen-of-the-dark-777710"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/ms-vampire-who-lives-in-my-neighborhood/episode-2-akaris-friend-777711"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/ms-vampire-who-lives-in-my-neighborhood/episode-3-the-vampire-goes-to-school-777712"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/ms-vampire-who-lives-in-my-neighborhood/episode-4-sophie-and-ellie-777713"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/ms-vampire-who-lives-in-my-neighborhood/episode-5-vampire-cooking-777714"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/ms-vampire-who-lives-in-my-neighborhood/episode-6-interview-with-the-vampire-777715"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/ms-vampire-who-lives-in-my-neighborhood/episode-7-summer-break-spent-with-a-vampire-777716"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/ms-vampire-who-lives-in-my-neighborhood/episode-8-the-last-day-of-summer-break-777717"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/ms-vampire-who-lives-in-my-neighborhood/episode-9-vampire-vs-vampire-hunter-777718"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/ms-vampire-who-lives-in-my-neighborhood/episode-10-the-vampire-and-the-end-of-the-year-777719"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/ms-vampire-who-lives-in-my-neighborhood/episode-11-cold-season-777720"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/ms-vampire-who-lives-in-my-neighborhood/episode-12-the-vampire-and-the-changing-seasons-777721"
+                            }
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "Ms. vampire who lives in my neighborhood.",
+                            "romaji": "Tonari no Kyuuketsuki-san"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 0,
+                    "status": "PLANNING"
+                },
+                {
+                    "media": {
+                        "averageScore": 74,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101386-ZtlTugIEuorU.png"
+                        },
+                        "description": "Hitori Bocchi suffers from extreme social anxiety, she’s not good at talking to people, takes pretty extreme actions, is surprisingly adept at avoiding people, her legs cramp when she overexerts herself, gets full of herself when alone, will vomit when exposed to extreme tension and often comes up with plans. Now she is entering middle school and her only friend, Yawara Kai, is attending a different school. This leaves Bocchi alone, surrounded by new classmates with whom she must make friends before Kai will talk to her again.<br><br>\n\n(Source: Doki)",
+                        "episodes": 12,
+                        "format": "TV",
+                        "id": 101386,
+                        "nextAiringEpisode": null,
+                        "season": "SPRING",
+                        "siteUrl": "https://anilist.co/anime/101386",
+                        "startDate": {
+                            "month": 4,
+                            "year": 2019
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hitoribocchi-no-marumaruseikatsu/episode-1-my-first-confession-788657"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hitoribocchi-no-marumaruseikatsu/episode-2-actually-thank-you-788658"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hitoribocchi-no-marumaruseikatsu/episode-3-getting-it-across-by-spinning-your-wheels-788660"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hitoribocchi-no-marumaruseikatsu/episode-4-ill-be-your-apprentice-788662"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hitoribocchi-no-marumaruseikatsu/episode-5-happens-all-the-time-788664"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hitoribocchi-no-marumaruseikatsu/episode-6-summer-comes-in-5-7-5-788666"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hitoribocchi-no-marumaruseikatsu/episode-7-gentle-tears-788668"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hitoribocchi-no-marumaruseikatsu/episode-8-welcome-back-from-elsewhere-788670"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hitoribocchi-no-marumaruseikatsu/episode-9-perfect-curry-pancakes-788672"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hitoribocchi-no-marumaruseikatsu/episode-10-no-one-said-that-before-788674"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hitoribocchi-no-marumaruseikatsu/episode-11-from-tap-tap-to-print-print-788675"
+                            },
+                            {
+                                "site": "Crunchyroll",
+                                "url": "http://www.crunchyroll.com/hitoribocchi-no-marumaruseikatsu/episode-12-maybe-i-just-might-788677"
+                            }
+                        ],
+                        "synonyms": [
+                            "Hitoribocchi",
+                            "Bocchi Seikatsu",
+                            "一个人的○○小日子"
+                        ],
+                        "title": {
+                            "english": "Hitoribocchi no Marumaruseikatsu",
+                            "romaji": "Hitoribocchi no Marumaru Seikatsu"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 12,
+                    "score": 8,
+                    "status": "COMPLETED"
+                },
+                {
+                    "media": {
+                        "averageScore": 74,
+                        "chapters": null,
+                        "coverImage": {
+                            "large": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101478-bo3xR8x2pc3i.png"
+                        },
+                        "description": "The film will tell a story not told in either the original book series or the television series — specifically, a story about \"Okko\" and her parents.<br>\n<br>\n(Source: Anime News Network)",
+                        "episodes": 1,
+                        "format": "MOVIE",
+                        "id": 101478,
+                        "nextAiringEpisode": null,
+                        "season": "SUMMER",
+                        "siteUrl": "https://anilist.co/anime/101478",
+                        "startDate": {
+                            "month": 9,
+                            "year": 2018
+                        },
+                        "status": "FINISHED",
+                        "streamingEpisodes": [
+                        ],
+                        "synonyms": [
+                        ],
+                        "title": {
+                            "english": "Okko's Inn",
+                            "romaji": "Wakaokami wa Shougakusei! Movie"
+                        },
+                        "volumes": null
+                    },
+                    "progress": 0,
+                    "score": 9,
+                    "status": "DROPPED"
+                }
+            ]
+        }
+    }
+}
