@@ -41,6 +41,7 @@ HEADERS += \
     src/base/Anime/animemanager.h \
     src/base/Anime/mediacontroller.h \
     src/base/Anime/medialoader.h \
+    src/base/Anime/mediasaver.h \
     src/base/Anime/mediasearchmanager.h \
     src/base/abaconfig.h \
     src/base/abatorrent.h \
@@ -89,6 +90,7 @@ SOURCES += \
     src/base/Anime/animemanager.cpp \
     src/base/Anime/mediacontroller.cpp \
     src/base/Anime/medialoader.cpp \
+    src/base/Anime/mediasaver.cpp \
     src/base/Anime/mediasearchmanager.cpp \
     src/base/abaconfig.cpp \
     src/base/abatorrent.cpp \
