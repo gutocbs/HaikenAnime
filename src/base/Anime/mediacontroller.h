@@ -9,6 +9,7 @@
 #include "src/base/Anime/animemanager.h"
 #include "src/utilities/singleton.h"
 
+//TODO - Essa classe deverá dar load e save nos animes, além de servir como interface para atualizar os animes no anilist
 class MediaController : public QObject
 {
     Q_OBJECT
@@ -17,6 +18,8 @@ public:
     explicit MediaController(QObject *parent = nullptr);
     static MediaController *instance();
     void initializeMedia();
+    void setMediaListManager(Enums::mediaType mediaType);
+    void setMediaManager(Enums::mediaType mediaType);
     QPointer<IMediaListManager> getMediaListManager();
     QPointer<IMediaSearchManager> getMediaSearchManager();
     QPointer<IMediaManager> getMediaManager();

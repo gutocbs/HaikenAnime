@@ -86,6 +86,7 @@ public:
     void fsalvaListaNomesAlternativos();
     void fleListaNomesAlternativos();
 
+    //Todo - Verificar quais funções precisam de mais de um argumento e ajustar o mediaLoader
     ///Classe de limpeza
     //Limpa arquivo
     QString limpaNull(QString linha);

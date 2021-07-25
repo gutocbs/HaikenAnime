@@ -142,6 +142,7 @@ QPointer<Media> MediaSearchManager::getMediaFromId(const QString &idAnime){
     return nullptr;
 }
 
+//TODO - Fazer função
 QPointer<Media> MediaSearchManager::getMediaFromListIndex(const QString &rlista, int posicao)
 {
 
@@ -212,6 +213,8 @@ QString MediaSearchManager::getIdFromMediaTitle(const QString &mediaTitle)
     return "0";
 }
 
+
+//TODO - Fazer função
 QPointer<Media> MediaSearchManager::fbuscaAnimeNoAno(int, const QString &rid)
 {
 

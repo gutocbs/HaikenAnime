@@ -6,6 +6,7 @@
 #include "src/utilities/Interfaces/IMediaSearchManager.h"
 #include "src/base/Anime/animelistmanager.h"
 
+//TODO - Fazer singleton
 class MediaSearchManager : public IMediaSearchManager
 {
     Q_OBJECT

@@ -151,7 +151,7 @@ QVector<Media*> AnimeListManager::getSortList(Enums::mediaOrder order, Enums::or
     }
     return tempList;
 }
-
+//TODO - Fazer função
 QVector<Media *> AnimeListManager::getAnimeYearlyList(int ano)
 {
 
@@ -165,6 +165,7 @@ QPointer<Media> AnimeListManager::getMediaByIndex(Enums::mediaList mediaList, in
     return nullptr;
 }
 
+//TODO - Fazer formata palavras ser estático
 bool AnimeListManager::compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle)
 {
 //    if(FormataPalavras::fcomparaNomes(oficialTitle, searchedTitle) || FormataPalavras::fcomparaNomes(englishTitle, searchedTitle))

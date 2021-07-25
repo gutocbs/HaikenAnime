@@ -8,6 +8,7 @@
 #include "src/base/Anime/mediasearchmanager.h"
 #include "src/base/Anime/animelistmanager.h"
 
+//TODO - Fazer singleton
 class AnimeManager : public IMediaManager
 {
 public:
