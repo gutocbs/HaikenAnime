@@ -7,7 +7,7 @@ Anime *Anime::createInstance()
 
 Anime *Anime::instance()
 {
-//    return Singleton<Anime>::instance(Anime::createInstance);
+    return Singleton<Anime>::instance(Anime::createInstance);
 }
 
 Anime::Anime(QObject *parent) : QObject(parent)
@@ -24,15 +24,15 @@ void Anime::initializeMedia()
 
 QPointer<IMediaListManager> Anime::getMediaListManager()
 {
-//    return mediaListManager;
+    return mediaListManager;
 }
 
 QPointer<IMediaSearchManager> Anime::getMediaSearchManager()
 {
-//    return mediaSearchManager;
+    return mediaSearchManager;
 }
 
 QPointer<IMediaManager> Anime::getMediaManager()
 {
-//    return mediaManager;
+    return mediaManager;
 }

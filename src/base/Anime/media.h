@@ -7,6 +7,7 @@
 #include "src/base/Anime/animelistmanager.h"
 #include "src/base/Anime/mediasearchmanager.h"
 #include "src/base/Anime/animemanager.h"
+#include "src/utilities/singleton.h"
 
 class Anime : public QObject
 {

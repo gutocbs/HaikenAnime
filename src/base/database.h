@@ -54,7 +54,7 @@ public:
     QVector<anime*> returnSearchList(const QString &rnome, type rtipoMidia);
 
     ///Classe de busca
-    //funções de buscas
+    //funções de buscas - OK
     QString fbuscaIDRapido(const QString &rnomeAnime);
     QString fbuscaIDRetornaLista(const QString &ridAnime);
     int fbuscaIDRetornaPosicao(const QString &ridAnime);
@@ -72,7 +72,7 @@ public:
 
 
     ///Classe de gerenciamento
-    //Funções de anime
+    //Funções de anime - OK
     bool fmudaLista(const QString &rid, const QString &rlista, type rtipo);
     bool fmudaNota(const QString &rid, const QString &rnota);
     bool fmudaProgresso(const QString &rid, const QString &rprogresso);
