@@ -6,6 +6,7 @@ MeadiaLoader::MeadiaLoader(QObject *parent) : QObject(parent)
 }
 
 //TODO - Refatorar função quando terminar de escrever
+//TODO - Organizar arquivos nas pastas certas
 bool MeadiaLoader::loadMediaFromFile()
 {
     finishedLoading = false;
