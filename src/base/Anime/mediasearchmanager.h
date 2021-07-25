@@ -6,7 +6,7 @@
 #include "src/utilities/Interfaces/IMediaSearchManager.h"
 #include "src/base/Anime/animelistmanager.h"
 
-class MediaSearchManager : public QObject, public IMediaSearchManager
+class MediaSearchManager : public IMediaSearchManager
 {
     Q_OBJECT
 public:
