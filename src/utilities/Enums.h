@@ -3,8 +3,10 @@
 
 #include <QObject>
 #include <QMetaEnum>
+#include <QVariant>
 
 class Enums : public QObject{
+    Q_OBJECT
 public:
     enum hashList{LISTA, POSICAO, NOME, NOMEALTERNATIVO};
     Q_ENUM(hashList)
@@ -42,13 +44,13 @@ public:
     }
 
     static QString enumHashListToQString(hashList enumName){
-        return QMetaEnum::fromType<hashList>().valueToKey(enumName);
+        return QVariant::fromValue(enumName).toString();
     }
     static QString enumMediaListToQString(mediaList enumName){
-        return QMetaEnum::fromType<mediaList>().valueToKey(enumName);
+        return QVariant::fromValue(enumName).toString();
     }
     static QString enumMediaTypeToQString(mediaType enumName){
-        return QMetaEnum::fromType<mediaList>().valueToKey(enumName);
+        return QVariant::fromValue(enumName).toString();
     }
 
 };
