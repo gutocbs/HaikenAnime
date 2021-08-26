@@ -26,7 +26,7 @@ class MediaLoader : public QObject
     Q_OBJECT
 public:
     explicit MediaLoader(QObject *parent = nullptr, IMediaListManager *mediaListManager = nullptr);
-    bool loadMediaFromFile();
+    bool loadMediaFromFile(bool mock = false);
     QString getQStringValueFromKey(QString objectName, QString key = "");
     QStringList getQStringListValuesFromKey(QString objectName, QString key = "");
     int getNumberValueFromKey(QString objectName, QString key = "");
@@ -38,6 +38,7 @@ public:
 
 private:
     bool finishedLoading;
+    int listSize;
     QJsonObject mediaObject;
     QPointer<IMediaListManager> mediaListManager;
     QPointer<IMediaSearchManager> mediaSearchManager;

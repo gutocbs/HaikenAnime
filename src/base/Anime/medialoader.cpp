@@ -8,14 +8,18 @@ MediaLoader::MediaLoader(QObject *parent, IMediaListManager *mediaListManager) :
 //TODO - Refatorar função quando terminar de escrever
 //TODO - Organizar arquivos nas pastas certas
 //TODO - Mudar dados de Media para usar enums
-bool MediaLoader::loadMediaFromFile()
+//TODO - Fazer teste para verificar se os hashs tem o mesmo número de entradas que a lista
+bool MediaLoader::loadMediaFromFile(bool mock)
 {
     finishedLoading = false;
 
+    QFile jsonMediaListFile;
     //Checa se arquivo pode ser lido
     //MOCK
-    QFile jsonMediaListFile(":/Anilist/qrc/Mocks/Anilist/MediaListMock.json");
-//    QFile jsonMediaListFile("Configurações/Temp/animeList.txt");
+    if(mock)
+        jsonMediaListFile.setFileName(":/Anilist/qrc/Mocks/Anilist/MediaListMock.json");
+    else
+        jsonMediaListFile.setFileName("Configurações/Temp/animeList.txt");
     if(!jsonMediaListFile.open(QIODevice::ReadOnly)) {
            qCritical() << "Could not read file!";
            qCritical() << jsonMediaListFile.errorString();
@@ -30,12 +34,12 @@ bool MediaLoader::loadMediaFromFile()
     QJsonDocument jsonMediaList = QJsonDocument::fromJson(jsonData);
     QVariantList jsonVariantList = qvariant_cast<QVariantList>(jsonMediaList["data"]["Page"]["mediaList"]);
     QJsonArray mediaList = QJsonArray::fromVariantList(jsonVariantList);
+    listSize = mediaList.size();
     QHash<QString, QStringList> hashMediaNamesById;
-
-    for(int i = 0; i < mediaList.size(); i++){
-        mediaObject = mediaList.takeAt(i).toObject().value("media").toObject();
+    for(int i = 0; i < listSize; i++){
+        mediaObject = mediaList.at(i).toObject().value("media").toObject();
         Enums::mediaType mediaTypeEnum = Enums::QStringToMediaType(getQStringValueFromKey("format"));
-        Enums::mediaList mediaListEnum = Enums::QStringToMediaList(mediaList.takeAt(i).toObject().value("status").toString());
+        Enums::mediaList mediaListEnum = Enums::QStringToMediaList(mediaList.at(i).toObject().value("status").toString());
         //TODO - Mudar mediaListManager de acordo com o tipo de media
         QPointer<Media> media(new Media);
         media->vid = QString::number(getNumberValueFromKey("id"));
