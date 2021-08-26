@@ -1,8 +1,18 @@
 #include "animelistmanager.h"
 
+AnimeListManager *AnimeListManager::createInstance()
+{
+    return new AnimeListManager();
+}
+
 AnimeListManager::AnimeListManager(QObject *parent) : IMediaListManager(parent)
 {
 
+}
+
+AnimeListManager *AnimeListManager::instance()
+{
+    return Singleton<AnimeListManager>::instance(AnimeListManager::createInstance);
 }
 
 QHash<QString, int> AnimeListManager::getHashMediaIndexById()
@@ -65,6 +75,7 @@ void AnimeListManager::addToHash(QString id, QStringList mediaNames, Enums::hash
     }
 }
 
+//TODO - retornar lista de ano
 QVector<Media*> AnimeListManager::getMediaList(Enums::mediaList mediaList, QString searchArgument)
 {
     switch (mediaList) {
@@ -151,6 +162,7 @@ QVector<Media*> AnimeListManager::getSortList(Enums::mediaOrder order, Enums::or
     }
     return tempList;
 }
+
 //TODO - Fazer função
 QVector<Media *> AnimeListManager::getAnimeYearlyList(int ano)
 {
@@ -179,30 +191,33 @@ bool AnimeListManager::compareMedia(QString oficialTitle, QString englishTitle, 
 
 bool AnimeListManager::addMedia(Media *mediaObject, Enums::mediaList mediaList)
 {
+    QVector<Media*>* mediaVector;
     switch (mediaList) {
     case Enums::mediaList::CURRENT:
-        mediaListCurrent.append(mediaObject);
-        hashMediaIndexById.insert(mediaObject->vid, mediaListCurrent.indexOf(mediaListCurrent.last()));
+        mediaVector = &mediaListCurrent;
         break;
     case Enums::mediaList::COMPLETED:
-        mediaListCompleted.append(mediaObject);
-        hashMediaIndexById.insert(mediaObject->vid, mediaListCompleted.indexOf(mediaListCompleted.last()));
+        mediaVector = &mediaListCompleted;
         break;
     case Enums::mediaList::PAUSED:
-        mediaListPaused.append(mediaObject);
-        hashMediaIndexById.insert(mediaObject->vid, mediaListPaused.indexOf(mediaListPaused.last()));
+        mediaVector = &mediaListPaused;
         break;
     case Enums::mediaList::DROPPED:
-        mediaListDropped.append(mediaObject);
-        hashMediaIndexById.insert(mediaObject->vid, mediaListDropped.indexOf(mediaListDropped.last()));
+        mediaVector = &mediaListDropped;
         break;
     case Enums::mediaList::PLANNING:
-        mediaListPlanning.append(mediaObject);
-        hashMediaIndexById.insert(mediaObject->vid, mediaListPlanning.indexOf(mediaListPlanning.last()));
+        mediaVector = &mediaListPlanning;
         break;
     default:
         return false;
     }
+    mediaVector->append(mediaObject);
+    addToHash(mediaObject->vid, mediaVector->indexOf(mediaVector->last()));
+    addToHash(mediaObject->vid,Enums::enumMediaListToQString(mediaList));
+    addToHash(mediaObject->vid, mediaObject->vnomeAlternativo, Enums::hashList::NOMEALTERNATIVO);
+    addToHash(mediaObject->vid, QStringList(mediaObject->vnomeIngles), Enums::hashList::NOME);
+    addToHash(mediaObject->vid, QStringList(mediaObject->vnome), Enums::hashList::NOME);
+    addToHash(mediaObject->vid, QStringList(mediaObject->vnomeJapones), Enums::hashList::NOME);
     return true;
 }
 

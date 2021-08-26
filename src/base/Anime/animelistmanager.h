@@ -5,13 +5,16 @@
 #include "src/DTO/media.h"
 #include "src/utilities/Interfaces/IMediaListManager.h"
 #include "src/utilities/formatapalavras.h"
+#include "src/utilities/singleton.h"
 
 //TODO - Fazer singleton
 class AnimeListManager : public IMediaListManager
 {
     Q_OBJECT
+    static AnimeListManager *createInstance();
 public:
     explicit AnimeListManager(QObject *parent = nullptr);
+    static AnimeListManager *instance();
 
     QHash<QString, int> getHashMediaIndexById();
     QHash<QString, QString> getHashMediaListById();
