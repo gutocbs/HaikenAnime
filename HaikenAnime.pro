@@ -1,4 +1,4 @@
-QT += quick network networkauth concurrent
+QT += quick network networkauth concurrent testlib
 
 CONFIG += c++14
 
@@ -51,7 +51,6 @@ HEADERS += \
     src/base/confusuario.h \
     src/base/database.h \
     src/base/downloaderworker.h \
-    src/base/interfaceA.h \
     src/base/leitorlistaanimes.h \
     src/base/torrentinfo.h \
     src/clients/anilist.h \
@@ -66,7 +65,8 @@ HEADERS += \
     src/utilities/formatapalavras.h \
     src/utilities/logger.h \
     src/utilities/playerrecognition.h \
-    src/utilities/singleton.h
+    src/utilities/singleton.h \
+    tests/listmanagertests.h
 
 SOURCES += \
     lib/anitomy/anitomy.cpp \
@@ -105,7 +105,9 @@ SOURCES += \
     src/utilities/downloader.cpp \
     src/utilities/formatapalavras.cpp \
     src/utilities/logger.cpp \
-    src/utilities/playerrecognition.cpp
+    src/utilities/playerrecognition.cpp \
+    tests/listmanagertests.cpp
+
 
 RESOURCES += \
     Mocks.qrc \
