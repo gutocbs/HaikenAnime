@@ -9,6 +9,7 @@
 #include "src/DTO/media.h"
 #include "src/utilities/Media/mediacomparer.h"
 #include "src/utilities/Media/mediautil.h"
+#include "src/base/FileManager/filemanagerloader.h"
 
 class FileManager : public QObject
 {

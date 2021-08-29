@@ -8,7 +8,7 @@ FileManager::FileManager(QObject *parent) : QObject(parent)
 //TODO - Ler um arquivo pra pegar todos os tipos de extensões permitidos e salvar em um vetor
 bool FileManager::getFileExtensions()
 {
-
+    return false;
 }
 
 QString FileManager::getMediaNextEpisodePath(Media *media)
@@ -39,7 +39,7 @@ QString FileManager::getMediaFolder(Media *media)
     //Verificar se a pasta já está cadastrada e se existe.
     //Caso exista, ver se está vazia.
     //Caso esteja vazia ou não exista, rodar a função searchMediaFolder para encontrar a pasta
-
+    return "";
 }
 
 bool FileManager::compareFileToMedia(Media *media, QString fileName)
@@ -56,7 +56,7 @@ bool FileManager::compareFileToMedia(Media *media, QString fileName)
 //TODO - Classe de configuração de usuário
 QString FileManager::searchMediaFolder(Media *media)
 {
-    QStringList mediaFolders = cconfUsuario->instance()->fretornaDiretoriosAnimes();
+    QStringList mediaFolders = FileManagerLoader::getMediaDirectories();
     //Começa a iterar a pasta em busca das pastas de animes
     for(int i = 0; i < mediaFolders.size(); i++){
         QDirIterator folderIterator(mediaFolders.at(i), QDir::Files);
