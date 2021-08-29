@@ -2,12 +2,14 @@
 #define FILEMANAGERSAVER_H
 
 #include <QObject>
+#include "src/base/FileManager/mediadirectories.h"
 
-class FileManagerSaver : public QObject
+class FileManagerSaver : public MediaDirectories
 {
     Q_OBJECT
 public:
     explicit FileManagerSaver(QObject *parent = nullptr);
+    static bool addMediaDirectory(QString id, QString path);
 
 signals:
 

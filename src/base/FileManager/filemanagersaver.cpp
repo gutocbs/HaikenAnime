@@ -1,6 +1,6 @@
 #include "filemanagersaver.h"
 
-FileManagerSaver::FileManagerSaver(QObject *parent) : QObject(parent)
+FileManagerSaver::FileManagerSaver(QObject *parent) : MediaDirectories(parent)
 {
 
 }

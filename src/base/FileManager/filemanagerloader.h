@@ -2,17 +2,18 @@
 #define FILEMANAGERLOADER_H
 
 #include <QObject>
+#include "src/base/FileManager/mediadirectories.h"
 
-class FileManagerLoader : public QObject
+class FileManagerLoader : public MediaDirectories
 {
     Q_OBJECT
 public:
-    explicit FileManagerLoader(QObject *parent = nullptr);
-    static QStringList getMediaDirectories();
+    explicit FileManagerLoader();
+    static QStringList getDirectories();
+    static QHash<QString,QString> getMediaDirectories();
     bool loadMediaDirectories();
 signals:
 private:
-    QStringList mediaDirectories;
 };
 
 #endif // FILEMANAGERLOADER_H

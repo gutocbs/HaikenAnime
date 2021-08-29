@@ -1,6 +1,6 @@
 #include "filemanagerloader.h"
 
-FileManagerLoader::FileManagerLoader(QObject *parent) : QObject(parent)
+FileManagerLoader::FileManagerLoader(QObject *parent) : MediaDirectories(parent)
 {
 
 }

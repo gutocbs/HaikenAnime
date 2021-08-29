@@ -10,6 +10,7 @@
 #include "src/utilities/Media/mediacomparer.h"
 #include "src/utilities/Media/mediautil.h"
 #include "src/base/FileManager/filemanagerloader.h"
+#include "src/base/FileManager/filemanagersaver.h"
 
 class FileManager : public QObject
 {
@@ -18,9 +19,9 @@ public:
     explicit FileManager(QObject *parent = nullptr);
     bool getFileExtensions();
     bool compareFileToMedia(Media *media, QString fileName);
-    QString searchMediaFolder(Media *media);
+    QString searchMediaFolderPath(Media *media);
     QString getMediaNextEpisodePath(Media *media);
-    QString getMediaFolder(Media *media);
+    QString getMediaFolderPath(Media *media);
     QString getMediaName(QString fileName);
     int getMediaEpisode(QString fileName);
 signals:

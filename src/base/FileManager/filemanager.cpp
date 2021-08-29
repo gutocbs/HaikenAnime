@@ -13,7 +13,7 @@ bool FileManager::getFileExtensions()
 
 QString FileManager::getMediaNextEpisodePath(Media *media)
 {
-    QString mediaFolder = getMediaFolder(media);
+    QString mediaFolder = getMediaFolderPath(media);
 
     //Verifica se a função retorna um valor que não está vazio, ou seja
     //Se existe uma pasta com o nome do anime
@@ -34,14 +34,27 @@ QString FileManager::getMediaNextEpisodePath(Media *media)
 
 }
 
-QString FileManager::getMediaFolder(Media *media)
+///Check if media folder is known and, case it is, if exists.
+///If doesn't exists or it's not know, search for the folder.
+///Returns the folder path if found, otherwise returns an empty QString.
+QString FileManager::getMediaFolderPath(Media *media)
 {
-    //Verificar se a pasta já está cadastrada e se existe.
-    //Caso exista, ver se está vazia.
-    //Caso esteja vazia ou não exista, rodar a função searchMediaFolder para encontrar a pasta
+    QHash<QString,QString> mediaFolders = FileManagerLoader::getMediaDirectories();
+    if(mediaFolders.contains(media->vid)){
+        QDir mediaDirectory(mediaFolders.value(media->vid));
+        if(mediaDirectory.exists())
+            return mediaFolders.value(media->vid);
+    }
+
+    QString path = searchMediaFolderPath(media);
+    if(!path.isEmpty()){
+        FileManagerSaver::addMediaDirectory(media->vid, path);
+        return path;
+    }
     return "";
 }
 
+///Check if the file found is the searched media. Checks the name and episode.
 bool FileManager::compareFileToMedia(Media *media, QString fileName)
 {
     int mediaEpisode = getMediaEpisode(fileName);
@@ -53,10 +66,9 @@ bool FileManager::compareFileToMedia(Media *media, QString fileName)
     return false;
 }
 
-//TODO - Classe de configuração de usuário
-QString FileManager::searchMediaFolder(Media *media)
+QString FileManager::searchMediaFolderPath(Media *media)
 {
-    QStringList mediaFolders = FileManagerLoader::getMediaDirectories();
+    QStringList mediaFolders = FileManagerLoader::getDirectories();
     //Começa a iterar a pasta em busca das pastas de animes
     for(int i = 0; i < mediaFolders.size(); i++){
         QDirIterator folderIterator(mediaFolders.at(i), QDir::Files);
@@ -74,7 +86,6 @@ QString FileManager::searchMediaFolder(Media *media)
 
 QString FileManager::getMediaName(QString fileName)
 {
-    //Anitomy é uma classe linda que separa os elementos de uma string
     anitomy::Anitomy lanitomy;
     lanitomy.Parse(fileName.toStdWString());
     const auto& lelements = lanitomy.elements();

@@ -46,6 +46,7 @@ HEADERS += \
     src/base/FileManager/filemanager.h \
     src/base/FileManager/filemanagerloader.h \
     src/base/FileManager/filemanagersaver.h \
+    src/base/FileManager/mediadirectories.h \
     src/base/abaconfig.h \
     src/base/abatorrent.h \
     src/base/anime.h \

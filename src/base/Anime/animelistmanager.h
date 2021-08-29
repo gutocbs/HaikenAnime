@@ -7,7 +7,6 @@
 #include "src/utilities/formatapalavras.h"
 #include "src/utilities/singleton.h"
 
-//TODO - Fazer singleton
 class AnimeListManager : public IMediaListManager
 {
     Q_OBJECT
