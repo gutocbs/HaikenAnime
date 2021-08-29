@@ -2,18 +2,18 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QPointer>
-#include <QTest>
-#include "tests/listmanagertests.h"
 
 #include "mainclass.h"
+#include "tests/testmanager.h"
+
 void executeTests();
 int main(int argc, char *argv[])
 {
+    executeTests();
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QCoreApplication::setOrganizationName("Haiken");
     QCoreApplication::setOrganizationDomain("");
     QCoreApplication::setApplicationName("Haiken App");
-    executeTests();
     QGuiApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
@@ -34,6 +34,6 @@ int main(int argc, char *argv[])
 }
 
 void executeTests(){
-    ListManagerTests listmanager;
-    QTest::qExec(&listmanager);
+    TestManager testManager;
+    testManager.executeAllTests();
 }

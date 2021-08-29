@@ -43,6 +43,9 @@ HEADERS += \
     src/base/Anime/medialoader.h \
     src/base/Anime/mediasaver.h \
     src/base/Anime/mediasearchmanager.h \
+    src/base/FileManager/filemanager.h \
+    src/base/FileManager/filemanagerloader.h \
+    src/base/FileManager/filemanagersaver.h \
     src/base/abaconfig.h \
     src/base/abatorrent.h \
     src/base/anime.h \
@@ -58,6 +61,8 @@ HEADERS += \
     src/utilities/Interfaces/IMediaListManager.h \
     src/utilities/Interfaces/IMediaManager.h \
     src/utilities/Interfaces/IMediaSearchManager.h \
+    src/utilities/Media/mediautil.h \
+    src/utilities/Media/mediacomparer.h \
     src/utilities/arquivoanime.h \
     src/utilities/call_once.h \
     src/utilities/client.h \
@@ -66,7 +71,9 @@ HEADERS += \
     src/utilities/logger.h \
     src/utilities/playerrecognition.h \
     src/utilities/singleton.h \
-    tests/listmanagertests.h
+    tests/listmanagertests.h \
+    tests/medialoadertests.h \
+    tests/testmanager.h
 
 SOURCES += \
     lib/anitomy/anitomy.cpp \
@@ -92,6 +99,9 @@ SOURCES += \
     src/base/Anime/medialoader.cpp \
     src/base/Anime/mediasaver.cpp \
     src/base/Anime/mediasearchmanager.cpp \
+    src/base/FileManager/filemanager.cpp \
+    src/base/FileManager/filemanagerloader.cpp \
+    src/base/FileManager/filemanagersaver.cpp \
     src/base/abaconfig.cpp \
     src/base/abatorrent.cpp \
     src/base/arquivos.cpp \
@@ -101,12 +111,16 @@ SOURCES += \
     src/base/downloaderworker.cpp \
     src/base/leitorlistaanimes.cpp \
     src/clients/anilist.cpp \
+    src/utilities/Media/mediautil.cpp \
+    src/utilities/Media/mediacomparer.cpp \
     src/utilities/client.cpp \
     src/utilities/downloader.cpp \
     src/utilities/formatapalavras.cpp \
     src/utilities/logger.cpp \
     src/utilities/playerrecognition.cpp \
-    tests/listmanagertests.cpp
+    tests/listmanagertests.cpp \
+    tests/medialoadertests.cpp \
+    tests/testmanager.cpp
 
 
 RESOURCES += \
