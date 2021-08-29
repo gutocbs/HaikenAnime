@@ -18,9 +18,10 @@ class FileManager : public QObject
 public:
     explicit FileManager(QObject *parent = nullptr);
     bool getFileExtensions();
-    bool compareFileToMedia(Media *media, QString fileName);
+    bool compareFileToMediaName(Media *media, QString fileName);
+    bool compareFileToMediaEpisode(Media *media, QString fileName, int episode);
     QString searchMediaFolderPath(Media *media);
-    QString getMediaNextEpisodePath(Media *media);
+    QString getMediaEpisodePath(Media *media, int episode = 0);
     QString getMediaFolderPath(Media *media);
     QString getMediaName(QString fileName);
     int getMediaEpisode(QString fileName);

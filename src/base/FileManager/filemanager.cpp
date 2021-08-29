@@ -11,7 +11,7 @@ bool FileManager::getFileExtensions()
     return false;
 }
 
-QString FileManager::getMediaNextEpisodePath(Media *media)
+QString FileManager::getMediaEpisodePath(Media *media, int episode)
 {
     QString mediaFolder = getMediaFolderPath(media);
 
@@ -25,7 +25,8 @@ QString FileManager::getMediaNextEpisodePath(Media *media)
             QFileInfo mediaFileInfo(mediaFile.fileName());
             //Checa se o que foi encontrado é um arquivo ou uma pasta e, no caso de ser um arquivo, se é um arquivo de tipo suportado
             if(mediaFileInfo.isFile() && fileExtensions.contains(mediaFileInfo.completeSuffix())
-                                      && compareFileToMedia(media, mediaFile.fileName())){
+                                      && compareFileToMediaName(media, mediaFile.fileName())
+                                      && compareFileToMediaEpisode(media, mediaFile.fileName(), episode)){
                 return mediaFile.fileName();
             }
         }
@@ -54,14 +55,22 @@ QString FileManager::getMediaFolderPath(Media *media)
     return "";
 }
 
-///Check if the file found is the searched media. Checks the name and episode.
-bool FileManager::compareFileToMedia(Media *media, QString fileName)
+///Check if the file found is the searched media by the name
+bool FileManager::compareFileToMediaName(Media *media, QString fileName)
 {
-    int mediaEpisode = getMediaEpisode(fileName);
     QString mediaName = getMediaName(fileName);
-    if((MediaComparer::compareEpisodeNumber(media, mediaEpisode)) &&
-        (MediaComparer::compareName(media->vnome,mediaName) || MediaComparer::compareName(media->vnomeIngles,mediaName)
-                                                           || MediaComparer::compareName(media->vnomeAlternativo, mediaName)))
+    if(MediaComparer::compareName(media->vnome,mediaName) || MediaComparer::compareName(media->vnomeIngles,mediaName)
+                                                          || MediaComparer::compareName(media->vnomeAlternativo, mediaName))
+        return true;
+    return false;
+}
+
+///Check if the file found is the searched media episode.
+bool FileManager::compareFileToMediaEpisode(Media *media, QString fileName, int mediaEpisode)
+{
+    if(mediaEpisode == 0)
+        mediaEpisode = getMediaEpisode(fileName);
+    if(MediaComparer::compareEpisodeNumber(media, mediaEpisode))
         return true;
     return false;
 }
@@ -77,7 +86,7 @@ QString FileManager::searchMediaFolderPath(Media *media)
             QFileInfo mediaFileInfo(mediaFile.fileName());
             //Checa se o que foi encontrado é um arquivo ou uma pasta e, no caso de ser um arquivo, se é um arquivo de vídeo
             if(mediaFileInfo.isFile() && fileExtensions.contains(mediaFileInfo.completeSuffix())
-                    && compareFileToMedia(media, mediaFile.fileName()))
+                    && compareFileToMediaName(media, mediaFile.fileName()))
                     return mediaFileInfo.absoluteFilePath();
         }
     }
