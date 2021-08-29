@@ -22,8 +22,7 @@ public:
     bool getFileExtensions();
     bool compareFileToMediaName(Media *media, QString fileName);
     bool compareFileToMediaEpisode(Media *media, QString fileName, int episode);
-    bool openFile(const QByteArray &path);
-    bool openFolder(const QByteArray &path);
+    bool openFileOrFolder(const QByteArray &path);
     QString searchMediaFolderPath(Media *media);
     QString getMediaEpisodePath(Media *media, int episode = 0);
     QString getMediaFolderPath(Media *media);
