@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 4.15.1, 2021-08-28T12:58:35. -->
+<!-- Written by QtCreator 4.15.1, 2021-08-29T20:19:53. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
@@ -67,14 +67,20 @@
     <value type="bool" key="AutoTest.Framework.QtQuickTest">true</value>
     <value type="bool" key="AutoTest.Framework.QtTest">true</value>
    </valuemap>
-   <valuemap type="QVariantMap" key="AutoTest.CheckStates"/>
+   <valuemap type="QVariantMap" key="AutoTest.CheckStates">
+    <value type="Qt::CheckState" key="1@I:/C++/HaikenAnime/tests/medialoadertests.cpp:cleanupTestCase">Unchecked</value>
+    <value type="Qt::CheckState" key="1@I:/C++/HaikenAnime/tests/medialoadertests.cpp:initTestCase">Unchecked</value>
+    <value type="Qt::CheckState" key="1@I:/C++/HaikenAnime/tests/medialoadertests.cpp:loadMediaFromFile_WhenCalled_returnFalse">Checked</value>
+    <value type="Qt::CheckState" key="1@I:/C++/HaikenAnime/tests/medialoadertests.cpp:loadMediaFromFile_WhenCalled_returnTrue">Checked</value>
+    <value type="Qt::CheckState" key="1@I:/C++/HaikenAnime/tests/medialoadertests.h:MediaLoaderTests">Checked</value>
+   </valuemap>
    <value type="int" key="AutoTest.RunAfterBuild">0</value>
    <value type="bool" key="AutoTest.UseGlobal">true</value>
    <valuelist type="QVariantList" key="ClangCodeModel.CustomCommandLineKey">
     <value type="QString">-fno-delayed-template-parsing</value>
    </valuelist>
-   <value type="bool" key="ClangCodeModel.UseGlobalConfig">true</value>
-   <value type="QString" key="ClangCodeModel.WarningConfigId">Builtin.BuildSystem</value>
+   <value type="bool" key="ClangCodeModel.UseGlobalConfig">false</value>
+   <value type="QString" key="ClangCodeModel.WarningConfigId">{a7d1ec11-8290-4172-961f-7e29ef507560}</value>
    <valuemap type="QVariantMap" key="ClangTools">
     <value type="bool" key="ClangTools.AnalyzeOpenFiles">true</value>
     <value type="bool" key="ClangTools.BuildBeforeAnalysis">true</value>
@@ -108,7 +114,7 @@
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.0">
       <value type="bool" key="ProjectExplorer.BuildStep.Enabled">true</value>
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">QtProjectManager.QMakeBuildStep</value>
-      <value type="bool" key="QtProjectManager.QMakeBuildStep.QMakeForced">false</value>
+      <value type="bool" key="QtProjectManager.QMakeBuildStep.QMakeForced">true</value>
       <valuelist type="QVariantList" key="QtProjectManager.QMakeBuildStep.SelectedAbis"/>
      </valuemap>
      <valuemap type="QVariantMap" key="ProjectExplorer.BuildStepList.Step.1">

@@ -162,6 +162,7 @@ bool arquivos::fabreEpisodio(const QByteArray &rcaminhoArquivo){
     return false;
 }
 
+//TODO - Passar isso pro mediautil
 int arquivos::fcomparaSeasons(QString rnome, int repisodio, int rtemporada)
 {
     int lepisodiosTotais = 0;

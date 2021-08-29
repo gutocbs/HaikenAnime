@@ -10,6 +10,7 @@
 
 class IMediaListManager : public QObject{
 public:
+    //TODO - Transformar todas as funções voids em bool ou int
     using QObject::QObject;
     virtual QHash<QString, int> getHashMediaIndexById() = 0;
     virtual QHash<QString, QString> getHashMediaListById() = 0;

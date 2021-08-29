@@ -3,12 +3,11 @@
 
 #include <QObject>
 #include "src/base/FileManager/mediadirectories.h"
-
 class FileManagerLoader : public MediaDirectories
 {
     Q_OBJECT
 public:
-    explicit FileManagerLoader();
+    explicit FileManagerLoader(QObject *parent = nullptr);
     static QStringList getDirectories();
     static QHash<QString,QString> getMediaDirectories();
     bool loadMediaDirectories();

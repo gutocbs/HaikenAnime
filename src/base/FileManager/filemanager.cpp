@@ -75,6 +75,22 @@ bool FileManager::compareFileToMediaEpisode(Media *media, QString fileName, int 
     return false;
 }
 
+bool FileManager::openFile(const QByteArray &path)
+{
+    QScopedPointer<QDesktopServices> openFile(new QDesktopServices);
+    if(!path.isEmpty()){
+        openFile->openUrl(QUrl("file:///"+path,QUrl::TolerantMode));
+        return true;
+    }
+    return false;
+}
+
+//TODO - Fazer função de abrir a pasta
+bool FileManager::openFolder(const QByteArray &path)
+{
+    return false;
+}
+
 QString FileManager::searchMediaFolderPath(Media *media)
 {
     QStringList mediaFolders = FileManagerLoader::getDirectories();
