@@ -27,10 +27,18 @@ class MediaLoader : public QObject
 public:
     explicit MediaLoader(QObject *parent = nullptr, IMediaListManager *mediaListManager = nullptr);
     bool loadMediaFromFile(bool mock = false);
+    QString getFileName(bool mock = false);
+    bool checkIfFileCanBeOpened(QString filename);
+    QJsonArray getMediaListArray(QString fileName);
+    QPointer<Media> getMedia();
     QString getQStringValueFromKey(QString objectName, QString key = "");
     QStringList getQStringListValuesFromKey(QString objectName, QString key = "");
     int getNumberValueFromKey(QString objectName, QString key = "");
     int getNumberChapters(Enums::mediaType mediaType);
+    QDate getStartDate(QString startDateObject);
+    QString getNextEpisode(QString nextAiringEpisodeObject);
+    QString getNextEpisodeDate(QString objectName);
+    QString getDayOfTheWeek(QDateTime secondsSinceEpoch);
     bool fchecaDatabaseReady();
     void finsereDataHashId(QString tipo, QString lista, QString id, QStringList nomes);
     void insereDataHashPosicao(Enums::mediaType type, QString id, int posicao);
@@ -40,6 +48,7 @@ private:
     bool finishedLoading;
     int listSize;
     QJsonObject mediaObject;
+    QHash<QString, QStringList> hashMediaNamesById;
     QPointer<IMediaListManager> mediaListManager;
     QPointer<IMediaSearchManager> mediaSearchManager;
     QPointer<IMediaManager> mediaManager;

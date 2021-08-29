@@ -31,6 +31,7 @@ QVector<Media*> MediaSearchManager::getMediaList(const QString &listName){
     return mediaListManager->getMediaList(listEnum);
 }
 
+//TODO - Tentar refatorar função
 QVector<Media*> MediaSearchManager::searchMedia(const QString &rnome)
 {
     QVector<Media*> mediaListSearch = mediaListManager->getMediaList(Enums::SEARCH);

@@ -189,6 +189,7 @@ bool AnimeListManager::compareMedia(QString oficialTitle, QString englishTitle, 
     return false;
 }
 
+//TODO - Salvar tudo em um banco de dados ao invés de usar hashs
 bool AnimeListManager::addMedia(Media *mediaObject, Enums::mediaList mediaList)
 {
     QVector<Media*>* mediaVector;
