@@ -2,4 +2,7 @@
     <qresource prefix="/Anilist">
         <file>qrc/Mocks/Anilist/MediaListMock.json</file>
     </qresource>
+    <qresource prefix="/FileManager">
+        <file>qrc/Mocks/FileManager/DirectoriesFileMock.json</file>
+    </qresource>
 </RCC>

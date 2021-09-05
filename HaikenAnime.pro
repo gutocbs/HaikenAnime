@@ -103,6 +103,7 @@ SOURCES += \
     src/base/FileManager/filemanager.cpp \
     src/base/FileManager/filemanagerloader.cpp \
     src/base/FileManager/filemanagersaver.cpp \
+    src/base/FileManager/mediadirectories.cpp \
     src/base/abaconfig.cpp \
     src/base/abatorrent.cpp \
     src/base/arquivos.cpp \
