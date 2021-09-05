@@ -125,5 +125,4 @@ int FileManager::getMediaEpisode(QString fileName)
         mediaEpisode = 1;
 
     return mediaEpisode;
-
 }

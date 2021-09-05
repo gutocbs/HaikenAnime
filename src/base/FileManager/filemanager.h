@@ -13,24 +13,25 @@
 #include "src/utilities/Media/mediautil.h"
 #include "src/base/FileManager/filemanagerloader.h"
 #include "src/base/FileManager/filemanagersaver.h"
+#include "src/base/FileManager/MediaDirectories.h"
 
-class FileManager : public QObject
+class FileManager : public MediaDirectories
 {
     Q_OBJECT
 public:
     explicit FileManager(QObject *parent = nullptr);
-    bool getFileExtensions();
-    bool compareFileToMediaName(Media *media, QString fileName);
-    bool compareFileToMediaEpisode(Media *media, QString fileName, int episode);
-    bool openFileOrFolder(const QByteArray &path);
-    QString searchMediaFolderPath(Media *media);
-    QString getMediaEpisodePath(Media *media, int episode = 0);
-    QString getMediaFolderPath(Media *media);
-    QString getMediaName(QString fileName);
-    int getMediaEpisode(QString fileName);
+    static bool getFileExtensions();
+    static bool compareFileToMediaName(Media *media, QString fileName);
+    static bool compareFileToMediaEpisode(Media *media, QString fileName, int episode);
+    static bool openFileOrFolder(const QByteArray &path);
+    static QString searchMediaFolderPath(Media *media);
+    static QString getMediaEpisodePath(Media *media, int episode = 0);
+    static QString getMediaFolderPath(Media *media);
+    static QString getMediaName(QString fileName);
+    static int getMediaEpisode(QString fileName);
 signals:
 private:
-    QStringList fileExtensions;
+    static QStringList fileExtensions;
 };
 
 #endif // FILEMANAGER_H
