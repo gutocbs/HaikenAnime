@@ -2,6 +2,10 @@
 #define FILEMANAGERLOADER_H
 
 #include <QObject>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QJsonDocument>
+#include <QFile>
 #include "src/base/FileManager/mediadirectories.h"
 class FileManagerLoader : public MediaDirectories
 {
@@ -10,7 +14,11 @@ public:
     explicit FileManagerLoader(QObject *parent = nullptr);
     static QStringList getDirectories();
     static QHash<QString,QString> getMediaDirectories();
-    bool loadMediaDirectories();
+    bool loadMediaDirectories(bool mock = false);
+    QString getDirectoriesFileName(bool mock);
+    QString getIdFromJson(QJsonObject object);
+    QString getPathFromJson(QJsonObject object);
+    QJsonArray getDirectoriesListArray(QString fileName);
 signals:
 private:
 };

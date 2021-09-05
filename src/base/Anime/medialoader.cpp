@@ -13,7 +13,7 @@ bool MediaLoader::loadMediaFromFile(bool mock)
 {
     finishedLoading = false;
     QString fileName = getFileName(mock);
-    if(!checkIfFileCanBeOpened(fileName))
+    if(!FileManager::checkIfFileCanBeOpened(fileName))
         return false;
     QJsonArray mediaList = getMediaListArray(fileName);
     listSize = mediaList.size();
@@ -36,19 +36,6 @@ QString MediaLoader::getFileName(bool mock)
         return ":/Anilist/qrc/Mocks/Anilist/MediaListMock.json";
     else
         return "Configurações/Temp/animeList.txt";
-}
-
-bool MediaLoader::checkIfFileCanBeOpened(QString filename)
-{
-    QFile jsonMediaListFile(filename);
-    if(!jsonMediaListFile.open(QIODevice::ReadOnly)) {
-           qCritical() << "Could not read file!";
-           qCritical() << jsonMediaListFile.errorString();
-           return false;
-    }
-    if(jsonMediaListFile.size() == 0)
-        return false;
-    return true;
 }
 
 QJsonArray MediaLoader::getMediaListArray(QString fileName)

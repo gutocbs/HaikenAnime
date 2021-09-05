@@ -18,6 +18,7 @@
 #include "src/base/Anime/animelistmanager.h"
 #include "src/base/Anime/mediasearchmanager.h"
 #include "src/base/Anime/animemanager.h"
+#include "src/base/FileManager/filemanager.h"
 
 //TODO - Fazer singleton
 //TODO - Funções de ler arquivos secundários (nomes alternativos, animes por ano etc)
@@ -28,7 +29,6 @@ public:
     explicit MediaLoader(QObject *parent = nullptr, IMediaListManager *mediaListManager = nullptr);
     bool loadMediaFromFile(bool mock = false);
     QString getFileName(bool mock = false);
-    bool checkIfFileCanBeOpened(QString filename);
     QJsonArray getMediaListArray(QString fileName);
     QPointer<Media> getMedia();
     QString getQStringValueFromKey(QString objectName, QString key = "");
