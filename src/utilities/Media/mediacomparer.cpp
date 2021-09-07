@@ -91,6 +91,11 @@ bool MediaComparer::compareName(QString rnome1, QString rnome2)
     return false;
 }
 
+bool MediaComparer::compareName(QStringList nameList, QString rnome2)
+{
+
+}
+
 QString MediaComparer::fremoveTudo(QString rpalavra)
 {
     rpalavra = fremovePontuacao(rpalavra);

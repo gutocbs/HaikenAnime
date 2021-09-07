@@ -22,9 +22,6 @@ private slots:
     void initTestCase();
     void cleanupTestCase();
     void getMediaList_WhenCalled_ReturnFullMediaList();
-    void getHashMediaIndexById_WhenCalled_ReturnFullhashMediaIndexById();
-    void getHashMediaListById_WhenCalled_ReturnFullhashMediaListById();
-    void getHashMediaNamesById_WhenCalled_ReturnFullhashMediaNamesById();
 };
 
 #endif // LISTMANAGERTESTS_H
