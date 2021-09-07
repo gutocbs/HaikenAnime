@@ -9,6 +9,7 @@ MediaLoader::MediaLoader(QObject *parent, IMediaListManager *mediaListManager) :
 //TODO - Mudar dados de Media para usar enums
 //TODO - Fazer teste para verificar se os hashs tem o mesmo número de entradas que a lista
 //TODO - Passar argumento int pra função, pra ler listas de anos
+//TODO - Mudar o arquivo de leitura pra ler o novo padrão
 bool MediaLoader::loadMediaFromFile(bool mock)
 {
     finishedLoading = false;
@@ -46,7 +47,7 @@ QJsonArray MediaLoader::getMediaListArray(QString fileName)
     jsonMediaListFile.close();
 
     QJsonDocument jsonMediaList = QJsonDocument::fromJson(jsonData);
-    QVariantList jsonVariantList = qvariant_cast<QVariantList>(jsonMediaList["data"]["Page"]["mediaList"]);
+    QVariantList jsonVariantList = qvariant_cast<QVariantList>(jsonMediaList["media"]);
     return QJsonArray::fromVariantList(jsonVariantList);
 }
 
