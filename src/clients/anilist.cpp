@@ -5,27 +5,38 @@ const QUrl graphqlUrl("https://graphql.anilist.co");
 
 anilist::anilist(QObject *parent) : QObject(parent)
 {
-//    vusername = "\"gutocbs\"";
-//    vtoken = "";
 }
 
 anilist::~anilist(){
-//    vreply->deleteLater();
 }
 
+//Sair da thread ao fechar o programa
 bool anilist::fgetList(){
+    getAvatar();
+    getMediaList();
+    return true;
+}
+
+QNetworkRequest anilist::getRequest()
+{
+    QNetworkRequest request(graphqlUrl);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
+    return request;
+}
+
+//TODO - Refatorar
+bool anilist::getAvatar()
+{
     //Cria o pedido em javascript
-    QNetworkRequest lrequest(graphqlUrl);
-    lrequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    lrequest.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
+    QNetworkRequest request = getRequest();
     QJsonObject json;
-    QNetworkAccessManager lacessManager;
+    QNetworkAccessManager acessManager;
 
     //Query que irá solicitar o avatar e o número de páginas que temos que pegar
     QFile avatarTotalPages(":/Anilist/qrc/Anilist/AvatarTotalPages.txt");
     QTextStream textStream(&avatarTotalPages);
     if(!avatarTotalPages.open(QIODevice::ReadOnly)){
-        this->thread()->exit(0);
         return false;
     }
     QString totalPages = textStream.readAll();
@@ -33,113 +44,131 @@ bool anilist::fgetList(){
     totalPages.replace("variableUsername", vusername);
     json.insert("query", totalPages);
 
-    //Checa se a thread está sendo interrompida, ou seja, se o programa está sendo fechado durante a execução da função
-    //Isso vai ocorrer em diversos pontos da thread por conta dos loops
-    if(this->thread()->isInterruptionRequested()){
-        this->thread()->exit(0);
-        return false;
-    }
-
-    //Post faz o pedido ao servidor lrequest, usando os argumentos em Json
-//    QPointer<QNetworkReply> vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
-    QNetworkReply* vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
+    //Post faz o pedido ao servidor request, usando os argumentos em Json
+    QNetworkReply* acessReply = acessManager.post(request, QJsonDocument(json).toJson());
     //Espera uma resposta
-    while (!vreply->isFinished())
+    //TODO - Colocar um tempo máximo de espera
+    while (!acessReply->isFinished())
     {
-        if(this->thread()->isInterruptionRequested()){
-            this->thread()->exit(0);
-            return false;
-        }
         qApp->processEvents();
     }
 
     //Após isso, pegamos a resposta e convertemos em um formato que possamos ler
     QByteArray response_data;
-    if(vreply->isReadable())
-        response_data = vreply->readAll();
+    if(acessReply->isReadable())
+        response_data = acessReply->readAll();
     else{
-        vreply->deleteLater();
+        acessReply->deleteLater();
         return false;
     }
-    if(vreply->isOpen())
-    {
-        vreply->close();
-    }
-    QJsonDocument jsond = QJsonDocument::fromJson(response_data);
-    QString lastpage = jsond.toJson();
+    if(acessReply->isOpen())
+        acessReply->close();
+
+    QJsonDocument responseDataJson = QJsonDocument::fromJson(response_data);
+    lastPage = responseDataJson.toJson();
     //Verificamos se é uma mensagem de erro
-    if(lastpage.contains("errors")){
-        this->thread()->exit(0);
+    if(lastPage.contains("errors")){
         emit sterminouDownload(false);
-        vreply->deleteLater();
+        acessReply->deleteLater();
         return false;
     }
-    lastpage = lastpage.toLatin1();
+    lastPage = lastPage.toLatin1();
     //Pega avatar
-    QString llastpage = lastpage.mid(lastpage.lastIndexOf("avatar"));
-    vavatar = llastpage.left(llastpage.indexOf("\"\n"));
+    QString avatarString = lastPage.mid(lastPage.lastIndexOf("avatar"));
+    vavatar = avatarString.left(avatarString.indexOf("\"\n"));
     //Pega total de páginas
-    llastpage = lastpage.mid(lastpage.lastIndexOf("lastPage")+11);
-    lastpage = llastpage.left(llastpage.indexOf(",\n"));
+    avatarString = lastPage.mid(lastPage.lastIndexOf("lastPage")+11);
+    lastPage = avatarString.left(avatarString.indexOf(",\n"));
 
     if(this->thread()->isInterruptionRequested()){
         this->thread()->exit(0);
-        vreply->deleteLater();
+        acessReply->deleteLater();
+        return false;
+    }
+    return true;
+}
+
+bool anilist::getMediaList()
+{
+    QFile tempAnimeList("Configurações/Temp/animeList.txt");
+    QByteArray mediaJson = getMediaListObject().toJson();
+
+    if(QString(mediaJson).contains("errors")){
+        emit sterminouDownload(false);
+        this->thread()->exit(0);
         return false;
     }
 
-    QFile t("Configurações/Temp/animeListTemp.txt");
-    if(t.open(QIODevice::WriteOnly)){
-        for(int i = 1; i < lastpage.toInt()+1; i++){
-            if(this->thread()->isInterruptionRequested()){
-                this->thread()->exit(0);
-                vreply->deleteLater();
-                return false;
-            }
-            QFile animeList(":/Anilist/qrc/Anilist/AnimeInfo.txt");
-            QTextStream textStream(&animeList);
-            if(!animeList.open(QIODevice::ReadOnly)){
-                this->thread()->exit(0);
-                return false;
-            }
-            QString query = textStream.readAll();
-            animeList.close();
-            query.replace("variablePage", QString::number(i));
-            query.replace("variableUsername", vusername);
-            json.insert("query", query.trimmed());
-            vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
-            while (!vreply->isFinished())
-            {
-                qApp->processEvents();
-            }
-            QByteArray response_data = vreply->readAll();
-            if(vreply->isOpen())
-            {
-                vreply->close();
-            }
-            jsond = QJsonDocument::fromJson(response_data);
-            t.write(jsond.toJson());
-        }
-        t.close();
+    if(tempAnimeList.open(QIODevice::WriteOnly)){
+        tempAnimeList.write(mediaJson);
+        tempAnimeList.close();
     }
-    QString lreplyString = jsond.toJson();
-    if(lreplyString.contains("errors")){
-        emit sterminouDownload(false);
-        this->thread()->exit(0);
-        vreply->deleteLater();
-        return false;
-    }
-    if(QFile::exists("Configurações/Temp/animeList.txt")){
-        if(QFile::remove("Configurações/Temp/animeList.txt"))
-            t.rename("Configurações/Temp/animeList.txt");
-    }
-    else
-        t.rename("Configurações/Temp/animeList.txt");
+
     emit sterminouDownload(true);
     fgetListasAnoSeason();
     this->thread()->exit(0);
-    vreply->deleteLater();
     return true;
+}
+
+QJsonDocument anilist::getMediaListObject()
+{
+    QJsonDocument responseDataJson;
+    QJsonArray mediaListArray;
+    QJsonObject mediaObject;
+    QString query = getQuery(Enums::AnilistQuery::AnimeInfo);
+    for(int i = 1; i < lastPage.toInt()+1; i++){
+        QString tempQuery = query;
+        tempQuery.replace("variablePage", QString::number(i));
+        QByteArray response_data = post(tempQuery);
+        QJsonDocument resposeJson = QJsonDocument::fromJson(response_data);
+        QJsonArray media = resposeJson["data"]["Page"]["mediaList"].toArray();
+        foreach(QJsonValue mediaValue, media){
+            mediaListArray.append(mediaValue);
+        }
+    }
+    mediaObject.insert("media", mediaListArray);
+    responseDataJson.setObject(mediaObject);
+    return responseDataJson;
+}
+
+QString anilist::getQuery(Enums::AnilistQuery query)
+{
+    switch (query) {
+    case Enums::AnimeInfo:
+        QFile animeList(":/Anilist/qrc/Anilist/AnimeInfo.txt");
+        QTextStream textStream(&animeList);
+        if(!animeList.open(QIODevice::ReadOnly)){
+            this->thread()->exit(0);
+            return "";
+        }
+        QString query = textStream.readAll();
+        animeList.close();
+        query.replace("variableUsername", vusername);
+        return query;
+        break;
+    }
+    return "";
+}
+
+QByteArray anilist::post(QString query)
+{
+    QJsonObject jsonObject;
+    QNetworkAccessManager acessManager;
+    QNetworkRequest request = getRequest();
+    QNetworkReply* acessReply;
+    jsonObject.insert("query", query.trimmed());
+    acessReply = acessManager.post(request, QJsonDocument(jsonObject).toJson());
+    while (!acessReply->isFinished())
+    {
+        qApp->processEvents();
+    }
+    QByteArray response_data = acessReply->readAll();
+    if(acessReply->isOpen())
+    {
+        acessReply->close();
+    }
+    acessReply->deleteLater();
+    return response_data;
 }
 
 bool anilist::fgetListasAnoSeason()
@@ -157,9 +186,9 @@ bool anilist::fgetListaAno(const QString &rano){
     else if(QFile::exists("Configurações/Temp/Lists/animeList"+rano+".txt") && rano.toInt() == QDate::currentDate().year() && QDate::currentDate().month() > 10)
         return true;
     //Cria o pedido em javascript
-    QNetworkRequest lrequest(graphqlUrl);
-    lrequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    lrequest.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
+    QNetworkRequest request(graphqlUrl);
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
     QJsonObject json;
     QNetworkAccessManager lacessManager;
 
@@ -182,9 +211,9 @@ bool anilist::fgetListaAno(const QString &rano){
         return false;
     }
 
-    //Post faz o pedido ao servidor lrequest, usando os argumentos em Json
-//    QPointer<QNetworkReply> vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
-    QNetworkReply* vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
+    //Post faz o pedido ao servidor request, usando os argumentos em Json
+//    QPointer<QNetworkReply> vreply = lacessManager.post(request, QJsonDocument(json).toJson());
+    QNetworkReply* vreply = lacessManager.post(request, QJsonDocument(json).toJson());
     //Espera uma resposta
     while (!vreply->isFinished())
     {
@@ -204,24 +233,24 @@ bool anilist::fgetListaAno(const QString &rano){
         vreply->close();
     }
     QJsonDocument jsond = QJsonDocument::fromJson(response_data);
-    QString lastpage = jsond.toJson();
+    QString lastPage = jsond.toJson();
     //Verificamos se é uma mensagem de erro
-    if(lastpage.contains("errors")){
+    if(lastPage.contains("errors")){
         this->thread()->exit(0);
         vreply->deleteLater();
         return false;
     }
-    lastpage = lastpage.toLatin1();
+    lastPage = lastPage.toLatin1();
     //Pega avatar
-    QString llastpage = lastpage.mid(lastpage.lastIndexOf("avatar"));
-    vavatar = llastpage.left(llastpage.indexOf("\"\n"));
+    QString llastPage = lastPage.mid(lastPage.lastIndexOf("avatar"));
+    vavatar = llastPage.left(llastPage.indexOf("\"\n"));
     //Pega total de páginas
-    llastpage = lastpage.mid(lastpage.lastIndexOf("lastPage")+11);
-    lastpage = llastpage.left(llastpage.indexOf(",\n"));
+    llastPage = lastPage.mid(lastPage.lastIndexOf("lastPage")+11);
+    lastPage = llastPage.left(llastPage.indexOf(",\n"));
 
     QFile t("Configurações/Temp/Lists/animeList"+rano+"Temp.txt");
     if(t.open(QIODevice::WriteOnly)){
-        for(int i = 1; i < lastpage.toInt()+1; i++){
+        for(int i = 1; i < lastPage.toInt()+1; i++){
             QFile animeList(":/Anilist/qrc/Anilist/AnimeInfoAno.txt");
             QTextStream textStream(&animeList);
             if(!animeList.open(QIODevice::ReadOnly)){
@@ -233,7 +262,7 @@ bool anilist::fgetListaAno(const QString &rano){
             query.replace("variablePagina", QString::number(i));
             query.replace("variableAno", rano);
             json.insert("query", query.trimmed());
-            vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
+            vreply = lacessManager.post(request, QJsonDocument(json).toJson());
             while (!vreply->isFinished())
             {
                 qApp->processEvents();
@@ -269,10 +298,10 @@ bool anilist::fmudaLista(int rid, const QString &rNovaLista){
     QString auth = "Bearer ";
     auth.append(vtoken);
 
-    QNetworkRequest lrequest(graphqlUrl);
-    lrequest.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
-    lrequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    lrequest.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
+    QNetworkRequest request(graphqlUrl);
+    request.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
     QJsonObject json;
     QNetworkAccessManager lacessManager;
 
@@ -292,7 +321,7 @@ bool anilist::fmudaLista(int rid, const QString &rNovaLista){
     //Insere item no json
     json.insert("query", query);
     //Manda a solicitação de mudança
-    QPointer<QNetworkReply> vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
+    QPointer<QNetworkReply> vreply = lacessManager.post(request, QJsonDocument(json).toJson());
     //Espera solicitação voltar do servidor
     while (!vreply->isFinished())
     {
@@ -323,10 +352,10 @@ bool anilist::fmudaNota(int rid, int rnovaNota){
 
     //Como pegar o nome ou id de usuário pelo token?
     //Posso pegar igual fazia antes,/ sem o token?
-    QNetworkRequest lrequest(graphqlUrl);
-    lrequest.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
-    lrequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    lrequest.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
+    QNetworkRequest request(graphqlUrl);
+    request.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
     QJsonObject json;
     QNetworkAccessManager lacessManager;
 
@@ -346,7 +375,7 @@ bool anilist::fmudaNota(int rid, int rnovaNota){
     //Insere item no json
     json.insert("query", query);
     //Manda a solicitação de mudança
-    QPointer<QNetworkReply> vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
+    QPointer<QNetworkReply> vreply = lacessManager.post(request, QJsonDocument(json).toJson());
 
 
     //Espera solicitação voltar do servidor
@@ -378,10 +407,10 @@ bool anilist::fmudaProgresso(int rid, int rnovoProgresso){
 
     //Como pegar o nome ou id de usuário pelo token?
     //Posso pegar igual fazia antes,/ sem o token?
-    QNetworkRequest lrequest(graphqlUrl);
-    lrequest.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
-    lrequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    lrequest.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
+    QNetworkRequest request(graphqlUrl);
+    request.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
     QJsonObject json;
     QNetworkAccessManager lacessManager;
 
@@ -401,7 +430,7 @@ bool anilist::fmudaProgresso(int rid, int rnovoProgresso){
     //Insere item no json
     json.insert("query", query);
     //Manda a solicitação de mudança
-    QPointer<QNetworkReply> vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
+    QPointer<QNetworkReply> vreply = lacessManager.post(request, QJsonDocument(json).toJson());
 
     //Espera solicitação voltar do servidor
     while (!vreply->isFinished())
@@ -445,10 +474,10 @@ bool anilist::fexcluiAnime(int rid){
     QString auth = "Bearer ";
     auth.append(vtoken);
 
-    QNetworkRequest lrequest(graphqlUrl);
-    lrequest.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
-    lrequest.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    lrequest.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
+    QNetworkRequest request(graphqlUrl);
+    request.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
+    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    request.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
     QJsonObject json;
     QNetworkAccessManager lacessManager;
 
@@ -466,7 +495,7 @@ bool anilist::fexcluiAnime(int rid){
     //Insere item no json
     json.insert("query", query);
     //Manda a solicitação de mudança
-    QPointer<QNetworkReply> vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
+    QPointer<QNetworkReply> vreply = lacessManager.post(request, QJsonDocument(json).toJson());
     if(!vreply->isRunning())
         return false;
     //Espera solicitação voltar do servidor
@@ -508,7 +537,7 @@ bool anilist::fexcluiAnime(int rid){
     //Insere item no json
     json.insert("query", query);
     //Manda a solicitação de mudança
-    vreply = lacessManager.post(lrequest, QJsonDocument(json).toJson());
+    vreply = lacessManager.post(request, QJsonDocument(json).toJson());
     while (!vreply->isFinished())
     {
         qApp->processEvents();

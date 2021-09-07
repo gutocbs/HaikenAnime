@@ -3,6 +3,8 @@
 
 #include <QObject>
 #include <QtNetwork>
+#include <QNetworkRequest>
+#include <QScopedPointer>
 
 #include <QOAuth2AuthorizationCodeFlow>
 #include <QOAuthHttpServerReplyHandler>
@@ -14,6 +16,7 @@
 #include <QJsonDocument>
 #include <QThread>
 
+#include "src/utilities/Enums.h"
 class anilist : public QObject
 {
     Q_OBJECT
@@ -40,10 +43,16 @@ signals:
 private slots:
     bool fgetListaAno(const QString &rano);
 private:
-//    QNetworkReply *vreply = nullptr;
+    QNetworkRequest getRequest();
+    bool getAvatar();
+    bool getMediaList();
+    QJsonDocument getMediaListObject();
+    QString getQuery(Enums::AnilistQuery query);
+    QByteArray post(QString query);
     QString vtoken;
     QString vusername;
     QString vavatar;
+    QString lastPage;
 };
 
 #endif // ANILIST_H
