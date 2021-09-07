@@ -20,7 +20,7 @@ public:
     static bool compareName(QString rnome1, QString rnome2);
     static bool compareName(QStringList nameList, QString rnome2);
     static bool compareEpisodeNumber(Media *media, int episode);
-    static bool isSeasonal(QString listName);
+    static bool isSeasonal(Enums::mediaList);
 
 
 
