@@ -30,6 +30,7 @@
 #include "src/base/Anime/medialoader.h"
 #include "src/utilities/Media/mediacomparer.h"
 #include "src/DTO/MediaList.h"
+#include "src/utilities/Media/mediadownloader.h"
 
 class MainClass : public QObject
 {
@@ -161,8 +162,7 @@ signals:
 
 private:
     void fconnections();
-    void fdownloadCoverImages();
-    void downloadCoverImages();
+    Q_DECL_DEPRECATED void fdownloadCoverImages();
 
     //Classes
     Database *cdatabase;
@@ -173,6 +173,7 @@ private:
     Downloader *cdownloader;
     abaConfig *cabaConfig;
     abaTorrent *cabaTorrent;
+    QPointer<MediaDownloader> mediaDownloader;
 
     QVector<anime*> vlistaSelecionada;
 
@@ -200,7 +201,7 @@ private:
     QStringList vlistaFilaLista;
     QList<int> vlistaFilaSize;
     QMap<QStringList, QString> vlistaAcoes;
-    QMap<QString, MediaList> downloadQueue;
+    QMap<QString, MediaList*> downloadQueue;
 
     QTimer *vtimerCountdown;
     QTimer *vtimerChecaAssistindo;

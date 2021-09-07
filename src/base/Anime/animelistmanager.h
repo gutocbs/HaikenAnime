@@ -28,12 +28,6 @@ public:
     bool compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle);
     bool addMedia(Media *mediaObject, Enums::mediaList);
     bool removeMedia(Media* media, Enums::mediaList mediaList);
-
-    // IMediaListManager interface
-public:
-
-    // IMediaListManager interface
-public:
 };
 
 #endif // ANIMELISTMANAGER_H
