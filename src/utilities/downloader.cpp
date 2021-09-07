@@ -21,10 +21,9 @@ void Downloader::fsetWorker()
     m_workers.append(dw);
 }
 
-//TODO - Fazer função
-void Downloader::setListAndType(QString listName, Enums::mediaType mediaType)
+void Downloader::setListAndType(Enums::mediaList mediaList, Enums::mediaType mediaType)
 {
-    dw->getList(listName, mediaType);
+    dw->getList(mediaList, mediaType);
 }
 
 void Downloader::setListAndType(QString rlista, QString rtipoLista)

@@ -112,7 +112,7 @@ void MainClass::fdownloadCoverImages()
             QTimer::singleShot(1000, this, &MainClass::fdownloadCoverImages);
     }
 }
-
+//TODO - COLOCAR ISSO EM UMA CLASSE SEPARADA
 void MainClass::downloadCoverImages()
 {
     if(!downloadQueue.contains(vlistaAtual) && !MediaComparer::isSeasonal(vlistaAtual))
@@ -122,7 +122,7 @@ void MainClass::downloadCoverImages()
         QTimer::singleShot(5000, this, &MainClass::fdownloadCoverImages);
     else if(!downloadQueue.isEmpty()){
         //Baixa imagens medias
-        cdownloader->setListAndType(downloadQueue.firstKey(), downloadQueue.first().type);
+        cdownloader->setListAndType(downloadQueue.first().list, downloadQueue.first().type);
         for(int i = 0; i < downloadQueue.first().size; i++){
             cdownloader->work(i);
         }
