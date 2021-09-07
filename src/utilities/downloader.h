@@ -5,6 +5,7 @@
 #include <QVector>
 #include <QDebug>
 #include "src/base/downloaderworker.h"
+#include "src/utilities/Enums.h"
 
 class Downloader : public QObject
 {
@@ -20,7 +21,10 @@ signals:
     void sfinishedAnimeTorrent();
 
 public slots:
-    void setListAndType(QString, QString);
+    //Novos
+    void setListAndType(Enums::mediaList mediaList, Enums::mediaType mediaType);
+    //Antigos
+    Q_DECL_DEPRECATED void setListAndType(QString, QString);
     void setAvatar(QString);
     void work(int value);
     void finished();
