@@ -1,5 +1,5 @@
-#ifndef ANIMELISTMANAGER_H
-#define ANIMELISTMANAGER_H
+#ifndef NOVELLISTMANAGER_H
+#define NOVELLISTMANAGER_H
 
 #include <QObject>
 #include "src/DTO/media.h"
@@ -7,13 +7,13 @@
 #include "src/utilities/Media/mediacomparer.h"
 #include "src/utilities/singleton.h"
 
-class AnimeListManager : public IMediaListManager
+class NovelListManager : public IMediaListManager
 {
     Q_OBJECT
-    static AnimeListManager *createInstance();
+    static NovelListManager *createInstance();
 public:
-    explicit AnimeListManager(QObject *parent = nullptr);
-    static AnimeListManager *instance();
+    explicit NovelListManager(QObject *parent = nullptr);
+    static NovelListManager *instance();
     ///QHash<Id, index>
     ///Get index position of media in the media vector
     QPointer<Media> getMediaById(int id);
@@ -28,12 +28,6 @@ public:
     bool compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle);
     bool addMedia(Media *mediaObject, Enums::mediaList);
     bool removeMedia(Media* media, Enums::mediaList mediaList);
-
-    // IMediaListManager interface
-public:
-
-    // IMediaListManager interface
-public:
 };
 
-#endif // ANIMELISTMANAGER_H
+#endif // NOVELLISTMANAGER_H

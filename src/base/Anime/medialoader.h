@@ -21,7 +21,6 @@
 #include "src/base/FileManager/filemanager.h"
 
 //TODO - Fazer singleton
-//TODO - Funções de ler arquivos secundários (nomes alternativos, animes por ano etc)
 class MediaLoader : public QObject
 {
     Q_OBJECT

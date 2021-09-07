@@ -5,6 +5,16 @@ FileManagerLoader::FileManagerLoader(QObject *parent) : MediaDirectories(parent)
 
 }
 
+QStringList FileManagerLoader::getDirectories()
+{
+
+}
+
+QHash<int, QString> FileManagerLoader::getMediaDirectories()
+{
+
+}
+
 bool FileManagerLoader::loadMediaDirectories(bool mock)
 {
     QString fileName = getDirectoriesFileName(mock);

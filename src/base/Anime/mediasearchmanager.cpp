@@ -136,7 +136,7 @@ int MediaSearchManager::getIdFromMediaTitle(const QString &mediaTitle)
 
 
 //TODO - Fazer função
-QPointer<Media> MediaSearchManager::fbuscamediaNoAno(int, const QString &rid)
+QPointer<Media> MediaSearchManager::fbuscaMediaNoAno(int ano, int id)
 {
     return QPointer<Media>();
 }

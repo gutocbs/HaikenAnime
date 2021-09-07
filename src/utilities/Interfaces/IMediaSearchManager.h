@@ -18,7 +18,7 @@ public:
     virtual QString getMediaScoreFromId(int id) = 0;
     virtual QString getMediaTitleFromId(int id) = 0;
     virtual int getIdFromMediaTitle(const QString &mediaTitle) = 0;
-    virtual QPointer<Media> fbuscaAnimeNoAno(int, int id) = 0;
+    virtual QPointer<Media> fbuscaMediaNoAno(int, int id) = 0;
     virtual QPointer<Media> getMediaFromId(int id) = 0;
     virtual QPointer<Media> getMediaFromListIndex(Enums::mediaList list, int posicao) = 0;
     virtual QVector<Media*> getMediaListFromId(int id) = 0;

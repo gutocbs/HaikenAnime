@@ -22,7 +22,6 @@ public:
     virtual QVector<Media*> getAnimeYearlyList(int ano) = 0;
     virtual QPointer<Media> getMediaByIndex(Enums::mediaList mediaList, int index) = 0;
     virtual bool compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle) = 0;
-    virtual void addToHashList(QString mediaId, Enums::mediaList mediaList, Enums::hashList hashList) = 0;
     virtual bool addMedia(Media* mediaObject, Enums::mediaList) = 0;
     virtual bool removeMedia(Media* media, Enums::mediaList mediaList) = 0;
 

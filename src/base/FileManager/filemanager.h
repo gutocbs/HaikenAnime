@@ -21,17 +21,17 @@ class FileManager : public MediaDirectories
 public:
     explicit FileManager(QObject *parent = nullptr);
     static bool getFileExtensions();
-    static bool compareFileToMediaName(Media *media, QString fileName);
+    bool compareFileToMediaName(Media *media, QString fileName);
     static bool compareFileToMediaEpisode(Media *media, QString fileName, int episode);
     static bool openFileOrFolder(const QByteArray &path);
-    static QString searchMediaFolderPath(Media *media);
-    static QString getMediaEpisodePath(Media *media, int episode = 0);
-    static QString getMediaFolderPath(Media *media);
+    QString searchMediaFolderPath(Media *media);
+    QString getMediaEpisodePath(Media *media, int episode = 0);
+    QString getMediaFolderPath(Media *media);
     static QString getMediaName(QString fileName);
     static int getMediaEpisode(QString fileName);
 signals:
 private:
-    static QStringList fileExtensions;
+    QStringList fileExtensions;
 };
 
 #endif // FILEMANAGER_H

@@ -48,6 +48,10 @@ HEADERS += \
     src/base/FileManager/filemanagerloader.h \
     src/base/FileManager/filemanagersaver.h \
     src/base/FileManager/mediadirectories.h \
+    src/base/Manga/mangalistmanager.h \
+    src/base/Manga/mangamanager.h \
+    src/base/Novel/novellistmanager.h \
+    src/base/Novel/novelmanager.h \
     src/base/abaconfig.h \
     src/base/abatorrent.h \
     src/base/anime.h \
@@ -105,6 +109,10 @@ SOURCES += \
     src/base/FileManager/filemanagerloader.cpp \
     src/base/FileManager/filemanagersaver.cpp \
     src/base/FileManager/mediadirectories.cpp \
+    src/base/Manga/mangalistmanager.cpp \
+    src/base/Manga/mangamanager.cpp \
+    src/base/Novel/novellistmanager.cpp \
+    src/base/Novel/novelmanager.cpp \
     src/base/abaconfig.cpp \
     src/base/abatorrent.cpp \
     src/base/arquivos.cpp \

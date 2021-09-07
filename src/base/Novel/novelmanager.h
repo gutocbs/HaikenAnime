@@ -1,5 +1,5 @@
-#ifndef ANIMEMANAGER_H
-#define ANIMEMANAGER_H
+#ifndef NOVELMANAGER_H
+#define NOVELMANAGER_H
 
 #include <QObject>
 #include <QPointer>
@@ -8,10 +8,11 @@
 #include "src/base/Anime/mediasearchmanager.h"
 #include "src/base/Anime/animelistmanager.h"
 
-class AnimeManager : public IMediaManager
+class NovelManager : public IMediaManager
 {
+    Q_OBJECT
 public:
-    explicit AnimeManager(QObject *parent = nullptr);
+    explicit NovelManager(QObject *parent = nullptr);
     void setMediaSearchManager(IMediaSearchManager *mediaSearchManager);
     void setMediaListManager(IMediaListManager *mediaListManager);
 
@@ -27,4 +28,4 @@ private:
     QPointer<IMediaListManager> mediaListManager;
 };
 
-#endif // ANIMEMANAGER_H
+#endif // NOVELMANAGER_H

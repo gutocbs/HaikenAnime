@@ -28,7 +28,7 @@ public:
     QString getMediaScoreFromId(int id);
     QString getMediaTitleFromId(int id);
     int getIdFromMediaTitle(const QString &mediaTitle);
-    QPointer<Media> fbuscamediaNoAno(int, const QString &rid);
+    QPointer<Media> fbuscaMediaNoAno(int ano, int id);
 private:
     QPointer<IMediaListManager> mediaListManager;
 

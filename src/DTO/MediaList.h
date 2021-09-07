@@ -19,10 +19,6 @@ public:
     Enums::mediaType type;
     Enums::mediaList list;
     int size;
-
-signals:
-
-public slots:
 };
 
 
