@@ -82,6 +82,7 @@ void MainClass::fconnections()
 
 }
 
+//TODO - REMOVER QUANDO TIVER A PARTE DE DOWNLOAD DE IMAGENS PRONTO
 void MainClass::fdownloadCoverImages()
 {
     if(!vlistaFilaLista.contains(vlistaAtual) && !vlistaAtual.contains("Fall", Qt::CaseInsensitive)
@@ -108,6 +109,31 @@ void MainClass::fdownloadCoverImages()
         }
         vlistaFilaSize.removeFirst();
         if(!cdownloader->isBusy() && !vlistaFilaTipo.isEmpty())
+            QTimer::singleShot(1000, this, &MainClass::fdownloadCoverImages);
+    }
+}
+
+void MainClass::downloadCoverImages()
+{
+    if(!downloadQueue.contains(vlistaAtual) && !MediaComparer::isSeasonal(vlistaAtual))
+        downloadQueue.insert(vlistaAtual,MediaList(mediaType, mediaList,vlistaSelecionada.size()));
+
+    if(cdownloader->isBusy() && !downloadQueue.isEmpty())
+        QTimer::singleShot(5000, this, &MainClass::fdownloadCoverImages);
+    else if(!downloadQueue.isEmpty()){
+        //Baixa imagens medias
+        cdownloader->setListAndType(downloadQueue.firstKey(), downloadQueue.first().type);
+        for(int i = 0; i < downloadQueue.first().size; i++){
+            cdownloader->work(i);
+        }
+        QTimer::singleShot(1000, this, &MainClass::sbaixouImagensMedias);
+        //Baixa imagens grandes
+        for(int i = 0; i < downloadQueue.first().size; i++){
+            cdownloader->workBig(i);
+        }
+        downloadQueue.remove(downloadQueue.firstKey());
+        //Caso já tenha iniciado os downloads mas a fila ainda não está vazia, verifica novamente após um minuto
+        if(!cdownloader->isBusy() && !downloadQueue.isEmpty())
             QTimer::singleShot(1000, this, &MainClass::fdownloadCoverImages);
     }
 }

@@ -28,6 +28,8 @@
 #include "src/base/Anime/mediasearchmanager.h"
 #include "src/utilities/Interfaces/IMediaSearchManager.h"
 #include "src/base/Anime/medialoader.h"
+#include "src/utilities/Media/mediacomparer.h"
+#include "src/DTO/MediaList.h"
 
 class MainClass : public QObject
 {
@@ -160,6 +162,7 @@ signals:
 private:
     void fconnections();
     void fdownloadCoverImages();
+    void downloadCoverImages();
 
     //Classes
     Database *cdatabase;
@@ -184,6 +187,8 @@ private:
     QString vordemLista;
     QString vlistaAtual;
     Database::type vtipoAtual;
+    Enums::mediaType mediaType;
+    Enums::mediaList mediaList;
     janela vjanelaAtual;
 
     QMetaEnum vmetaEnumLista;
@@ -195,6 +200,7 @@ private:
     QStringList vlistaFilaLista;
     QList<int> vlistaFilaSize;
     QMap<QStringList, QString> vlistaAcoes;
+    QMap<QString, MediaList> downloadQueue;
 
     QTimer *vtimerCountdown;
     QTimer *vtimerChecaAssistindo;
