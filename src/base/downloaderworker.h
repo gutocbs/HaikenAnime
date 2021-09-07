@@ -16,6 +16,10 @@
 #include "src/base/confbase.h"
 #include "src/base/abaconfig.h"
 
+
+#include "src/utilities/Enums.h"
+#include "src/base/Anime/animelistmanager.h"
+
 class DownloaderWorker : public QObject
 {
     Q_OBJECT
@@ -49,7 +53,8 @@ public slots:
     void ffinished();
     void workBig(int value);
     void ffinishedBig();
-    void fselecionaLista(QString, QString);
+    Q_DECL_DEPRECATED void fselecionaLista(QString, QString);
+    void getList(Enums::mediaList mediaList, Enums::mediaType);
 
 private slots:
     void onFinished(QNetworkReply*);
@@ -75,6 +80,7 @@ private:
     QPointer<anime> animeSelecionado;
     QPointer<Database> cdatabase;
     QPointer<confBase> cconfBase;
+    QPointer<IMediaListManager> listManager;
 };
 
 #endif // DOWNLOADERWORKER_H
