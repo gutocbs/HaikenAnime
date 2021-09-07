@@ -67,6 +67,7 @@ HEADERS += \
     src/utilities/Interfaces/IMediaListManager.h \
     src/utilities/Interfaces/IMediaManager.h \
     src/utilities/Interfaces/IMediaSearchManager.h \
+    src/utilities/Media/mediadownloader.h \
     src/utilities/Media/mediautil.h \
     src/utilities/Media/mediacomparer.h \
     src/utilities/arquivoanime.h \
@@ -122,6 +123,7 @@ SOURCES += \
     src/base/downloaderworker.cpp \
     src/base/leitorlistaanimes.cpp \
     src/clients/anilist.cpp \
+    src/utilities/Media/mediadownloader.cpp \
     src/utilities/Media/mediautil.cpp \
     src/utilities/Media/mediacomparer.cpp \
     src/utilities/client.cpp \
