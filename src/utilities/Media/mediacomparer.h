@@ -1,5 +1,5 @@
-#ifndef FORMATAPALAVRAS_H
-#define FORMATAPALAVRAS_H
+#ifndef MEDIACOMPARER_H
+#define MEDIACOMPARER_H
 
 #include <QObject>
 #include <QDebug>
@@ -20,6 +20,7 @@ public:
     static bool compareName(QString rnome1, QString rnome2);
     static bool compareName(QStringList nameList, QString rnome2);
     static bool compareEpisodeNumber(Media *media, int episode);
+    static bool isSeasonal(QString listName);
 
 
 
@@ -45,4 +46,4 @@ private:
     static QString fremoveTV(QString);
 };
 
-#endif // FORMATAPALAVRAS_H
+#endif // MEDIACOMPARER_H

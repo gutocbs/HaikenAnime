@@ -12,6 +12,14 @@ bool MediaComparer::compareEpisodeNumber(Media *media, int episode)
     return false;
 }
 
+bool MediaComparer::isSeasonal(QString listName)
+{
+    if(listName.contains("Fall", Qt::CaseInsensitive) || listName.contains("Winter", Qt::CaseInsensitive)
+            || listName.contains("Summer", Qt::CaseInsensitive) || listName.contains("Spring", Qt::CaseInsensitive))
+        return true;
+    return false;
+}
+
 //Vamos testar todas as combinações possíveis. Se for igual em alguma, retornamos true.
 //se não for igual em nenhuma, é false.
 bool MediaComparer::compareName(QString rnome1, QString rnome2)
