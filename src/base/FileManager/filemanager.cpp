@@ -1,8 +1,7 @@
 #include "filemanager.h"
 
-FileManager::FileManager(QObject *parent) : QObject(parent)
+FileManager::FileManager(QObject *parent) : MediaDirectories(parent)
 {
-
 }
 
 //TODO - Ler um arquivo pra pegar todos os tipos de extensões permitidos e salvar em um vetor
@@ -40,16 +39,16 @@ QString FileManager::getMediaEpisodePath(Media *media, int episode)
 ///Returns the folder path if found, otherwise returns an empty QString.
 QString FileManager::getMediaFolderPath(Media *media)
 {
-    QHash<QString,QString> mediaFolders = FileManagerLoader::getMediaDirectories();
-    if(mediaFolders.contains(media->vid)){
-        QDir mediaDirectory(mediaFolders.value(media->vid));
+    QHash<int,QString> mediaFolders = FileManagerLoader::getMediaDirectories();
+    if(mediaFolders.contains(media->id)){
+        QDir mediaDirectory(mediaFolders.value(media->id));
         if(mediaDirectory.exists())
-            return mediaFolders.value(media->vid);
+            return mediaFolders.value(media->id);
     }
 
     QString path = searchMediaFolderPath(media);
     if(!path.isEmpty()){
-        FileManagerSaver::addMediaDirectory(media->vid, path);
+        FileManagerSaver::addMediaDirectory(media->id, path);
         return path;
     }
     return "";
@@ -59,8 +58,8 @@ QString FileManager::getMediaFolderPath(Media *media)
 bool FileManager::compareFileToMediaName(Media *media, QString fileName)
 {
     QString mediaName = getMediaName(fileName);
-    if(MediaComparer::compareName(media->vnome,mediaName) || MediaComparer::compareName(media->vnomeIngles,mediaName)
-                                                          || MediaComparer::compareName(media->vnomeAlternativo, mediaName))
+    if(MediaComparer::compareName(media->originalName,mediaName) || MediaComparer::compareName(media->englishName,mediaName)
+                                                          || MediaComparer::compareName(media->customNames, mediaName))
         return true;
     return false;
 }

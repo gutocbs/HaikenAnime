@@ -11,11 +11,11 @@ public:
     using QObject::QObject;
     virtual void setMediaSearchManager(IMediaSearchManager* mediaSearchManager) = 0;
     virtual void setMediaListManager(IMediaListManager* mediaListManager) = 0;
-    virtual bool updateMediaList(const QString &mediaId, Enums::mediaList newList) = 0;
-    virtual bool updateScore(const QString &mediaId, const QString &newScore) = 0;
-    virtual bool updateProgress(const QString &mediaId, const QString &mediaProgress) = 0;
-    virtual bool deleteFromList(const QString &mediaId) = 0;
-    virtual bool insertCustomName(const QString &mediaId, const QStringList &mediaTitle) = 0;
+    virtual bool updateMediaList(int id, Enums::mediaList newList) = 0;
+    virtual bool updateScore(int id, const QString &newScore) = 0;
+    virtual bool updateProgress(int id, int mediaProgress) = 0;
+    virtual bool deleteFromList(int id) = 0;
+    virtual bool insertCustomName(int id, const QStringList &mediaTitle) = 0;
 
     //TODO - Funções de get da midia - Ex: Get Name
 };

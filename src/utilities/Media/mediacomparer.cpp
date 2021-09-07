@@ -7,7 +7,7 @@ MediaComparer::MediaComparer(QObject *parent) : QObject(parent)
 
 bool MediaComparer::compareEpisodeNumber(Media *media, int episode)
 {
-    if(episode == media->vnumEpisodiosAssistidos+1 || episode == MediaUtil::getNumberOfWatchedEpisodes(media)+1)
+    if(episode == media->progress+1 || episode == MediaUtil::getNumberOfWatchedEpisodes(media)+1)
         return true;
     return false;
 }

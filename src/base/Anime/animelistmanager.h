@@ -4,7 +4,7 @@
 #include <QObject>
 #include "src/DTO/media.h"
 #include "src/utilities/Interfaces/IMediaListManager.h"
-#include "src/utilities/formatapalavras.h"
+#include "src/utilities/Media/mediacomparer.h"
 #include "src/utilities/singleton.h"
 
 class AnimeListManager : public IMediaListManager
@@ -14,13 +14,11 @@ class AnimeListManager : public IMediaListManager
 public:
     explicit AnimeListManager(QObject *parent = nullptr);
     static AnimeListManager *instance();
-
-    QHash<QString, int> getHashMediaIndexById();
-    QHash<QString, QString> getHashMediaListById();
-    QHash<QString, QStringList> getHashMediaNamesById(Enums::hashList mediaList);
-    void addToHash(QString id, int index);
-    void addToHash(QString id, QString mediaList);
-    void addToHash(QString id, QStringList mediaNames, Enums::hashList hashList);
+    ///QHash<Id, index>
+    ///Get index position of media in the media vector
+    QPointer<Media> getMediaById(int id);
+    QHash<int, Media *> getHashMediaById();
+    void addToHash(QPointer<Media> media);
     void addToHashList(QString mediaId, Enums::mediaList mediaList, Enums::hashList hashList);
 
     QVector<Media*> getMediaList(Enums::mediaList mediaList, QString searchArgument = "");
@@ -31,6 +29,12 @@ public:
     bool compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle);
     bool addMedia(Media *mediaObject, Enums::mediaList);
     bool removeMedia(Media* media, Enums::mediaList mediaList);
+
+    // IMediaListManager interface
+public:
+
+    // IMediaListManager interface
+public:
 };
 
 #endif // ANIMELISTMANAGER_H

@@ -16,11 +16,11 @@ public:
     void setMediaSearchManager(IMediaSearchManager *mediaSearchManager);
     void setMediaListManager(IMediaListManager *mediaListManager);
 
-    bool updateMediaList(const QString &mediaId, Enums::mediaList newList);
-    bool updateScore(const QString &mediaId, const QString &newScore);
-    bool updateProgress(const QString &mediaId, const QString &mediaProgress);
-    bool deleteFromList(const QString &mediaId);
-    bool insertCustomName(const QString &mediaId, const QStringList &mediaTitle);
+    bool updateMediaList(int id, Enums::mediaList newList);
+    bool updateScore(int id, const QString &newScore);
+    bool updateProgress(int id, int mediaProgress);
+    bool deleteFromList(int id);
+    bool insertCustomName(int id, const QStringList &mediaTitle);
 
 
 private:

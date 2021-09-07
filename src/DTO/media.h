@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QStringList>
 #include <QDate> //Pega data de estreia e season
+#include "src/utilities/Enums.h"
 
 class Media : public QObject
 {
@@ -11,37 +12,32 @@ class Media : public QObject
 public:
     explicit Media(QObject *parent = nullptr){
         Q_UNUSED(parent)
-        vfinalizado = false;
-        vtemporada = 0;
+        complete = false;
+        seasonNumber = 0;
     }
-    QString vnome;
-    QString vnomeIngles;
-    QString vnomeJapones;
-    QStringList vnomeAlternativo; //StringList por que pode ter vários nomes alternativos
-    QString vnumEpisodiosTotais;
-    QString vnumEpisodiosAssistidos;
-    QString vnumProximoEpisodioLancado;
-    QString vnotaMediaSite;
-    QString vLinkImagemMedia;
-    QString vnotaMediaPessoal;
-    QString vstatus;
-    QString vsinopse;
-    QString vid;
-    QString vseason;
-    QString vSeasonSemAno;
-    QString vlista; //Esse atributo será usado para a função de busca e para função de mudar a lista do anime
-    QString vformato; //Usado pra organizar a lista
-    QString vdataEpisodio;
-    QString vstream;
-    QString vdatabaseSite;
-    QDate vdataEstreia;
-    bool vfinalizado;
-    int vtemporada;
-    //Adicionar mais depois
-
-signals:
-
-public slots:
+    int id;
+    QString originalName;
+    QString englishName;
+    QString japaneseName;
+    QStringList customNames;
+    int totalEpisodes;
+    int progress;
+    int nextNewEpisode;
+    QString nextAiringEpisodeDate;//MON 23 13:00
+    QString meanScore;
+    QString coverURL;
+    QString personalScore;
+    QString status;
+    QString synopsis;
+    QString yearSeason;
+    QString cleanSeason;
+    Enums::mediaList mediaList; //Esse atributo será usado para a função de busca e para função de mudar a lista do anime
+    Enums::mediaType format; //Usado pra organizar a lista
+    QString siteURL;
+    QDate startDate;
+    bool complete;
+    int seasonNumber;
+    int mediaListIndex;
 };
 
 #endif // MEDIA_H

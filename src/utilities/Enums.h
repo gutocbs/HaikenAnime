@@ -12,7 +12,7 @@ public:
     Q_ENUM(hashList)
     enum mediaType{ANIME, MANGA, NOVEL, SEASON};
     Q_ENUM(mediaType)
-    enum mediaList{CURRENT, COMPLETED, PAUSED, DROPPED, PLANNING, SEARCH, WINTER, SUMMER, FALL, SPRING, YEAR};
+    enum mediaList{CURRENT, COMPLETED, PAUSED, DROPPED, PLANNING, SEARCH, WINTER, SUMMER, FALL, SPRING, YEAR, NOLIST};
     Q_ENUM(mediaList)
     enum mediaOrder{Title, StartDate, Progress, Score, Type};
     Q_ENUM(mediaOrder)

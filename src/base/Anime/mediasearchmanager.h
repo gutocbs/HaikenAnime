@@ -14,23 +14,25 @@ public:
     explicit MediaSearchManager(QObject *parent = nullptr, IMediaListManager* mediaListManager = nullptr);
     void setMediaListManager(IMediaListManager *mediaListManager);
     QVector<Media*> searchMedia(const QString &rnome);
-    int getMediaListIndexFromId(const QString &ridAnime);
-    QString buscaIDRapido(const QString &rnomeAnime);
-    QString getMediaListNameFromId(const QString &ridAnime);
-    QString getMediaEpisodeFromId(const QString &rid);
-    QString getMediaScoreFromId(const QString &rid);
-    QString getMediaTitleFromId(const QString &rid);
-    QString getIdFromMediaTitle(const QString &rid);
-    QPointer<Media> fbuscaAnimeNoAno(int, const QString &rid);
-    QPointer<Media> getMediaFromId(const QString &rid);
-    QPointer<Media> getMediaFromListIndex(const QString &rlista, int posicao);
-    QVector<Media*> getMediaListFromId(const QString &id);
+    int buscaIDRapido(const QString &rnomeAnime);
+    QPointer<Media> fbuscaAnimeNoAno(int, int idAnime);
+    QPointer<Media> getMediaFromId(int rid);
+    QVector<Media*> getMediaListFromId(int id);
     void loadListNames();
     void appendToList(QVector<Media*> &mediaList, Enums::mediaList list, int position);
     QVector<Media*> getMediaList(const QString &listName);
+    QPointer<Media> getMediaFromListIndex(Enums::mediaList list, int posicao);
+    QStringList getNamesById(int id);
 
+    int getMediaEpisodeFromId(int idMedia);
+    QString getMediaScoreFromId(int id);
+    QString getMediaTitleFromId(int id);
+    int getIdFromMediaTitle(const QString &mediaTitle);
+    QPointer<Media> fbuscamediaNoAno(int, const QString &rid);
 private:
     QPointer<IMediaListManager> mediaListManager;
+
+    // IMediaSearchManager interface
 };
 
 #endif // MEDIASEARCHMANAGER_H

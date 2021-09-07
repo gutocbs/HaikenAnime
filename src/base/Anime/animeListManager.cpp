@@ -15,67 +15,16 @@ AnimeListManager *AnimeListManager::instance()
     return Singleton<AnimeListManager>::instance(AnimeListManager::createInstance);
 }
 
-QHash<QString, int> AnimeListManager::getHashMediaIndexById()
+QPointer<Media> AnimeListManager::getMediaById(int id)
 {
-//    if(!vdatabaseReady)
-//        return QHash<QString, QStringList>();
-    return hashMediaIndexById;
+    return hashMediaById.value(id);
 }
 
-QHash<QString, QString> AnimeListManager::getHashMediaListById()
+QHash<int, Media *> AnimeListManager::getHashMediaById()
 {
-//    if(!vdatabaseReady)
-//        return QHash<QString, QStringList>();
-    return hashMediaListById;
+    return hashMediaById;
 }
 
-QHash<QString, QStringList> AnimeListManager::getHashMediaNamesById(Enums::hashList mediaList)
-{
-//    if(!vdatabaseReady)
-//        return QHash<QString, QStringList>();
-    switch(mediaList){
-    case Enums::LISTA:
-        break;
-    case Enums::POSICAO:
-        break;
-    case Enums::NOMEALTERNATIVO:
-        return hashMediaCustomNamesById;
-    case Enums::NOME:
-        return hashMediaNameById;
-    }
-    return QHash<QString, QStringList>();
-}
-
-void AnimeListManager::addToHash(QString id, int index)
-{
-    hashMediaIndexById.insert(id, index);
-}
-
-void AnimeListManager::addToHash(QString id, QString mediaList)
-{
-    hashMediaListById.insert(id, mediaList);
-}
-
-void AnimeListManager::addToHash(QString id, QStringList mediaNames, Enums::hashList hashList)
-{
-    switch(hashList){
-    case Enums::LISTA:
-        break;
-    case Enums::POSICAO:
-        break;
-    case Enums::NOMEALTERNATIVO:
-        hashMediaCustomNamesById.insert(id, mediaNames);
-        break;
-    case Enums::NOME:
-        if(!hashMediaNameById.contains(id))
-            hashMediaNameById.insert(id, mediaNames);
-        else
-            hashMediaNameById[id].append(mediaNames);
-        break;
-    }
-}
-
-//TODO - retornar lista de ano
 QVector<Media*> AnimeListManager::getMediaList(Enums::mediaList mediaList, QString searchArgument)
 {
     switch (mediaList) {
@@ -105,7 +54,7 @@ QVector<Media*> AnimeListManager::getMediaList(Enums::mediaList mediaList, QStri
             //Checa se a lista é um número válido
             searchArgument.toInt(&ok);
             if(ok){
-    //            return returnAnimeYearlyList(listString.toInt());
+                return getAnimeYearlyList(searchArgument.toInt());
             }
         }
         break;
@@ -120,42 +69,42 @@ QVector<Media*> AnimeListManager::getSortList(Enums::mediaOrder order, Enums::or
     case Enums::Ascending:
         switch (order) {
         case Enums::Title:
-            std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{ return a->vnome < b->vnome; });
+            std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{ return a->originalName < b->originalName; });
             break;
         case Enums::StartDate:
-            std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{ return a->vdataEstreia < b->vdataEstreia;});
+            std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{ return a->startDate < b->startDate;});
             break;
         case Enums::Progress:
             std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{
-                return a->vnumEpisodiosAssistidos.toInt() < b->vnumEpisodiosAssistidos.toInt(); });
+                return a->progress < b->progress; });
             break;
         case Enums::Score:
             std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{
-                return a->vnotaMediaPessoal.toInt() < b->vnotaMediaPessoal.toInt() ;});
+                return a->personalScore.toInt() < b->personalScore.toInt() ;});
             break;
         case Enums::Type:
-            std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{ return a->vformato < b->vformato ;});
+            std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{ return a->format < b->format ;});
             break;
         }
         break;
     case Enums::Descending:
         switch (order) {
         case Enums::Title:
-            std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{ return a->vnome > b->vnome; });
+            std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{ return a->originalName > b->originalName; });
             break;
         case Enums::StartDate:
-            std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{ return a->vdataEstreia > b->vdataEstreia;});
+            std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{ return a->startDate > b->startDate;});
             break;
         case Enums::Progress:
             std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{
-                return a->vnumEpisodiosAssistidos.toInt() > b->vnumEpisodiosAssistidos.toInt(); });
+                return a->progress > b->progress; });
             break;
         case Enums::Score:
             std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{
-                return a->vnotaMediaPessoal.toInt() > b->vnotaMediaPessoal.toInt() ;});
+                return a->personalScore.toInt() > b->personalScore.toInt() ;});
             break;
         case Enums::Type:
-            std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{ return a->vformato > b->vformato ;});
+            std::sort(tempList.begin(),tempList.end(),[](Media* a, Media* b)->bool{ return a->format > b->format ;});
             break;
         }
         break;
@@ -166,7 +115,7 @@ QVector<Media*> AnimeListManager::getSortList(Enums::mediaOrder order, Enums::or
 //TODO - Fazer função
 QVector<Media *> AnimeListManager::getAnimeYearlyList(int ano)
 {
-
+    return QVector<Media*>();
 }
 
 QPointer<Media> AnimeListManager::getMediaByIndex(Enums::mediaList mediaList, int index)
@@ -177,15 +126,14 @@ QPointer<Media> AnimeListManager::getMediaByIndex(Enums::mediaList mediaList, in
     return nullptr;
 }
 
-//TODO - Fazer formata palavras ser estático
 bool AnimeListManager::compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle)
 {
-//    if(FormataPalavras::fcomparaNomes(oficialTitle, searchedTitle) || FormataPalavras::fcomparaNomes(englishTitle, searchedTitle))
-//        return true;
-//    foreach(QString alternativeTitle, alternativeTitles){
-//        if(FormataPalavras::fcomparaNomes(alternativeTitle, searchedTitle))
-//            return true;
-//    }
+    if(MediaComparer::compareName(oficialTitle, searchedTitle) || MediaComparer::compareName(englishTitle, searchedTitle))
+        return true;
+    foreach(QString alternativeTitle, alternativeTitles){
+        if(MediaComparer::compareName(alternativeTitle, searchedTitle))
+            return true;
+    }
     return false;
 }
 
@@ -213,12 +161,7 @@ bool AnimeListManager::addMedia(Media *mediaObject, Enums::mediaList mediaList)
         return false;
     }
     mediaVector->append(mediaObject);
-    addToHash(mediaObject->vid, mediaVector->indexOf(mediaVector->last()));
-    addToHash(mediaObject->vid,Enums::enumMediaListToQString(mediaList));
-    addToHash(mediaObject->vid, mediaObject->vnomeAlternativo, Enums::hashList::NOMEALTERNATIVO);
-    addToHash(mediaObject->vid, QStringList(mediaObject->vnomeIngles), Enums::hashList::NOME);
-    addToHash(mediaObject->vid, QStringList(mediaObject->vnome), Enums::hashList::NOME);
-    addToHash(mediaObject->vid, QStringList(mediaObject->vnomeJapones), Enums::hashList::NOME);
+    hashMediaById.insert(mediaObject->id, mediaObject);
     return true;
 }
 
@@ -243,28 +186,11 @@ bool AnimeListManager::removeMedia(Media* media, Enums::mediaList mediaList)
     default:
         return false;
     }
+    hashMediaById.remove(media->id);
     return true;
 }
 
-void AnimeListManager::addToHashList(QString mediaId, Enums::mediaList mediaList, Enums::hashList hashList)
+void AnimeListManager::addToHash(QPointer<Media> media)
 {
-    QVector<Media*> tempList = getMediaList(mediaList);
-    for(int i = 0; i < tempList.size(); i++){
-        if(tempList[i]->vid.compare(mediaId) == 0){
-            switch(hashList){
-            case Enums::LISTA:
-                addToHash(mediaId, Enums::enumMediaListToQString(mediaList));
-                break;
-            case Enums::POSICAO:
-                addToHash(mediaId, i);
-                break;
-            case Enums::NOMEALTERNATIVO:
-                addToHash(mediaId, tempList[i]->vnomeAlternativo, hashList);
-                break;
-            case Enums::NOME:
-                addToHash(mediaId, QStringList(tempList[i]->vnome), hashList);
-                break;
-            }
-        }
-    }
+    hashMediaById.insert(media->id, media);
 }

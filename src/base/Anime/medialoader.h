@@ -39,6 +39,8 @@ public:
     QString getNextEpisode(QString nextAiringEpisodeObject);
     QString getNextEpisodeDate(QString objectName);
     QString getDayOfTheWeek(QDateTime secondsSinceEpoch);
+    Enums::mediaType getMediaTypeFromKey(QString key);
+    Enums::mediaList getMediaListFromKey(QString key);
     bool fchecaDatabaseReady();
     void finsereDataHashId(QString tipo, QString lista, QString id, QStringList nomes);
     void insereDataHashPosicao(Enums::mediaType type, QString id, int posicao);

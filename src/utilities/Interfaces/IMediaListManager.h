@@ -12,12 +12,9 @@ class IMediaListManager : public QObject{
 public:
     //TODO - Transformar todas as funções voids em bool ou int
     using QObject::QObject;
-    virtual QHash<QString, int> getHashMediaIndexById() = 0;
-    virtual QHash<QString, QString> getHashMediaListById() = 0;
-    virtual QHash<QString, QStringList> getHashMediaNamesById(Enums::hashList) = 0;
-    virtual void addToHash(QString id, int index) = 0;
-    virtual void addToHash(QString id, QString mediaList) = 0;
-    virtual void addToHash(QString id, QStringList mediaNames, Enums::hashList hashList) = 0;
+    virtual QPointer<Media> getMediaById(int id) = 0;
+    virtual QHash<int, Media*> getHashMediaById() = 0;
+    virtual void addToHash(QPointer<Media> media) = 0;
 
     //return functions
     virtual QVector<Media*> getMediaList(Enums::mediaList mediaList, QString searchArgument = "") = 0;
@@ -43,10 +40,7 @@ protected:
     QVector<Media*> mediaListSeasonFall;
     QVector<Media*> mediaListSeasonSpring;
 
-    QHash<QString,QString> hashMediaListById;
-    QHash<QString,int> hashMediaIndexById;
-    QHash<QString,QStringList> hashMediaNameById;
-    QHash<QString, QStringList> hashMediaCustomNamesById;
+    QHash<int,Media*> hashMediaById;
     QHash<int,QString> hashMediaListSizeByYear;
 };
 

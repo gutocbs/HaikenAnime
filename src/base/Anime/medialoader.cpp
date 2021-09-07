@@ -6,10 +6,7 @@ MediaLoader::MediaLoader(QObject *parent, IMediaListManager *mediaListManager) :
 }
 
 //TODO - Organizar arquivos nas pastas certas
-//TODO - Mudar dados de Media para usar enums
-//TODO - Fazer teste para verificar se os hashs tem o mesmo número de entradas que a lista
 //TODO - Passar argumento int pra função, pra ler listas de anos
-//TODO - Mudar o arquivo de leitura pra ler o novo padrão
 bool MediaLoader::loadMediaFromFile(bool mock)
 {
     finishedLoading = false;
@@ -23,6 +20,8 @@ bool MediaLoader::loadMediaFromFile(bool mock)
         Enums::mediaType mediaTypeEnum = Enums::QStringToMediaType(getQStringValueFromKey("format"));
         Enums::mediaList mediaListEnum = Enums::QStringToMediaList(mediaList.at(i).toObject().value("status").toString());
         QPointer<Media> media = getMedia();
+        media->mediaList = mediaListEnum;
+        media->format = mediaTypeEnum;
         //TODO - Mudar mediaListManager de acordo com o tipo de media
         mediaListManager->addMedia(media, mediaListEnum);
     }
@@ -54,26 +53,22 @@ QJsonArray MediaLoader::getMediaListArray(QString fileName)
 QPointer<Media> MediaLoader::getMedia()
 {
     QPointer<Media> media(new Media);
-    media->vid = QString::number(getNumberValueFromKey("id"));
-    media->vnome = getQStringValueFromKey("title","romaji");
-    media->vnomeIngles = getQStringValueFromKey("title", "english");
-    hashMediaNamesById = mediaListManager->getHashMediaNamesById(Enums::NOMEALTERNATIVO);
-    if(!hashMediaNamesById.contains(media->vid))
-        hashMediaNamesById.insert(media->vid, getQStringListValuesFromKey("synonyms"));
-    media->vnomeAlternativo = hashMediaNamesById[media->vid];
-    media->vnotaMediaSite = getQStringValueFromKey("averageScore");
-    media->vLinkImagemMedia = getQStringValueFromKey("coverImage", "large");
-    media->vnotaMediaPessoal = getQStringValueFromKey("score");
-    media->vstatus = getQStringValueFromKey("status");
-    media->vsinopse = getQStringValueFromKey("description");
-    media->vseason = getQStringValueFromKey("season") + " " + getQStringValueFromKey("startDate", "year");
-    media->vnumProximoEpisodioLancado = getNextEpisode(getQStringValueFromKey("nextAiringEpisode"));
-    media->vnumEpisodiosAssistidos = getQStringValueFromKey("progress");
-    media->vformato = getQStringValueFromKey("format");
-     media->vdataEstreia = getStartDate(getQStringValueFromKey("startDate"));
-    media->vdataEpisodio = getNextEpisodeDate("nextAiringEpisode");
-    media->vdatabaseSite = getQStringValueFromKey("siteUrl");
-//        //TODO - FAZER UMA CLASSE CHAMADA MEDIA HELPER QUE IRÁ PEGAR QUAL A TEMPORADA CERTA
+    media->id = getNumberValueFromKey("id");
+    media->originalName = getQStringValueFromKey("title","romaji");
+    media->englishName = getQStringValueFromKey("title", "english");
+    media->customNames = getQStringListValuesFromKey("synonyms");
+    media->meanScore = getQStringValueFromKey("averageScore");
+    media->coverURL = getQStringValueFromKey("coverImage", "large");
+    media->personalScore = getQStringValueFromKey("score");
+    media->status = getQStringValueFromKey("status");
+    media->synopsis = getQStringValueFromKey("description");
+    media->yearSeason = getQStringValueFromKey("season") + " " + getQStringValueFromKey("startDate", "year");
+    media->nextAiringEpisodeDate = getNextEpisode(getQStringValueFromKey("nextAiringEpisode"));
+    media->progress = getNumberValueFromKey("progress");
+    media->startDate = getStartDate(getQStringValueFromKey("startDate"));
+    media->nextAiringEpisodeDate = getNextEpisodeDate("nextAiringEpisode");
+    media->siteURL = getQStringValueFromKey("siteUrl");
+    //        //TODO - FAZER UMA CLASSE CHAMADA MEDIA HELPER QUE IRÁ PEGAR QUAL A TEMPORADA CERTA
 //        media->vtemporada = getNumberValueFromKey("nextAiringEpisode");
     return media;
 }
@@ -186,4 +181,35 @@ QString MediaLoader::getDayOfTheWeek(QDateTime secondsSinceEpoch)
         break;
     }
     return dayOfTheWeekString;
+}
+
+Enums::mediaType MediaLoader::getMediaTypeFromKey(QString key)
+{
+    QString format;
+    if(mediaObject.contains(key))
+        format = mediaObject.value(key).toInt();
+    if(format.compare("MANGA", Qt::CaseInsensitive) == 0 || format.compare("ONE SHOT", Qt::CaseInsensitive) == 0)
+        return Enums::mediaType::MANGA;
+    else if(format.compare("NOVEL", Qt::CaseInsensitive) == 0)
+        return Enums::mediaType::NOVEL;
+    return Enums::mediaType::ANIME;
+}
+
+Enums::mediaList MediaLoader::getMediaListFromKey(QString key)
+{
+    Enums::mediaList mediaList = Enums::CURRENT;
+    QString list;
+    if(mediaObject.contains(key))
+        list = mediaObject.value(key).toInt();
+    if(list.compare(Enums::enumMediaListToQString(Enums::CURRENT), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::CURRENT;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::COMPLETED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::COMPLETED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::PAUSED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::PAUSED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::DROPPED), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::DROPPED;
+    else if(list.compare(Enums::enumMediaListToQString(Enums::PLANNING), Qt::CaseInsensitive) == 0)
+        mediaList = Enums::PLANNING;
+    return mediaList;
 }
