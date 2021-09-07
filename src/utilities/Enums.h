@@ -18,8 +18,6 @@ public:
     Q_ENUM(mediaOrder)
     enum orderType{Ascending, Descending};
     Q_ENUM(orderType)
-    enum AnilistQuery{AnimeInfo};
-    Q_ENUM(AnilistQuery)
     virtual ~Enums() = 0;
 
     static hashList QStringToHashList(QString enumName){

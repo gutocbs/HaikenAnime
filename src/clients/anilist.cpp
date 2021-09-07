@@ -10,81 +10,30 @@ anilist::anilist(QObject *parent) : QObject(parent)
 anilist::~anilist(){
 }
 
-//Sair da thread ao fechar o programa
+//TODO - Sair da thread ao fechar o programa
 bool anilist::fgetList(){
     getAvatar();
     getMediaList();
     return true;
 }
 
-QNetworkRequest anilist::getRequest()
+QNetworkRequest anilist::getRequest(bool auth)
 {
     QNetworkRequest request(graphqlUrl);
+    if(auth){
+        QString token = "Bearer ";
+        token.append(vtoken);
+        request.setRawHeader(QByteArray("Authorization"), token.toUtf8());
+    }
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
     return request;
 }
 
-//TODO - Refatorar
 bool anilist::getAvatar()
 {
-    //Cria o pedido em javascript
-    QNetworkRequest request = getRequest();
-    QJsonObject json;
-    QNetworkAccessManager acessManager;
-
-    //Query que irá solicitar o avatar e o número de páginas que temos que pegar
-    QFile avatarTotalPages(":/Anilist/qrc/Anilist/AvatarTotalPages.txt");
-    QTextStream textStream(&avatarTotalPages);
-    if(!avatarTotalPages.open(QIODevice::ReadOnly)){
-        return false;
-    }
-    QString totalPages = textStream.readAll();
-    avatarTotalPages.close();
-    totalPages.replace("variableUsername", vusername);
-    json.insert("query", totalPages);
-
-    //Post faz o pedido ao servidor request, usando os argumentos em Json
-    QNetworkReply* acessReply = acessManager.post(request, QJsonDocument(json).toJson());
-    //Espera uma resposta
-    //TODO - Colocar um tempo máximo de espera
-    while (!acessReply->isFinished())
-    {
-        qApp->processEvents();
-    }
-
-    //Após isso, pegamos a resposta e convertemos em um formato que possamos ler
-    QByteArray response_data;
-    if(acessReply->isReadable())
-        response_data = acessReply->readAll();
-    else{
-        acessReply->deleteLater();
-        return false;
-    }
-    if(acessReply->isOpen())
-        acessReply->close();
-
-    QJsonDocument responseDataJson = QJsonDocument::fromJson(response_data);
-    lastPage = responseDataJson.toJson();
-    //Verificamos se é uma mensagem de erro
-    if(lastPage.contains("errors")){
-        emit sterminouDownload(false);
-        acessReply->deleteLater();
-        return false;
-    }
-    lastPage = lastPage.toLatin1();
-    //Pega avatar
-    QString avatarString = lastPage.mid(lastPage.lastIndexOf("avatar"));
-    vavatar = avatarString.left(avatarString.indexOf("\"\n"));
-    //Pega total de páginas
-    avatarString = lastPage.mid(lastPage.lastIndexOf("lastPage")+11);
-    lastPage = avatarString.left(avatarString.indexOf(",\n"));
-
-    if(this->thread()->isInterruptionRequested()){
-        this->thread()->exit(0);
-        acessReply->deleteLater();
-        return false;
-    }
+    vavatar = getAvatarURL();
+    this->thread()->exit(0);
     return true;
 }
 
@@ -115,8 +64,15 @@ QJsonDocument anilist::getMediaListObject()
     QJsonDocument responseDataJson;
     QJsonArray mediaListArray;
     QJsonObject mediaObject;
-    QString query = getQuery(Enums::AnilistQuery::AnimeInfo);
-    for(int i = 1; i < lastPage.toInt()+1; i++){
+
+    QString query = getQuery(AnilistQuery::Avatar);
+    query.replace("variableUsername", "gutocbs");
+    QByteArray response_data = post(query);
+    QJsonDocument resposeJson = QJsonDocument::fromJson(response_data);
+    int numberOfPages = resposeJson["data"]["Page"]["pageInfo"]["lastPage"].toInt();
+
+    query = getQuery(AnilistQuery::AnimeInfo);
+    for(int i = 1; i < numberOfPages+1; i++){
         QString tempQuery = query;
         tempQuery.replace("variablePage", QString::number(i));
         QByteArray response_data = post(tempQuery);
@@ -131,30 +87,116 @@ QJsonDocument anilist::getMediaListObject()
     return responseDataJson;
 }
 
-QString anilist::getQuery(Enums::AnilistQuery query)
+QJsonDocument anilist::getMediaYearListObject(int year)
 {
-    switch (query) {
-    case Enums::AnimeInfo:
-        QFile animeList(":/Anilist/qrc/Anilist/AnimeInfo.txt");
-        QTextStream textStream(&animeList);
-        if(!animeList.open(QIODevice::ReadOnly)){
-            this->thread()->exit(0);
-            return "";
+    QJsonDocument responseDataJson;
+    QJsonArray mediaListArray;
+    QJsonObject mediaObject;
+    QString query = getQuery(AnilistQuery::AnimeInfo);
+    query.replace("variableAno", QString::number(year));
+    QByteArray response_data = post(query);
+    QJsonDocument resposeJson = QJsonDocument::fromJson(response_data);
+    int numberOfPages = resposeJson["data"]["Page"]["pageInfo"]["lastPage"].toInt();
+
+    query = getQuery(AnilistQuery::YearMediaList);
+    for(int i = 1; i < numberOfPages+1; i++){
+        QString tempQuery = query;
+        tempQuery.replace("variablePage", QString::number(i));
+        tempQuery.replace("variableAno", QString::number(year));
+        QByteArray response_data = post(tempQuery);
+        QJsonDocument resposeJson = QJsonDocument::fromJson(response_data);
+        QJsonArray media = resposeJson["data"]["Page"]["mediaList"].toArray();
+        foreach(QJsonValue mediaValue, media){
+            mediaListArray.append(mediaValue);
         }
-        QString query = textStream.readAll();
-        animeList.close();
-        query.replace("variableUsername", vusername);
-        return query;
-        break;
     }
-    return "";
+    mediaObject.insert("media", mediaListArray);
+    responseDataJson.setObject(mediaObject);
+    return responseDataJson;
 }
 
-QByteArray anilist::post(QString query)
+QString anilist::getAvatarURL()
+{
+    QJsonObject mediaObject;
+    QString query = getQuery(AnilistQuery::Avatar);
+    query.replace("variableUsername", "gutocbs");
+    QByteArray responseData = post(query);
+    QJsonDocument resposeJson = QJsonDocument::fromJson(responseData);
+    mediaObject = resposeJson["data"]["Page"]["mediaList"][0]["user"].toObject();
+    QString avatar = mediaObject.value("avatar").toObject().value("large").toString();
+    return avatar;
+}
+
+QString anilist::getQuery(AnilistQuery query)
+{
+    QFile queryFile;
+    QTextStream textStream(&queryFile);
+    switch (query) {
+    case anilist::MediaId:
+        queryFile.setFileName(":/Anilist/qrc/Anilist/QueryDelete.txt");
+        break;
+    case YearMediaList:
+        queryFile.setFileName(":/Anilist/qrc/Anilist/AnimeInfoAno.txt");
+        break;
+    case YearLists:
+        queryFile.setFileName(":/Anilist/qrc/Anilist/AnoTotalPages.txt");
+        break;
+    case Avatar:
+        queryFile.setFileName(":/Anilist/qrc/Anilist/AvatarTotalPages.txt");
+        break;
+    case AnimeInfo:
+        queryFile.setFileName(":/Anilist/qrc/Anilist/AnimeInfo.txt");
+        break;
+    }
+
+    if(!queryFile.open(QIODevice::ReadOnly)){
+        this->thread()->exit(0);
+        return "";
+    }
+
+    QString queryString = textStream.readAll();
+    queryFile.close();
+    queryString.replace("variableUsername", vusername);
+
+    return queryString;
+}
+
+QString anilist::getMutationQuery(AnilistMutationType query, int id)
+{
+    QFile queryFile;
+    QTextStream textStream(&queryFile);
+    switch (query) {
+    case anilist::MutationDelete:
+        queryFile.setFileName(":/Anilist/qrc/Anilist/MutationDelete.txt");
+        break;
+    case anilist::MutationScore:
+        queryFile.setFileName(":/Anilist/qrc/Anilist/MutationScore.txt");
+        break;
+    case anilist::MutationList:
+        queryFile.setFileName(":/Anilist/qrc/Anilist/MutationLista.txt");
+        break;
+    case anilist::MutationProgress:
+        queryFile.setFileName(":/Anilist/qrc/Anilist/MutationProgresso.txt");
+        break;;
+    }
+
+    if(!queryFile.open(QIODevice::ReadOnly)){
+        this->thread()->exit(0);
+        return "";
+    }
+
+    QString queryString = textStream.readAll();
+    queryFile.close();
+    queryString.replace("variableID", QString::number(id));
+
+    return queryString;
+}
+
+QByteArray anilist::post(QString query, bool auth)
 {
     QJsonObject jsonObject;
     QNetworkAccessManager acessManager;
-    QNetworkRequest request = getRequest();
+    QNetworkRequest request = getRequest(auth);
     QNetworkReply* acessReply;
     jsonObject.insert("query", query.trimmed());
     acessReply = acessManager.post(request, QJsonDocument(jsonObject).toJson());
@@ -162,295 +204,95 @@ QByteArray anilist::post(QString query)
     {
         qApp->processEvents();
     }
-    QByteArray response_data = acessReply->readAll();
+    QByteArray response_data;
+    if(acessReply->isReadable())
+        response_data = acessReply->readAll();
+    else
+        qWarning() << acessReply->errorString();
     if(acessReply->isOpen())
-    {
         acessReply->close();
-    }
     acessReply->deleteLater();
     return response_data;
 }
 
+int anilist::getMediaId(int anilistId)
+{
+    QString query = getQuery(AnilistQuery::MediaId);
+    query.replace("variableID", QString::number(anilistId));
+    query.replace("variableUsername", vusername);
+    QByteArray response_data = post(query);
+    QJsonDocument resposeJson = QJsonDocument::fromJson(response_data);
+    QString responseString = resposeJson.toJson();
+    if(responseString.contains("error"))
+        return 0;
+    int mediaId = resposeJson["data"]["MediaList"].toObject().value("id").toInt();
+    return mediaId;
+
+}
+
 bool anilist::fgetListasAnoSeason()
 {
-    for(int i = 0; i <  QDate::currentDate().year()-1998; i++){
-        if(!fgetListaAno(QString::number(2000+i)))
+    int anilistStartYear = 1998;
+    for(int i = 0; i <  QDate::currentDate().year()-anilistStartYear; i++){
+        if(!fgetListaAno(2000))
             return false;
     }
     return true;
 }
 
-bool anilist::fgetListaAno(const QString &rano){
-    if(QFile::exists("Configurações/Temp/Lists/animeList"+rano+".txt") && rano.toInt() < QDate::currentDate().year())
+bool anilist::fgetListaAno(int year){
+    if(QFile::exists("Configurações/Temp/Lists/animeList"+QString::number(year)+".txt") &&
+            (year < QDate::currentDate().year() ||
+             //A lista de animes deixa de ser atualizada depois de outubro.
+            (year == QDate::currentDate().year() && QDate::currentDate().month() > 10)))
         return true;
-    else if(QFile::exists("Configurações/Temp/Lists/animeList"+rano+".txt") && rano.toInt() == QDate::currentDate().year() && QDate::currentDate().month() > 10)
-        return true;
-    //Cria o pedido em javascript
-    QNetworkRequest request(graphqlUrl);
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    request.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
-    QJsonObject json;
-    QNetworkAccessManager lacessManager;
 
-    //Query que irá solicitar o avatar e o número de páginas que temos que pegar
-    QFile totalPages(":/Anilist/qrc/Anilist/AnoTotalPages.txt");
-    QTextStream textStream(&totalPages);
-    if(!totalPages.open(QIODevice::ReadOnly)){
-        this->thread()->exit(0);
-        return false;
-    }
-    QString query = textStream.readAll();
-    totalPages.close();
-    query.replace("variableAno", rano);
-    json.insert("query", query);
+    QFile tempAnimeList("Configurações/Temp/Lists/animeList"+QString::number(year)+".txt");
+    QByteArray mediaJson = getMediaYearListObject(year).toJson();
 
-    //Checa se a thread está sendo interrompida, ou seja, se o programa está sendo fechado durante a execução da função
-    //Isso vai ocorrer em diversos pontos da thread por conta dos loops
-    if(this->thread()->isInterruptionRequested()){
+    if(QString(mediaJson).contains("errors")){
+        emit sterminouDownload(false);
         this->thread()->exit(0);
         return false;
     }
 
-    //Post faz o pedido ao servidor request, usando os argumentos em Json
-//    QPointer<QNetworkReply> vreply = lacessManager.post(request, QJsonDocument(json).toJson());
-    QNetworkReply* vreply = lacessManager.post(request, QJsonDocument(json).toJson());
-    //Espera uma resposta
-    while (!vreply->isFinished())
-    {
-        qApp->processEvents();
+    if(tempAnimeList.open(QIODevice::WriteOnly)){
+        tempAnimeList.write(mediaJson);
+        tempAnimeList.close();
     }
-
-    //Após isso, pegamos a resposta e convertemos em um formato que possamos ler
-    QByteArray response_data;
-    if(vreply->isReadable())
-        response_data = vreply->readAll();
-    else{
-        vreply->deleteLater();
-        return false;
-    }
-    if(vreply->isOpen())
-    {
-        vreply->close();
-    }
-    QJsonDocument jsond = QJsonDocument::fromJson(response_data);
-    QString lastPage = jsond.toJson();
-    //Verificamos se é uma mensagem de erro
-    if(lastPage.contains("errors")){
-        this->thread()->exit(0);
-        vreply->deleteLater();
-        return false;
-    }
-    lastPage = lastPage.toLatin1();
-    //Pega avatar
-    QString llastPage = lastPage.mid(lastPage.lastIndexOf("avatar"));
-    vavatar = llastPage.left(llastPage.indexOf("\"\n"));
-    //Pega total de páginas
-    llastPage = lastPage.mid(lastPage.lastIndexOf("lastPage")+11);
-    lastPage = llastPage.left(llastPage.indexOf(",\n"));
-
-    QFile t("Configurações/Temp/Lists/animeList"+rano+"Temp.txt");
-    if(t.open(QIODevice::WriteOnly)){
-        for(int i = 1; i < lastPage.toInt()+1; i++){
-            QFile animeList(":/Anilist/qrc/Anilist/AnimeInfoAno.txt");
-            QTextStream textStream(&animeList);
-            if(!animeList.open(QIODevice::ReadOnly)){
-                this->thread()->exit(0);
-                return false;
-            }
-            query = textStream.readAll();
-            animeList.close();
-            query.replace("variablePagina", QString::number(i));
-            query.replace("variableAno", rano);
-            json.insert("query", query.trimmed());
-            vreply = lacessManager.post(request, QJsonDocument(json).toJson());
-            while (!vreply->isFinished())
-            {
-                qApp->processEvents();
-            }
-            QByteArray response_data = vreply->readAll();
-            if(vreply->isOpen())
-            {
-                vreply->close();
-            }
-            jsond = QJsonDocument::fromJson(response_data);
-            t.write(jsond.toJson());
-        }
-        t.close();
-    }
-    QString lreplyString = jsond.toJson();
-    if(lreplyString.contains("errors")){
-        vreply->deleteLater();
-        return false;
-    }
-    if(QFile::exists("Configurações/Temp/Lists/animeList"+rano+".txt")){
-        if(QFile::remove("Configurações/Temp/Lists/animeList"+rano+".txt"))
-            t.rename("Configurações/Temp/Lists/animeList"+rano+".txt");
-    }
-    else
-        t.rename("Configurações/Temp/Lists/animeList"+rano+".txt");
-    vreply->deleteLater();
     return true;
 }
 
 
-bool anilist::fmudaLista(int rid, const QString &rNovaLista){
-    ///Preciso por o token em um arquvio de configuração criptografado
-    QString auth = "Bearer ";
-    auth.append(vtoken);
-
-    QNetworkRequest request(graphqlUrl);
-    request.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    request.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
-    QJsonObject json;
-    QNetworkAccessManager lacessManager;
-
-    //Pra deletar
-    //QString lnovaLista = "mutation{     DeleteMediaListEntry (mediaId: " + lnovoId + ", status: " + rnovaLista + ") {         id         status     } }";
-    //Cria string com a lista nova lista
-    QFile animeList(":/Anilist/qrc/Anilist/MutationLista.txt");
-    QTextStream textStream(&animeList);
-    if(!animeList.open(QIODevice::ReadOnly)){
-        this->thread()->exit(0);
-        return false;
-    }
-    QString query = textStream.readAll();
-    animeList.close();
-    query.replace("variableID", QString::number(rid));
+bool anilist::fmudaLista(int id, const QString &rNovaLista){
+    QString query = getMutationQuery(AnilistMutationType::MutationList, id);
     query.replace("variableNovaLista", rNovaLista);
-    //Insere item no json
-    json.insert("query", query);
-    //Manda a solicitação de mudança
-    QPointer<QNetworkReply> vreply = lacessManager.post(request, QJsonDocument(json).toJson());
-    //Espera solicitação voltar do servidor
-    while (!vreply->isFinished())
-    {
-        qApp->processEvents();
-    }
-    QByteArray response_data;
-    if(vreply->isReadable())
-        response_data = vreply->readAll();
-    else{
-        qWarning() << vreply->errorString();
-        return false;
-    }
-    if(vreply->isOpen())
-    {
-        vreply->close();
-    }
-    QJsonDocument jsond = QJsonDocument::fromJson(response_data);
-    QString lreplyString = jsond.toJson();
-    if(lreplyString.contains("error"))
+    QByteArray response_data = post(query, true);
+    QJsonDocument resposeJson = QJsonDocument::fromJson(response_data);
+    QString responseString = resposeJson.toJson();
+    if(responseString.contains("error"))
         return false;
     return true;
 }
 
-///fmudaNota(id, nova nota)
-bool anilist::fmudaNota(int rid, int rnovaNota){
-    QString auth = "Bearer ";
-    auth.append(vtoken);
-
-    //Como pegar o nome ou id de usuário pelo token?
-    //Posso pegar igual fazia antes,/ sem o token?
-    QNetworkRequest request(graphqlUrl);
-    request.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    request.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
-    QJsonObject json;
-    QNetworkAccessManager lacessManager;
-
-    //Pra deletar
-    //QString lnovaLista = "mutation{     DeleteMediaListEntry (mediaId: " + lnovoId + ", status: " + rnovaLista + ") {         id         status     } }";
-    //Cria string com a nova nota
-    QFile animeList(":/Anilist/qrc/Anilist/MutationScore.txt");
-    QTextStream textStream(&animeList);
-    if(!animeList.open(QIODevice::ReadOnly)){
-        this->thread()->exit(0);
-        return false;
-    }
-    QString query = textStream.readAll();
-    animeList.close();
-    query.replace("variableID", QString::number(rid));
-    query.replace("variableScore", QString::number(rnovaNota));
-    //Insere item no json
-    json.insert("query", query);
-    //Manda a solicitação de mudança
-    QPointer<QNetworkReply> vreply = lacessManager.post(request, QJsonDocument(json).toJson());
-
-
-    //Espera solicitação voltar do servidor
-    while (!vreply->isFinished())
-    {
-        qApp->processEvents();
-    }
-    QByteArray response_data;
-    if(vreply->isReadable())
-        response_data = vreply->readAll();
-    else{
-        qWarning() << vreply->errorString();
-        return false;
-    }
-    if(vreply->isOpen())
-    {
-        vreply->close();
-    }
-    QJsonDocument jsond = QJsonDocument::fromJson(response_data);
-    QString lreplyString = jsond.toJson();
-    if(lreplyString.contains("error"))
+bool anilist::fmudaNota(int id, int novaNota){
+    QString query = getMutationQuery(AnilistMutationType::MutationScore, id);
+    query.replace("variableScore", QString::number(novaNota));
+    QByteArray response_data = post(query, true);
+    QJsonDocument resposeJson = QJsonDocument::fromJson(response_data);
+    QString responseString = resposeJson.toJson();
+    if(responseString.contains("error"))
         return false;
     return true;
 }
 
-bool anilist::fmudaProgresso(int rid, int rnovoProgresso){
-    QString auth = "Bearer ";
-    auth.append(vtoken);
-
-    //Como pegar o nome ou id de usuário pelo token?
-    //Posso pegar igual fazia antes,/ sem o token?
-    QNetworkRequest request(graphqlUrl);
-    request.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    request.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
-    QJsonObject json;
-    QNetworkAccessManager lacessManager;
-
-    //Pra deletar
-    //QString lnovaLista = "mutation{     DeleteMediaListEntry (mediaId: " + lnovoId + ", status: " + rnovaLista + ") {         id         status     } }";
-    //Cria string com a nova nota
-    QFile animeList(":/Anilist/qrc/Anilist/MutationProgresso.txt");
-    QTextStream textStream(&animeList);
-    if(!animeList.open(QIODevice::ReadOnly)){
-        this->thread()->exit(0);
-        return false;
-    }
-    QString query = textStream.readAll();
-    animeList.close();
-    query.replace("variableID", QString::number(rid));
-    query.replace("variableProgresso", QString::number(rnovoProgresso));
-    //Insere item no json
-    json.insert("query", query);
-    //Manda a solicitação de mudança
-    QPointer<QNetworkReply> vreply = lacessManager.post(request, QJsonDocument(json).toJson());
-
-    //Espera solicitação voltar do servidor
-    while (!vreply->isFinished())
-    {
-        qApp->processEvents();
-    }
-    QByteArray response_data;
-    if(vreply->isReadable())
-        response_data = vreply->readAll();
-    else{
-        qWarning() << vreply->errorString();
-        return false;
-    }
-    if(vreply->isOpen())
-    {
-        vreply->close();
-    }
-    QJsonDocument jsond = QJsonDocument::fromJson(response_data);
-    QString lreplyString = jsond.toJson();
-    if(lreplyString.contains("error"))
+bool anilist::fmudaProgresso(int id, int novoProgresso){
+    QString query = getMutationQuery(AnilistMutationType::MutationProgress, id);
+    query.replace("variableProgresso", QString::number(novoProgresso));
+    QByteArray response_data = post(query, true);
+    QJsonDocument resposeJson = QJsonDocument::fromJson(response_data);
+    QString responseString = resposeJson.toJson();
+    if(responseString.contains("error"))
         return false;
     return true;
 }
@@ -470,86 +312,14 @@ void anilist::frecebeAutorizacao(const QString &ruser, QVariant rauthcode)
     vtoken = rauthcode.toString();
 }
 
-bool anilist::fexcluiAnime(int rid){
-    QString auth = "Bearer ";
-    auth.append(vtoken);
+bool anilist::fexcluiAnime(int id){
+    int mediaId = getMediaId(id);
 
-    QNetworkRequest request(graphqlUrl);
-    request.setRawHeader(QByteArray("Authorization"), auth.toUtf8());
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    request.setRawHeader(QByteArray("Accept"), "application/json; charset=utf-8");
-    QJsonObject json;
-    QNetworkAccessManager lacessManager;
-
-    //Cria string com o pedido de delete
-    QFile animeList(":/Anilist/qrc/Anilist/QueryDelete.txt");
-    QTextStream textStream(&animeList);
-    if(!animeList.open(QIODevice::ReadOnly)){
-        this->thread()->exit(0);
-        return false;
-    }
-    QString query = textStream.readAll();
-    animeList.close();
-    query.replace("variableID", QString::number(rid));
-    query.replace("variableUsername", vusername);
-    //Insere item no json
-    json.insert("query", query);
-    //Manda a solicitação de mudança
-    QPointer<QNetworkReply> vreply = lacessManager.post(request, QJsonDocument(json).toJson());
-    if(!vreply->isRunning())
-        return false;
-    //Espera solicitação voltar do servidor
-    //CASO NUNCA VOLTE SÓ CRASHA RESOLVER
-    while (!vreply->isFinished())
-    {
-        qApp->processEvents();
-    }
-    QByteArray response_data = nullptr;
-    if(vreply->isReadable())
-        response_data = vreply->readAll();
-    else{
-        qWarning() << vreply->errorString();
-        return false;
-    }
-    if(vreply->isOpen())
-    {
-        vreply->close();
-    }
-    QJsonDocument jsond = QJsonDocument::fromJson(response_data);
-    QString lreplyString = jsond.toJson();
-
-    json.empty();
-    query = lreplyString.toLatin1();
-    //id do anime na lista
-    QString lid = query.mid(query.lastIndexOf("id")+5);
-    query = lid.left(lid.indexOf("\n"));
-    lid = query;
-    //Cria string com o pedido de delete
-    QFile queryDelete(":/Anilist/qrc/Anilist/MutationDelete.txt");
-    QTextStream queryDeleteStream(&queryDelete);
-    if(!queryDelete.open(QIODevice::ReadOnly)){
-        this->thread()->exit(0);
-        return false;
-    }
-    query = queryDeleteStream.readAll();
-    queryDelete.close();
-    query.replace("variableID", lid);
-    //Insere item no json
-    json.insert("query", query);
-    //Manda a solicitação de mudança
-    vreply = lacessManager.post(request, QJsonDocument(json).toJson());
-    while (!vreply->isFinished())
-    {
-        qApp->processEvents();
-    }
-    response_data = vreply->readAll();
-    if(vreply->isOpen())
-    {
-        vreply->close();
-    }
-    jsond = QJsonDocument::fromJson(response_data);
-    lreplyString = jsond.toJson();
-    if(lreplyString.contains("error") || lreplyString.contains("errors"))
+    QString query = getMutationQuery(AnilistMutationType::MutationDelete, mediaId);
+    QByteArray response_data = post(query, true);
+    QJsonDocument resposeJson = QJsonDocument::fromJson(response_data);
+    QString responseString = resposeJson.toJson();
+    if(responseString.contains("error"))
         return false;
     return true;
 }

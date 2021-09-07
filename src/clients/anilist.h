@@ -21,6 +21,10 @@ class anilist : public QObject
 {
     Q_OBJECT
 public:
+    enum AnilistQuery{AnimeInfo, Avatar, YearLists, YearMediaList, MediaId};
+    Q_ENUM(AnilistQuery)
+    enum AnilistMutationType{MutationScore, MutationList, MutationProgress, MutationDelete};
+    Q_ENUM(AnilistMutationType)
     explicit anilist(QObject *parent = nullptr);
     ~anilist();
     bool fmudaLista(int, const QString &rNovaLista);
@@ -41,14 +45,18 @@ public slots:
 signals:
     void sterminouDownload(bool);
 private slots:
-    bool fgetListaAno(const QString &rano);
+    bool fgetListaAno(int year);
 private:
-    QNetworkRequest getRequest();
+    QNetworkRequest getRequest(bool auth = false);
     bool getAvatar();
     bool getMediaList();
     QJsonDocument getMediaListObject();
-    QString getQuery(Enums::AnilistQuery query);
-    QByteArray post(QString query);
+    QJsonDocument getMediaYearListObject(int year);
+    QString getAvatarURL();
+    QString getQuery(AnilistQuery query);
+    QString getMutationQuery(AnilistMutationType query, int id);
+    QByteArray post(QString query, bool auth = false);
+    int getMediaId(int anilistId);
     QString vtoken;
     QString vusername;
     QString vavatar;

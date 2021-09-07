@@ -1,20 +1,20 @@
 query ($id: Int) {
-	Page (page: 1 perPage: 50) {
-  		pageInfo {
-  			total
-  			currentPage
-  			lastPage
-  			hasNextPage
-  			perPage
-  		}
+        Page (page: 1 perPage: 50) {
+                pageInfo {
+                        total
+                        currentPage
+                        lastPage
+                        hasNextPage
+                        perPage
+                }
                 mediaList(userName: variableUsername, id: $id, sort: MEDIA_ID) {
-			user{
-				id
-				name
-				avatar{
-					large
-				}
-	 		}
-	  	}
-	}
+                        user{
+                                id
+                                name
+                                avatar{
+                                        large
+                                }
+                        }
+                }
+        }
 }
