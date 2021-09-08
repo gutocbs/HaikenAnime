@@ -12,10 +12,10 @@ bool MediaComparer::compareEpisodeNumber(Media *media, int episode)
     return false;
 }
 
-bool MediaComparer::isSeasonal(Enums::mediaList list)
+bool MediaComparer::isSeasonal(QString listName)
 {
-    if(list == Enums::mediaList::FALL || list == Enums::mediaList::WINTER ||
-            list == Enums::mediaList::SUMMER || list == Enums::mediaList::SPRING)
+    if(listName.contains("Fall", Qt::CaseInsensitive) || listName.contains("Winter", Qt::CaseInsensitive)
+            || listName.contains("Summer", Qt::CaseInsensitive) || listName.contains("Spring", Qt::CaseInsensitive))
         return true;
     return false;
 }
