@@ -10,8 +10,11 @@
 
 class AnimeManager : public IMediaManager
 {
+    Q_OBJECT
+    static AnimeManager *createInstance();
 public:
     explicit AnimeManager(QObject *parent = nullptr);
+    static AnimeManager *instance();
     void setMediaSearchManager(IMediaSearchManager *mediaSearchManager);
     void setMediaListManager(IMediaListManager *mediaListManager);
 

@@ -4,6 +4,16 @@ NovelManager::NovelManager(QObject *parent) : IMediaManager(parent)
 {
 }
 
+NovelManager *NovelManager::createInstance()
+{
+    return new NovelManager();
+}
+
+NovelManager *NovelManager::instance()
+{
+    return Singleton<NovelManager>::instance(NovelManager::createInstance);
+}
+
 void NovelManager::setMediaSearchManager(IMediaSearchManager *mediaSearchManager)
 {
     this->mediaSearchManager = mediaSearchManager;

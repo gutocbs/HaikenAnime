@@ -11,8 +11,10 @@
 class MangaManager : public IMediaManager
 {
     Q_OBJECT
+    static MangaManager *createInstance();
 public:
     explicit MangaManager(QObject *parent = nullptr);
+    static MangaManager *instance();
     void setMediaSearchManager(IMediaSearchManager *mediaSearchManager);
     void setMediaListManager(IMediaListManager *mediaListManager);
 

@@ -4,6 +4,16 @@ AnimeManager::AnimeManager(QObject *parent) : IMediaManager(parent)
 {
 }
 
+AnimeManager *AnimeManager::createInstance()
+{
+    return new AnimeManager();
+}
+
+AnimeManager *AnimeManager::instance()
+{
+    return Singleton<AnimeManager>::instance(AnimeManager::createInstance);
+}
+
 void AnimeManager::setMediaSearchManager(IMediaSearchManager *mediaSearchManager)
 {
     this->mediaSearchManager = mediaSearchManager;

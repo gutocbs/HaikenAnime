@@ -4,6 +4,16 @@ MangaManager::MangaManager(QObject *parent) : IMediaManager(parent)
 {
 }
 
+MangaManager *MangaManager::createInstance()
+{
+    return new MangaManager();
+}
+
+MangaManager *MangaManager::instance()
+{
+    return Singleton<MangaManager>::instance(MangaManager::createInstance);
+}
+
 void MangaManager::setMediaSearchManager(IMediaSearchManager *mediaSearchManager)
 {
     this->mediaSearchManager = mediaSearchManager;

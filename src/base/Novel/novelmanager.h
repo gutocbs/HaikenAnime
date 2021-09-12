@@ -12,7 +12,10 @@ class NovelManager : public IMediaManager
 {
     Q_OBJECT
 public:
+    static NovelManager *createInstance();
+public:
     explicit NovelManager(QObject *parent = nullptr);
+    static NovelManager *instance();
     void setMediaSearchManager(IMediaSearchManager *mediaSearchManager);
     void setMediaListManager(IMediaListManager *mediaListManager);
 
