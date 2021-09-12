@@ -54,7 +54,6 @@ public slots:
     void workBig(int value);
     void ffinishedBig();
     Q_DECL_DEPRECATED void fselecionaLista(QString, QString);
-    void getList(Enums::mediaList mediaList, Enums::mediaType);
 
 private slots:
     void onFinished(QNetworkReply*);

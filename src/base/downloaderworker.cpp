@@ -418,16 +418,3 @@ void DownloaderWorker::fselecionaLista(QString rlista, QString rtipoLista)
     }
 }
 
-//TODO - Fazer função
-void DownloaderWorker::getList(Enums::mediaList mediaList, Enums::mediaType mediaType)
-{
-    vindexLista = 0;
-    switch(mediaType){
-    case Enums::ANIME:
-        QPointer<AnimeListManager> animeListManager;
-        listManager = animeListManager->instance();
-        break;
-    }
-    listManager->getMediaList(mediaList);
-}
-
