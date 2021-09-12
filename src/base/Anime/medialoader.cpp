@@ -1,15 +1,17 @@
 #include "medialoader.h"
 
-MediaLoader::MediaLoader(QObject *parent, IMediaListManager *mediaListManager) : QObject(parent)
+MediaLoader::MediaLoader(QObject *parent) : QObject(parent)
 {
-    this->mediaListManager = mediaListManager;
 }
 
 //TODO - Organizar arquivos nas pastas certas
 //TODO - Passar argumento int pra função, pra ler listas de anos
 bool MediaLoader::loadMediaFromFile(bool mock)
 {
-    finishedLoading = false;
+    QJsonObject mediaObject;
+    int listSize = 0;
+    QPointer<IMediaListManager> mediaListManager;
+    QPointer<MediaController> mediaController = new MediaController();
     QString fileName = getFileName(mock);
     if(!FileManager::checkIfFileCanBeOpened(fileName))
         return false;
@@ -17,15 +19,14 @@ bool MediaLoader::loadMediaFromFile(bool mock)
     listSize = mediaList.size();
     for(int i = 0; i < listSize; i++){
         mediaObject = mediaList.at(i).toObject().value("media").toObject();
-        Enums::mediaType mediaTypeEnum = Enums::QStringToMediaType(getQStringValueFromKey("format"));
+        Enums::mediaType mediaTypeEnum = Enums::QStringToMediaType(getQStringValueFromKey(mediaObject, "format"));
         Enums::mediaList mediaListEnum = Enums::QStringToMediaList(mediaList.at(i).toObject().value("status").toString());
-        QPointer<Media> media = getMedia();
+        QPointer<Media> media = getMedia(mediaList, i);
         media->mediaList = mediaListEnum;
         media->format = mediaTypeEnum;
-        //TODO - Mudar mediaListManager de acordo com o tipo de media
+        mediaListManager = mediaController->instance()->getMediaListManager(mediaTypeEnum);
         mediaListManager->addMedia(media, mediaListEnum);
     }
-    finishedLoading = true;
     return true;
 
 }
@@ -50,30 +51,32 @@ QJsonArray MediaLoader::getMediaListArray(QString fileName)
     return QJsonArray::fromVariantList(jsonVariantList);
 }
 
-QPointer<Media> MediaLoader::getMedia()
+QPointer<Media> MediaLoader::getMedia(QJsonArray mediaList, int index)
 {
+    QJsonObject mediaObject;
+    mediaObject = mediaList.at(index).toObject().value("media").toObject();
     QPointer<Media> media(new Media);
-    media->id = getNumberValueFromKey("id");
-    media->originalName = getQStringValueFromKey("title","romaji");
-    media->englishName = getQStringValueFromKey("title", "english");
-    media->customNames = getQStringListValuesFromKey("synonyms");
-    media->meanScore = getQStringValueFromKey("averageScore");
-    media->coverURL = getQStringValueFromKey("coverImage", "large");
-    media->personalScore = getQStringValueFromKey("score");
-    media->status = getQStringValueFromKey("status");
-    media->synopsis = getQStringValueFromKey("description");
-    media->yearSeason = getQStringValueFromKey("season") + " " + getQStringValueFromKey("startDate", "year");
-    media->nextAiringEpisodeDate = getNextEpisode(getQStringValueFromKey("nextAiringEpisode"));
-    media->progress = getNumberValueFromKey("progress");
-    media->startDate = getStartDate(getQStringValueFromKey("startDate"));
-    media->nextAiringEpisodeDate = getNextEpisodeDate("nextAiringEpisode");
-    media->siteURL = getQStringValueFromKey("siteUrl");
+    media->id = getNumberValueFromKey(mediaObject, "id");
+    media->originalName = getQStringValueFromKey(mediaObject, "title","romaji");
+    media->englishName = getQStringValueFromKey(mediaObject, "title", "english");
+    media->customNames = getQStringListValuesFromKey(mediaObject, "synonyms");
+    media->meanScore = getQStringValueFromKey(mediaObject, "averageScore");
+    media->coverURL = getQStringValueFromKey(mediaObject, "coverImage", "large");
+    media->personalScore = getQStringValueFromKey(mediaObject, "score");
+    media->status = getQStringValueFromKey(mediaObject, "status");
+    media->synopsis = getQStringValueFromKey(mediaObject, "description");
+    media->yearSeason = getQStringValueFromKey(mediaObject, "season") + " " + getQStringValueFromKey(mediaObject, "startDate", "year");
+    media->nextAiringEpisodeDate = getNextEpisode(mediaObject, getQStringValueFromKey(mediaObject, "nextAiringEpisode"));
+    media->progress = getNumberValueFromKey(mediaObject, "progress");
+    media->startDate = getStartDate(mediaObject, getQStringValueFromKey(mediaObject, "startDate"));
+    media->nextAiringEpisodeDate = getNextEpisodeDate(mediaObject, "nextAiringEpisode");
+    media->siteURL = getQStringValueFromKey(mediaObject, "siteUrl");
     //        //TODO - FAZER UMA CLASSE CHAMADA MEDIA HELPER QUE IRÁ PEGAR QUAL A TEMPORADA CERTA
 //        media->vtemporada = getNumberValueFromKey("nextAiringEpisode");
     return media;
 }
 
-QString MediaLoader::getQStringValueFromKey(QString objectName, QString key)
+QString MediaLoader::getQStringValueFromKey(QJsonObject mediaObject, QString objectName, QString key)
 {
     QString value = "-";
     if(mediaObject.contains(objectName) && key.isEmpty())
@@ -83,7 +86,7 @@ QString MediaLoader::getQStringValueFromKey(QString objectName, QString key)
     return value;
 }
 
-QStringList MediaLoader::getQStringListValuesFromKey(QString objectName, QString key)
+QStringList MediaLoader::getQStringListValuesFromKey(QJsonObject mediaObject, QString objectName, QString key)
 {
     QJsonArray jsonArrayValue;
     QStringList value;
@@ -98,7 +101,7 @@ QStringList MediaLoader::getQStringListValuesFromKey(QString objectName, QString
     return value;
 }
 
-int MediaLoader::getNumberValueFromKey(QString objectName, QString key)
+int MediaLoader::getNumberValueFromKey(QJsonObject mediaObject, QString objectName, QString key)
 {
     int value = 0;
     if(mediaObject.contains(objectName) && key.isEmpty())
@@ -108,7 +111,7 @@ int MediaLoader::getNumberValueFromKey(QString objectName, QString key)
     return value;
 }
 
-int MediaLoader::getNumberChapters(Enums::mediaType mediaType)
+int MediaLoader::getNumberChapters(QJsonObject mediaObject, Enums::mediaType mediaType)
 {
     int chapterNumber = 0;
     if(mediaType == Enums::ANIME && !mediaObject.value("episodes").isNull())
@@ -120,7 +123,7 @@ int MediaLoader::getNumberChapters(Enums::mediaType mediaType)
     return chapterNumber;
 }
 
-QDate MediaLoader::getStartDate(QString startDateObject)
+QDate MediaLoader::getStartDate(QJsonObject mediaObject, QString startDateObject)
 {
     QJsonObject startDateJsonObject;
     QString month = "1", year = "2000";
@@ -135,7 +138,7 @@ QDate MediaLoader::getStartDate(QString startDateObject)
     return QDate(year.toInt(), month.toInt(), 1);
 }
 
-QString MediaLoader::getNextEpisode(QString nextAiringEpisodeObject)
+QString MediaLoader::getNextEpisode(QJsonObject mediaObject, QString nextAiringEpisodeObject)
 {
     QString nextAiringEpisode = "Not Airing";
     if(mediaObject.contains(nextAiringEpisodeObject) && !mediaObject.value(nextAiringEpisodeObject).isNull())
@@ -143,7 +146,7 @@ QString MediaLoader::getNextEpisode(QString nextAiringEpisodeObject)
     return nextAiringEpisode;
 }
 
-QString MediaLoader::getNextEpisodeDate(QString objectName)
+QString MediaLoader::getNextEpisodeDate(QJsonObject mediaObject, QString objectName)
 {
     QDateTime nextEpisodeDateTime;
     if(mediaObject.contains(objectName) && !mediaObject.value(objectName).toObject().value("airingAt").isNull())
@@ -183,7 +186,7 @@ QString MediaLoader::getDayOfTheWeek(QDateTime secondsSinceEpoch)
     return dayOfTheWeekString;
 }
 
-Enums::mediaType MediaLoader::getMediaTypeFromKey(QString key)
+Enums::mediaType MediaLoader::getMediaTypeFromKey(QJsonObject mediaObject, QString key)
 {
     QString format;
     if(mediaObject.contains(key))
@@ -195,7 +198,7 @@ Enums::mediaType MediaLoader::getMediaTypeFromKey(QString key)
     return Enums::mediaType::ANIME;
 }
 
-Enums::mediaList MediaLoader::getMediaListFromKey(QString key)
+Enums::mediaList MediaLoader::getMediaListFromKey(QJsonObject mediaObject, QString key)
 {
     Enums::mediaList mediaList = Enums::CURRENT;
     QString list;
@@ -213,3 +216,4 @@ Enums::mediaList MediaLoader::getMediaListFromKey(QString key)
         mediaList = Enums::PLANNING;
     return mediaList;
 }
+

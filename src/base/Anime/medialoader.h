@@ -16,43 +16,37 @@
 #include "src/utilities/singleton.h"
 #include "src/DTO/media.h"
 #include "src/base/Anime/animelistmanager.h"
+#include "src/base/Manga/mangalistmanager.h"
+#include "src/base/Novel/novellistmanager.h"
 #include "src/base/Anime/mediasearchmanager.h"
 #include "src/base/Anime/animemanager.h"
 #include "src/base/FileManager/filemanager.h"
+#include "src/base/Anime/mediacontroller.h"
 
 //TODO - Fazer singleton
 class MediaLoader : public QObject
 {
     Q_OBJECT
 public:
-    explicit MediaLoader(QObject *parent = nullptr, IMediaListManager *mediaListManager = nullptr);
-    bool loadMediaFromFile(bool mock = false);
-    QString getFileName(bool mock = false);
-    QJsonArray getMediaListArray(QString fileName);
-    QPointer<Media> getMedia();
-    QString getQStringValueFromKey(QString objectName, QString key = "");
-    QStringList getQStringListValuesFromKey(QString objectName, QString key = "");
-    int getNumberValueFromKey(QString objectName, QString key = "");
-    int getNumberChapters(Enums::mediaType mediaType);
-    QDate getStartDate(QString startDateObject);
-    QString getNextEpisode(QString nextAiringEpisodeObject);
-    QString getNextEpisodeDate(QString objectName);
-    QString getDayOfTheWeek(QDateTime secondsSinceEpoch);
-    Enums::mediaType getMediaTypeFromKey(QString key);
-    Enums::mediaList getMediaListFromKey(QString key);
-    bool fchecaDatabaseReady();
-    void finsereDataHashId(QString tipo, QString lista, QString id, QStringList nomes);
-    void insereDataHashPosicao(Enums::mediaType type, QString id, int posicao);
-    void fcarregaListaAnoEmThread();
-
-private:
-    bool finishedLoading;
-    int listSize;
-    QJsonObject mediaObject;
-    QHash<QString, QStringList> hashMediaNamesById;
-    QPointer<IMediaListManager> mediaListManager;
-    QPointer<IMediaSearchManager> mediaSearchManager;
-    QPointer<IMediaManager> mediaManager;
+    explicit MediaLoader(QObject *parent = nullptr);
+    static bool loadMediaFromFile(bool mock = false);
+    static QString getFileName(bool mock = false);
+    static QJsonArray getMediaListArray(QString fileName);
+    static QPointer<Media> getMedia(QJsonArray mediaList, int index);
+    static QString getQStringValueFromKey(QJsonObject mediaObject, QString objectName, QString key = "");
+    static QStringList getQStringListValuesFromKey(QJsonObject mediaObject, QString objectName, QString key = "");
+    static int getNumberValueFromKey(QJsonObject mediaObject, QString objectName, QString key = "");
+    static int getNumberChapters(QJsonObject mediaObject, Enums::mediaType mediaType);
+    static QDate getStartDate(QJsonObject mediaObject, QString startDateObject);
+    static QString getNextEpisode(QJsonObject mediaObject, QString nextAiringEpisodeObject);
+    static QString getNextEpisodeDate(QJsonObject mediaObject, QString objectName);
+    static QString getDayOfTheWeek(QDateTime secondsSinceEpoch);
+    static Enums::mediaType getMediaTypeFromKey(QJsonObject mediaObject, QString key);
+    static Enums::mediaList getMediaListFromKey(QJsonObject mediaObject, QString key);
+    static bool fchecaDatabaseReady();
+    static void finsereDataHashId(QString tipo, QString lista, QString id, QStringList nomes);
+    static void insereDataHashPosicao(Enums::mediaType type, QString id, int posicao);
+    static void fcarregaListaAnoEmThread();
 };
 
 #endif // MEDIALOADER_H
