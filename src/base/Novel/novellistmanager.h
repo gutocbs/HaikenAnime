@@ -19,6 +19,7 @@ public:
     QPointer<Media> getMediaById(int id);
     QHash<int, Media *> getHashMediaById();
     void addToHash(QPointer<Media> media);
+    Enums::mediaType getMediaType();
 
     QVector<Media*> getMediaList(Enums::mediaList mediaList, QString searchArgument = "");
     QVector<Media*> getSortList(Enums::mediaOrder order, Enums::orderType orderType, Enums::mediaList mediaList);

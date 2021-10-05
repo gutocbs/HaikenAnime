@@ -38,6 +38,7 @@ public:
     bool complete;
     int seasonNumber;
     int mediaListIndex;
+    QString mediaPath;
 };
 
 #endif // MEDIA_H

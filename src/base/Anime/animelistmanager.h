@@ -13,12 +13,13 @@ class AnimeListManager : public IMediaListManager
     static AnimeListManager *createInstance();
 public:
     explicit AnimeListManager(QObject *parent = nullptr);
-    static AnimeListManager *instance();
+    static IMediaListManager *instance();
     ///QHash<Id, index>
     ///Get index position of media in the media vector
     QPointer<Media> getMediaById(int id);
     QHash<int, Media *> getHashMediaById();
     void addToHash(QPointer<Media> media);
+    Enums::mediaType getMediaType();
 
     QVector<Media*> getMediaList(Enums::mediaList mediaList, QString searchArgument = "");
     QVector<Media*> getSortList(Enums::mediaOrder order, Enums::orderType orderType, Enums::mediaList mediaList);
@@ -28,6 +29,9 @@ public:
     bool compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle);
     bool addMedia(Media *mediaObject, Enums::mediaList);
     bool removeMedia(Media* media, Enums::mediaList mediaList);
+
+    // IMediaListManager interface
+public:
 };
 
 #endif // ANIMELISTMANAGER_H

@@ -195,3 +195,8 @@ void MangaListManager::addToHash(QPointer<Media> media)
     hashMediaById.insert(media->id, media);
 }
 
+Enums::mediaType MangaListManager::getMediaType()
+{
+    return Enums::mediaType::MANGA;
+}
+

@@ -10,7 +10,7 @@ AnimeListManager::AnimeListManager(QObject *parent) : IMediaListManager(parent)
 
 }
 
-AnimeListManager *AnimeListManager::instance()
+IMediaListManager *AnimeListManager::instance()
 {
     return Singleton<AnimeListManager>::instance(AnimeListManager::createInstance);
 }
@@ -193,4 +193,9 @@ bool AnimeListManager::removeMedia(Media* media, Enums::mediaList mediaList)
 void AnimeListManager::addToHash(QPointer<Media> media)
 {
     hashMediaById.insert(media->id, media);
+}
+
+Enums::mediaType AnimeListManager::getMediaType()
+{
+    return Enums::mediaType::ANIME;
 }

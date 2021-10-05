@@ -28,7 +28,6 @@ bool MediaLoader::loadMediaFromFile(bool mock)
         mediaListManager->addMedia(media, mediaListEnum);
     }
     return true;
-
 }
 
 QString MediaLoader::getFileName(bool mock)

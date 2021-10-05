@@ -12,6 +12,7 @@ class IMediaListManager : public QObject{
 public:
     //TODO - Transformar todas as funções voids em bool ou int
     using QObject::QObject;
+    IMediaListManager *instance();
     virtual QPointer<Media> getMediaById(int id) = 0;
     virtual QHash<int, Media*> getHashMediaById() = 0;
     virtual void addToHash(QPointer<Media> media) = 0;
@@ -24,6 +25,7 @@ public:
     virtual bool compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle) = 0;
     virtual bool addMedia(Media* mediaObject, Enums::mediaList) = 0;
     virtual bool removeMedia(Media* media, Enums::mediaList mediaList) = 0;
+    virtual Enums::mediaType getMediaType() = 0;
 
 protected:
     QVector<Media*> mediaListCurrent;

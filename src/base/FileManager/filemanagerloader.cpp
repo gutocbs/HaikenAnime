@@ -48,6 +48,7 @@ QHash<int, QString> FileManagerLoader::getMediaDirectories()
 //                    mediaName.append(QString(" " + vtemporada));
                 //pega o Id disso e verifica se está em idsPathToSearch. Se estiver, confirmado. Se não estiver, ignora.
                 mediaDirectoriesById.insert(idAnime, mediaFileInfo.path());
+                //Mudar a Media pra colocar o path nela
             }
         }
     }
