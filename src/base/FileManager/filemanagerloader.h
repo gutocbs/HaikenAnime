@@ -6,6 +6,8 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 #include <QFile>
+#include <QDirIterator>
+#include <QDir>
 #include "src/base/FileManager/mediadirectories.h"
 class FileManagerLoader : public MediaDirectories
 {
@@ -14,11 +16,11 @@ public:
     explicit FileManagerLoader(QObject *parent = nullptr);
     static QStringList getDirectories();
     static QHash<int, QString> getMediaDirectories();
-    bool loadMediaDirectories(bool mock = false);
-    QString getDirectoriesFileName(bool mock);
-    QString getIdFromJson(QJsonObject object);
-    QString getPathFromJson(QJsonObject object);
-    QJsonArray getDirectoriesListArray(QString fileName);
+    static bool loadMediaDirectories(bool mock = false);
+    static QString getDirectoriesFileName(bool mock);
+    static QString getIdFromJson(QJsonObject object);
+    static QString getPathFromJson(QJsonObject object);
+    static QJsonArray getDirectoriesListArray(QString fileName);
 signals:
 private:
 };

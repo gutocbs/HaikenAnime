@@ -20,18 +20,18 @@ class FileManager : public MediaDirectories
     Q_OBJECT
 public:
     explicit FileManager(QObject *parent = nullptr);
-    static bool getFileExtensions();
-    bool compareFileToMediaName(Media *media, QString fileName);
+    bool getFileExtensions();
+    static bool compareFileToMediaName(Media *media, QString fileName);
     static bool compareFileToMediaEpisode(Media *media, QString fileName, int episode);
     static bool openFileOrFolder(const QByteArray &path);
-    QString searchMediaFolderPath(Media *media);
-    QString getMediaEpisodePath(Media *media, int episode = 0);
-    QString getMediaFolderPath(Media *media);
+    static QString searchMediaFolderPath(Media *media);
+    static QString getMediaEpisodePath(Media *media, int episode = 0);
+    static QString getMediaFolderPath(Media *media);
     static QString getMediaName(QString fileName);
     static int getMediaEpisode(QString fileName);
 signals:
 private:
-    QStringList fileExtensions;
+    static QStringList fileExtensions;
 };
 
 #endif // FILEMANAGER_H

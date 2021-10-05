@@ -2,6 +2,7 @@
 
 FileManager::FileManager(QObject *parent) : MediaDirectories(parent)
 {
+    getFileExtensions();
 }
 
 //TODO - Ler um arquivo pra pegar todos os tipos de extensões permitidos e salvar em um vetor
@@ -34,6 +35,7 @@ QString FileManager::getMediaEpisodePath(Media *media, int episode)
 
 }
 
+//TODO - Mudar isso pra classe MediaDirectories
 ///Check if media folder is known and, case it is, if exists.
 ///If doesn't exists or it's not know, search for the folder.
 ///Returns the folder path if found, otherwise returns an empty QString.
@@ -84,6 +86,7 @@ bool FileManager::openFileOrFolder(const QByteArray &path)
     return false;
 }
 
+//TODO - Mudar isso pra classe MediaDirectories
 QString FileManager::searchMediaFolderPath(Media *media)
 {
     QStringList mediaFolders = FileManagerLoader::getDirectories();
@@ -102,6 +105,7 @@ QString FileManager::searchMediaFolderPath(Media *media)
     return "";
 }
 
+//TODO - Mudar isso pro MediaUtil
 QString FileManager::getMediaName(QString fileName)
 {
     anitomy::Anitomy lanitomy;

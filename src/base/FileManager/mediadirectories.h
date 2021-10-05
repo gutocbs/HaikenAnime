@@ -13,12 +13,13 @@ public:
     explicit MediaDirectories(QObject *parent = nullptr);
     static bool checkIfFileCanBeOpened(QString filename);
 protected:
-    bool addMediaDirectory(QString id, QString path);
+    static bool addMediaDirectory(QString id, QString path);
 
-    QStringList generalDirectories;
+    static QStringList generalDirectories;
 
     ///QHash<id,Directory>
-    QHash<QString,QString> mediaDirectoriesById;
+    static QHash<QString,QString> mediaDirectoriesById;
+    static QStringList fileExtensions;
 };
 
 #endif // MEDIADIRECTORIES_H
