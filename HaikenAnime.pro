@@ -44,6 +44,10 @@ HEADERS += \
     src/base/Anime/medialoader.h \
     src/base/Anime/mediasaver.h \
     src/base/Anime/mediasearchmanager.h \
+    src/base/Download/downloadenums.h \
+    src/base/Download/downloadmanager.h \
+    src/base/Download/downloadqueue.h \
+    src/base/Download/downloadworker.h \
     src/base/FileManager/filemanager.h \
     src/base/FileManager/filemanagerloader.h \
     src/base/FileManager/filemanagersaver.h \
@@ -106,6 +110,9 @@ SOURCES += \
     src/base/Anime/medialoader.cpp \
     src/base/Anime/mediasaver.cpp \
     src/base/Anime/mediasearchmanager.cpp \
+    src/base/Download/downloadmanager.cpp \
+    src/base/Download/downloadqueue.cpp \
+    src/base/Download/downloadworker.cpp \
     src/base/FileManager/filemanager.cpp \
     src/base/FileManager/filemanagerloader.cpp \
     src/base/FileManager/filemanagersaver.cpp \

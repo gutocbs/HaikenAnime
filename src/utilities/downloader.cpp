@@ -23,7 +23,7 @@ void Downloader::fsetWorker()
 
 void Downloader::setListAndType(Enums::mediaList mediaList, Enums::mediaType mediaType)
 {
-    dw->getList(mediaList, mediaType);
+//    dw->getList(mediaList, mediaType);
 }
 
 void Downloader::setListAndType(QString rlista, QString rtipoLista)

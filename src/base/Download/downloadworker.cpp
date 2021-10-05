@@ -2,28 +2,12 @@
 
 DownloadWorker::DownloadWorker(QObject *parent) : QObject(parent)
 {
-
+    isBusyDownloading = false;
 }
 
-void DownloadWorker::getList(Enums::mediaList mediaList, Enums::mediaType mediaType)
+void DownloadWorker::download(DownloadEnums::fileType fileType, QString url, DownloadEnums::imageSize imageSize)
 {
-    QPointer<MediaController> mediaController = new MediaController(this);
-    switch(mediaType){
-    case Enums::ANIME:
-        listManager = mediaController->getMediaListManager(Enums::ANIME);
-        break;
-    case Enums::MANGA:
-        listManager = mediaController->getMediaListManager(Enums::MANGA);
-        break;
-    case Enums::NOVEL:
-        listManager = mediaController->getMediaListManager(Enums::NOVEL);
-        break;
-    }
-    listManager->getMediaList(mediaList);
-}
-
-void DownloadWorker::download(fileType fileType, QString url, imageSize imageSize)
-{
+    isBusyDownloading = true;
     QString downloadPath = getDownloadPath(fileType, imageSize);
     downloadPath.append(getFileName(url));
     QPointer<QFile> file;
@@ -43,14 +27,9 @@ void DownloadWorker::download(fileType fileType, QString url, imageSize imageSiz
         setFinishedSignal(fileType, imageSize);
 }
 
-//TODO - Fazer função
-void DownloadWorker::downloadListCovers(Enums::mediaList mediaList, Enums::mediaType mediaType)
+bool DownloadWorker::isBusy()
 {
-    //Pegar vetor de medias
-    //Loopar pelo vetor
-    //Pegar a url de cada midia e ir baixando
-    //Baixar arquivo grande e arquivo pequeno
-
+    return isBusyDownloading;
 }
 
 QByteArray DownloadWorker::get(QString url)
@@ -112,44 +91,45 @@ bool DownloadWorker::saveFile(QPointer<QFile> file, QByteArray fileByteArray)
     return false;
 }
 //TODO - EMITIR SINAIS
-void DownloadWorker::setFinishedSignal(fileType fileType, imageSize imageSize)
+void DownloadWorker::setFinishedSignal(DownloadEnums::fileType fileType, DownloadEnums::imageSize imageSize)
 {
     switch (fileType) {
-    case DownloadWorker::Avatar:
+    case DownloadEnums::fileType::Avatar:
         break;
-    case DownloadWorker::Cover:
+    case DownloadEnums::fileType::Cover:
         switch(imageSize){
-        case DownloadWorker::Small:
+        case DownloadEnums::imageSize::Small:
             break;
-        case DownloadWorker::Medium:
+        case DownloadEnums::imageSize::Medium:
             break;
-        case DownloadWorker::Big:
+        case DownloadEnums::imageSize::Big:
             break;
         }
         break;
-    case DownloadWorker::Torrent:
+    case DownloadEnums::fileType::Torrent:
         break;
 
     }
+    isBusyDownloading = false;
 }
 
 //Ler configuração pra saber onde salvar
-QString DownloadWorker::getDownloadPath(fileType fileType, imageSize imageSize)
+QString DownloadWorker::getDownloadPath(DownloadEnums::fileType fileType, DownloadEnums::imageSize imageSize)
 {
     switch (fileType) {
-    case DownloadWorker::Avatar:
+    case DownloadEnums::fileType::Avatar:
         break;
-    case DownloadWorker::Cover:
+    case DownloadEnums::fileType::Cover:
         switch(imageSize){
-        case DownloadWorker::Small:
+        case DownloadEnums::imageSize::Small:
             break;
-        case DownloadWorker::Medium:
+        case DownloadEnums::imageSize::Medium:
             break;
-        case DownloadWorker::Big:
+        case DownloadEnums::imageSize::Big:
             break;
         }
         break;
-    case DownloadWorker::Torrent:
+    case DownloadEnums::fileType::Torrent:
         break;
     }
     return "";
