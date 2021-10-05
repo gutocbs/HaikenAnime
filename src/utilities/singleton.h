@@ -28,10 +28,10 @@ T* Singleton<T>::instance(CreateInstanceFunction create)
 {
     //Fracking Error!!!
     //Singleton::create.store(create);
-    Singleton::create.store(((QBasicAtomicPointer<void>::Type)create));
+    Singleton::create.storeRelaxed(((QBasicAtomicPointer<void>::Type)create));
 
   qCallOnce(init, flag);
-  return (T*)tptr.load();
+  return (T*)tptr.loadRelaxed();
 }
 
 template <class T>
@@ -39,8 +39,8 @@ void Singleton<T>::init()
 {
   static Singleton singleton;
   if (singleton.inited) {
-    CreateInstanceFunction createFunction = (CreateInstanceFunction)Singleton::create.load();
-    tptr.store(createFunction());
+    CreateInstanceFunction createFunction = (CreateInstanceFunction)Singleton::create.loadRelaxed();
+    tptr.storeRelaxed(createFunction());
   }
 }
 
@@ -55,7 +55,7 @@ Singleton<T>::~Singleton() {
   if (createdTptr) {
     delete createdTptr;
   }
-  create.store(nullptr);
+  create.storeRelaxed(nullptr);
 }
 
 template<class T> QBasicAtomicPointer<void> Singleton<T>::create = Q_BASIC_ATOMIC_INITIALIZER(nullptr);
