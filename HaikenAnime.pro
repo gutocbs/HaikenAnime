@@ -1,6 +1,6 @@
 QT += quick network networkauth concurrent testlib
 
-CONFIG += c++14
+CONFIG += c++17
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
