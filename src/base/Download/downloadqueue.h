@@ -15,11 +15,13 @@ public:
     explicit DownloadQueue(QObject *parent = nullptr);
     static void insertCoverDownloadQueue(int mediaId, DownloadEnums::imageSize imageSize);
     void downloadMedia();
+    void downloadCovers();
+    void downloadURLs();
 signals:
 
 private:
-    static QHash<QVariant, DownloadEnums::imageSize> mediaQueue;
-
+    static inline QHash<int, DownloadEnums::imageSize> mediaQueue = QHash<int, DownloadEnums::imageSize>();
+    static inline QHash<QString, DownloadEnums::imageSize> mediaQueueURL;
 };
 
 #endif // DOWNLOADQUEUE_H

@@ -93,7 +93,8 @@ QPointer<Media> DownloadManager::getMedia(int id)
             listManager = new MangaListManager();
         else if(media.isNull() && listManager->getMediaType() == Enums::mediaType::MANGA)
             listManager = new NovelListManager();
-        mediaSearchManager->setMediaListManager(listManager->instance());
+        //TODO - Setar media list manager
+//        mediaSearchManager->setMediaListManager(listManager->getInstance());
         media = mediaSearchManager->getMediaFromId(id);
     }
     return media;
