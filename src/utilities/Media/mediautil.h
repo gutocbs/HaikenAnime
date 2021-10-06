@@ -2,7 +2,10 @@
 #define MEDIAUTIL_H
 
 #include <QObject>
+#include <QFile>
 #include "src/DTO/media.h"
+#include "src/base/Anime/mediasearchmanager.h"
+#include "src/base/Anime/animelistmanager.h"
 
 class MediaUtil : public QObject
 {
@@ -12,6 +15,11 @@ public:
     explicit MediaUtil(QObject *parent = nullptr);
     static int getTotalEpisodes(Media *media);
     static int getNumberOfWatchedEpisodes(Media *media);
+    static int getMediaIdFromFile(QString fileName);
+    static int getMediaEpisodeFromFile(QString fileName);
+    static QString getMediaNameFromFile(QString fileName);
+    static QString getSeasonFromFile(QString fileName);
+    static bool checkIfFileCanBeOpened(QString filename);
 signals:
 
 };
