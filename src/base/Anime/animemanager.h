@@ -14,7 +14,7 @@ class AnimeManager : public IMediaManager
     static AnimeManager *createInstance();
 public:
     explicit AnimeManager(QObject *parent = nullptr);
-    static AnimeManager *instance();
+    static IMediaManager *instance();
     void setMediaSearchManager(IMediaSearchManager *mediaSearchManager);
     void setMediaListManager(IMediaListManager *mediaListManager);
 
@@ -23,6 +23,8 @@ public:
     bool updateProgress(int id, int mediaProgress);
     bool deleteFromList(int id);
     bool insertCustomName(int id, const QStringList &mediaTitle);
+    //TODO - Criar função
+    bool updatePath(int id, const QString &mediaPath);
 
 
 private:

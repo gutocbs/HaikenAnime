@@ -9,7 +9,7 @@ AnimeManager *AnimeManager::createInstance()
     return new AnimeManager();
 }
 
-AnimeManager *AnimeManager::instance()
+IMediaManager *AnimeManager::instance()
 {
     return Singleton<AnimeManager>::instance(AnimeManager::createInstance);
 }
@@ -93,4 +93,9 @@ bool AnimeManager::insertCustomName(int mediaId, const QStringList &mediaTitle)
 
     tempMedia->customNames.append(mediaTitle);
     return true;
+}
+
+bool AnimeManager::updatePath(int id, const QString &mediaPath)
+{
+
 }

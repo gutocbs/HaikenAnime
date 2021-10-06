@@ -10,7 +10,7 @@ AnimeListManager::AnimeListManager(QObject *parent) : IMediaListManager(parent)
 
 }
 
-IMediaListManager *AnimeListManager::instance()
+AnimeListManager *AnimeListManager::instance()
 {
     return Singleton<AnimeListManager>::instance(AnimeListManager::createInstance);
 }

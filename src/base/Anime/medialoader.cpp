@@ -13,7 +13,7 @@ bool MediaLoader::loadMediaFromFile(bool mock)
     QPointer<IMediaListManager> mediaListManager;
     QPointer<MediaController> mediaController = new MediaController();
     QString fileName = getFileName(mock);
-    if(!FileManager::checkIfFileCanBeOpened(fileName))
+    if(!MediaUtil::checkIfFileCanBeOpened(fileName))
         return false;
     QJsonArray mediaList = getMediaListArray(fileName);
     listSize = mediaList.size();

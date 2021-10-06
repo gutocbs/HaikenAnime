@@ -11,7 +11,7 @@ class MediaSearchManager : public IMediaSearchManager
 {
     Q_OBJECT
 public:
-    explicit MediaSearchManager(QObject *parent = nullptr);
+    explicit MediaSearchManager(QObject *parent = nullptr, IMediaListManager* mediaListManager = nullptr);
     void setMediaListManager(IMediaListManager *mediaListManager);
     QVector<Media*> searchMedia(const QString &rnome);
     int buscaIDRapido(const QString &rnomeAnime);
@@ -30,7 +30,7 @@ public:
     int getIdFromMediaTitle(const QString &mediaTitle);
     QPointer<Media> fbuscaMediaNoAno(int ano, int id);
 private:
-//    QPointer<IMediaListManager> mediaListManager;
+    QPointer<IMediaListManager> mediaListManager;
 
     // IMediaSearchManager interface
 };
