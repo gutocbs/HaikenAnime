@@ -12,7 +12,6 @@ class IMediaListManager : public QObject{
 public:
     //TODO - Transformar todas as funções voids em bool ou int
     using QObject::QObject;
-    IMediaListManager *instance();
     virtual QPointer<Media> getMediaById(int id) = 0;
     virtual QHash<int, Media*> getHashMediaById() = 0;
     virtual void addToHash(QPointer<Media> media) = 0;

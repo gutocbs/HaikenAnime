@@ -94,3 +94,8 @@ bool NovelManager::insertCustomName(int mediaId, const QStringList &mediaTitle)
     tempMedia->customNames.append(mediaTitle);
     return true;
 }
+
+bool NovelManager::updatePath(int id, const QString &mediaPath)
+{
+
+}

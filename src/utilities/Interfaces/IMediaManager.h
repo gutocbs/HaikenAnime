@@ -9,6 +9,7 @@
 class IMediaManager : public QObject{
 public:
     using QObject::QObject;
+    IMediaManager *instance();
     virtual void setMediaSearchManager(IMediaSearchManager* mediaSearchManager) = 0;
     virtual void setMediaListManager(IMediaListManager* mediaListManager) = 0;
     virtual bool updateMediaList(int id, Enums::mediaList newList) = 0;
@@ -16,6 +17,7 @@ public:
     virtual bool updateProgress(int id, int mediaProgress) = 0;
     virtual bool deleteFromList(int id) = 0;
     virtual bool insertCustomName(int id, const QStringList &mediaTitle) = 0;
+    virtual bool updatePath(int id, const QString &mediaPath) = 0;
 
     //TODO - Funções de get da midia - Ex: Get Name
 };

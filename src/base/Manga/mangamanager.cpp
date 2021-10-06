@@ -94,3 +94,8 @@ bool MangaManager::insertCustomName(int mediaId, const QStringList &mediaTitle)
     tempMedia->customNames.append(mediaTitle);
     return true;
 }
+
+bool MangaManager::updatePath(int id, const QString &mediaPath)
+{
+
+}

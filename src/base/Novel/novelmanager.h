@@ -24,6 +24,7 @@ public:
     bool updateProgress(int id, int mediaProgress);
     bool deleteFromList(int id);
     bool insertCustomName(int id, const QStringList &mediaTitle);
+    bool updatePath(int id, const QString &mediaPath);
 
 
 private:
