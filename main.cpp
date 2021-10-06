@@ -9,7 +9,8 @@
 void executeTests();
 int main(int argc, char *argv[])
 {
-    executeTests();
+//#if QTEST()
+//    executeTests();
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
     QCoreApplication::setOrganizationName("Haiken");
     QCoreApplication::setOrganizationDomain("");

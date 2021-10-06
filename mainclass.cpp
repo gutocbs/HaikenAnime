@@ -20,8 +20,8 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     cabaTorrent = new abaTorrent(this);
     mediaDownloader = new MediaDownloader(this);
     AnimeListManager *mediaManager = new AnimeListManager(this);
-    MediaLoader *mediaLoader = new MediaLoader(this, mediaManager);
-    mediaLoader->loadMediaFromFile();
+//    MediaLoader *mediaLoader = new MediaLoader(this, mediaManager);
+//    mediaLoader->loadMediaFromFile();
     cclient->fselecionaClient(cabaConfig->instance()->fgetService());
     //cclient->frecebeAutorizacao(configurações->user, configurações->codigo)
     cclient->frecebeAutorizacao(cabaConfig->instance()->fgetUsername(), cabaConfig->instance()->fgetAuthCode());
