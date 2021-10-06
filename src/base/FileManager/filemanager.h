@@ -24,14 +24,11 @@ public:
     static bool compareFileToMediaName(Media *media, QString fileName);
     static bool compareFileToMediaEpisode(Media *media, QString fileName, int episode);
     static bool openFileOrFolder(const QByteArray &path);
-    static QString searchMediaFolderPath(Media *media);
+    static QString searchForMediaDirectory(Media *media);
     static QString getMediaEpisodePath(Media *media, int episode = 0);
     static QString getMediaFolderPath(Media *media);
-    static QString getMediaName(QString fileName);
-    static int getMediaEpisode(QString fileName);
 signals:
 private:
-    static QStringList fileExtensions;
 };
 
 #endif // FILEMANAGER_H

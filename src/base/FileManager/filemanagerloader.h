@@ -9,16 +9,15 @@
 #include <QDirIterator>
 #include <QDir>
 #include "src/base/FileManager/mediadirectories.h"
+#include "src/utilities/Media/mediautil.h"
 class FileManagerLoader : public MediaDirectories
 {
     Q_OBJECT
 public:
     explicit FileManagerLoader(QObject *parent = nullptr);
-    static QStringList getDirectories();
-    static QHash<int, QString> getMediaDirectories();
     static bool loadMediaDirectories(bool mock = false);
     static QString getDirectoriesFileName(bool mock);
-    static QString getIdFromJson(QJsonObject object);
+    static int getIdFromJson(QJsonObject object);
     static QString getPathFromJson(QJsonObject object);
     static QJsonArray getDirectoriesListArray(QString fileName);
 signals:
