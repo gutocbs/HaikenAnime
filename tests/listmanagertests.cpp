@@ -8,8 +8,7 @@ ListManagerTests::ListManagerTests(QObject *parent) : QObject(parent)
 void ListManagerTests::initTestCase()
 {
     this->animeListManager = animeListManager->instance();
-    this->mediaLoader = new MediaLoader(this,animeListManager);
-    this->mediaLoader->loadMediaFromFile(true);
+    MediaLoader::loadMediaFromFile(true);
 }
 
 //TODO - Apagar a lista após os testes
