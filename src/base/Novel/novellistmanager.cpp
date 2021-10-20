@@ -62,8 +62,10 @@ QVector<Media*> NovelListManager::getMediaList(Enums::mediaList mediaList, QStri
     return QVector<Media*>();
 }
 
-QVector<Media*> NovelListManager::getSortList(Enums::mediaOrder order, Enums::orderType orderType, Enums::mediaList mediaList)
+QVector<Media*> NovelListManager::getSortList(Enums::mediaList mediaList)
 {
+    Enums::mediaOrder order = ListOrder::getOrder();
+    Enums::orderType orderType = ListOrder::getOrderType();
     QVector<Media*> tempList = getMediaList(mediaList);
     switch (orderType) {
     case Enums::Ascending:
@@ -188,6 +190,11 @@ bool NovelListManager::removeMedia(Media* media, Enums::mediaList mediaList)
     }
     hashMediaById.remove(media->id);
     return true;
+}
+
+IMediaListManager *NovelListManager::getInstance()
+{
+    return instance();
 }
 
 void NovelListManager::addToHash(QPointer<Media> media)

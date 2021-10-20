@@ -15,6 +15,11 @@ AnimeListManager *AnimeListManager::instance()
     return Singleton<AnimeListManager>::instance(AnimeListManager::createInstance);
 }
 
+IMediaListManager *AnimeListManager::getInstance()
+{
+    return this->instance();
+}
+
 QPointer<Media> AnimeListManager::getMediaById(int id)
 {
     return hashMediaById.value(id);
@@ -62,8 +67,10 @@ QVector<Media*> AnimeListManager::getMediaList(Enums::mediaList mediaList, QStri
     return QVector<Media*>();
 }
 
-QVector<Media*> AnimeListManager::getSortList(Enums::mediaOrder order, Enums::orderType orderType, Enums::mediaList mediaList)
+QVector<Media*> AnimeListManager::getSortList(Enums::mediaList mediaList)
 {
+    Enums::mediaOrder order = ListOrder::getOrder();
+    Enums::orderType orderType = ListOrder::getOrderType();
     QVector<Media*> tempList = getMediaList(mediaList);
     switch (orderType) {
     case Enums::Ascending:

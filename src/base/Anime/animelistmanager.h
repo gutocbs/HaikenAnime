@@ -14,6 +14,7 @@ class AnimeListManager : public IMediaListManager
 public:
     explicit AnimeListManager(QObject *parent = nullptr);
     static AnimeListManager *instance();
+    IMediaListManager *getInstance();
     ///QHash<Id, index>
     ///Get index position of media in the media vector
     QPointer<Media> getMediaById(int id);
@@ -22,7 +23,7 @@ public:
     Enums::mediaType getMediaType();
 
     QVector<Media*> getMediaList(Enums::mediaList mediaList, QString searchArgument = "");
-    QVector<Media*> getSortList(Enums::mediaOrder order, Enums::orderType orderType, Enums::mediaList mediaList);
+    QVector<Media*> getSortList(Enums::mediaList mediaList);
     QVector<Media*> getAnimeYearlyList(int ano);
     QPointer<Media> getMediaByIndex(Enums::mediaList mediaList, int index);
 

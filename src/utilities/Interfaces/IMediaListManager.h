@@ -7,18 +7,20 @@
 #include <QPointer>
 #include "src/utilities/Enums.h"
 #include "src/DTO/media.h"
+#include "src/base/Media/medialistmanager.h"
 
 class IMediaListManager : public QObject{
 public:
     //TODO - Transformar todas as funções voids em bool ou int
     using QObject::QObject;
+    virtual IMediaListManager *getInstance() = 0;
     virtual QPointer<Media> getMediaById(int id) = 0;
     virtual QHash<int, Media*> getHashMediaById() = 0;
     virtual void addToHash(QPointer<Media> media) = 0;
 
     //return functions
     virtual QVector<Media*> getMediaList(Enums::mediaList mediaList, QString searchArgument = "") = 0;
-    virtual QVector<Media*> getSortList(Enums::mediaOrder order, Enums::orderType orderType, Enums::mediaList mediaList) = 0;
+    virtual QVector<Media*> getSortList(Enums::mediaList mediaList) = 0;
     virtual QVector<Media*> getAnimeYearlyList(int ano) = 0;
     virtual QPointer<Media> getMediaByIndex(Enums::mediaList mediaList, int index) = 0;
     virtual bool compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle) = 0;
