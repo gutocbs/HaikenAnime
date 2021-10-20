@@ -10,6 +10,7 @@ anilist::anilist(QObject *parent) : QObject(parent)
 anilist::~anilist(){
 }
 
+//TODO - Fazer essa classe usar uma interface
 //TODO - Sair da thread ao fechar o programa
 bool anilist::fgetList(){
     getAvatar();
