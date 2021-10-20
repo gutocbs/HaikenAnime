@@ -42,7 +42,14 @@ public:
         else if(enumName.compare("ONE SHOT") == 0) return mediaType::MANGA;
         return mediaType::ANIME;
     }
-
+    static mediaOrder QStringToMediaOrder(QString enumName){
+        if(enumName.compare(enumMediaOrderToQString(mediaOrder::Title)) == 0) return mediaOrder::Title;
+        else if(enumName.compare(enumMediaOrderToQString(mediaOrder::StartDate)) == 0) return mediaOrder::StartDate;
+        else if(enumName.compare(enumMediaOrderToQString(mediaOrder::Progress)) == 0) return mediaOrder::Progress;
+        else if(enumName.compare(enumMediaOrderToQString(mediaOrder::Score)) == 0) return mediaOrder::Score;
+        else if(enumName.compare(enumMediaOrderToQString(mediaOrder::Type)) == 0) return mediaOrder::Type;
+        return mediaOrder::Title;
+    }
     static QString enumHashListToQString(hashList enumName){
         return QVariant::fromValue(enumName).toString();
     }
@@ -50,6 +57,9 @@ public:
         return QVariant::fromValue(enumName).toString();
     }
     static QString enumMediaTypeToQString(mediaType enumName){
+        return QVariant::fromValue(enumName).toString();
+    }
+    static QString enumMediaOrderToQString(mediaOrder enumName){
         return QVariant::fromValue(enumName).toString();
     }
 
