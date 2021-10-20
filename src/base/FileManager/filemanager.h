@@ -13,7 +13,7 @@
 #include "src/utilities/Media/mediautil.h"
 #include "src/base/FileManager/filemanagerloader.h"
 #include "src/base/FileManager/filemanagersaver.h"
-#include "src/base/FileManager/MediaDirectories.h"
+#include "src/base/FileManager/mediadirectories.h"
 
 class FileManager : public MediaDirectories
 {
