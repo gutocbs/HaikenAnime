@@ -17,35 +17,42 @@ void DownloadQueue::downloadMedia()
     QTimer::singleShot(30, this, &DownloadQueue::downloadMedia);
 }
 
-//TODO - mudar foreach pra iterators
 void DownloadQueue::downloadCovers()
 {
-    if(mediaQueue.size() > 0){
+    if(mediaQueue.size() > 0 && !isDownloading){
+        isDownloading = true;
         QPointer<DownloadManager> downloadManager = new DownloadManager();
         int maxWorkers = 5;
-        if(downloadManager->instance()->getWorkersNumber() > maxWorkers){
+        if(downloadManager->instance()->getWorkersNumber() < maxWorkers){
             for(int i = 0; i < maxWorkers - downloadManager->instance()->getWorkersNumber(); i++)
                 downloadManager->instance()->setWorker();
         }
-        foreach(QVariant media, mediaQueue.keys()){
-            downloadManager->instance()->work(media);
+        QHash<int, DownloadEnums::imageSize>::iterator iterator;
+        for (iterator = mediaQueue.begin(); iterator != mediaQueue.end(); ++iterator){
+            downloadManager->instance()->setWork(iterator.key());
         }
+        downloadManager->instance()->work();
         mediaQueue.clear();
+        isDownloading = false;
     }
 }
 
 void DownloadQueue::downloadURLs()
 {
-    if(this->mediaQueueURL.size() > 0){
+    if(mediaQueue.size() > 0 && !isDownloading){
+        isDownloading = true;
         QPointer<DownloadManager> downloadManager = new DownloadManager();
         int maxWorkers = 5;
         if(downloadManager->instance()->getWorkersNumber() > maxWorkers){
             for(int i = 0; i < maxWorkers - downloadManager->instance()->getWorkersNumber(); i++)
                 downloadManager->instance()->setWorker();
         }
-        foreach(QVariant media, mediaQueueURL.keys()){
-            downloadManager->instance()->work(media);
+        QHash<QString, DownloadEnums::imageSize>::iterator iterator;
+        for (iterator = mediaQueueURL.begin(); iterator != mediaQueueURL.end(); ++iterator){
+            downloadManager->instance()->setWork(iterator.key());
         }
+        downloadManager->instance()->work();
+        isDownloading = false;
         mediaQueueURL.clear();
     }
 }

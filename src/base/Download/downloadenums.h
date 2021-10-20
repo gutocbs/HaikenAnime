@@ -11,6 +11,8 @@ public:
     Q_ENUM(fileType)
     enum imageSize{Small, Medium, Big, None = 0};
     Q_ENUM(imageSize)
+    enum imageType{jpg, png};
+    Q_ENUM(imageType)
 };
 
 

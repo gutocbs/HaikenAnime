@@ -21,7 +21,8 @@ signals:
 
 private:
     static inline QHash<int, DownloadEnums::imageSize> mediaQueue = QHash<int, DownloadEnums::imageSize>();
-    static inline QHash<QString, DownloadEnums::imageSize> mediaQueueURL;
+    static inline QHash<QString, DownloadEnums::imageSize> mediaQueueURL = QHash<QString, DownloadEnums::imageSize>();
+    static inline bool isDownloading = false;
 };
 
 #endif // DOWNLOADQUEUE_H

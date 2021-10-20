@@ -22,14 +22,18 @@ public:
     bool isBusy();
 
 signals:
+    void downloadFinished();
 private:
     QString getDownloadPath(DownloadEnums::fileType fileType, DownloadEnums::imageSize = DownloadEnums::imageSize::None);
     QString getFileName(QString url);
+    QString getUrlFromImageSize(QString url, DownloadEnums::imageSize = DownloadEnums::imageSize::None);
     QByteArray get(QString url);
     qint64 getFileSize(QString url);
     bool saveFile(QPointer<QFile> file, QByteArray fileByteArray);
     void setFinishedSignal(DownloadEnums::fileType fileType, DownloadEnums::imageSize = DownloadEnums::imageSize::None);
+    void setImageTypes();
     bool isBusyDownloading;
+    QStringList imageTypes;
 };
 
 #endif // DOWNLOADWORKER_H

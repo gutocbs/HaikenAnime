@@ -19,7 +19,8 @@ DownloadManager::DownloadManager(QObject *parent) : QObject(parent)
 void DownloadManager::setWorker()
 {
     QPointer<DownloadWorker> dw = new DownloadWorker(this);
-    dw->setObjectName("DownloadWorker " + QString::number(0));
+    dw->setObjectName("DownloadWorker " + QString::number(workers.size()));
+    connect(dw,&DownloadWorker::downloadFinished,this, &DownloadManager::checkwork);
     workers.append(dw);
 }
 
@@ -28,19 +29,19 @@ int DownloadManager::getWorkersNumber()
     return workers.size();
 }
 
-void DownloadManager::work(QVariant value)
+void DownloadManager::setWork(QVariant value)
 {
     QString workType = value.typeName();
     if(workType.compare("QString", Qt::CaseInsensitive) == 0)
-        work(value.toString());
-    else if(workType.compare("integrer", Qt::CaseInsensitive) == 0)
-        work(value.toInt());
+        workVector.append(value);
+    else if(workType.compare("int", Qt::CaseInsensitive) == 0)
+        workVector.append(value);
+    //TODO - Else dar um log aqui
 }
 
 //Adiciona um trabalho na fila para que um worker possa pegar
-void DownloadManager::work(int value)
+void DownloadManager::work()
 {
-    workVector.append(value);
     checkwork();
 }
 
@@ -63,6 +64,7 @@ void DownloadManager::checkwork()
     }
 }
 
+//TODO - Fazer os downloads pararem quando fechar o programa
 void DownloadManager::setDownload(DownloadWorker* dw)
 {
     QVariant work = workVector.takeFirst();
@@ -71,7 +73,7 @@ void DownloadManager::setDownload(DownloadWorker* dw)
     if(workType.compare("QString", Qt::CaseInsensitive) == 0)
         dw->download(DownloadEnums::Torrent, work.toString());
     //Caso seja um id, buscar a media certa e baixar
-    else if(workType.compare("integrer", Qt::CaseInsensitive) == 0){
+    else if(workType.compare("int", Qt::CaseInsensitive) == 0){
         QPointer<Media> media = getMedia(work.toInt());
         if(!media.isNull()){
             dw->download(DownloadEnums::Cover, media->coverURL,DownloadEnums::Medium);
@@ -83,18 +85,21 @@ void DownloadManager::setDownload(DownloadWorker* dw)
 
 QPointer<Media> DownloadManager::getMedia(int id)
 {
+    QPointer<MediaController> mediaController = new MediaController();
     QPointer<MediaSearchManager> mediaSearchManager = new MediaSearchManager();
     QPointer<IMediaListManager> listManager;
     QPointer<Media> media;
-    while(media.isNull() || listManager->getMediaType() != Enums::mediaType::NOVEL){
+    while(media.isNull()){
         if(media.isNull() && listManager.isNull())
             listManager = new AnimeListManager();
         else if(media.isNull() && listManager->getMediaType() == Enums::mediaType::ANIME)
             listManager = new MangaListManager();
         else if(media.isNull() && listManager->getMediaType() == Enums::mediaType::MANGA)
             listManager = new NovelListManager();
-        //TODO - Setar media list manager
-//        mediaSearchManager->setMediaListManager(listManager->getInstance());
+        else
+            break;
+        //TODO - Testar instance em vez de testes
+        mediaSearchManager->setMediaListManager(listManager->getInstance());
         media = mediaSearchManager->getMediaFromId(id);
     }
     return media;

@@ -19,12 +19,13 @@ public:
 signals:
 
 public slots:
-void work(QVariant value);
-void work(int value);
-void work(QString value);
+    void setWork(QVariant value);
+    void work();
+//    void work(int value);
+    void work(QString value);
 
 private slots:
-void checkwork();
+    void checkwork();
 
 private:
     void setDownload(DownloadWorker* dw);

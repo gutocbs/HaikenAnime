@@ -3,28 +3,33 @@
 DownloadWorker::DownloadWorker(QObject *parent) : QObject(parent)
 {
     isBusyDownloading = false;
+    setImageTypes();
 }
 
 void DownloadWorker::download(DownloadEnums::fileType fileType, QString url, DownloadEnums::imageSize imageSize)
 {
     isBusyDownloading = true;
+    url = getUrlFromImageSize(url, imageSize);
     QString downloadPath = getDownloadPath(fileType, imageSize);
-    downloadPath.append(getFileName(url));
-    QPointer<QFile> file;
-    file->setFileName(downloadPath);
+    QString fileName = getFileName(url);
+    qDebug() << "Start " + fileName;
+    downloadPath.append(fileName);
+    QPointer<QFile> file = new QFile(downloadPath);
     qint64 downloadFileSize = getFileSize(url);
 
     //Remove corrupted files or old files
-    if((QFile::exists(downloadPath) && file->size() == 0) || (file->size() != downloadFileSize))
+    if(QFile::exists(downloadPath) && (file->size() == 0 || file->size() != downloadFileSize))
         file->remove();
-    //If the file exists and is the same, we don't need to download it again
-    else if(file->size() == downloadFileSize)
-        return;
-
-    QByteArray fileByteArray = get(url);
-    bool save = saveFile(file, fileByteArray);
-    if(save)
-        setFinishedSignal(fileType, imageSize);
+    //If the file exists, we don't need to download it again
+    if(downloadFileSize != 0 && !QFile::exists(downloadPath)){
+        QByteArray fileByteArray = get(url);
+        saveFile(file, fileByteArray);
+    }
+    if(file->isOpen())
+        file->close();
+    isBusyDownloading = false;
+    qDebug() << "Success " + fileName;
+//        setFinishedSignal(fileType, imageSize);
 }
 
 bool DownloadWorker::isBusy()
@@ -108,14 +113,21 @@ void DownloadWorker::setFinishedSignal(DownloadEnums::fileType fileType, Downloa
         break;
     case DownloadEnums::fileType::Torrent:
         break;
-
     }
-    isBusyDownloading = false;
+    emit downloadFinished();
+}
+
+void DownloadWorker::setImageTypes()
+{
+    //TODO - Ler isso de uma configuração
+    imageTypes.append("jpg");
+    imageTypes.append("png");
 }
 
 //Ler configuração pra saber onde salvar
 QString DownloadWorker::getDownloadPath(DownloadEnums::fileType fileType, DownloadEnums::imageSize imageSize)
 {
+    QString downloadPath = "";
     switch (fileType) {
     case DownloadEnums::fileType::Avatar:
         break;
@@ -126,16 +138,38 @@ QString DownloadWorker::getDownloadPath(DownloadEnums::fileType fileType, Downlo
         case DownloadEnums::imageSize::Medium:
             break;
         case DownloadEnums::imageSize::Big:
+            downloadPath = QDir::currentPath() + QDir::separator() + "Configurações" + QDir::separator() + "Imagens" + QDir::separator() + "Grande" + QDir::separator();
             break;
         }
         break;
     case DownloadEnums::fileType::Torrent:
         break;
     }
-    return "";
+    return downloadPath;
 }
-
+//TODO - Melhorar função de pegar nome
 QString DownloadWorker::getFileName(QString url)
 {
-    return url.mid(url.lastIndexOf(QChar('.')));
+    QString fileType = url.mid(url.lastIndexOf(QChar('.'))).remove(".");
+    QString fileName = url.mid(url.lastIndexOf(QChar('/'))).remove("/");
+    if(imageTypes.contains(fileType)){
+        fileName.remove(QRegExp("[A-Za-z]*"));
+        fileName = fileName.left(fileName.lastIndexOf(QChar('-')));
+    }
+    fileName.append(".").append(fileType);
+    return fileName;
+}
+
+QString DownloadWorker::getUrlFromImageSize(QString url, DownloadEnums::imageSize imageSize)
+{
+    switch(imageSize){
+    case DownloadEnums::imageSize::Small:
+        break;
+    case DownloadEnums::imageSize::Medium:
+        break;
+    case DownloadEnums::imageSize::Big:
+        url.replace("medium", "large");
+        break;
+    }
+    return url;
 }
