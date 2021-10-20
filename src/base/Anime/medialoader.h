@@ -22,6 +22,7 @@
 #include "src/base/Anime/animemanager.h"
 #include "src/base/FileManager/filemanager.h"
 #include "src/base/Anime/mediacontroller.h"
+#include "src/base/Download/downloadqueue.h"
 
 //TODO - Fazer singleton
 class MediaLoader : public QObject

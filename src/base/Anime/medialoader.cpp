@@ -26,6 +26,7 @@ bool MediaLoader::loadMediaFromFile(bool mock)
         media->format = mediaTypeEnum;
         mediaListManager = mediaController->instance()->getMediaListManager(mediaTypeEnum);
         mediaListManager->addMedia(media, mediaListEnum);
+        DownloadQueue::insertCoverDownloadQueue(media->id, DownloadEnums::imageSize::Big);
     }
     return true;
 }
