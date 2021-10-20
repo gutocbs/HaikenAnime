@@ -32,6 +32,15 @@
 #include "src/DTO/MediaList.h"
 #include "src/utilities/Media/mediadownloader.h"
 
+#include "src/base/Download/downloadqueue.h"
+#include "src/base/Download/downloadenums.h"
+#include "src/base/Anime/animelistmanager.h"
+#include "src/utilities/Enums.h"
+#include "src/clients/clientmanager.h"
+#include "src/base/Media/medialistmanager.h"
+#include "src/DTO/ListOrder.h"
+#include "src/base/Media/mediamanager.h"
+
 class MainClass : public QObject
 {
     Q_OBJECT
@@ -48,6 +57,7 @@ public:
     Q_ENUM(janela)
 public slots:
 
+    //TODO - Mudar isso vai foder tudo no qml. Vou ter que olhar bem lá para resolver
     //Organizar aqui pra por todos os gets e sets juntos
     void fmostraListaAnimes();
     void finfoAnimeSelecionado(QVariant);
@@ -61,18 +71,8 @@ public slots:
     QVariant fretornaPathAvatar();
     void fupdateTimer();
 
-    void fordemLista(QVariant);
     void fabreSite(QVariant);
-    void fselecionaTipoAnime();
-    void fselecionaTipoManga();
-    void fselecionaTipoNovel();
     void fselecionaTipoSeason(QVariant);
-    void fselecionaListaCurrent();
-    void fselecionaListaCompleted();
-    void fselecionaListaPaused();
-    void fselecionaListaDropped();
-    void fselecionaListaPlanning();
-    void fabreProximoEpisodio();
     void fabrePastaAnime();
     void fabreStream();
     void frefresh();
@@ -84,15 +84,12 @@ public slots:
     void fadicionaNomeAlternativo(QVariant);
     void fselecionaPastaespecificaAnime(QVariant);
     void fremoveFromList();
-
     void fproximaPagina();
     void fanteriorPagina();
 
     void fmudaListaAnime(QVariant);
     void ftryClientConnection(bool);
-    void fconnectSuccess();
     void fconnectFail();
-    void fclientUpdate();
 
     void fbotaoHome();
     void fbotaoConfig();
@@ -112,6 +109,36 @@ public slots:
     QVariant fopenTorrentLink(QVariant);
     void fbotaoBusca(QVariant);
     void fbotaoDownloadTorrents();
+
+    //Remover, mas verificar no QML antes
+    Q_DECL_UNUSED void fordemLista(QVariant);
+    Q_DECL_UNUSED void fclientUpdate();
+    Q_DECL_UNUSED void fselecionaTipoAnime();
+    Q_DECL_UNUSED void fselecionaTipoManga();
+    Q_DECL_UNUSED void fselecionaTipoNovel();
+    Q_DECL_UNUSED void fselecionaListaCurrent();
+    Q_DECL_UNUSED void fselecionaListaCompleted();
+    Q_DECL_UNUSED void fselecionaListaPaused();
+    Q_DECL_UNUSED void fselecionaListaDropped();
+    Q_DECL_UNUSED void fselecionaListaPlanning();
+    Q_DECL_UNUSED void fabreProximoEpisodio();
+
+    //Falta terminar de refazer
+    Q_DECL_DEPRECATED void fconnectSuccess();
+
+    //Novos
+    void getMediaList(QVariant order = "Title");
+
+    void selectTypeAnime();
+    void selectTypeManga();
+    void selectTypeNovel();
+
+    void selectListCurrent();
+    void selectListCompleted();
+    void selectListPaused();
+    void selectListDropped();
+    void selectListPlanning();
+    void playNextEpisode();
 
 signals:
     void sidAnime1(QVariant data);
@@ -162,7 +189,12 @@ signals:
 
 private:
     void fconnections();
-    Q_DECL_DEPRECATED void fdownloadCoverImages();
+
+    //Connect and update lists
+    void connectSuccess();
+    void loadMediaList();
+    void setUpdateTimer();
+    void setDownloads();
 
     //Classes
     Database *cdatabase;
@@ -173,8 +205,6 @@ private:
     Downloader *cdownloader;
     abaConfig *cabaConfig;
     abaTorrent *cabaTorrent;
-    QPointer<MediaDownloader> mediaDownloader;
-
     QVector<anime*> vlistaSelecionada;
 
     int vindexAnimeSelecionado;
@@ -188,8 +218,6 @@ private:
     QString vordemLista;
     QString vlistaAtual;
     Database::type vtipoAtual;
-    Enums::mediaType mediaType;
-    Enums::mediaList mediaList;
     janela vjanelaAtual;
 
     QMetaEnum vmetaEnumLista;
@@ -201,12 +229,28 @@ private:
     QStringList vlistaFilaLista;
     QList<int> vlistaFilaSize;
     QMap<QStringList, QString> vlistaAcoes;
-    QMap<QString, MediaList*> downloadQueue;
 
     QTimer *vtimerCountdown;
     QTimer *vtimerChecaAssistindo;
     QTimer timerMaxClientRequests;
     QTime time;
+
+    //Novos
+    QPointer<MediaDownloader> mediaDownloader;
+    QPointer<DownloadQueue> downloadQueue;
+    QPointer<IMediaListManager> mediaListManager;
+    QPointer<ClientManager> clientManager;
+    QVector<Media*> activeMediaList;
+
+    int selectedMediaIndex;
+    int selectedPage;
+    QTime listUpdateTimer;
+    QPointer<QTimer> listUpdateCountdown;
+
+    Enums::mediaOrder mediaOrder;
+    Enums::mediaType mediaType;
+    Enums::mediaList mediaList;
+    Enums::orderType mediaOrderType;
 };
 
 #endif // MAINCLASS_H

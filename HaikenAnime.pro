@@ -36,6 +36,7 @@ HEADERS += \
     lib/robotlib/Size.h \
     lib/robotlib/Window.h \
     mainclass.h \
+    src/DTO/ListOrder.h \
     src/DTO/MediaList.h \
     src/DTO/media.h \
     src/base/Anime/animelistmanager.h \
@@ -54,6 +55,8 @@ HEADERS += \
     src/base/FileManager/mediadirectories.h \
     src/base/Manga/mangalistmanager.h \
     src/base/Manga/mangamanager.h \
+    src/base/Media/medialistmanager.h \
+    src/base/Media/mediamanager.h \
     src/base/Novel/novellistmanager.h \
     src/base/Novel/novelmanager.h \
     src/base/abaconfig.h \
@@ -66,7 +69,10 @@ HEADERS += \
     src/base/downloaderworker.h \
     src/base/leitorlistaanimes.h \
     src/base/torrentinfo.h \
+    src/clients/ClientEnums.h \
+    src/clients/IClient.h \
     src/clients/anilist.h \
+    src/clients/clientmanager.h \
     src/utilities/Enums.h \
     src/utilities/Interfaces/IMediaListManager.h \
     src/utilities/Interfaces/IMediaManager.h \
@@ -119,6 +125,8 @@ SOURCES += \
     src/base/FileManager/mediadirectories.cpp \
     src/base/Manga/mangalistmanager.cpp \
     src/base/Manga/mangamanager.cpp \
+    src/base/Media/medialistmanager.cpp \
+    src/base/Media/mediamanager.cpp \
     src/base/Novel/novellistmanager.cpp \
     src/base/Novel/novelmanager.cpp \
     src/base/abaconfig.cpp \
@@ -130,6 +138,7 @@ SOURCES += \
     src/base/downloaderworker.cpp \
     src/base/leitorlistaanimes.cpp \
     src/clients/anilist.cpp \
+    src/clients/clientmanager.cpp \
     src/utilities/Media/mediadownloader.cpp \
     src/utilities/Media/mediautil.cpp \
     src/utilities/Media/mediacomparer.cpp \

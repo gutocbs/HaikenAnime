@@ -19,9 +19,8 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     cabaConfig = new abaConfig(this);
     cabaTorrent = new abaTorrent(this);
     mediaDownloader = new MediaDownloader(this);
-    AnimeListManager *mediaManager = new AnimeListManager(this);
-//    MediaLoader *mediaLoader = new MediaLoader(this, mediaManager);
-//    mediaLoader->loadMediaFromFile();
+    downloadQueue = new DownloadQueue(this);
+    MediaLoader::loadMediaFromFile();
     cclient->fselecionaClient(cabaConfig->instance()->fgetService());
     //cclient->frecebeAutorizacao(configurações->user, configurações->codigo)
     cclient->frecebeAutorizacao(cabaConfig->instance()->fgetUsername(), cabaConfig->instance()->fgetAuthCode());
@@ -83,37 +82,6 @@ void MainClass::fconnections()
 
 }
 
-//TODO - REMOVER QUANDO TIVER A PARTE DE DOWNLOAD DE IMAGENS PRONTO
-void MainClass::fdownloadCoverImages()
-{
-    if(!vlistaFilaLista.contains(vlistaAtual) && !vlistaAtual.contains("Fall", Qt::CaseInsensitive)
-        && !vlistaAtual.contains("Winter", Qt::CaseInsensitive) && !vlistaAtual.contains("Summer", Qt::CaseInsensitive)
-        && !vlistaAtual.contains("Spring", Qt::CaseInsensitive)){
-        vlistaFilaLista.append(vlistaAtual);
-        vlistaFilaTipo.append(enumtipoToQString(vtipoAtual));
-        vlistaFilaSize.append(vlistaSelecionada.size());
-    }
-
-    if(cdownloader->isBusy() && !vlistaFilaTipo.isEmpty()){
-        QTimer::singleShot(5000, this, &MainClass::fdownloadCoverImages);
-    }
-    else if(!vlistaFilaTipo.isEmpty()){
-        cdownloader->setListAndType(vlistaFilaLista.takeFirst(), vlistaFilaTipo.takeFirst());
-    //    cdownloader->setListAndType(vlistaFilaLista.first(), vlistaFilaTipo.first());
-        for(int i = 0; i < vlistaFilaSize.first(); i++){
-            cdownloader->work(i);
-        }
-        QTimer::singleShot(1000, this, &MainClass::sbaixouImagensMedias);
-    //    cdownloader->setListAndType(vlistaFilaLista.takeFirst(), vlistaFilaTipo.takeFirst());
-        for(int i = 0; i < vlistaFilaSize.first(); i++){
-            cdownloader->workBig(i);
-        }
-        vlistaFilaSize.removeFirst();
-        if(!cdownloader->isBusy() && !vlistaFilaTipo.isEmpty())
-            QTimer::singleShot(1000, this, &MainClass::fdownloadCoverImages);
-    }
-}
-
 void MainClass::ftryClientConnection(bool connection)
 {
     if(!connection)
@@ -153,7 +121,7 @@ void MainClass::fconnectSuccess()
     cdownloader->setAvatar(cclient->fgetAvatar());
     cdownloader->fsetWorker();
     cdownloader->workAvatar(0);
-    fdownloadCoverImages();
+    downloadQueue->downloadMedia();
     //TODO - COLOCAR SEMPRE QUE PRECISAR MUDAR DE PÁGINA OU BAIXAR UMA NOVA IMAGEM
     mediaDownloader->insertDownloadQueue(vlistaAtual, mediaType, mediaList,vlistaSelecionada.size());
     mediaDownloader->downloadCoverImages();
@@ -162,6 +130,51 @@ void MainClass::fconnectSuccess()
     if(!tthreadDiretorios.isRunning()){
         tthreadDiretorios.start();
     }
+}
+
+void MainClass::connectSuccess()
+{
+    //block buttons
+    emit sconnectGUI(false);
+    loadMediaList();
+
+    //Read info from the selected anime
+    finfoAnimeSelecionado(0);
+    emit sconnectGUI(true);
+    setUpdateTimer();
+    setDownloads();
+    //TODO - Ler comentário a baixo sobre ser a primeira conexão
+    //Setar uma variável pra ver se é a primeira vez que conecta. Se for, pode dar o setUpdate.
+    //Caso não, nào deve dar o setUpdate
+    clientManager->setUpdate();
+    //TODO - Startar busca por animes
+}
+
+void MainClass::loadMediaList()
+{
+    //TODO - If the list is not empty, we have to empty it first.
+    MediaLoader::loadMediaFromFile();
+    activeMediaList = mediaListManager->getInstance()->getSortList(mediaList);
+
+    //We need to check if the list got empy before reading it
+    if(activeMediaList.size() < selectedMediaIndex){
+        selectedMediaIndex = 0;
+        selectedPage = 1;
+    }
+}
+
+void MainClass::setUpdateTimer()
+{
+    listUpdateTimer = QTime::fromString("10","m");
+    listUpdateCountdown->setInterval(1000);
+    listUpdateCountdown->start();
+}
+
+void MainClass::setDownloads()
+{
+    //TODO - Download de avatar
+//    downloadQueue->downloadAvatar();
+    downloadQueue->downloadMedia();
 }
 
 void MainClass::fconnectFail()
@@ -176,55 +189,6 @@ void MainClass::fconnectFail()
     }
 
     QTimer::singleShot(10000, cclient, &Client::fbaixaListas);
-}
-
-void MainClass::fclientUpdate()
-{
-    if(vlistaAcoes.isEmpty())
-        return;
-    QString nome;
-    foreach (QStringList key, vlistaAcoes.keys()) {
-        nome = cdatabase->instance()->fbuscaIDRetornaTitulo(key.at(1));
-        if(vrateLimitRequests == 90)
-            return;
-        else if(key.at(0) == "nota"){
-            if(cclient->fmudaNota(key.at(1).toInt(), vlistaAcoes[key].toInt())){
-                qDebug() << QString("Change: Score - " + nome + " - " + vlistaAcoes[key]
-                                     + " - " + QDateTime::currentDateTime().toString());
-                vlistaAcoes.remove(key);
-            }
-            else
-                qDebug() << "Couldn't reach the client server. Trying again in 10 seconds.";
-        }
-        else if(key.at(0) == "progresso"){
-            if(cclient->fmudaProgresso(key.at(1).toInt(), vlistaAcoes[key].toInt())){
-                qDebug() << QString("Change: Progress - " + nome +
-                                    " - " + vlistaAcoes[key] + " - " + QDateTime::currentDateTime().toString());
-                vlistaAcoes.remove(key);
-            }
-            else
-                qDebug() << "Couldn't reach the client server. Trying again in 10 seconds.";
-        }
-//        else if(key.at(0) == "lista"){
-//            if(cclient->fmudaLista(key.at(1).toInt(), vlistaAcoes[key])){
-//                qDebug() << QString("Change: List - " + nome +
-//                                    " - " + vlistaAcoes[key] + " - " + QDateTime::currentDateTime().toString());
-//                vlistaAcoes.remove(key);
-//            }
-//            else
-//                qDebug() << "Couldn't reach the client server. Trying again in 10 seconds.";
-//        }
-        else if(key.at(0) == "remove"){
-            if(cclient->fexcluiAnime(key.at(1).toInt())){
-                qDebug() << QString("Change: Remove - " + nome +
-                                    " - " + vlistaAcoes[key] + " - " + QDateTime::currentDateTime().toString());
-                vlistaAcoes.remove(key);
-            }
-            else
-                qDebug() << "Couldn't reach the client server. Trying again in 10 seconds.";
-        }
-        vrateLimitRequests++;
-    }
 }
 
 void MainClass::fbotaoHome()
@@ -334,7 +298,7 @@ void MainClass::fbotaoBusca(QVariant search)
             vlistaSelecionada = cdatabase->instance()->returnSearchList(searchText.simplified(), vtipoAtual);
             if(!vlistaSelecionada.isEmpty()){
                 vlistaAtual = enumlistaToQString(lista::SEARCH);
-                fdownloadCoverImages();
+                mediaDownloader->downloadCoverImages();
                 vindexAnimeSelecionado = 0;
                 vpagina = 1;
     //            ui->NumPagina->setText("Busca  - " + QString::number(vlistaSelecionada.size()) +
@@ -358,6 +322,76 @@ void MainClass::fbotaoBusca(QVariant search)
 void MainClass::fbotaoDownloadTorrents()
 {
     cabaTorrent->fdownloadAnimes();
+}
+
+void MainClass::fordemLista(QVariant ordem)
+{
+    //First we need to see if the order is the same, and if it is, we will change the first letter
+    //To invert the order
+    if(vordemLista.contains(ordem.toString()) && vordemLista.front() == "c")
+        vordemLista.replace(0,1,"v");
+    else if(vordemLista.contains(ordem.toString()) && vordemLista.front() == "v")
+        vordemLista.replace(0,1,"c");
+    //If it's not, let's change to the new order, with a C to make it from low to high
+    else
+        vordemLista = QString("c" + ordem.toString());
+
+    //Change the old list to the new
+    vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
+    if(!vlistaSelecionada.isEmpty()){
+        vindexAnimeSelecionado = 0;
+        vpagina = 1;
+        finfoAnimeSelecionado(0);
+    }
+}
+
+void MainClass::fclientUpdate()
+{
+    if(vlistaAcoes.isEmpty())
+        return;
+    QString nome;
+    foreach (QStringList key, vlistaAcoes.keys()) {
+        nome = cdatabase->instance()->fbuscaIDRetornaTitulo(key.at(1));
+        if(vrateLimitRequests == 90)
+            return;
+        else if(key.at(0) == "nota"){
+            if(cclient->fmudaNota(key.at(1).toInt(), vlistaAcoes[key].toInt())){
+                qDebug() << QString("Change: Score - " + nome + " - " + vlistaAcoes[key]
+                                     + " - " + QDateTime::currentDateTime().toString());
+                vlistaAcoes.remove(key);
+            }
+            else
+                qDebug() << "Couldn't reach the client server. Trying again in 10 seconds.";
+        }
+        else if(key.at(0) == "progresso"){
+            if(cclient->fmudaProgresso(key.at(1).toInt(), vlistaAcoes[key].toInt())){
+                qDebug() << QString("Change: Progress - " + nome +
+                                    " - " + vlistaAcoes[key] + " - " + QDateTime::currentDateTime().toString());
+                vlistaAcoes.remove(key);
+            }
+            else
+                qDebug() << "Couldn't reach the client server. Trying again in 10 seconds.";
+        }
+//        else if(key.at(0) == "lista"){
+//            if(cclient->fmudaLista(key.at(1).toInt(), vlistaAcoes[key])){
+//                qDebug() << QString("Change: List - " + nome +
+//                                    " - " + vlistaAcoes[key] + " - " + QDateTime::currentDateTime().toString());
+//                vlistaAcoes.remove(key);
+//            }
+//            else
+//                qDebug() << "Couldn't reach the client server. Trying again in 10 seconds.";
+//        }
+        else if(key.at(0) == "remove"){
+            if(cclient->fexcluiAnime(key.at(1).toInt())){
+                qDebug() << QString("Change: Remove - " + nome +
+                                    " - " + vlistaAcoes[key] + " - " + QDateTime::currentDateTime().toString());
+                vlistaAcoes.remove(key);
+            }
+            else
+                qDebug() << "Couldn't reach the client server. Trying again in 10 seconds.";
+        }
+        vrateLimitRequests++;
+    }
 }
 
 void MainClass::finfoAnimeSelecionado(QVariant posicaoAnimeNaGrid)
@@ -480,9 +514,6 @@ void MainClass::fupdateTimer()
     else
         time = time.addSecs(-1);
 
-    if(time.second() == 30 || time.second() == 0)
-        fclientUpdate();
-
     emit stimer(QVariant(time.toString("mm:ss")));
 }
 
@@ -491,24 +522,14 @@ QVariant MainClass::fretornaNumeroAnos()
     return QVariant(QDate::currentDate().year()-1998);
 }
 
-void MainClass::fordemLista(QVariant ordem)
+void MainClass::getMediaList(QVariant order)
 {
-    //First we need to see if the order is the same, and if it is, we will change the first letter
-    //To invert the order
-    if(vordemLista.contains(ordem.toString()) && vordemLista.front() == "c")
-        vordemLista.replace(0,1,"v");
-    else if(vordemLista.contains(ordem.toString()) && vordemLista.front() == "v")
-        vordemLista.replace(0,1,"c");
-    //If it's not, let's change to the new order, with a C to make it from low to high
-    else
-        vordemLista = QString("c" + ordem.toString());
-
-    //Change the old list to the new
-    vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
+    MediaListManager::setListOrder(order);
+    activeMediaList = mediaListManager->getInstance()->getSortList(mediaList);
     //Check if the list is empty for some reason
-    if(!vlistaSelecionada.isEmpty()){
-        vindexAnimeSelecionado = 0;
-        vpagina = 1;
+    if(activeMediaList.size() < selectedMediaIndex){
+        selectedMediaIndex = 0;
+        selectedPage = 1;
         finfoAnimeSelecionado(0);
     }
 }
@@ -535,9 +556,82 @@ void MainClass::fselecionaTipoAnime()
             vindexAnimeSelecionado = 0;
             vpagina = 1;
             finfoAnimeSelecionado(0);
-            fdownloadCoverImages();
+            mediaDownloader->downloadCoverImages();
+            downloadQueue->downloadMedia();
         }
     }
+}
+
+void MainClass::selectTypeAnime()
+{
+    if(mediaType != Enums::mediaType::ANIME){
+        mediaType = Enums::mediaType::ANIME;
+        mediaList = Enums::mediaList::CURRENT;
+        getMediaList();
+    }
+}
+
+void MainClass::selectTypeManga()
+{
+    if(mediaType != Enums::mediaType::MANGA){
+        mediaType = Enums::mediaType::MANGA;
+        mediaList = Enums::mediaList::CURRENT;
+        getMediaList();
+    }
+}
+
+void MainClass::selectTypeNovel()
+{
+    if(mediaType != Enums::mediaType::NOVEL){
+        mediaType = Enums::mediaType::NOVEL;
+        mediaList = Enums::mediaList::CURRENT;
+        getMediaList();
+    }
+}
+
+void MainClass::selectListCurrent()
+{
+    if(mediaList != Enums::mediaList::CURRENT){
+        mediaList = Enums::mediaList::CURRENT;
+        getMediaList();
+    }
+}
+
+void MainClass::selectListCompleted()
+{
+    if(mediaList != Enums::mediaList::COMPLETED){
+        mediaList = Enums::mediaList::COMPLETED;
+        getMediaList();
+    }
+}
+
+void MainClass::selectListPaused()
+{
+    if(mediaList != Enums::mediaList::PAUSED){
+        mediaList = Enums::mediaList::PAUSED;
+        getMediaList();
+    }
+}
+
+void MainClass::selectListDropped()
+{
+    if(mediaList != Enums::mediaList::DROPPED){
+        mediaList = Enums::mediaList::DROPPED;
+        getMediaList();
+    }
+}
+
+void MainClass::selectListPlanning()
+{
+    if(mediaList != Enums::mediaList::PLANNING){
+        mediaList = Enums::mediaList::PLANNING;
+        getMediaList();
+    }
+}
+
+void MainClass::playNextEpisode()
+{
+    MediaManager::playMediaNextEpisode(activeMediaList.at(selectedMediaIndex));
 }
 
 void MainClass::fselecionaTipoManga()
@@ -553,7 +647,8 @@ void MainClass::fselecionaTipoManga()
             vindexAnimeSelecionado = 0;
             vpagina = 1;
             finfoAnimeSelecionado(0);
-            fdownloadCoverImages();
+            mediaDownloader->downloadCoverImages();
+            downloadQueue->downloadMedia();
         }
     }
 }
@@ -571,7 +666,8 @@ void MainClass::fselecionaTipoNovel()
             vindexAnimeSelecionado = 0;
             vpagina = 1;
             finfoAnimeSelecionado(0);
-            fdownloadCoverImages();
+            mediaDownloader->downloadCoverImages();
+            downloadQueue->downloadMedia();
         }
     }
 }
@@ -586,7 +682,8 @@ void MainClass::fselecionaTipoSeason(QVariant data)
         vindexAnimeSelecionado = 0;
         vpagina = 1;
         finfoAnimeSelecionado(0);
-        fdownloadCoverImages();
+        mediaDownloader->downloadCoverImages();
+        downloadQueue->downloadMedia();
     }
 }
 
@@ -605,7 +702,8 @@ void MainClass::fselecionaListaCurrent()
                 vindexAnimeSelecionado = 0;
                 vpagina = 1;
                 finfoAnimeSelecionado(0);
-                fdownloadCoverImages();
+                mediaDownloader->downloadCoverImages();
+                downloadQueue->downloadMedia();
             }
         }
         break;
@@ -620,7 +718,8 @@ void MainClass::fselecionaListaCurrent()
                 vindexAnimeSelecionado = 0;
                 vpagina = 1;
                 finfoAnimeSelecionado(0);
-                fdownloadCoverImages();
+                mediaDownloader->downloadCoverImages();
+                downloadQueue->downloadMedia();
             }
         }
         break;
@@ -641,7 +740,8 @@ void MainClass::fselecionaListaCompleted()
                 vindexAnimeSelecionado = 0;
                 vpagina = 1;
                 finfoAnimeSelecionado(0);
-                fdownloadCoverImages();
+                mediaDownloader->downloadCoverImages();
+                downloadQueue->downloadMedia();
             }
         }
         break;
@@ -656,7 +756,8 @@ void MainClass::fselecionaListaCompleted()
                 vindexAnimeSelecionado = 0;
                 vpagina = 1;
                 finfoAnimeSelecionado(0);
-                fdownloadCoverImages();
+                mediaDownloader->downloadCoverImages();
+                downloadQueue->downloadMedia();
             }
         }
         break;
@@ -677,7 +778,8 @@ void MainClass::fselecionaListaPaused()
                 vindexAnimeSelecionado = 0;
                 vpagina = 1;
                 finfoAnimeSelecionado(0);
-                fdownloadCoverImages();
+                mediaDownloader->downloadCoverImages();
+                downloadQueue->downloadMedia();
             }
         }
         break;
@@ -692,7 +794,8 @@ void MainClass::fselecionaListaPaused()
                 vindexAnimeSelecionado = 0;
                 vpagina = 1;
                 finfoAnimeSelecionado(0);
-                fdownloadCoverImages();
+                mediaDownloader->downloadCoverImages();
+                downloadQueue->downloadMedia();
             }
         }
         break;
@@ -713,7 +816,8 @@ void MainClass::fselecionaListaDropped()
                 vindexAnimeSelecionado = 0;
                 vpagina = 1;
                 finfoAnimeSelecionado(0);
-                fdownloadCoverImages();
+                mediaDownloader->downloadCoverImages();
+                downloadQueue->downloadMedia();
             }
         }
         break;
@@ -728,7 +832,8 @@ void MainClass::fselecionaListaDropped()
                 vindexAnimeSelecionado = 0;
                 vpagina = 1;
                 finfoAnimeSelecionado(0);
-                fdownloadCoverImages();
+                mediaDownloader->downloadCoverImages();
+                downloadQueue->downloadMedia();
             }
         }
         break;
@@ -747,7 +852,8 @@ void MainClass::fselecionaListaPlanning()
             vindexAnimeSelecionado = 0;
             vpagina = 1;
             finfoAnimeSelecionado(0);
-            fdownloadCoverImages();
+            mediaDownloader->downloadCoverImages();
+            downloadQueue->downloadMedia();
         }
     }
 }

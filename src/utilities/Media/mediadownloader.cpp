@@ -13,6 +13,7 @@ void MediaDownloader::insertDownloadQueue(QString list, Enums::mediaType mediaTy
     }
 }
 
+///TODO - Parar downloads ao fechar programa
 void MediaDownloader::downloadCoverImages()
 {
     int waitRetry = 0;
