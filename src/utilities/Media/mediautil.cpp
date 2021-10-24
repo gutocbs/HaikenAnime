@@ -35,6 +35,63 @@ bool MediaUtil::checkIfFileCanBeOpened(QString filename)
     return true;
 }
 
+QJsonObject MediaUtil::getMediaAsJsonObject(Media *media)
+{
+    QString mediaNumberReleasedEpisodes;
+    if(media->nextNewEpisode == 0 &&
+            media->status != "Finished Airing")
+        mediaNumberReleasedEpisodes = "-";
+    else if(media->nextNewEpisode == 0)
+        mediaNumberReleasedEpisodes = "All Episodes";
+    else{
+        if(media->nextNewEpisode - 1 == 1)
+            mediaNumberReleasedEpisodes = QString::number(media->nextNewEpisode - 1) + " Episode";
+        else if(media->nextNewEpisode - 1 == 0)
+            mediaNumberReleasedEpisodes = "No Episodes";
+        else
+            mediaNumberReleasedEpisodes = QString::number(media->nextNewEpisode - 1) + " Episodes";
+    }
+
+    QString episodePath = FileManager::getMediaEpisodePath(media, media->progress+1);
+    bool hasNextEpisode = false;
+    if(!episodePath.isEmpty())
+        hasNextEpisode = true;
+
+    QPixmap pixMap;
+    QString coverImagePath;
+    //TODO - Fazer classe de diretorios padrão
+//    if(pixMap.load(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes+
+//                media->id+".png","png"))
+//        coverImagePath = cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes+
+//                                              media->id+".png";
+//    else if(pixMap.load(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes+
+//                     media->id+".jpg", "jpg"))
+//        coverImagePath = cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes+
+//                                              media->id+".jpg";
+//    else
+//        coverImagePath = cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensMedio+
+//                                 media->id;
+
+    QJsonObject mediaJsonObject{
+        {"originalName", media->originalName},
+        {"englishName", media->englishName},
+        {"synopsis", media->synopsis},
+        {"status", media->status},
+        {"yearSeason", media->yearSeason},
+        {"meanScore", QString::number(media->meanScore.toFloat()/10, 'f', 2)},
+        {"personalScore", media->personalScore},
+        {"nextAiringEpisodeDate", media->nextAiringEpisodeDate},
+        {"nextNewEpisode", mediaNumberReleasedEpisodes},
+        {"progress", media->progress},
+        {"totalEpisodes", media->totalEpisodes},
+        {"format", media->format},
+        {"hasNextEpisode", hasNextEpisode},
+        {"coverImagePath", coverImagePath},
+        {"id", media->id}
+    };
+    return mediaJsonObject;
+}
+
 //TODO - Mudar isso pro MediaUtil
 QString MediaUtil::getMediaNameFromFile(QString fileName)
 {

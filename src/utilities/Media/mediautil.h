@@ -3,9 +3,12 @@
 
 #include <QObject>
 #include <QFile>
+#include <QJsonObject>
+#include <QPixmap>
 #include "src/DTO/media.h"
 #include "src/base/Anime/mediasearchmanager.h"
 #include "src/base/Anime/animelistmanager.h"
+#include "src/base/FileManager/filemanager.h"
 
 class MediaUtil : public QObject
 {
@@ -20,6 +23,7 @@ public:
     static QString getMediaNameFromFile(QString fileName);
     static QString getSeasonFromFile(QString fileName);
     static bool checkIfFileCanBeOpened(QString filename);
+    static QJsonObject getMediaAsJsonObject(Media *media);
 signals:
 
 };
