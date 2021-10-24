@@ -40,6 +40,7 @@
 #include "src/base/Media/medialistmanager.h"
 #include "src/DTO/ListOrder.h"
 #include "src/base/Media/mediamanager.h"
+#include "src/utilities/Media/mediautil.h"
 
 class MainClass : public QObject
 {
@@ -59,20 +60,8 @@ public slots:
 
     //TODO - Mudar isso vai foder tudo no qml. Vou ter que olhar bem lá para resolver
     //Organizar aqui pra por todos os gets e sets juntos
-    void fmostraListaAnimes();
-    void finfoAnimeSelecionado(QVariant);
-    QVariant fretornaNumeroAnos();
-    QVariant fretornaNomeAnimePosicao(QVariant);
-    QVariant fretornaEpisodiosAnimePosicao(QVariant);
-    QVariant fretornaNotaAnimePosicao(QVariant);
-    QVariant fretornaListaAnimePosicao(QVariant);
-    QVariant fretornaEpisodioAnimeEncontrado(QVariant);
-    QVariant fretornaNomeUsuario();
-    QVariant fretornaPathAvatar();
     void fupdateTimer();
 
-    void fabreSite(QVariant);
-    void fselecionaTipoSeason(QVariant);
     void fabrePastaAnime();
     void fabreStream();
     void frefresh();
@@ -111,7 +100,7 @@ public slots:
     void fbotaoDownloadTorrents();
 
     //Remover, mas verificar no QML antes
-    Q_DECL_UNUSED void fordemLista(QVariant);
+    Q_DECL_UNUSED void fordemLista(QVariant); //void getMediaList(QVariant order = "Title");
     Q_DECL_UNUSED void fclientUpdate();
     Q_DECL_UNUSED void fselecionaTipoAnime();
     Q_DECL_UNUSED void fselecionaTipoManga();
@@ -121,13 +110,25 @@ public slots:
     Q_DECL_UNUSED void fselecionaListaPaused();
     Q_DECL_UNUSED void fselecionaListaDropped();
     Q_DECL_UNUSED void fselecionaListaPlanning();
-    Q_DECL_UNUSED void fabreProximoEpisodio();
+    Q_DECL_UNUSED void fabreProximoEpisodio(); //void playNextEpisode();
+    Q_DECL_UNUSED void fmostraListaAnimes(); //void getMediaListPage();
+    Q_DECL_UNUSED void finfoAnimeSelecionado(QVariant); //getSelectedMediaData()
+    Q_DECL_UNUSED QVariant fretornaNumeroAnos(); //Só remover, mas ver onde uso isso no qml. Acho que é pra pegar o número de anos disponíveis na busca
+    Q_DECL_UNUSED QVariant fretornaNomeAnimePosicao(QVariant); //getMediaJsonObjectByGridIndex()
+    Q_DECL_UNUSED QVariant fretornaEpisodiosAnimePosicao(QVariant); //Todas as funções vão ser uma só
+    Q_DECL_UNUSED QVariant fretornaNotaAnimePosicao(QVariant);//QML deve chamar a mesma, montar o objeto e distribuir as variáveis
+    Q_DECL_UNUSED QVariant fretornaListaAnimePosicao(QVariant); //getMediaJsonObjectByGridIndex()
+    Q_DECL_UNUSED QVariant fretornaEpisodioAnimeEncontrado(QVariant); //getMediaJsonObjectByGridIndex()
+    Q_DECL_UNUSED QVariant fretornaNomeUsuario();
+    Q_DECL_UNUSED QVariant fretornaPathAvatar();
+    Q_DECL_UNUSED void fabreSite(QVariant);
+    Q_DECL_UNUSED void fselecionaTipoSeason(QVariant);
 
     //Falta terminar de refazer
     Q_DECL_DEPRECATED void fconnectSuccess();
 
     //Novos
-    void getMediaList(QVariant order = "Title");
+    void getMediaList(QVariant order = "Title", QVariant year = 0);
 
     void selectTypeAnime();
     void selectTypeManga();
@@ -139,8 +140,17 @@ public slots:
     void selectListDropped();
     void selectListPlanning();
     void playNextEpisode();
+    void getMediaListPage();
+    void emitSignalIdMedia(int listMediaIndex, bool nullSignal = false);
+    void getSelectedMediaData(QVariant selectedMediaGridIndex);
+    QVariant getMediaJsonObjectByGridIndex(QVariant gridIndex);
+    QVariant getUsername();
+    QVariant getUserAvatar();
+    void openMediaWebpage(QVariant data);
+    void selectListSeason(QVariant data);
 
 signals:
+    //Antigos
     void sidAnime1(QVariant data);
     void sidAnime2(QVariant data);
     void sidAnime3(QVariant data);
@@ -169,7 +179,7 @@ signals:
     void stipoAnimeSelecionado(QVariant data);
     void sproximoEpisodioAnimeSelecionado(QVariant data);
     void simagemAnimeSelecionado(QVariant data);
-
+    //Não feitos ainda
     void sdirImagensGrandes(QVariant data);
     void sdirImagensMedias(QVariant data);
     void sdirImagensPequenas(QVariant data);
@@ -186,7 +196,21 @@ signals:
 
     void sanimeReconhecidoID(QVariant dataId, QVariant dataNome, QVariant dataEpisodio);
 
+    //Novos
+    void signalIdMediaGrid0(QVariant data);
+    void signalIdMediaGrid1(QVariant data);
+    void signalIdMediaGrid2(QVariant data);
+    void signalIdMediaGrid3(QVariant data);
+    void signalIdMediaGrid4(QVariant data);
+    void signalIdMediaGrid5(QVariant data);
+    void signalIdMediaGrid6(QVariant data);
+    void signalIdMediaGrid7(QVariant data);
+    void signalIdMediaGrid8(QVariant data);
+    void signalIdMediaGrid9(QVariant data);
+    void signalIdMediaGrid10(QVariant data);
+    void signalIdMediaGrid11(QVariant data);
 
+    void signalSelectedMedia(QVariant data);
 private:
     void fconnections();
 
@@ -244,6 +268,7 @@ private:
 
     int selectedMediaIndex;
     int selectedPage;
+    int selectedMediaGridIndex;
     QTime listUpdateTimer;
     QPointer<QTimer> listUpdateCountdown;
 

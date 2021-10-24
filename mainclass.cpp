@@ -460,6 +460,7 @@ QVariant MainClass::fretornaNomeAnimePosicao(QVariant posicao)
         return QVariant(vlistaSelecionada[(12*(vpagina-1))+posicao.toInt()]->vnome);
     return QVariant("");
 }
+
 QVariant MainClass::fretornaEpisodiosAnimePosicao(QVariant posicao)
 {
     if(vlistaSelecionada.size() > (12*(vpagina-1))+posicao.toInt())
@@ -522,10 +523,10 @@ QVariant MainClass::fretornaNumeroAnos()
     return QVariant(QDate::currentDate().year()-1998);
 }
 
-void MainClass::getMediaList(QVariant order)
+void MainClass::getMediaList(QVariant order, QVariant year)
 {
     MediaListManager::setListOrder(order);
-    activeMediaList = mediaListManager->getInstance()->getSortList(mediaList);
+    activeMediaList = mediaListManager->getInstance()->getSortList(mediaList, year);
     //Check if the list is empty for some reason
     if(activeMediaList.size() < selectedMediaIndex){
         selectedMediaIndex = 0;
@@ -589,6 +590,7 @@ void MainClass::selectTypeNovel()
     }
 }
 
+//TODO - Fazer mudança do botão pra lista de cada season
 void MainClass::selectListCurrent()
 {
     if(mediaList != Enums::mediaList::CURRENT){
@@ -632,6 +634,105 @@ void MainClass::selectListPlanning()
 void MainClass::playNextEpisode()
 {
     MediaManager::playMediaNextEpisode(activeMediaList.at(selectedMediaIndex));
+}
+
+void MainClass::getMediaListPage()
+{
+    int mediaListIndex;
+    for(int i = 0; i < 12; i++)
+    {
+        mediaListIndex = (12*(selectedPage-1))+i;
+        if(activeMediaList.size() > mediaListIndex)
+            emitSignalIdMedia(i);
+        else
+            emitSignalIdMedia(i, true);
+    }
+}
+
+void MainClass::emitSignalIdMedia(int listMediaIndex, bool nullSignal)
+{
+    QVariant signalId;
+    if(nullSignal)
+        signalId = QVariant("null");
+    else
+        signalId = QVariant(activeMediaList[listMediaIndex]->id);
+    if(listMediaIndex == 0)
+        emit signalIdMediaGrid0(signalId);
+    if(listMediaIndex == 1)
+        emit signalIdMediaGrid1(signalId);
+    if(listMediaIndex == 2)
+        emit signalIdMediaGrid2(signalId);
+    if(listMediaIndex == 3)
+        emit signalIdMediaGrid3(signalId);
+    if(listMediaIndex == 4)
+        emit signalIdMediaGrid4(signalId);
+    if(listMediaIndex == 5)
+        emit signalIdMediaGrid5(signalId);
+    if(listMediaIndex == 6)
+        emit signalIdMediaGrid6(signalId);
+    if(listMediaIndex == 7)
+        emit signalIdMediaGrid7(signalId);
+    if(listMediaIndex == 8)
+        emit signalIdMediaGrid8(signalId);
+    if(listMediaIndex == 9)
+        emit signalIdMediaGrid9(signalId);
+    if(listMediaIndex == 10)
+        emit signalIdMediaGrid10(signalId);
+    if(listMediaIndex == 11)
+        emit signalIdMediaGrid11(signalId);
+
+}
+
+void MainClass::getSelectedMediaData(QVariant selectedMediaGridIndex)
+{
+//    emit sdirImagensPequenas(QVariant(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensPequenas));
+    emit sdirImagensMedias(QVariant(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensMedio));
+    emit sdirImagensGrandes(QVariant(cconfiguracoesDiretoriosPadrao->instance()->vdiretorioImagensGrandes));
+
+    bool ok;
+    this->selectedMediaGridIndex = selectedMediaGridIndex.toInt(&ok);
+    if(ok)
+        selectedMediaIndex = 12*(selectedPage-1)+this->selectedMediaGridIndex;
+
+    //TODO - Dá pra mandar um QJsonObject. Fazer uma função que cria um objeto com os dados e envia só o objeto
+    if(activeMediaList.size() > selectedMediaIndex){
+        emit signalSelectedMedia(QVariant(MediaUtil::getMediaAsJsonObject(activeMediaList[selectedMediaIndex])));
+    }
+    fmostraListaAnimes();
+}
+
+QVariant MainClass::getMediaJsonObjectByGridIndex(QVariant gridIndex)
+{
+    if(activeMediaList.size() > (12*(selectedPage-1))+gridIndex.toInt())
+        return QVariant(MediaUtil::getMediaAsJsonObject(activeMediaList[(12*(selectedPage-1))+gridIndex.toInt()]));
+    return QVariant("");
+}
+
+QVariant MainClass::getUsername()
+{
+    return QVariant(cabaConfig->instance()->fgetUsername());
+}
+
+QVariant MainClass::getUserAvatar()
+{
+    return QVariant(cconfiguracoesDiretoriosPadrao->instance()->vimagemAvatar);
+}
+
+void MainClass::openMediaWebpage(QVariant data)
+{
+    bool ok;
+    data.toInt(&ok);
+    if(ok){
+        QDesktopServices::openUrl(QUrl(activeMediaList[selectedMediaIndex]->siteURL));
+    }
+}
+
+void MainClass::selectListSeason(QVariant data)
+{
+    if(mediaList != Enums::mediaList::CURRENT){
+        mediaList = Enums::mediaList::YEAR;
+        getMediaList(Enums::mediaOrder::StartDate, data.toInt());
+    }
 }
 
 void MainClass::fselecionaTipoManga()
