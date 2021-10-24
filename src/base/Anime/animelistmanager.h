@@ -22,8 +22,8 @@ public:
     void addToHash(QPointer<Media> media);
     Enums::mediaType getMediaType();
 
-    QVector<Media*> getMediaList(Enums::mediaList mediaList, QString searchArgument = "");
-    QVector<Media*> getSortList(Enums::mediaList mediaList);
+    QVector<Media*> getMediaList(Enums::mediaList mediaList, QVariant searchArgument = "");
+    QVector<Media*> getSortList(Enums::mediaList mediaList, QVariant searchArgument = "");
     QVector<Media*> getAnimeYearlyList(int ano);
     QPointer<Media> getMediaByIndex(Enums::mediaList mediaList, int index);
 

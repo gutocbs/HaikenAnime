@@ -5,6 +5,7 @@
 #include <QHash>
 #include <QMetaEnum>
 #include <QPointer>
+#include <QVariant>
 #include "src/utilities/Enums.h"
 #include "src/DTO/media.h"
 #include "src/base/Media/medialistmanager.h"
@@ -19,8 +20,8 @@ public:
     virtual void addToHash(QPointer<Media> media) = 0;
 
     //return functions
-    virtual QVector<Media*> getMediaList(Enums::mediaList mediaList, QString searchArgument = "") = 0;
-    virtual QVector<Media*> getSortList(Enums::mediaList mediaList) = 0;
+    virtual QVector<Media*> getMediaList(Enums::mediaList mediaList, QVariant searchArgument = "") = 0;
+    virtual QVector<Media*> getSortList(Enums::mediaList mediaList, QVariant searchArguments = "") = 0;
     virtual QVector<Media*> getAnimeYearlyList(int ano) = 0;
     virtual QPointer<Media> getMediaByIndex(Enums::mediaList mediaList, int index) = 0;
     virtual bool compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle) = 0;

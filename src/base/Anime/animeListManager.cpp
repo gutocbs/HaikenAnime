@@ -30,7 +30,7 @@ QHash<int, Media *> AnimeListManager::getHashMediaById()
     return hashMediaById;
 }
 
-QVector<Media*> AnimeListManager::getMediaList(Enums::mediaList mediaList, QString searchArgument)
+QVector<Media*> AnimeListManager::getMediaList(Enums::mediaList mediaList, QVariant searchArgument)
 {
     switch (mediaList) {
     case Enums::CURRENT:
@@ -54,7 +54,7 @@ QVector<Media*> AnimeListManager::getMediaList(Enums::mediaList mediaList, QStri
     case Enums::SPRING:
         return mediaListSeasonSpring;
     case Enums::YEAR:
-        if(!searchArgument.isEmpty()){
+        if(!searchArgument.toString().isEmpty()){
             bool ok;
             //Checa se a lista é um número válido
             searchArgument.toInt(&ok);
@@ -67,11 +67,11 @@ QVector<Media*> AnimeListManager::getMediaList(Enums::mediaList mediaList, QStri
     return QVector<Media*>();
 }
 
-QVector<Media*> AnimeListManager::getSortList(Enums::mediaList mediaList)
+QVector<Media*> AnimeListManager::getSortList(Enums::mediaList mediaList, QVariant searchArgument)
 {
     Enums::mediaOrder order = ListOrder::getOrder();
     Enums::orderType orderType = ListOrder::getOrderType();
-    QVector<Media*> tempList = getMediaList(mediaList);
+    QVector<Media*> tempList = getMediaList(mediaList, searchArgument);
     switch (orderType) {
     case Enums::Ascending:
         switch (order) {
