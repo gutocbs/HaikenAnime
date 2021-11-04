@@ -1,10 +1,9 @@
-#include "MediaDirectories.h"
+#include "mediadirectories.h"
 
 MediaDirectories::MediaDirectories(QObject *parent) : QObject(parent)
 {
     generalDirectories = QStringList();
     mediaDirectoriesById = QHash<int,QString>();
-    fileExtensions = QStringList();
 }
 
 bool MediaDirectories::addMediaDirectory(int id, QString path)
@@ -22,12 +21,46 @@ bool MediaDirectories::searchForMediaDirectories()
         while(folderIterator.hasNext()){
             QFile mediaFile(folderIterator.next());
             QFileInfo mediaFileInfo(mediaFile.fileName());
-            if(mediaFileInfo.isFile() && fileExtensions.contains(mediaFileInfo.completeSuffix())){
+            if(mediaFileInfo.isFile() && FileManager::fileExtensions.contains(mediaFileInfo.completeSuffix())){
                 updateMediaPath(mediaToSearch, mediaFileInfo.path());
             }
         }
     }
     return true;
+}
+
+QString MediaDirectories::getMediaFolderPath(Media *media)
+{
+    QHash<int,QString> mediaFolders = mediaDirectoriesById;
+    if(mediaFolders.contains(media->id)){
+        QDir mediaDirectory(mediaFolders.value(media->id));
+        if(mediaDirectory.exists())
+            return mediaFolders.value(media->id);
+    }
+
+    QString path = searchForMediaDirectory(media);
+    if(!path.isEmpty()){
+        addMediaDirectory(media->id, path);
+        return path;
+    }
+    return "";
+}
+
+QString MediaDirectories::searchForMediaDirectory(Media *media)
+{
+    //Começa a iterar a pasta em busca das pastas de animes
+    for(int i = 0; i < generalDirectories.size(); i++){
+        QDirIterator folderIterator(generalDirectories.at(i), QDir::Files);
+        while(folderIterator.hasNext()){
+            QFile mediaFile(folderIterator.next());
+            QFileInfo mediaFileInfo(mediaFile.fileName());
+            //Checa se o que foi encontrado é um arquivo ou uma pasta e, no caso de ser um arquivo, se é um arquivo de vídeo
+            if(mediaFileInfo.isFile() && FileManager::fileExtensions.contains(mediaFileInfo.completeSuffix())
+                    && FileManager::compareFileToMediaName(media, mediaFile.fileName()))
+                    return mediaFileInfo.absoluteFilePath();
+        }
+    }
+    return "";
 }
 
 QVector<int> MediaDirectories::getMediaPathsToSearch()

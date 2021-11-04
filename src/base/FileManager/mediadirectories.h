@@ -7,26 +7,24 @@
 #include <QDebug>
 #include <QDirIterator>
 #include <QDir>
-#include "src/base/Anime/mediasearchmanager.h"
-#include "src/base/Anime/animelistmanager.h"
 #include "src/base/Anime/animemanager.h"
 #include "src/utilities/Media/mediautil.h"
+#include "src/base/FileManager/filemanager.h"
 
 class MediaDirectories : public QObject
 {
 public:
     using QObject::QObject;
     explicit MediaDirectories(QObject *parent = nullptr);
-protected:
     static bool addMediaDirectory(int id, QString path);
     static bool searchForMediaDirectories();
+    static QString getMediaFolderPath(Media *media);
+    static QString searchForMediaDirectory(Media *media);
 
     static inline QStringList generalDirectories;
 
     ///QHash<id,Directory>
     static inline QHash<int,QString> mediaDirectoriesById;
-    static inline QStringList fileExtensions;
-
 private:
     static inline QVector<int> getMediaPathsToSearch();
     static inline bool updateMediaPath(QVector<int> mediaToSearch, QString path);

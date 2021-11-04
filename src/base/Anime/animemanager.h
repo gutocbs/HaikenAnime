@@ -14,7 +14,8 @@ class AnimeManager : public IMediaManager
     static AnimeManager *createInstance();
 public:
     explicit AnimeManager(QObject *parent = nullptr);
-    static IMediaManager *instance();
+    IMediaManager *getInstance();
+    static AnimeManager *instance();
     void setMediaSearchManager(IMediaSearchManager *mediaSearchManager);
     void setMediaListManager(IMediaListManager *mediaListManager);
 
@@ -30,6 +31,9 @@ public:
 private:
     QPointer<IMediaSearchManager> mediaSearchManager;
     QPointer<IMediaListManager> mediaListManager;
+
+    // IMediaManager interface
+public:
 };
 
 #endif // ANIMEMANAGER_H

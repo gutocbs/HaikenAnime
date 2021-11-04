@@ -24,6 +24,7 @@ bool MediaLoader::loadMediaFromFile(bool mock)
         QPointer<Media> media = getMedia(mediaList, i);
         media->mediaList = mediaListEnum;
         media->format = mediaTypeEnum;
+        media->totalEpisodes = getNumberChapters(mediaObject, mediaTypeEnum);
         mediaListManager = mediaController->instance()->getMediaListManager(mediaTypeEnum);
         mediaListManager->addMedia(media, mediaListEnum);
         DownloadQueue::insertCoverDownloadQueue(media->id, DownloadEnums::imageSize::Big);
@@ -191,7 +192,8 @@ Enums::mediaType MediaLoader::getMediaTypeFromKey(QJsonObject mediaObject, QStri
     QString format;
     if(mediaObject.contains(key))
         format = mediaObject.value(key).toInt();
-    if(format.compare("MANGA", Qt::CaseInsensitive) == 0 || format.compare("ONE SHOT", Qt::CaseInsensitive) == 0)
+    if(format.compare("MANGA", Qt::CaseInsensitive) == 0 || format.compare("ONE SHOT", Qt::CaseInsensitive) == 0
+                                                         || format.compare("ONE_SHOT", Qt::CaseInsensitive) == 0)
         return Enums::mediaType::MANGA;
     else if(format.compare("NOVEL", Qt::CaseInsensitive) == 0)
         return Enums::mediaType::NOVEL;

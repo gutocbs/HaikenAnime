@@ -66,7 +66,7 @@ Item {
                     id: selecionaAnime
                     width: 110
                     height: 150
-                    onPressed: mainClass.finfoAnimeSelecionado(posicao)
+                    onPressed: mainClass.getSelectedMediaData(posicao)
                 }
             }
 

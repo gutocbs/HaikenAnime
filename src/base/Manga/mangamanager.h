@@ -14,6 +14,7 @@ class MangaManager : public IMediaManager
     static MangaManager *createInstance();
 public:
     explicit MangaManager(QObject *parent = nullptr);
+    IMediaManager *getInstance();
     static MangaManager *instance();
     void setMediaSearchManager(IMediaSearchManager *mediaSearchManager);
     void setMediaListManager(IMediaListManager *mediaListManager);
@@ -29,6 +30,9 @@ public:
 private:
     QPointer<IMediaSearchManager> mediaSearchManager;
     QPointer<IMediaListManager> mediaListManager;
+
+    // IMediaManager interface
+public:
 };
 
 #endif // MANGAMANAGER_H

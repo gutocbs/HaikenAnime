@@ -1,6 +1,6 @@
-QT += quick network networkauth concurrent testlib
+QT += quick network networkauth concurrent testlib gui
 
-CONFIG += c++17
+CONFIG += c++17 qml_debug declarative_debug
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -36,6 +36,7 @@ HEADERS += \
     lib/robotlib/Size.h \
     lib/robotlib/Window.h \
     mainclass.h \
+    src/DTO/CurrentMediaPlaying.h \
     src/DTO/ListOrder.h \
     src/DTO/MediaList.h \
     src/DTO/media.h \
@@ -80,6 +81,7 @@ HEADERS += \
     src/utilities/Media/mediadownloader.h \
     src/utilities/Media/mediautil.h \
     src/utilities/Media/mediacomparer.h \
+    src/utilities/MediaPlayer/mediaplayer.h \
     src/utilities/arquivoanime.h \
     src/utilities/call_once.h \
     src/utilities/client.h \
@@ -142,6 +144,7 @@ SOURCES += \
     src/utilities/Media/mediadownloader.cpp \
     src/utilities/Media/mediautil.cpp \
     src/utilities/Media/mediacomparer.cpp \
+    src/utilities/MediaPlayer/mediaplayer.cpp \
     src/utilities/client.cpp \
     src/utilities/downloader.cpp \
     src/utilities/formatapalavras.cpp \

@@ -17,19 +17,24 @@ public:
     IMediaListManager *getInstance();
     ///QHash<Id, index>
     ///Get index position of media in the media vector
-    QPointer<Media> getMediaById(int id);
+    QPointer<Media> getMediaById(const int &id);
     QHash<int, Media *> getHashMediaById();
     void addToHash(QPointer<Media> media);
     Enums::mediaType getMediaType();
 
     QVector<Media*> getMediaList(Enums::mediaList mediaList, QVariant searchArgument = "");
     QVector<Media*> getSortList(Enums::mediaList mediaList, QVariant searchArgument = "");
-    QVector<Media*> getAnimeYearlyList(int ano);
-    QPointer<Media> getMediaByIndex(Enums::mediaList mediaList, int index);
+    bool setMediaList(Enums::mediaList mediaList, QVector<Media *> media);
 
-    bool compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle);
+    bool compareMedia(const QString &oficialTitle, const QString &englishTitle, QStringList alternativeTitles, const QString &searchedTitle);
     bool addMedia(Media *mediaObject, Enums::mediaList);
     bool removeMedia(Media* media, Enums::mediaList mediaList);
+
+    QVector<Media *> getAnimeYearlyList(const int &year);
+    QPointer<Media> getMediaByIndex(Enums::mediaList mediaList, const int &index);
+
+    // IMediaListManager interface
+public:
 };
 
 #endif // ANIMELISTMANAGER_H

@@ -4,6 +4,11 @@ MangaManager::MangaManager(QObject *parent) : IMediaManager(parent)
 {
 }
 
+IMediaManager *MangaManager::getInstance()
+{
+    return this->instance();
+}
+
 MangaManager *MangaManager::createInstance()
 {
     return new MangaManager();

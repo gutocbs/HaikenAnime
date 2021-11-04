@@ -9,8 +9,9 @@
 #include <QDirIterator>
 #include <QDir>
 #include "src/base/FileManager/mediadirectories.h"
-#include "src/utilities/Media/mediautil.h"
-class FileManagerLoader : public MediaDirectories
+#include "src/base/FileManager/filemanager.h"
+
+class FileManagerLoader : public FileManager
 {
     Q_OBJECT
 public:
@@ -20,8 +21,6 @@ public:
     static int getIdFromJson(QJsonObject object);
     static QString getPathFromJson(QJsonObject object);
     static QJsonArray getDirectoriesListArray(QString fileName);
-signals:
-private:
 };
 
 #endif // FILEMANAGERLOADER_H

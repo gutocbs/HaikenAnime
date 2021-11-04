@@ -12,7 +12,7 @@ void DownloadWorker::download(DownloadEnums::fileType fileType, QString url, Dow
     url = getUrlFromImageSize(url, imageSize);
     QString downloadPath = getDownloadPath(fileType, imageSize);
     QString fileName = getFileName(url);
-    qDebug() << "Start " + fileName;
+//    qDebug() << "Start " + fileName;
     downloadPath.append(fileName);
     QPointer<QFile> file = new QFile(downloadPath);
     qint64 downloadFileSize = getFileSize(url);
@@ -28,7 +28,7 @@ void DownloadWorker::download(DownloadEnums::fileType fileType, QString url, Dow
     if(file->isOpen())
         file->close();
     isBusyDownloading = false;
-    qDebug() << "Success " + fileName;
+//    qDebug() << "Success " + fileName;
 //        setFinishedSignal(fileType, imageSize);
 }
 
@@ -136,6 +136,7 @@ QString DownloadWorker::getDownloadPath(DownloadEnums::fileType fileType, Downlo
         case DownloadEnums::imageSize::Small:
             break;
         case DownloadEnums::imageSize::Medium:
+            downloadPath = QDir::currentPath() + QDir::separator() + "Configurações" + QDir::separator() + "Imagens" + QDir::separator() + "Medio" + QDir::separator();
             break;
         case DownloadEnums::imageSize::Big:
             downloadPath = QDir::currentPath() + QDir::separator() + "Configurações" + QDir::separator() + "Imagens" + QDir::separator() + "Grande" + QDir::separator();

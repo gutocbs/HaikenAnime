@@ -60,6 +60,7 @@ QVector<Media*> MediaSearchManager::searchMedia(const QString &rnome)
         if(names.contains(rnome))
             mediaListSearch.append(hashMediaById[iterator.key()]);
     }
+    mediaListManager->setMediaList(Enums::mediaList::SEARCH, mediaListSearch);
     return mediaListSearch;
 }
 

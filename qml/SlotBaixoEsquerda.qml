@@ -50,7 +50,7 @@ Item {
                         width: 60
                         height: 60
                         text: qsTr("Type")
-                        onClicked: mainClass.fordemLista("formato")
+                        onClicked: mainClass.getMediaList("formato")
                     }
 
                     Button {
@@ -58,7 +58,7 @@ Item {
                         width: 60
                         height: 60
                         text: qsTr("Release")
-                        onClicked: mainClass.fordemLista("data")
+                        onClicked: mainClass.getMediaList("data")
                     }
 
                     Button {
@@ -66,7 +66,7 @@ Item {
                         width: 60
                         height: 60
                         text: qsTr("Score")
-                        onClicked: mainClass.fordemLista("nota")
+                        onClicked: mainClass.getMediaList("nota")
                     }
 
                     Button {
@@ -74,7 +74,7 @@ Item {
                         width: 60
                         height: 60
                         text: qsTr("Progress")
-                        onClicked: mainClass.fordemLista("progresso")
+                        onClicked: mainClass.getMediaList("progresso")
                     }
 
                     Button {
@@ -82,7 +82,7 @@ Item {
                         width: 60
                         height: 60
                         text: qsTr("Alphabetical")
-                        onClicked: mainClass.fordemLista("nome")
+                        onClicked: mainClass.getMediaList("Title")
                     }
                 }
 
@@ -97,14 +97,14 @@ Item {
                         id: foward
                         width: 40
                         text: qsTr("Pra frente")
-                        onClicked: mainClass.fproximaPagina()
+                        onClicked: mainClass.buttonNextPage()
                     }
 
                     Button {
                         id: backward
                         width: 40
                         text: qsTr("Pra trás")
-                        onClicked: mainClass.fanteriorPagina()
+                        onClicked: mainClass.buttonLastPage()
                     }
 
                 }

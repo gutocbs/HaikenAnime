@@ -12,6 +12,11 @@ void ClientManager::setUpdate()
     QTimer::singleShot(30, this, &ClientManager::setUpdate);
 }
 
+void ClientManager::downloadMediaList()
+{
+
+}
+
 bool ClientManager::addToUpdateQueue(ClientEnums::updateType updateType, int mediaId, QVariant updatedValue)
 {
 }

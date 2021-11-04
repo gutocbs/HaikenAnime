@@ -25,7 +25,7 @@ QHash<int, Media *> NovelListManager::getHashMediaById()
     return hashMediaById;
 }
 
-QVector<Media*> NovelListManager::getMediaList(Enums::mediaList mediaList, QString searchArgument)
+QVector<Media*> NovelListManager::getMediaList(Enums::mediaList mediaList, QVariant searchArgument)
 {
     switch (mediaList) {
     case Enums::CURRENT:
@@ -49,7 +49,7 @@ QVector<Media*> NovelListManager::getMediaList(Enums::mediaList mediaList, QStri
     case Enums::SPRING:
         return mediaListSeasonSpring;
     case Enums::YEAR:
-        if(!searchArgument.isEmpty()){
+        if(!searchArgument.toString().isEmpty()){
             bool ok;
             //Checa se a lista é um número válido
             searchArgument.toInt(&ok);
@@ -62,7 +62,7 @@ QVector<Media*> NovelListManager::getMediaList(Enums::mediaList mediaList, QStri
     return QVector<Media*>();
 }
 
-QVector<Media*> NovelListManager::getSortList(Enums::mediaList mediaList)
+QVector<Media*> NovelListManager::getSortList(Enums::mediaList mediaList, QVariant searchArguments)
 {
     Enums::mediaOrder order = ListOrder::getOrder();
     Enums::orderType orderType = ListOrder::getOrderType();
@@ -115,12 +115,17 @@ QVector<Media*> NovelListManager::getSortList(Enums::mediaList mediaList)
 }
 
 //TODO - Fazer função
-QVector<Media *> NovelListManager::getAnimeYearlyList(int ano)
+QVector<Media *> NovelListManager::getAnimeYearlyList(const int &ano)
 {
     return QVector<Media*>();
 }
 
-QPointer<Media> NovelListManager::getMediaByIndex(Enums::mediaList mediaList, int index)
+bool NovelListManager::setMediaList(Enums::mediaList mediaList, QVector<Media *> media)
+{
+
+}
+
+QPointer<Media> NovelListManager::getMediaByIndex(Enums::mediaList mediaList, const int &index)
 {
     QVector<Media*> mediaVector = getMediaList(mediaList);
     if(mediaVector.count() > index)
@@ -128,7 +133,7 @@ QPointer<Media> NovelListManager::getMediaByIndex(Enums::mediaList mediaList, in
     return nullptr;
 }
 
-bool NovelListManager::compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle)
+bool NovelListManager::compareMedia(const QString &oficialTitle, const QString &englishTitle, QStringList alternativeTitles, const QString &searchedTitle)
 {
     if(MediaComparer::compareName(oficialTitle, searchedTitle) || MediaComparer::compareName(englishTitle, searchedTitle))
         return true;
@@ -190,6 +195,11 @@ bool NovelListManager::removeMedia(Media* media, Enums::mediaList mediaList)
     }
     hashMediaById.remove(media->id);
     return true;
+}
+
+QPointer<Media> NovelListManager::getMediaById(const int &id)
+{
+
 }
 
 IMediaListManager *NovelListManager::getInstance()

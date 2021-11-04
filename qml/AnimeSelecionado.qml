@@ -6,8 +6,8 @@ Item {
     width: 1086
     height: 606
 
-    property var idAnime: ""
-    property var imagemSelecionada: ""
+    property string idAnime: ""
+    property string imagemSelecionada: ""
 
     Row {
         id: row7

@@ -15,6 +15,7 @@ public:
     static NovelManager *createInstance();
 public:
     explicit NovelManager(QObject *parent = nullptr);
+    IMediaManager *getInstance();
     static NovelManager *instance();
     void setMediaSearchManager(IMediaSearchManager *mediaSearchManager);
     void setMediaListManager(IMediaListManager *mediaListManager);
@@ -30,6 +31,9 @@ public:
 private:
     QPointer<IMediaSearchManager> mediaSearchManager;
     QPointer<IMediaListManager> mediaListManager;
+
+    // IMediaManager interface
+public:
 };
 
 #endif // NOVELMANAGER_H

@@ -17,6 +17,7 @@ public:
     explicit ClientManager(QObject *parent = nullptr);
     static bool addToUpdateQueue(ClientEnums::updateType updateType, int mediaId, QVariant updatedValue);
     void setUpdate();
+    void downloadMediaList();
 signals:
 private:
     void updateClient();

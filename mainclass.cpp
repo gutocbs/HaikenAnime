@@ -20,7 +20,6 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     cabaTorrent = new abaTorrent(this);
     mediaDownloader = new MediaDownloader(this);
     downloadQueue = new DownloadQueue(this);
-    MediaLoader::loadMediaFromFile();
     cclient->fselecionaClient(cabaConfig->instance()->fgetService());
     //cclient->frecebeAutorizacao(configurações->user, configurações->codigo)
     cclient->frecebeAutorizacao(cabaConfig->instance()->fgetUsername(), cabaConfig->instance()->fgetAuthCode());
@@ -29,7 +28,8 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     cconfiguracoesUsuarioDiretorios->instance()->frecebeConfigs(cabaConfig->instance()->fgetDirectory().toStringList());
 
     cdatabase->instance()->fcarregaIdNomeAno();
-    cdatabase->instance()->freadDatabaseFile();
+    MediaLoader::loadMediaFromFile();
+    mediaList = Enums::mediaList::CURRENT;
     vlistaSelecionada = cdatabase->instance()->returnAnimeList("CURRENT");
 
 
@@ -45,17 +45,20 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     vtipoAtual = Database::type::ANIME;
     vordemLista = "";
     vjanelaAtual = janela::MAIN;
+    selectedPage = 1;
 
 
     cconfiguracoesUsuarioDiretorios->instance()->fgetThread(tthreadDiretorios);
     cconfiguracoesUsuarioDiretorios->instance()->moveToThread(&tthreadDiretorios);
 
+    listUpdateCountdown = new QTimer(this);
     vtimerCountdown = new QTimer(this);
     vtimerChecaAssistindo = new QTimer(this);
     vtimerChecaAssistindo->setInterval(10000);
     vtimerChecaAssistindo->start();
     fconnections();
     fresetRequests();
+    setObjects();
 }
 
 MainClass::~MainClass()
@@ -108,7 +111,8 @@ void MainClass::fconnectSuccess()
         vindexAnimeSelecionado = 0;
         vpagina = 1;
     }
-    finfoAnimeSelecionado(0);
+    loadMediaList();
+    getSelectedMediaData(0);
     emit sconnectGUI(true);
 
     //The auto-update timer starts
@@ -175,6 +179,24 @@ void MainClass::setDownloads()
     //TODO - Download de avatar
 //    downloadQueue->downloadAvatar();
     downloadQueue->downloadMedia();
+}
+
+int MainClass::getPageIndexRange()
+{
+    int mediaNumberPerPage{12};
+    //-1 since the page starts at 1, not 0
+    return mediaNumberPerPage*(selectedPage-1);
+}
+
+void MainClass::setObjects()
+{
+    downloadQueue = new DownloadQueue(this);
+    mediaListManager = new AnimeListManager(this);
+    clientManager = new ClientManager(this);
+    mediaPlayer = new MediaPlayer(this);
+    mediaSearchManager = new MediaSearchManager(this);
+    mediaManager = new AnimeManager(this);
+    activeMediaList = mediaListManager->getInstance()->getMediaList(Enums::mediaList::CURRENT);
 }
 
 void MainClass::fconnectFail()
@@ -531,8 +553,8 @@ void MainClass::getMediaList(QVariant order, QVariant year)
     if(activeMediaList.size() < selectedMediaIndex){
         selectedMediaIndex = 0;
         selectedPage = 1;
-        finfoAnimeSelecionado(0);
     }
+    getSelectedMediaData(selectedMediaIndex);
 }
 
 void MainClass::fabreSite(QVariant data)
@@ -641,7 +663,7 @@ void MainClass::getMediaListPage()
     int mediaListIndex;
     for(int i = 0; i < 12; i++)
     {
-        mediaListIndex = (12*(selectedPage-1))+i;
+        mediaListIndex = (getPageIndexRange())+i;
         if(activeMediaList.size() > mediaListIndex)
             emitSignalIdMedia(i);
         else
@@ -692,19 +714,20 @@ void MainClass::getSelectedMediaData(QVariant selectedMediaGridIndex)
     bool ok;
     this->selectedMediaGridIndex = selectedMediaGridIndex.toInt(&ok);
     if(ok)
-        selectedMediaIndex = 12*(selectedPage-1)+this->selectedMediaGridIndex;
+        selectedMediaIndex = getPageIndexRange()+this->selectedMediaGridIndex;
 
-    //TODO - Dá pra mandar um QJsonObject. Fazer uma função que cria um objeto com os dados e envia só o objeto
     if(activeMediaList.size() > selectedMediaIndex){
-        emit signalSelectedMedia(QVariant(MediaUtil::getMediaAsJsonObject(activeMediaList[selectedMediaIndex])));
+        QJsonObject selectedMediaObject = MediaUtil::getMediaAsJsonObject(activeMediaList[selectedMediaIndex]);
+        emit signalSelectedMediaCover(QVariant(selectedMediaObject["coverImagePath"]));
+        emit signalSelectedMedia(QVariant(selectedMediaObject));
     }
-    fmostraListaAnimes();
+    getMediaListPage();
 }
 
 QVariant MainClass::getMediaJsonObjectByGridIndex(QVariant gridIndex)
 {
-    if(activeMediaList.size() > (12*(selectedPage-1))+gridIndex.toInt())
-        return QVariant(MediaUtil::getMediaAsJsonObject(activeMediaList[(12*(selectedPage-1))+gridIndex.toInt()]));
+    if(activeMediaList.size() > (getPageIndexRange())+gridIndex.toInt())
+        return QVariant(MediaUtil::getMediaAsJsonObject(activeMediaList[(getPageIndexRange())+gridIndex.toInt()]));
     return QVariant("");
 }
 
@@ -732,6 +755,150 @@ void MainClass::selectListSeason(QVariant data)
     if(mediaList != Enums::mediaList::CURRENT){
         mediaList = Enums::mediaList::YEAR;
         getMediaList(Enums::mediaOrder::StartDate, data.toInt());
+    }
+}
+
+void MainClass::openMediaFolder()
+{
+    MediaUtil::openMediaFileOrFolder(activeMediaList[selectedMediaIndex]);
+}
+
+void MainClass::refreshMediaList()
+{
+    clientManager->downloadMediaList();
+}
+
+void MainClass::getCurrentMediaPlaying()
+{
+    QPointer<CurrentMediaPlaying> currentMediaPlaying = mediaPlayer->getCurrentMediaPlaying();
+    if(!currentMediaPlaying.isNull()){
+        emit currentMediaPlayer(QVariant(currentMediaPlaying->mediaId),
+                                QVariant(currentMediaPlaying->mediaName),
+                                QVariant(currentMediaPlaying->mediaEpisode));
+
+        if(currentMediaPlayingCounter == 20){
+            currentMediaPlayingCounter++;
+            if(currentMediaPlaying->mediaEpisode > mediaSearchManager->getMediaEpisodeFromId(currentMediaPlaying->mediaId))
+                clientManager->addToUpdateQueue(ClientEnums::PROGRESS, currentMediaPlaying->mediaId,currentMediaPlaying->mediaEpisode);
+        }
+        else if(currentMediaPlayingCounter < 20)
+            currentMediaPlayingCounter++;
+    }
+    else{
+        currentMediaPlayingCounter = 0;
+        emit currentMediaPlayer(QVariant(""), QVariant(""), QVariant(""));
+    }
+    QTimer::singleShot(10, this, &MainClass::getCurrentMediaPlaying);
+}
+
+void MainClass::setMediaProgress(int mediaId, int mediaProgress)
+{
+    mediaManager->getInstance()->updateProgress(mediaId, mediaProgress);
+    clientManager->addToUpdateQueue(ClientEnums::PROGRESS, mediaId, mediaProgress);
+    getMediaList();
+}
+
+void MainClass::buttonSetMediaProgress(QVariant data)
+{
+    QPointer<Media> selectedMedia = activeMediaList.at(selectedMediaIndex);
+    int progress{1};
+    //TODO - Fazer enums pra isso
+    if(data.toString().compare("diminui") == 0)
+        progress = -1;
+    if(selectedMedia->progress+progress >= 0 && selectedMedia->progress+progress < MediaUtil::getTotalEpisodes(selectedMedia))
+        setMediaProgress(selectedMedia->id, selectedMedia->progress+progress);
+}
+
+void MainClass::buttonSetMediaScoreButton(QVariant data)
+{
+    QPointer<Media> selectedMedia = activeMediaList.at(selectedMediaIndex);
+    int score{selectedMedia->personalScore.toInt()};
+    int maxScore{10};
+    //TODO - Fazer enums pra isso
+    if(data.toString().compare("diminui") == 0)
+        score--;
+    if(selectedMedia->personalScore+score >= 0 && selectedMedia->personalScore+score < maxScore){
+        mediaManager->getInstance()->updateScore(selectedMedia->id, QString::number(score));
+        clientManager->addToUpdateQueue(ClientEnums::SCORE, selectedMedia->id, score);
+        getMediaList();
+    }
+}
+
+void MainClass::setMediaCustomName(QVariant data)
+{
+    if(!data.toString().isEmpty())
+        mediaManager->getInstance()->insertCustomName(activeMediaList.at(selectedMediaIndex)->id, data.toStringList());
+}
+
+void MainClass::removeMediaFromList()
+{
+    QPointer<Media> selectedMedia = activeMediaList.at(selectedMediaIndex);
+    clientManager->addToUpdateQueue(ClientEnums::LIST, selectedMedia->id, Enums::mediaList::NOLIST);
+    mediaManager->deleteFromList(selectedMedia->id);
+    getMediaList();
+}
+
+void MainClass::buttonNextPage()
+{
+    int mediaNumberPerPage{12};
+    if(activeMediaList.size() > mediaNumberPerPage+(getPageIndexRange())){
+        selectedPage++;
+        getMediaListPage();
+    }
+}
+
+void MainClass::buttonLastPage()
+{
+    if(selectedPage > 1){
+        selectedPage--;
+        getMediaListPage();
+    }
+}
+
+void MainClass::setMediaList(QVariant data)
+{
+    Enums::mediaList newMediaList = Enums::QStringToMediaList(data.toString());
+    //Check if the user is trying to change the entry from list A to list A
+    if(mediaList == newMediaList)
+        return;
+    mediaManager->updateMediaList(activeMediaList.at(selectedMediaIndex)->id, newMediaList);
+    clientManager->addToUpdateQueue(ClientEnums::updateType::LIST, activeMediaList.at(selectedMediaIndex)->id, newMediaList);
+    getMediaList();
+}
+
+void MainClass::buttonMenuMedia()
+{
+    selectedMenu = menu::MEDIA;
+    emit signalMenuMedia();
+}
+
+void MainClass::buttonMenuConfigurations()
+{
+    selectedMenu = menu::CONFIGURATION;
+    emit signalMenuConfiguration();
+}
+
+void MainClass::buttonMenuTorrent()
+{
+    selectedMenu = menu::TORRENTS;
+    emit signalMenuTorrents();
+}
+
+void MainClass::buttonSearch(QVariant data)
+{
+    QString searchText = data.toString();
+    if(selectedMenu == menu::MEDIA && !searchText.isEmpty()){
+        QVector<Media*> searchList = mediaSearchManager->searchMedia(data.toString());
+        if(!searchList.isEmpty()){
+            mediaList = Enums::mediaList::SEARCH;
+            activeMediaList.swap(searchList);
+            getMediaList();
+        }
+    }
+    //Caso seja a janela de torrent
+    else if(vjanelaAtual == janela::TORRENT){
+        if(!searchText.isEmpty())
+            cabaTorrent->fgetSpecificTorrentList(searchText);
     }
 }
 

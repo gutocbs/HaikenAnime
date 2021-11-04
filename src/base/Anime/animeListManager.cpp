@@ -20,7 +20,7 @@ IMediaListManager *AnimeListManager::getInstance()
     return this->instance();
 }
 
-QPointer<Media> AnimeListManager::getMediaById(int id)
+QPointer<Media> AnimeListManager::getMediaById(const int &id)
 {
     return hashMediaById.value(id);
 }
@@ -119,13 +119,40 @@ QVector<Media*> AnimeListManager::getSortList(Enums::mediaList mediaList, QVaria
     return tempList;
 }
 
+bool AnimeListManager::setMediaList(Enums::mediaList mediaList, QVector<Media *> media)
+{
+    switch (mediaList) {
+    case Enums::mediaList::CURRENT:
+        mediaListCurrent.swap(media);
+        break;
+    case Enums::mediaList::COMPLETED:
+        mediaListCompleted.swap(media);
+        break;
+    case Enums::mediaList::PAUSED:
+        mediaListPaused.swap(media);
+        break;
+    case Enums::mediaList::DROPPED:
+        mediaListDropped.swap(media);
+        break;
+    case Enums::mediaList::PLANNING:
+        mediaListPlanning.swap(media);
+        break;
+    case Enums::mediaList::SEARCH:
+        mediaListSearch.swap(media);
+        break;
+    default:
+        return false;
+    }
+    return true;
+}
+
 //TODO - Fazer função
-QVector<Media *> AnimeListManager::getAnimeYearlyList(int ano)
+QVector<Media *> AnimeListManager::getAnimeYearlyList(const int &ano)
 {
     return QVector<Media*>();
 }
 
-QPointer<Media> AnimeListManager::getMediaByIndex(Enums::mediaList mediaList, int index)
+QPointer<Media> AnimeListManager::getMediaByIndex(Enums::mediaList mediaList, const int &index)
 {
     QVector<Media*> mediaVector = getMediaList(mediaList);
     if(mediaVector.count() > index)
@@ -133,7 +160,7 @@ QPointer<Media> AnimeListManager::getMediaByIndex(Enums::mediaList mediaList, in
     return nullptr;
 }
 
-bool AnimeListManager::compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle)
+bool AnimeListManager::compareMedia(const QString &oficialTitle, const QString &englishTitle, QStringList alternativeTitles, const QString &searchedTitle)
 {
     if(MediaComparer::compareName(oficialTitle, searchedTitle) || MediaComparer::compareName(englishTitle, searchedTitle))
         return true;

@@ -4,12 +4,17 @@ AnimeManager::AnimeManager(QObject *parent) : IMediaManager(parent)
 {
 }
 
+IMediaManager *AnimeManager::getInstance()
+{
+    return this->instance();
+}
+
 AnimeManager *AnimeManager::createInstance()
 {
     return new AnimeManager();
 }
 
-IMediaManager *AnimeManager::instance()
+AnimeManager *AnimeManager::instance()
 {
     return Singleton<AnimeManager>::instance(AnimeManager::createInstance);
 }
@@ -71,6 +76,8 @@ bool AnimeManager::updateProgress(int mediaId, int mediaProgress)
 
     if(tempMedia->mediaList != Enums::mediaList::YEAR){
         tempMedia->progress = mediaProgress;
+        if(tempMedia->progress == tempMedia->totalEpisodes)
+            updateMediaList(mediaId, Enums::mediaList::COMPLETED);
     }
     return true;
 }

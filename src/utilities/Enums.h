@@ -21,33 +21,33 @@ public:
     virtual ~Enums() = 0;
 
     static hashList QStringToHashList(QString enumName){
-        if(enumName.compare(enumHashListToQString(hashList::LISTA)) == 0) return hashList::LISTA;
-        else if(enumName.compare(enumHashListToQString(hashList::POSICAO)) == 0) return hashList::POSICAO;
-        else if(enumName.compare(enumHashListToQString(hashList::NOME)) == 0) return hashList::NOME;
-        else if(enumName.compare(enumHashListToQString(hashList::NOMEALTERNATIVO)) == 0) return hashList::NOMEALTERNATIVO;
+        if(enumName.compare(enumHashListToQString(hashList::LISTA), Qt::CaseInsensitive) == 0) return hashList::LISTA;
+        else if(enumName.compare(enumHashListToQString(hashList::POSICAO), Qt::CaseInsensitive) == 0) return hashList::POSICAO;
+        else if(enumName.compare(enumHashListToQString(hashList::NOME), Qt::CaseInsensitive) == 0) return hashList::NOME;
+        else if(enumName.compare(enumHashListToQString(hashList::NOMEALTERNATIVO), Qt::CaseInsensitive) == 0) return hashList::NOMEALTERNATIVO;
         return hashList::LISTA;
     }
     static mediaList QStringToMediaList(QString enumName){
-        if(enumName.compare(enumMediaListToQString(mediaList::CURRENT)) == 0) return mediaList::CURRENT;
-        else if(enumName.compare(enumMediaListToQString(mediaList::COMPLETED)) == 0) return mediaList::COMPLETED;
-        else if(enumName.compare(enumMediaListToQString(mediaList::PAUSED)) == 0) return mediaList::PAUSED;
-        else if(enumName.compare(enumMediaListToQString(mediaList::DROPPED)) == 0) return mediaList::DROPPED;
-        else if(enumName.compare(enumMediaListToQString(mediaList::PLANNING)) == 0) return mediaList::PLANNING;
+        if(enumName.compare(enumMediaListToQString(mediaList::CURRENT), Qt::CaseInsensitive) == 0) return mediaList::CURRENT;
+        else if(enumName.compare(enumMediaListToQString(mediaList::COMPLETED), Qt::CaseInsensitive) == 0) return mediaList::COMPLETED;
+        else if(enumName.compare(enumMediaListToQString(mediaList::PAUSED), Qt::CaseInsensitive) == 0) return mediaList::PAUSED;
+        else if(enumName.compare(enumMediaListToQString(mediaList::DROPPED), Qt::CaseInsensitive) == 0) return mediaList::DROPPED;
+        else if(enumName.compare(enumMediaListToQString(mediaList::PLANNING), Qt::CaseInsensitive) == 0) return mediaList::PLANNING;
         return mediaList::CURRENT;
     }
     static mediaType QStringToMediaType(QString enumName){
-        if(enumName.compare(enumMediaTypeToQString(mediaType::ANIME)) == 0) return mediaType::ANIME;
-        else if(enumName.compare(enumMediaTypeToQString(mediaType::MANGA)) == 0) return mediaType::MANGA;
-        else if(enumName.compare(enumMediaTypeToQString(mediaType::NOVEL)) == 0) return mediaType::NOVEL;
+        if(enumName.compare(enumMediaTypeToQString(mediaType::ANIME), Qt::CaseInsensitive) == 0) return mediaType::ANIME;
+        else if(enumName.compare(enumMediaTypeToQString(mediaType::MANGA), Qt::CaseInsensitive) == 0) return mediaType::MANGA;
+        else if(enumName.compare(enumMediaTypeToQString(mediaType::NOVEL), Qt::CaseInsensitive) == 0) return mediaType::NOVEL;
         else if(enumName.compare("ONE SHOT") == 0) return mediaType::MANGA;
         return mediaType::ANIME;
     }
     static mediaOrder QStringToMediaOrder(QString enumName){
-        if(enumName.compare(enumMediaOrderToQString(mediaOrder::Title)) == 0) return mediaOrder::Title;
-        else if(enumName.compare(enumMediaOrderToQString(mediaOrder::StartDate)) == 0) return mediaOrder::StartDate;
-        else if(enumName.compare(enumMediaOrderToQString(mediaOrder::Progress)) == 0) return mediaOrder::Progress;
-        else if(enumName.compare(enumMediaOrderToQString(mediaOrder::Score)) == 0) return mediaOrder::Score;
-        else if(enumName.compare(enumMediaOrderToQString(mediaOrder::Type)) == 0) return mediaOrder::Type;
+        if(enumName.compare(enumMediaOrderToQString(mediaOrder::Title), Qt::CaseInsensitive) == 0) return mediaOrder::Title;
+        else if(enumName.compare(enumMediaOrderToQString(mediaOrder::StartDate), Qt::CaseInsensitive) == 0) return mediaOrder::StartDate;
+        else if(enumName.compare(enumMediaOrderToQString(mediaOrder::Progress), Qt::CaseInsensitive) == 0) return mediaOrder::Progress;
+        else if(enumName.compare(enumMediaOrderToQString(mediaOrder::Score), Qt::CaseInsensitive) == 0) return mediaOrder::Score;
+        else if(enumName.compare(enumMediaOrderToQString(mediaOrder::Type), Qt::CaseInsensitive) == 0) return mediaOrder::Type;
         return mediaOrder::Title;
     }
     static QString enumHashListToQString(hashList enumName){

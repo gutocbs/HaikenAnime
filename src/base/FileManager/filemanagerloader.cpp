@@ -1,6 +1,6 @@
 #include "filemanagerloader.h"
 
-FileManagerLoader::FileManagerLoader(QObject *parent) : MediaDirectories(parent)
+FileManagerLoader::FileManagerLoader(QObject *parent) : FileManager(parent)
 {
 
 }
@@ -16,7 +16,7 @@ bool FileManagerLoader::loadMediaDirectories(bool mock)
     QJsonObject directoryObject;
     for(int i = 0; i < listSize; i++){
         directoryObject = mediaDirectoriesList.at(i).toObject();
-        addMediaDirectory(getIdFromJson(directoryObject), getPathFromJson(directoryObject));
+        MediaDirectories::addMediaDirectory(getIdFromJson(directoryObject), getPathFromJson(directoryObject));
     }
     return true;
 }

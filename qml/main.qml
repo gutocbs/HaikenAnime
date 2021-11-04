@@ -69,10 +69,14 @@ Window {
         var listaNotaTemp = notaAnime
         var listaListaTemp = listaAnime
         var listaEpisodiosEncontradosTemp = episodiosEncontradosAnime
-        listaIdTemp[posicaoGrid] = id
-        listaNomeTemp[posicaoGrid] = mainClass.fretornaNomeAnimePosicao(posicaoGrid)
-        listaEpisodiosTemp[posicaoGrid] = mainClass.fretornaEpisodiosAnimePosicao(posicaoGrid)
-        listaNotaTemp[posicaoGrid] = mainClass.fretornaNotaAnimePosicao(posicaoGrid)
+        var mediaJson = mainClass.getMediaJsonObjectByGridIndex(posicaoGrid);
+        listaIdTemp[posicaoGrid] = mediaJson.id
+        if(mediaJson.originalName === "")
+            listaNomeTemp[posicaoGrid] = mediaJson.englishName
+        else
+            listaNomeTemp[posicaoGrid] = mediaJson.originalName
+        listaEpisodiosTemp[posicaoGrid] = "Progresso: " + mediaJson.progress+"/"+mediaJson.totalEpisodes
+        listaNotaTemp[posicaoGrid] = "Nota: " + mediaJson.personalScore+"/10"
         if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "1")
             listaEpisodiosEncontradosTemp[posicaoGrid] = "1"
         else if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "-1")
@@ -88,25 +92,48 @@ Window {
 
     }
 
+    function getSelectedMediaData(selectedMediaData){
+        idAnimeSelecionado = selectedMediaData.id;
+        nomeAnimeSelecionado = selectedMediaData.originalName;
+        nomeAlternativoAnimeSelecionado = selectedMediaData.englishName;
+        sinopseAnimeSelecionado = selectedMediaData.synopsis;
+        statusAnimeSelecionado = selectedMediaData.status;
+        seasonAnimeSelecionado = selectedMediaData.yearSeason;
+        mediaGlobalAnimeSelecionado = selectedMediaData.meanScore;
+        mediaPessoalAnimeSelecionado = selectedMediaData.personalScore;
+        releaseAnimeSelecionado = selectedMediaData.nextAiringEpisodeDate;
+        episodiosAnimeSelecionado = selectedMediaData.progress;
+        episodiosTotaisAnimeSelecionado = selectedMediaData.totalEpisodes;
+        episodiosAssistidosAnimeSelecionado = selectedMediaData.progress;
+        tipoAnimeSelecionado = selectedMediaData.format;
+    }
+
     Connections{
         target: mainClass
         function onSdirImagensPequenas(data){ dirImagensPequenas = data}
         function onSdirImagensMedias(data){ dirImagensMedias = data}
         function onSdirImagensGrandes(data){ dirImagensGrandes = data}
-        function onSidAnime1(data){ getData(data,0)}
-        function onSidAnime2(data){ getData(data,1)}
-        function onSidAnime3(data){ getData(data,2)}
-        function onSidAnime4(data){ getData(data,3)}
-        function onSidAnime5(data){ getData(data,4)}
-        function onSidAnime6(data){ getData(data,5)}
-        function onSidAnime7(data){ getData(data,6)}
-        function onSidAnime8(data){ getData(data,7)}
-        function onSidAnime9(data){ getData(data,8)}
-        function onSidAnime10(data){ getData(data,9)}
-        function onSidAnime11(data){ getData(data,10)}
-        function onSidAnime12(data){ getData(data,11)}
+        function onSignalIdMediaGrid0(data){ getData(data,0)}
+        function onSignalIdMediaGrid1(data){ getData(data,1)}
+        function onSignalIdMediaGrid2(data){ getData(data,2)}
+        function onSignalIdMediaGrid3(data){ getData(data,3)}
+        function onSignalIdMediaGrid4(data){ getData(data,4)}
+        function onSignalIdMediaGrid5(data){ getData(data,5)}
+        function onSignalIdMediaGrid6(data){ getData(data,6)}
+        function onSignalIdMediaGrid7(data){ getData(data,7)}
+        function onSignalIdMediaGrid8(data){ getData(data,8)}
+        function onSignalIdMediaGrid9(data){ getData(data,9)}
+        function onSignalIdMediaGrid10(data){ getData(data,10)}
+        function onSignalIdMediaGrid11(data){ getData(data,11)}
 
-        function onSidAnimeSelecionado(data){ idAnimeSelecionado = data}
+        function onSignalSelectedMedia(data){
+            getSelectedMediaData(data)
+        }
+        function onSignalSelectedMediaCover(data){
+            imagemAnimeSelecionado = data
+        }
+
+        function onSidAnimeSelecionado(data){ idAnimeSelecionado = data }
         function onSnomeAnimeSelecionado(data){ nomeAnimeSelecionado = data}
         function onSnomeAlternativoAnimeSelecionado(data){ nomeAlternativoAnimeSelecionado = data}
         function onSsinopseAnimeSelecionado(data){ sinopseAnimeSelecionado = data}

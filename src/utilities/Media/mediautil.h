@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QFile>
 #include <QJsonObject>
-#include <QPixmap>
+#include <QFile>
 #include "src/DTO/media.h"
 #include "src/base/Anime/mediasearchmanager.h"
 #include "src/base/Anime/animelistmanager.h"
@@ -24,8 +24,11 @@ public:
     static QString getSeasonFromFile(QString fileName);
     static bool checkIfFileCanBeOpened(QString filename);
     static QJsonObject getMediaAsJsonObject(Media *media);
+    static bool openMediaFileOrFolder(Media *media);
 signals:
 
+private:
+    static QString getMediaNumberReleasedEpisodes(Media *media);
 };
 
 #endif // MEDIAUTIL_H

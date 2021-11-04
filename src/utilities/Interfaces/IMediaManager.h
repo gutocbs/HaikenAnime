@@ -9,7 +9,7 @@
 class IMediaManager : public QObject{
 public:
     using QObject::QObject;
-    IMediaManager *instance();
+    virtual IMediaManager *getInstance() = 0;
     virtual void setMediaSearchManager(IMediaSearchManager* mediaSearchManager) = 0;
     virtual void setMediaListManager(IMediaListManager* mediaListManager) = 0;
     virtual bool updateMediaList(int id, Enums::mediaList newList) = 0;

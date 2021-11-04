@@ -10,12 +10,7 @@
 #include <QUrl>
 #include "src/DTO/media.h"
 #include "src/utilities/Media/mediacomparer.h"
-#include "src/utilities/Media/mediautil.h"
-#include "src/base/FileManager/filemanagerloader.h"
-#include "src/base/FileManager/filemanagersaver.h"
-#include "src/base/FileManager/mediadirectories.h"
-
-class FileManager : public MediaDirectories
+class FileManager : public QObject
 {
     Q_OBJECT
 public:
@@ -24,11 +19,9 @@ public:
     static bool compareFileToMediaName(Media *media, QString fileName);
     static bool compareFileToMediaEpisode(Media *media, QString fileName, int episode);
     static bool openFileOrFolder(const QByteArray &path);
-    static QString searchForMediaDirectory(Media *media);
     static QString getMediaEpisodePath(Media *media, int episode = 0);
     static QString getMediaFolderPath(Media *media);
-signals:
-private:
+    static inline QStringList fileExtensions;
 };
 
 #endif // FILEMANAGER_H

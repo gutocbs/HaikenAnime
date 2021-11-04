@@ -4,6 +4,11 @@ NovelManager::NovelManager(QObject *parent) : IMediaManager(parent)
 {
 }
 
+IMediaManager *NovelManager::getInstance()
+{
+    return this->instance();
+}
+
 NovelManager *NovelManager::createInstance()
 {
     return new NovelManager();

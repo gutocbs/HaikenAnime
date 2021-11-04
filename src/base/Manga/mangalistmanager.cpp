@@ -15,7 +15,7 @@ MangaListManager *MangaListManager::instance()
     return Singleton<MangaListManager>::instance(MangaListManager::createInstance);
 }
 
-QPointer<Media> MangaListManager::getMediaById(int id)
+QPointer<Media> MangaListManager::getMediaById(const int &id)
 {
     return hashMediaById.value(id);
 }
@@ -25,7 +25,7 @@ QHash<int, Media *> MangaListManager::getHashMediaById()
     return hashMediaById;
 }
 
-QVector<Media*> MangaListManager::getMediaList(Enums::mediaList mediaList, QString searchArgument)
+QVector<Media*> MangaListManager::getMediaList(Enums::mediaList mediaList, QVariant searchArgument)
 {
     switch (mediaList) {
     case Enums::CURRENT:
@@ -49,7 +49,7 @@ QVector<Media*> MangaListManager::getMediaList(Enums::mediaList mediaList, QStri
     case Enums::SPRING:
         return mediaListSeasonSpring;
     case Enums::YEAR:
-        if(!searchArgument.isEmpty()){
+        if(!searchArgument.toString().isEmpty()){
             bool ok;
             //Checa se a lista é um número válido
             searchArgument.toInt(&ok);
@@ -62,7 +62,7 @@ QVector<Media*> MangaListManager::getMediaList(Enums::mediaList mediaList, QStri
     return QVector<Media*>();
 }
 
-QVector<Media*> MangaListManager::getSortList(Enums::mediaList mediaList)
+QVector<Media*> MangaListManager::getSortList(Enums::mediaList mediaList, QVariant searchArgument)
 {
     Enums::mediaOrder order = ListOrder::getOrder();
     Enums::orderType orderType = ListOrder::getOrderType();
@@ -115,12 +115,17 @@ QVector<Media*> MangaListManager::getSortList(Enums::mediaList mediaList)
 }
 
 //TODO - Fazer função
-QVector<Media *> MangaListManager::getAnimeYearlyList(int ano)
+QVector<Media *> MangaListManager::getAnimeYearlyList(const int &ano)
 {
     return QVector<Media*>();
 }
 
-QPointer<Media> MangaListManager::getMediaByIndex(Enums::mediaList mediaList, int index)
+bool MangaListManager::setMediaList(Enums::mediaList mediaList, QVector<Media *> media)
+{
+
+}
+
+QPointer<Media> MangaListManager::getMediaByIndex(Enums::mediaList mediaList, const int &index)
 {
     QVector<Media*> mediaVector = getMediaList(mediaList);
     if(mediaVector.count() > index)
@@ -128,7 +133,7 @@ QPointer<Media> MangaListManager::getMediaByIndex(Enums::mediaList mediaList, in
     return nullptr;
 }
 
-bool MangaListManager::compareMedia(QString oficialTitle, QString englishTitle, QStringList alternativeTitles, QString searchedTitle)
+bool MangaListManager::compareMedia(const QString &oficialTitle, const QString &englishTitle, QStringList alternativeTitles, const QString &searchedTitle)
 {
     if(MediaComparer::compareName(oficialTitle, searchedTitle) || MediaComparer::compareName(englishTitle, searchedTitle))
         return true;

@@ -13,9 +13,9 @@ class MediaDownloader : public QObject
 {
     Q_OBJECT
 public:
-    explicit MediaDownloader(QObject *parent = nullptr);
-    void insertDownloadQueue(QString list, Enums::mediaType mediaType, Enums::mediaList mediaList, int listSize);
-    void downloadCoverImages();
+    Q_DECL_DEPRECATED explicit MediaDownloader(QObject *parent = nullptr);
+    Q_DECL_DEPRECATED void insertDownloadQueue(QString list, Enums::mediaType mediaType, Enums::mediaList mediaList, int listSize);
+    Q_DECL_DEPRECATED void downloadCoverImages();
 
 private:
     QMap<QString, MediaList*> downloadQueue;

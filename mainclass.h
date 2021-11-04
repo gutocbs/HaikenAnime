@@ -39,8 +39,11 @@
 #include "src/clients/clientmanager.h"
 #include "src/base/Media/medialistmanager.h"
 #include "src/DTO/ListOrder.h"
+#include "src/DTO/CurrentMediaPlaying.h"
 #include "src/base/Media/mediamanager.h"
+#include "src/base/Anime/mediasearchmanager.h"
 #include "src/utilities/Media/mediautil.h"
+#include "src/utilities/MediaPlayer/mediaplayer.h"
 
 class MainClass : public QObject
 {
@@ -56,33 +59,17 @@ public:
     Q_ENUM(lista)
     enum janela{MAIN, TORRENT, CONFIG};
     Q_ENUM(janela)
+    enum menu{MEDIA, TORRENTS, CONFIGURATION};
+    Q_ENUM(menu)
 public slots:
 
     //TODO - Mudar isso vai foder tudo no qml. Vou ter que olhar bem lá para resolver
     //Organizar aqui pra por todos os gets e sets juntos
+    //Na hora de refatorar, deixar aqui só as funções que lidam com a interface. O resto vai pra outra classe
     void fupdateTimer();
-
-    void fabrePastaAnime();
-    void fabreStream();
-    void frefresh();
-    void fchecaAnimeAssistido();
-    void fAumentaProgressoID(const QString &ridAnime, const QString &episodioAnime);
-    void fmudaProgresso(QVariant);
-    void fmudaNota(QVariant);
-    void fresetRequests();
-    void fadicionaNomeAlternativo(QVariant);
     void fselecionaPastaespecificaAnime(QVariant);
-    void fremoveFromList();
-    void fproximaPagina();
-    void fanteriorPagina();
-
-    void fmudaListaAnime(QVariant);
     void ftryClientConnection(bool);
     void fconnectFail();
-
-    void fbotaoHome();
-    void fbotaoConfig();
-    void fbotaoTorrent();
     void fsetauthCode(QVariant);
     void fsetUsername(QVariant);
     void fsetClient(QVariant);
@@ -96,7 +83,6 @@ public slots:
     void fchangeTorrentState(QVariant, QVariant);
     void fsearchAnimeFromTorrent(QVariant);
     QVariant fopenTorrentLink(QVariant);
-    void fbotaoBusca(QVariant);
     void fbotaoDownloadTorrents();
 
     //Remover, mas verificar no QML antes
@@ -123,9 +109,26 @@ public slots:
     Q_DECL_UNUSED QVariant fretornaPathAvatar();
     Q_DECL_UNUSED void fabreSite(QVariant);
     Q_DECL_UNUSED void fselecionaTipoSeason(QVariant);
+    Q_DECL_UNUSED void fabrePastaAnime(); //openMediaFolder
+    Q_DECL_UNUSED void fabreStream(); //removido
+    Q_DECL_UNUSED void frefresh(); //refreshMediaList
+    Q_DECL_UNUSED void fchecaAnimeAssistido(); //getCurrentMediaPlaying
+    Q_DECL_UNUSED void fAumentaProgressoID(const QString &ridAnime, const QString &episodioAnime); //setMediaProgress
+    Q_DECL_UNUSED void fmudaProgresso(QVariant); //buttonSetMediaProgress
+    Q_DECL_UNUSED void fmudaNota(QVariant); //buttonSetMediaScoreButton
+    Q_DECL_UNUSED void fresetRequests(); //removido
+    Q_DECL_UNUSED void fadicionaNomeAlternativo(QVariant); //setMediaCustomName
+    Q_DECL_UNUSED void fremoveFromList(); //removeMediaFromList
+    Q_DECL_UNUSED void fproximaPagina(); //buttonNextPage
+    Q_DECL_UNUSED void fanteriorPagina(); //buttonLastPage
+    Q_DECL_UNUSED void fmudaListaAnime(QVariant); //setMediaList
+    Q_DECL_UNUSED void fbotaoHome();
+    Q_DECL_UNUSED void fbotaoConfig();
+    Q_DECL_UNUSED void fbotaoTorrent();
 
     //Falta terminar de refazer
     Q_DECL_DEPRECATED void fconnectSuccess();
+    Q_DECL_DEPRECATED void fbotaoBusca(QVariant); //buttonSearch
 
     //Novos
     void getMediaList(QVariant order = "Title", QVariant year = 0);
@@ -148,6 +151,21 @@ public slots:
     QVariant getUserAvatar();
     void openMediaWebpage(QVariant data);
     void selectListSeason(QVariant data);
+    void openMediaFolder();
+    void refreshMediaList();
+    void getCurrentMediaPlaying();
+    void setMediaProgress(int mediaId, int mediaProgress);
+    void buttonSetMediaProgress(QVariant data);
+    void buttonSetMediaScoreButton(QVariant data);
+    void setMediaCustomName(QVariant data);
+    void removeMediaFromList();
+    void buttonNextPage();
+    void buttonLastPage();
+    void setMediaList(QVariant data);
+    void buttonMenuMedia();
+    void buttonMenuConfigurations();
+    void buttonMenuTorrent();
+    void buttonSearch(QVariant data);
 
 signals:
     //Antigos
@@ -179,6 +197,7 @@ signals:
     void stipoAnimeSelecionado(QVariant data);
     void sproximoEpisodioAnimeSelecionado(QVariant data);
     void simagemAnimeSelecionado(QVariant data);
+    void sanimeReconhecidoID(QVariant dataId, QVariant dataNome, QVariant dataEpisodio);
     //Não feitos ainda
     void sdirImagensGrandes(QVariant data);
     void sdirImagensMedias(QVariant data);
@@ -194,7 +213,6 @@ signals:
     void storrentPronto();
     void sbaixouImagensMedias();
 
-    void sanimeReconhecidoID(QVariant dataId, QVariant dataNome, QVariant dataEpisodio);
 
     //Novos
     void signalIdMediaGrid0(QVariant data);
@@ -211,6 +229,12 @@ signals:
     void signalIdMediaGrid11(QVariant data);
 
     void signalSelectedMedia(QVariant data);
+    void signalSelectedMediaCover(QVariant data);
+    void currentMediaPlayer(QVariant dataId, QVariant dataName, QVariant dataEpisode);
+
+    void signalMenuMedia();
+    void signalMenuConfiguration();
+    void signalMenuTorrents();
 private:
     void fconnections();
 
@@ -219,6 +243,8 @@ private:
     void loadMediaList();
     void setUpdateTimer();
     void setDownloads();
+    int getPageIndexRange();
+    void setObjects();
 
     //Classes
     Database *cdatabase;
@@ -264,11 +290,29 @@ private:
     QPointer<DownloadQueue> downloadQueue;
     QPointer<IMediaListManager> mediaListManager;
     QPointer<ClientManager> clientManager;
+    QPointer<MediaPlayer> mediaPlayer;
+    QPointer<IMediaSearchManager> mediaSearchManager;
+    QPointer<IMediaManager> mediaManager;
     QVector<Media*> activeMediaList;
+
+    //TODO - Novas classes de controle
+    //Classe SelectedMedia com dados:
+    //Media*
+    //SelectedMediaIndex
+//    int selectedMediaGridIndex;
+
+    //Classe SelectedMediaList
+    //activeMediaList
+    //Enums::mediaOrder mediaOrder;
+//    Enums::mediaType mediaType;
+//    Enums::mediaList mediaList;
+//    Enums::orderType mediaOrderType;
+//    int selectedPage;
 
     int selectedMediaIndex;
     int selectedPage;
     int selectedMediaGridIndex;
+    int currentMediaPlayingCounter;
     QTime listUpdateTimer;
     QPointer<QTimer> listUpdateCountdown;
 
@@ -276,6 +320,7 @@ private:
     Enums::mediaType mediaType;
     Enums::mediaList mediaList;
     Enums::orderType mediaOrderType;
+    menu selectedMenu;
 };
 
 #endif // MAINCLASS_H
