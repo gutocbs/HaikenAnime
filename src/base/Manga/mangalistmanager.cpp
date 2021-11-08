@@ -144,6 +144,11 @@ bool MangaListManager::compareMedia(const QString &oficialTitle, const QString &
     return false;
 }
 
+bool MangaListManager::containsMedia(const int &id)
+{
+
+}
+
 //TODO - Salvar tudo em um banco de dados ao invés de usar hashs
 bool MangaListManager::addMedia(Media *mediaObject, Enums::mediaList mediaList)
 {

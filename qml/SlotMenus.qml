@@ -193,28 +193,28 @@ Item {
                     id: botaoCurrent
                     text: nomeBotaoCurrent
                     font.family: "Tahoma"
-                    onClicked: mainClass.fselecionaListaCurrent()
+                    onClicked: mainClass.selectListCurrent()
                 }
 
                 Button {
                     id: botaoCompleted
                     text: nomeBotaoCompleted
                     font.family: "Tahoma"
-                    onClicked: mainClass.fselecionaListaCompleted()
+                    onClicked: mainClass.selectListCompleted()
                 }
 
                 Button {
                     id: botaoPaused
                     text: nomeBotaoPaused
                     font.family: "Tahoma"
-                    onClicked: mainClass.fselecionaListaPaused()
+                    onClicked: mainClass.selectListPaused()
                 }
 
                 Button {
                     id: botaoDropped
                     text: nomeBotaoDropped
                     font.family: "Tahoma"
-                    onClicked: mainClass.fselecionaListaDropped()
+                    onClicked: mainClass.selectListDropped()
                 }
 
                 Item {
@@ -246,7 +246,7 @@ Item {
                         y: 0
                         text: nomeBotaoPlanning
                         font.family: "Tahoma"
-                        onClicked: mainClass.fselecionaListaPlanning()
+                        onClicked: mainClass.selectListPlanning()
                     }
                 }
 

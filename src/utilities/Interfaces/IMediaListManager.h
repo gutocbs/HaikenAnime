@@ -28,6 +28,7 @@ public:
     virtual bool compareMedia(const QString &oficialTitle, const QString &englishTitle, QStringList alternativeTitles, const QString &searchedTitle) = 0;
     virtual bool addMedia(Media* mediaObject, Enums::mediaList) = 0;
     virtual bool removeMedia(Media* media, Enums::mediaList mediaList) = 0;
+    virtual bool containsMedia(const int &id) = 0;
     virtual Enums::mediaType getMediaType() = 0;
 
 protected:

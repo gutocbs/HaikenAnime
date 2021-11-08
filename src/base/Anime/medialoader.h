@@ -23,6 +23,7 @@
 #include "src/base/FileManager/filemanager.h"
 #include "src/base/Anime/mediacontroller.h"
 #include "src/base/Download/downloadqueue.h"
+#include "src/base/Download/downloadedmediamanager.h"
 
 //TODO - Fazer singleton
 class MediaLoader : public QObject
@@ -31,6 +32,7 @@ class MediaLoader : public QObject
 public:
     explicit MediaLoader(QObject *parent = nullptr);
     static bool loadMediaFromFile(bool mock = false);
+private:
     static QString getFileName(bool mock = false);
     static QJsonArray getMediaListArray(QString fileName);
     static QPointer<Media> getMedia(QJsonArray mediaList, int index);
@@ -44,6 +46,11 @@ public:
     static QString getDayOfTheWeek(QDateTime secondsSinceEpoch);
     static Enums::mediaType getMediaTypeFromKey(QJsonObject mediaObject, QString key);
     static Enums::mediaList getMediaListFromKey(QJsonObject mediaObject, QString key);
+    static bool removeDeletedEntriesFromList();
+
+    static inline QHash<int, Enums::mediaType> removedMediaId = QHash<int, Enums::mediaType>();
+    static inline QHash<int, Enums::mediaType> mediaId = QHash<int, Enums::mediaType>();
+
     static bool fchecaDatabaseReady();
     static void finsereDataHashId(QString tipo, QString lista, QString id, QStringList nomes);
     static void insereDataHashPosicao(Enums::mediaType type, QString id, int posicao);

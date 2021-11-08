@@ -29,11 +29,11 @@ public:
     bool compareMedia(const QString &oficialTitle, const QString &englishTitle, QStringList alternativeTitles, const QString &searchedTitle);
     bool addMedia(Media *mediaObject, Enums::mediaList);
     bool removeMedia(Media* media, Enums::mediaList mediaList);
+    bool containsMedia(const int &id);
 
     QVector<Media *> getAnimeYearlyList(const int &year);
     QPointer<Media> getMediaByIndex(Enums::mediaList mediaList, const int &index);
 
-    // IMediaListManager interface
 public:
 };
 

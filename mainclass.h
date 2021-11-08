@@ -86,16 +86,10 @@ public slots:
     void fbotaoDownloadTorrents();
 
     //Remover, mas verificar no QML antes
-    Q_DECL_UNUSED void fordemLista(QVariant); //void getMediaList(QVariant order = "Title");
     Q_DECL_UNUSED void fclientUpdate();
     Q_DECL_UNUSED void fselecionaTipoAnime();
     Q_DECL_UNUSED void fselecionaTipoManga();
     Q_DECL_UNUSED void fselecionaTipoNovel();
-    Q_DECL_UNUSED void fselecionaListaCurrent();
-    Q_DECL_UNUSED void fselecionaListaCompleted();
-    Q_DECL_UNUSED void fselecionaListaPaused();
-    Q_DECL_UNUSED void fselecionaListaDropped();
-    Q_DECL_UNUSED void fselecionaListaPlanning();
     Q_DECL_UNUSED void fabreProximoEpisodio(); //void playNextEpisode();
     Q_DECL_UNUSED void fmostraListaAnimes(); //void getMediaListPage();
     Q_DECL_UNUSED void finfoAnimeSelecionado(QVariant); //getSelectedMediaData()
@@ -119,8 +113,6 @@ public slots:
     Q_DECL_UNUSED void fresetRequests(); //removido
     Q_DECL_UNUSED void fadicionaNomeAlternativo(QVariant); //setMediaCustomName
     Q_DECL_UNUSED void fremoveFromList(); //removeMediaFromList
-    Q_DECL_UNUSED void fproximaPagina(); //buttonNextPage
-    Q_DECL_UNUSED void fanteriorPagina(); //buttonLastPage
     Q_DECL_UNUSED void fmudaListaAnime(QVariant); //setMediaList
     Q_DECL_UNUSED void fbotaoHome();
     Q_DECL_UNUSED void fbotaoConfig();
@@ -156,7 +148,7 @@ public slots:
     void getCurrentMediaPlaying();
     void setMediaProgress(int mediaId, int mediaProgress);
     void buttonSetMediaProgress(QVariant data);
-    void buttonSetMediaScoreButton(QVariant data);
+    void buttonSetMediaScore(QVariant data);
     void setMediaCustomName(QVariant data);
     void removeMediaFromList();
     void buttonNextPage();

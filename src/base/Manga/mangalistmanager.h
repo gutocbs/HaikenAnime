@@ -30,6 +30,7 @@ public:
     bool setMediaList(Enums::mediaList mediaList, QVector<Media *> media);
     QPointer<Media> getMediaByIndex(Enums::mediaList mediaList, const int &index);
     bool compareMedia(const QString &oficialTitle, const QString &englishTitle, QStringList alternativeTitles, const QString &searchedTitle);
+    bool containsMedia(const int &id);
 };
 
 #endif // MANGALISTMANAGER_H

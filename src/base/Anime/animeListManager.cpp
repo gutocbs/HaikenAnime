@@ -194,7 +194,15 @@ bool AnimeListManager::addMedia(Media *mediaObject, Enums::mediaList mediaList)
     default:
         return false;
     }
-    mediaVector->append(mediaObject);
+
+    if(hashMediaById.contains(mediaObject->id) && hashMediaById.value(mediaObject->id)->mediaList == mediaList)
+        mediaVector->replace(mediaVector->indexOf(hashMediaById.value(mediaObject->id)), mediaObject);
+    else if(hashMediaById.contains(mediaObject->id) && hashMediaById.value(mediaObject->id)->mediaList != mediaList){
+        removeMedia(hashMediaById.value(mediaObject->id), hashMediaById.value(mediaObject->id)->mediaList);
+        mediaVector->append(mediaObject);
+    }
+    else
+        mediaVector->append(mediaObject);
     hashMediaById.insert(mediaObject->id, mediaObject);
     return true;
 }
@@ -222,6 +230,11 @@ bool AnimeListManager::removeMedia(Media* media, Enums::mediaList mediaList)
     }
     hashMediaById.remove(media->id);
     return true;
+}
+
+bool AnimeListManager::containsMedia(const int &id)
+{
+    return hashMediaById.contains(id);
 }
 
 void AnimeListManager::addToHash(QPointer<Media> media)

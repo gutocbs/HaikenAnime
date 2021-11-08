@@ -50,7 +50,7 @@ Item {
                         width: 60
                         height: 60
                         text: qsTr("Type")
-                        onClicked: mainClass.getMediaList("formato")
+                        onClicked: mainClass.getMediaList("Type")
                     }
 
                     Button {
@@ -58,7 +58,7 @@ Item {
                         width: 60
                         height: 60
                         text: qsTr("Release")
-                        onClicked: mainClass.getMediaList("data")
+                        onClicked: mainClass.getMediaList("StartDate")
                     }
 
                     Button {
@@ -66,7 +66,7 @@ Item {
                         width: 60
                         height: 60
                         text: qsTr("Score")
-                        onClicked: mainClass.getMediaList("nota")
+                        onClicked: mainClass.getMediaList("Score")
                     }
 
                     Button {
@@ -74,7 +74,7 @@ Item {
                         width: 60
                         height: 60
                         text: qsTr("Progress")
-                        onClicked: mainClass.getMediaList("progresso")
+                        onClicked: mainClass.getMediaList("Progress")
                     }
 
                     Button {

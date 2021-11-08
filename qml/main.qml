@@ -64,19 +64,18 @@ Window {
 
     function getData(id, posicaoGrid){
         var listaIdTemp = idAnime
-        var listaNomeTemp = nomeAnime
-        var listaEpisodiosTemp = episodiosAnime
-        var listaNotaTemp = notaAnime
-        var listaListaTemp = listaAnime
         var listaEpisodiosEncontradosTemp = episodiosEncontradosAnime
         var mediaJson = mainClass.getMediaJsonObjectByGridIndex(posicaoGrid);
-        listaIdTemp[posicaoGrid] = mediaJson.id
+        idAnime[posicaoGrid] = mediaJson.id
         if(mediaJson.originalName === "")
-            listaNomeTemp[posicaoGrid] = mediaJson.englishName
+            nomeAnime[posicaoGrid] = mediaJson.englishName
         else
-            listaNomeTemp[posicaoGrid] = mediaJson.originalName
-        listaEpisodiosTemp[posicaoGrid] = "Progresso: " + mediaJson.progress+"/"+mediaJson.totalEpisodes
-        listaNotaTemp[posicaoGrid] = "Nota: " + mediaJson.personalScore+"/10"
+            nomeAnime[posicaoGrid] = mediaJson.originalName
+        if(mediaJson.totalEpisodes === 0)
+            episodiosAnime[posicaoGrid] = "Progresso: " + mediaJson.progress+"/?"
+        else
+            episodiosAnime[posicaoGrid] = "Progresso: " + mediaJson.progress+"/"+mediaJson.totalEpisodes
+        notaAnime[posicaoGrid] = "Nota: " + mediaJson.personalScore+"/10"
         if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "1")
             listaEpisodiosEncontradosTemp[posicaoGrid] = "1"
         else if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "-1")
@@ -84,10 +83,6 @@ Window {
         else
             listaEpisodiosEncontradosTemp[posicaoGrid] = "0"
         idAnime = listaIdTemp
-        nomeAnime = listaNomeTemp
-        episodiosAnime = listaEpisodiosTemp
-        notaAnime = listaNotaTemp
-        listaAnime = listaListaTemp
         episodiosEncontradosAnime = listaEpisodiosEncontradosTemp
 
     }

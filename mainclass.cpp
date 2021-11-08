@@ -15,10 +15,9 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     cconfiguracoesUsuarioDiretorios = new confUsuario(nullptr);
     carquivos = new arquivos(this);
     cclient = new Client(this);
-    cdownloader = new Downloader(this);
+//    cdownloader = new Downloader(this);
     cabaConfig = new abaConfig(this);
     cabaTorrent = new abaTorrent(this);
-    mediaDownloader = new MediaDownloader(this);
     downloadQueue = new DownloadQueue(this);
     cclient->fselecionaClient(cabaConfig->instance()->fgetService());
     //cclient->frecebeAutorizacao(configurações->user, configurações->codigo)
@@ -122,9 +121,9 @@ void MainClass::fconnectSuccess()
 
 
     //After, we try to download the cover images
-    cdownloader->setAvatar(cclient->fgetAvatar());
-    cdownloader->fsetWorker();
-    cdownloader->workAvatar(0);
+//    cdownloader->setAvatar(cclient->fgetAvatar());
+//    cdownloader->fsetWorker();
+//    cdownloader->workAvatar(0);
     downloadQueue->downloadMedia();
     //TODO - COLOCAR SEMPRE QUE PRECISAR MUDAR DE PÁGINA OU BAIXAR UMA NOVA IMAGEM
     mediaDownloader->insertDownloadQueue(vlistaAtual, mediaType, mediaList,vlistaSelecionada.size());
@@ -344,27 +343,6 @@ void MainClass::fbotaoBusca(QVariant search)
 void MainClass::fbotaoDownloadTorrents()
 {
     cabaTorrent->fdownloadAnimes();
-}
-
-void MainClass::fordemLista(QVariant ordem)
-{
-    //First we need to see if the order is the same, and if it is, we will change the first letter
-    //To invert the order
-    if(vordemLista.contains(ordem.toString()) && vordemLista.front() == "c")
-        vordemLista.replace(0,1,"v");
-    else if(vordemLista.contains(ordem.toString()) && vordemLista.front() == "v")
-        vordemLista.replace(0,1,"c");
-    //If it's not, let's change to the new order, with a C to make it from low to high
-    else
-        vordemLista = QString("c" + ordem.toString());
-
-    //Change the old list to the new
-    vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
-    if(!vlistaSelecionada.isEmpty()){
-        vindexAnimeSelecionado = 0;
-        vpagina = 1;
-        finfoAnimeSelecionado(0);
-    }
 }
 
 void MainClass::fclientUpdate()
@@ -809,7 +787,7 @@ void MainClass::buttonSetMediaProgress(QVariant data)
         setMediaProgress(selectedMedia->id, selectedMedia->progress+progress);
 }
 
-void MainClass::buttonSetMediaScoreButton(QVariant data)
+void MainClass::buttonSetMediaScore(QVariant data)
 {
     QPointer<Media> selectedMedia = activeMediaList.at(selectedMediaIndex);
     int score{selectedMedia->personalScore.toInt()};
@@ -956,175 +934,44 @@ void MainClass::fselecionaTipoSeason(QVariant data)
 }
 
 ///Se a função de todas as listas forem iguais, posso fazer uma função e passar o lista::Current como referência
-void MainClass::fselecionaListaCurrent()
-{
-    switch (vtipoAtual) {
-    case Database::type::SEASON:
-        if(vlistaAtual.compare(enumlistaToQString(lista::WINTER)
-                               +QString::number(vanoBuscaAnimes), Qt::CaseInsensitive) != 0){
-            vlistaAtual = enumlistaToQString(lista::WINTER)+QString::number(vanoBuscaAnimes);
-            //Change the old list to the new
-            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
-            //Check if the list is empty for some reason
-            if(!vlistaSelecionada.isEmpty()){
-                vindexAnimeSelecionado = 0;
-                vpagina = 1;
-                finfoAnimeSelecionado(0);
-                mediaDownloader->downloadCoverImages();
-                downloadQueue->downloadMedia();
-            }
-        }
-        break;
-    default:
-        //Check if it is already the right list
-        if(vlistaAtual.compare(enumlistaToQString(lista::CURRENT), Qt::CaseInsensitive) != 0){
-            vlistaAtual = enumlistaToQString(lista::CURRENT);
-            //Change the old list to the new
-            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
-            //Check if the list is empty for some reason
-            if(!vlistaSelecionada.isEmpty()){
-                vindexAnimeSelecionado = 0;
-                vpagina = 1;
-                finfoAnimeSelecionado(0);
-                mediaDownloader->downloadCoverImages();
-                downloadQueue->downloadMedia();
-            }
-        }
-        break;
-    }
-}
+//void MainClass::fselecionaListaCurrent()
+//{
+//    switch (vtipoAtual) {
+//    case Database::type::SEASON:
+//        if(vlistaAtual.compare(enumlistaToQString(lista::WINTER)
+//                               +QString::number(vanoBuscaAnimes), Qt::CaseInsensitive) != 0){
+//            vlistaAtual = enumlistaToQString(lista::WINTER)+QString::number(vanoBuscaAnimes);
+//            //Change the old list to the new
+//            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
+//            //Check if the list is empty for some reason
+//            if(!vlistaSelecionada.isEmpty()){
+//                vindexAnimeSelecionado = 0;
+//                vpagina = 1;
+//                finfoAnimeSelecionado(0);
+//                mediaDownloader->downloadCoverImages();
+//                downloadQueue->downloadMedia();
+//            }
+//        }
+//        break;
+//    default:
+//        //Check if it is already the right list
+//        if(vlistaAtual.compare(enumlistaToQString(lista::CURRENT), Qt::CaseInsensitive) != 0){
+//            vlistaAtual = enumlistaToQString(lista::CURRENT);
+//            //Change the old list to the new
+//            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
+//            //Check if the list is empty for some reason
+//            if(!vlistaSelecionada.isEmpty()){
+//                vindexAnimeSelecionado = 0;
+//                vpagina = 1;
+//                finfoAnimeSelecionado(0);
+//                mediaDownloader->downloadCoverImages();
+//                downloadQueue->downloadMedia();
+//            }
+//        }
+//        break;
+//    }
+//}
 
-void MainClass::fselecionaListaCompleted()
-{
-    switch (vtipoAtual) {
-    case Database::type::SEASON:
-        if(vlistaAtual.compare(enumlistaToQString(lista::SPRING)
-                               +QString::number(vanoBuscaAnimes), Qt::CaseInsensitive) != 0){
-            vlistaAtual = enumlistaToQString(lista::SPRING)+QString::number(vanoBuscaAnimes);
-            //Change the old list to the new
-            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
-            //Check if the list is empty for some reason
-            if(!vlistaSelecionada.isEmpty()){
-                vindexAnimeSelecionado = 0;
-                vpagina = 1;
-                finfoAnimeSelecionado(0);
-                mediaDownloader->downloadCoverImages();
-                downloadQueue->downloadMedia();
-            }
-        }
-        break;
-    default:
-        //Check if it is already the right list
-        if(vlistaAtual.compare(enumlistaToQString(lista::COMPLETED), Qt::CaseInsensitive) != 0){
-            vlistaAtual = enumlistaToQString(lista::COMPLETED);
-            //Change the old list to the new
-            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
-            //Check if the list is empty for some reason
-            if(!vlistaSelecionada.isEmpty()){
-                vindexAnimeSelecionado = 0;
-                vpagina = 1;
-                finfoAnimeSelecionado(0);
-                mediaDownloader->downloadCoverImages();
-                downloadQueue->downloadMedia();
-            }
-        }
-        break;
-    }
-}
-
-void MainClass::fselecionaListaPaused()
-{
-    switch (vtipoAtual) {
-    case Database::type::SEASON:
-        if(vlistaAtual.compare(enumlistaToQString(lista::SUMMER)
-                               +QString::number(vanoBuscaAnimes), Qt::CaseInsensitive) != 0){
-            vlistaAtual = enumlistaToQString(lista::SUMMER)+QString::number(vanoBuscaAnimes);
-            //Change the old list to the new
-            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
-            //Check if the list is empty for some reason
-            if(!vlistaSelecionada.isEmpty()){
-                vindexAnimeSelecionado = 0;
-                vpagina = 1;
-                finfoAnimeSelecionado(0);
-                mediaDownloader->downloadCoverImages();
-                downloadQueue->downloadMedia();
-            }
-        }
-        break;
-    default:
-        //Check if it is already the right list
-        if(vlistaAtual.compare(enumlistaToQString(lista::PAUSED), Qt::CaseInsensitive) != 0){
-            vlistaAtual = enumlistaToQString(lista::PAUSED);
-            //Change the old list to the new
-            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
-            //Check if the list is empty for some reason
-            if(!vlistaSelecionada.isEmpty()){
-                vindexAnimeSelecionado = 0;
-                vpagina = 1;
-                finfoAnimeSelecionado(0);
-                mediaDownloader->downloadCoverImages();
-                downloadQueue->downloadMedia();
-            }
-        }
-        break;
-    }
-}
-
-void MainClass::fselecionaListaDropped()
-{
-    switch (vtipoAtual) {
-    case Database::type::SEASON:
-        if(vlistaAtual.compare(enumlistaToQString(lista::FALL)
-                               +QString::number(vanoBuscaAnimes), Qt::CaseInsensitive) != 0){
-            vlistaAtual = enumlistaToQString(lista::FALL)+QString::number(vanoBuscaAnimes);
-            //Change the old list to the new
-            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
-            //Check if the list is empty for some reason
-            if(!vlistaSelecionada.isEmpty()){
-                vindexAnimeSelecionado = 0;
-                vpagina = 1;
-                finfoAnimeSelecionado(0);
-                mediaDownloader->downloadCoverImages();
-                downloadQueue->downloadMedia();
-            }
-        }
-        break;
-    default:
-        //Check if it is already the right list
-        if(vlistaAtual.compare(enumlistaToQString(lista::DROPPED), Qt::CaseInsensitive) != 0){
-            vlistaAtual = enumlistaToQString(lista::DROPPED);
-            //Change the old list to the new
-            vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
-            //Check if the list is empty for some reason
-            if(!vlistaSelecionada.isEmpty()){
-                vindexAnimeSelecionado = 0;
-                vpagina = 1;
-                finfoAnimeSelecionado(0);
-                mediaDownloader->downloadCoverImages();
-                downloadQueue->downloadMedia();
-            }
-        }
-        break;
-    }
-}
-
-void MainClass::fselecionaListaPlanning()
-{
-    //Check if it is already the right list
-    if(vlistaAtual.compare(enumlistaToQString(lista::PLANNING), Qt::CaseInsensitive) != 0){
-        vlistaAtual = enumlistaToQString(lista::PLANNING);
-        //Change the old list to the new
-        vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
-        //Check if the list is empty for some reason
-        if(!vlistaSelecionada.isEmpty()){
-            vindexAnimeSelecionado = 0;
-            vpagina = 1;
-            finfoAnimeSelecionado(0);
-            mediaDownloader->downloadCoverImages();
-            downloadQueue->downloadMedia();
-        }
-    }
-}
 
 
 ///TODO: MAKE WARNINGS
@@ -1485,23 +1332,6 @@ void MainClass::fmostraListaAnimes()
         emit sidAnime12(QVariant(vlistaSelecionada[(12*(vpagina-1))+11]->vid));
     else
         emit sidAnime12(QVariant("null"));
-}
-
-
-void MainClass::fproximaPagina()
-{
-    if(vlistaSelecionada.size() > 12+(12*(vpagina-1))){
-        vpagina++;
-        fmostraListaAnimes();
-    }
-}
-
-void MainClass::fanteriorPagina()
-{
-    if(vpagina > 1){
-        vpagina--;
-        fmostraListaAnimes();
-    }
 }
 
 void MainClass::fmudaListaAnime(QVariant rnewListVariant)

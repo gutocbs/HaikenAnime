@@ -44,7 +44,7 @@ Item {
                         id: botaoProximoEpisodio
                         text: qsTr("Próximo episódio")
                         anchors.fill: parent
-                        onClicked: mainClass.fabreProximoEpisodio()
+                        onClicked: mainClass.playNextEpisode()
                     }
                 }
             }
@@ -87,7 +87,7 @@ Item {
                         text: qsTr("Anilist")
                         anchors.fill: parent
 
-                        onClicked: mainClass.fabreSite(idAnimeSelecionado)
+                        onClicked: mainClass.openMediaWebpage(idAnimeSelecionado)
                     }
                 }
             }
@@ -108,7 +108,7 @@ Item {
                         y: 0
                         text: qsTr("Open Anime Folder")
                         anchors.fill: parent
-                        onClicked: mainClass.fabrePastaAnime()
+                        onClicked: mainClass.openMediaFolder()
                     }
                 }
             }
@@ -336,7 +336,7 @@ Item {
                                     font.pointSize: 8
                                     font.family: "Tahoma"
                                     anchors.verticalCenter: parent.verticalCenter
-                                    onClicked: mainClass.fmudaProgresso("diminui")
+                                    onClicked: mainClass.buttonSetMediaProgress("diminui")
                                 }
                             }
                         }
@@ -361,7 +361,7 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     font.pointSize: 8
                                     font.family: "Tahoma"
-                                    onClicked: mainClass.fmudaProgresso("aumenta")
+                                    onClicked: mainClass.buttonSetMediaProgress("aumenta")
                                 }
                             }
                         }
@@ -533,7 +533,7 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     font.pointSize: 8
                                     font.family: "Tahoma"
-                                    onClicked: mainClass.fmudaNota("diminui")
+                                    onClicked: mainClass.buttonSetMediaScore("diminui")
                                 }
                             }
                         }
@@ -558,7 +558,7 @@ Item {
                                     anchors.verticalCenter: parent.verticalCenter
                                     font.pointSize: 8
                                     font.family: "Tahoma"
-                                    onClicked: mainClass.fmudaNota("aumenta")
+                                    onClicked: mainClass.buttonSetMediaScore("aumenta")
                                 }
                             }
                         }

@@ -8,27 +8,41 @@ MediaLoader::MediaLoader(QObject *parent) : QObject(parent)
 //TODO - Passar argumento int pra função, pra ler listas de anos
 bool MediaLoader::loadMediaFromFile(bool mock)
 {
-    QJsonObject mediaObject;
     int listSize = 0;
+    removedMediaId.swap(mediaId);
+    QJsonObject mediaObject;
     QPointer<IMediaListManager> mediaListManager;
     QPointer<MediaController> mediaController = new MediaController();
     QString fileName = getFileName(mock);
+
     if(!MediaUtil::checkIfFileCanBeOpened(fileName))
         return false;
+
     QJsonArray mediaList = getMediaListArray(fileName);
     listSize = mediaList.size();
     for(int i = 0; i < listSize; i++){
         mediaObject = mediaList.at(i).toObject().value("media").toObject();
         Enums::mediaType mediaTypeEnum = Enums::QStringToMediaType(getQStringValueFromKey(mediaObject, "format"));
         Enums::mediaList mediaListEnum = Enums::QStringToMediaList(mediaList.at(i).toObject().value("status").toString());
+
         QPointer<Media> media = getMedia(mediaList, i);
         media->mediaList = mediaListEnum;
         media->format = mediaTypeEnum;
         media->totalEpisodes = getNumberChapters(mediaObject, mediaTypeEnum);
+        media->progress = getNumberValueFromKey(mediaList.at(i).toObject(), "progress");
+        media->personalScore = QString::number(getNumberValueFromKey(mediaList.at(i).toObject(), "score"));
         mediaListManager = mediaController->instance()->getMediaListManager(mediaTypeEnum);
         mediaListManager->addMedia(media, mediaListEnum);
-        DownloadQueue::insertCoverDownloadQueue(media->id, DownloadEnums::imageSize::Big);
+
+        if(!DownloadedMediaManager::mediaExists(media->id))
+            DownloadQueue::insertCoverDownloadQueue(media->id, DownloadEnums::imageSize::Big);
+
+        //Variaveis de controle que verificam se algum anime foi removido da lista desde a última vez que foi lida
+        mediaId.insert(media->id, mediaTypeEnum);
+        removedMediaId.remove(media->id);
     }
+    if(!removedMediaId.isEmpty())
+        removeDeletedEntriesFromList();
     return true;
 }
 
@@ -61,15 +75,13 @@ QPointer<Media> MediaLoader::getMedia(QJsonArray mediaList, int index)
     media->originalName = getQStringValueFromKey(mediaObject, "title","romaji");
     media->englishName = getQStringValueFromKey(mediaObject, "title", "english");
     media->customNames = getQStringListValuesFromKey(mediaObject, "synonyms");
-    media->meanScore = getQStringValueFromKey(mediaObject, "averageScore");
+    media->meanScore = QString::number(getNumberValueFromKey(mediaObject, "averageScore"));
     media->coverURL = getQStringValueFromKey(mediaObject, "coverImage", "large");
-    media->personalScore = getQStringValueFromKey(mediaObject, "score");
     media->status = getQStringValueFromKey(mediaObject, "status");
     media->synopsis = getQStringValueFromKey(mediaObject, "description");
     media->yearSeason = getQStringValueFromKey(mediaObject, "season") + " " + getQStringValueFromKey(mediaObject, "startDate", "year");
     media->nextAiringEpisodeDate = getNextEpisode(mediaObject, getQStringValueFromKey(mediaObject, "nextAiringEpisode"));
-    media->progress = getNumberValueFromKey(mediaObject, "progress");
-    media->startDate = getStartDate(mediaObject, getQStringValueFromKey(mediaObject, "startDate"));
+    media->startDate = getStartDate(mediaObject, "startDate");
     media->nextAiringEpisodeDate = getNextEpisodeDate(mediaObject, "nextAiringEpisode");
     media->siteURL = getQStringValueFromKey(mediaObject, "siteUrl");
     //        //TODO - FAZER UMA CLASSE CHAMADA MEDIA HELPER QUE IRÁ PEGAR QUAL A TEMPORADA CERTA
@@ -127,16 +139,16 @@ int MediaLoader::getNumberChapters(QJsonObject mediaObject, Enums::mediaType med
 QDate MediaLoader::getStartDate(QJsonObject mediaObject, QString startDateObject)
 {
     QJsonObject startDateJsonObject;
-    QString month = "1", year = "2000";
+    int month = 1, year = 2000;
     if(mediaObject.contains(startDateObject) && mediaObject.value(startDateObject).toObject().contains("month")
                                              && mediaObject.value(startDateObject).toObject().contains("year")){
         startDateJsonObject = mediaObject.value(startDateObject).toObject();
         if(!startDateJsonObject.value("month").isNull())
-            month = startDateJsonObject.value("month").toString();
+            month = startDateJsonObject.value("month").toInt();
         if(!startDateJsonObject.value("year").isNull())
-            year = startDateJsonObject.value("year").toString();
+            year = startDateJsonObject.value("year").toInt();
     }
-    return QDate(year.toInt(), month.toInt(), 1);
+    return QDate(year, month, 1);
 }
 
 QString MediaLoader::getNextEpisode(QJsonObject mediaObject, QString nextAiringEpisodeObject)
@@ -217,5 +229,20 @@ Enums::mediaList MediaLoader::getMediaListFromKey(QJsonObject mediaObject, QStri
     else if(list.compare(Enums::enumMediaListToQString(Enums::PLANNING), Qt::CaseInsensitive) == 0)
         mediaList = Enums::PLANNING;
     return mediaList;
+}
+
+bool MediaLoader::removeDeletedEntriesFromList()
+{
+    QHash<int, Enums::mediaType>::iterator iterator;
+    QPointer<IMediaListManager> mediaListManager;
+    QPointer<MediaController> mediaController = new MediaController();
+    QPointer<Media> media;
+    for (iterator = removedMediaId.begin(); iterator != removedMediaId.end(); ++iterator){
+        mediaListManager = mediaController->instance()->getMediaListManager(removedMediaId[iterator.key()]);
+        media = mediaListManager->getMediaById(iterator.key());
+        mediaListManager->removeMedia(media, media->mediaList);
+    }
+    removedMediaId.clear();
+    return true;
 }
 
