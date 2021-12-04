@@ -11,7 +11,7 @@
 #include "src/base/FileManager/mediadirectories.h"
 #include "src/base/FileManager/filemanager.h"
 
-class FileManagerLoader : public FileManager
+class FileManagerLoader : public QObject
 {
     Q_OBJECT
 public:

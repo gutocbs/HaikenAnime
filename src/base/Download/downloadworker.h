@@ -11,7 +11,7 @@
 
 #include "src/utilities/Enums.h"
 #include "src/base/Download/downloadenums.h"
-#include "src/base/Anime/mediacontroller.h"
+#include "src/base/Media/mediacontroller.h"
 
 class DownloadWorker : public QObject
 {

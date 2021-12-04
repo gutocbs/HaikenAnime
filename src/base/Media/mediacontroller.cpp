@@ -35,13 +35,13 @@ void MediaController::setMediaManager(Enums::mediaType mediaType)
 {
     switch (mediaType) {
     case Enums::ANIME:
-        mediaManager = animeManager->instance();
+        mediaManager = animeManager->getInstance();
         break;
     case Enums::MANGA:
-        mediaManager = mangaManager->instance();
+        mediaManager = mangaManager->getInstance();
         break;
     case Enums::NOVEL:
-        mediaManager = novelManager->instance();
+        mediaManager = novelManager->getInstance();
         break;
     }
 }
@@ -50,13 +50,13 @@ void MediaController::setMediaListManager(Enums::mediaType mediaType)
 {
     switch (mediaType) {
     case Enums::ANIME:
-        mediaListManager = animeListManager->instance();
+        mediaListManager = animeListManager->getInstance();
         break;
     case Enums::MANGA:
-        mediaListManager = mangaListManager->instance();
+        mediaListManager = mangaListManager->getInstance();
         break;
     case Enums::NOVEL:
-        mediaListManager = novelListManager->instance();
+        mediaListManager = novelListManager->getInstance();
         break;
     }
 }

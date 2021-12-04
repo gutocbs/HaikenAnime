@@ -6,9 +6,7 @@
 #include <QMetaEnum>
 #include <QPointer>
 #include <QVariant>
-#include "src/utilities/Enums.h"
 #include "src/DTO/media.h"
-#include "src/base/Media/medialistmanager.h"
 
 class IMediaListManager : public QObject{
 public:
@@ -21,8 +19,9 @@ public:
 
     //return functions
     virtual QVector<Media*> getMediaList(Enums::mediaList mediaList, QVariant searchArgument = "") = 0;
-    virtual QVector<Media*> getSortList(Enums::mediaList mediaList, QVariant searchArguments = "") = 0;
-    virtual QVector<Media*> getAnimeYearlyList(const int &year) = 0;
+    virtual bool sortList(Enums::mediaList mediaList, QVariant searchArguments = "") = 0;
+    virtual QVector<Media*> getMediaYearlyList(const int &year) = 0;
+    virtual int size(Enums::mediaList mediaList) = 0;
     virtual bool setMediaList(Enums::mediaList mediaList, QVector<Media*> media) = 0;
     virtual QPointer<Media> getMediaByIndex(Enums::mediaList mediaList, const int &index) = 0;
     virtual bool compareMedia(const QString &oficialTitle, const QString &englishTitle, QStringList alternativeTitles, const QString &searchedTitle) = 0;
@@ -30,8 +29,10 @@ public:
     virtual bool removeMedia(Media* media, Enums::mediaList mediaList) = 0;
     virtual bool containsMedia(const int &id) = 0;
     virtual Enums::mediaType getMediaType() = 0;
+    virtual void setListOrder(QVariant newOrder) = 0;
 
 protected:
+    QVector<Media*> mediaList;
     QVector<Media*> mediaListCurrent;
     QVector<Media*> mediaListCompleted;
     QVector<Media*> mediaListPaused;

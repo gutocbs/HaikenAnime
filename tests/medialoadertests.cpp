@@ -7,7 +7,7 @@ MediaLoaderTests::MediaLoaderTests(QObject *parent) : QObject(parent)
 
 void MediaLoaderTests::initTestCase()
 {
-    this->animeListManager = animeListManager->instance();
+    this->animeListManager = new AnimeListManager();
     //    this->mediaLoader = new MediaLoader(this);
 
 }

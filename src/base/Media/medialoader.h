@@ -12,20 +12,9 @@
 #include <QHash>
 #include <QVariantList>
 #include <QPointer>
-#include "src/utilities/Enums.h"
-#include "src/utilities/singleton.h"
-#include "src/DTO/media.h"
-#include "src/base/Anime/animelistmanager.h"
-#include "src/base/Manga/mangalistmanager.h"
-#include "src/base/Novel/novellistmanager.h"
-#include "src/base/Anime/mediasearchmanager.h"
-#include "src/base/Anime/animemanager.h"
 #include "src/base/FileManager/filemanager.h"
-#include "src/base/Anime/mediacontroller.h"
-#include "src/base/Download/downloadqueue.h"
-#include "src/base/Download/downloadedmediamanager.h"
+#include "src/base/Media/mediacontroller.h"
 
-//TODO - Fazer singleton
 class MediaLoader : public QObject
 {
     Q_OBJECT

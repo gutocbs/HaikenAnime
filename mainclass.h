@@ -25,26 +25,25 @@
 #include "src/base/abatorrent.h"
 #include "lib/robotlib/Robot.h"
 #include "src/utilities/playerrecognition.h"
-#include "src/base/Anime/mediasearchmanager.h"
+#include "src/base/Media/mediasearchmanager.h"
 #include "src/utilities/Interfaces/IMediaSearchManager.h"
-#include "src/base/Anime/medialoader.h"
+#include "src/base/Media/medialoader.h"
 #include "src/utilities/Media/mediacomparer.h"
 #include "src/DTO/MediaList.h"
 #include "src/utilities/Media/mediadownloader.h"
 
 #include "src/base/Download/downloadqueue.h"
 #include "src/base/Download/downloadenums.h"
-#include "src/base/Anime/animelistmanager.h"
+#include "src/base/MediaType/Anime/animelistmanager.h"
 #include "src/utilities/Enums.h"
 #include "src/clients/clientmanager.h"
 #include "src/base/Media/medialistmanager.h"
 #include "src/DTO/ListOrder.h"
 #include "src/DTO/CurrentMediaPlaying.h"
 #include "src/base/Media/mediamanager.h"
-#include "src/base/Anime/mediasearchmanager.h"
+#include "src/base/Media/mediasearchmanager.h"
 #include "src/utilities/Media/mediautil.h"
 #include "src/utilities/MediaPlayer/mediaplayer.h"
-
 class MainClass : public QObject
 {
     Q_OBJECT
@@ -123,7 +122,7 @@ public slots:
     Q_DECL_DEPRECATED void fbotaoBusca(QVariant); //buttonSearch
 
     //Novos
-    void getMediaList(QVariant order = "Title", QVariant year = 0);
+    void getMediaList(QVariant order = "Title", QVariant year = 0, bool changeOrder = false);
 
     void selectTypeAnime();
     void selectTypeManga();
@@ -285,7 +284,7 @@ private:
     QPointer<MediaPlayer> mediaPlayer;
     QPointer<IMediaSearchManager> mediaSearchManager;
     QPointer<IMediaManager> mediaManager;
-    QVector<Media*> activeMediaList;
+//    QVector<Media*> activeMediaList;
 
     //TODO - Novas classes de controle
     //Classe SelectedMedia com dados:

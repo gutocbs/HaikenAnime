@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QPointer>
 #include <QTest>
-#include "src/base/Anime/medialoader.h"
+#include "src/base/Media/medialoader.h"
 
 class MediaLoaderTests : public QObject
 {

@@ -27,7 +27,6 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     cconfiguracoesUsuarioDiretorios->instance()->frecebeConfigs(cabaConfig->instance()->fgetDirectory().toStringList());
 
     cdatabase->instance()->fcarregaIdNomeAno();
-    MediaLoader::loadMediaFromFile();
     mediaList = Enums::mediaList::CURRENT;
     vlistaSelecionada = cdatabase->instance()->returnAnimeList("CURRENT");
 
@@ -126,8 +125,8 @@ void MainClass::fconnectSuccess()
 //    cdownloader->workAvatar(0);
     downloadQueue->downloadMedia();
     //TODO - COLOCAR SEMPRE QUE PRECISAR MUDAR DE PÁGINA OU BAIXAR UMA NOVA IMAGEM
-    mediaDownloader->insertDownloadQueue(vlistaAtual, mediaType, mediaList,vlistaSelecionada.size());
-    mediaDownloader->downloadCoverImages();
+    //mediaDownloader->insertDownloadQueue(vlistaAtual, mediaType, mediaList,vlistaSelecionada.size());
+//    mediaDownloader->downloadCoverImages();
 
     //After, will look for anime episodes in your computer
     if(!tthreadDiretorios.isRunning()){
@@ -157,10 +156,8 @@ void MainClass::loadMediaList()
 {
     //TODO - If the list is not empty, we have to empty it first.
     MediaLoader::loadMediaFromFile();
-    activeMediaList = mediaListManager->getInstance()->getSortList(mediaList);
-
     //We need to check if the list got empy before reading it
-    if(activeMediaList.size() < selectedMediaIndex){
+    if(mediaListManager->getInstance()->size(mediaList) < selectedMediaIndex){
         selectedMediaIndex = 0;
         selectedPage = 1;
     }
@@ -194,8 +191,12 @@ void MainClass::setObjects()
     clientManager = new ClientManager(this);
     mediaPlayer = new MediaPlayer(this);
     mediaSearchManager = new MediaSearchManager(this);
+    mediaSearchManager->setMediaListManager(mediaListManager);
     mediaManager = new AnimeManager(this);
-    activeMediaList = mediaListManager->getInstance()->getMediaList(Enums::mediaList::CURRENT);
+    mediaManager->getInstance()->setMediaListManager(mediaListManager);
+    mediaManager->getInstance()->setMediaSearchManager(mediaSearchManager);
+    loadMediaList();
+    getSelectedMediaData(0);
 }
 
 void MainClass::fconnectFail()
@@ -523,12 +524,13 @@ QVariant MainClass::fretornaNumeroAnos()
     return QVariant(QDate::currentDate().year()-1998);
 }
 
-void MainClass::getMediaList(QVariant order, QVariant year)
+void MainClass::getMediaList(QVariant order, QVariant year, bool changeOrder)
 {
-    MediaListManager::setListOrder(order);
-    activeMediaList = mediaListManager->getInstance()->getSortList(mediaList, year);
+    if(changeOrder)
+        mediaListManager->getInstance()->setListOrder(order);
+    mediaListManager->getInstance()->sortList(mediaList, year);
     //Check if the list is empty for some reason
-    if(activeMediaList.size() < selectedMediaIndex){
+    if(mediaListManager->getInstance()->size(mediaList) < selectedMediaIndex){
         selectedMediaIndex = 0;
         selectedPage = 1;
     }
@@ -557,7 +559,7 @@ void MainClass::fselecionaTipoAnime()
             vindexAnimeSelecionado = 0;
             vpagina = 1;
             finfoAnimeSelecionado(0);
-            mediaDownloader->downloadCoverImages();
+//            mediaDownloader->downloadCoverImages();
             downloadQueue->downloadMedia();
         }
     }
@@ -568,6 +570,11 @@ void MainClass::selectTypeAnime()
     if(mediaType != Enums::mediaType::ANIME){
         mediaType = Enums::mediaType::ANIME;
         mediaList = Enums::mediaList::CURRENT;
+        mediaListManager = new AnimeListManager(this);
+        mediaManager = new AnimeManager(this);
+        mediaSearchManager->setMediaListManager(mediaListManager);
+        mediaManager->getInstance()->setMediaListManager(mediaListManager);
+        mediaManager->getInstance()->setMediaSearchManager(mediaSearchManager);
         getMediaList();
     }
 }
@@ -577,6 +584,11 @@ void MainClass::selectTypeManga()
     if(mediaType != Enums::mediaType::MANGA){
         mediaType = Enums::mediaType::MANGA;
         mediaList = Enums::mediaList::CURRENT;
+        mediaListManager = new MangaListManager(this);
+        mediaManager = new MangaManager(this);
+        mediaSearchManager->setMediaListManager(mediaListManager);
+        mediaManager->getInstance()->setMediaListManager(mediaListManager);
+        mediaManager->getInstance()->setMediaSearchManager(mediaSearchManager);
         getMediaList();
     }
 }
@@ -586,6 +598,11 @@ void MainClass::selectTypeNovel()
     if(mediaType != Enums::mediaType::NOVEL){
         mediaType = Enums::mediaType::NOVEL;
         mediaList = Enums::mediaList::CURRENT;
+        mediaListManager = new NovelListManager(this);
+        mediaManager = new NovelManager(this);
+        mediaSearchManager->setMediaListManager(mediaListManager);
+        mediaManager->getInstance()->setMediaListManager(mediaListManager);
+        mediaManager->getInstance()->setMediaSearchManager(mediaSearchManager);
         getMediaList();
     }
 }
@@ -633,7 +650,7 @@ void MainClass::selectListPlanning()
 
 void MainClass::playNextEpisode()
 {
-    MediaManager::playMediaNextEpisode(activeMediaList.at(selectedMediaIndex));
+//    MediaManager::playMediaNextEpisode(mediaListManager->getInstance()->getMediaByIndex(mediaList,selectedMediaIndex));
 }
 
 void MainClass::getMediaListPage()
@@ -642,7 +659,7 @@ void MainClass::getMediaListPage()
     for(int i = 0; i < 12; i++)
     {
         mediaListIndex = (getPageIndexRange())+i;
-        if(activeMediaList.size() > mediaListIndex)
+        if(mediaListManager->getInstance()->size(mediaList) > mediaListIndex)
             emitSignalIdMedia(i);
         else
             emitSignalIdMedia(i, true);
@@ -655,7 +672,7 @@ void MainClass::emitSignalIdMedia(int listMediaIndex, bool nullSignal)
     if(nullSignal)
         signalId = QVariant("null");
     else
-        signalId = QVariant(activeMediaList[listMediaIndex]->id);
+        signalId = QVariant(mediaListManager->getInstance()->getMediaByIndex(mediaList,listMediaIndex)->id);
     if(listMediaIndex == 0)
         emit signalIdMediaGrid0(signalId);
     if(listMediaIndex == 1)
@@ -694,8 +711,8 @@ void MainClass::getSelectedMediaData(QVariant selectedMediaGridIndex)
     if(ok)
         selectedMediaIndex = getPageIndexRange()+this->selectedMediaGridIndex;
 
-    if(activeMediaList.size() > selectedMediaIndex){
-        QJsonObject selectedMediaObject = MediaUtil::getMediaAsJsonObject(activeMediaList[selectedMediaIndex]);
+    if(mediaListManager->getInstance()->size(mediaList) > selectedMediaIndex){
+        QJsonObject selectedMediaObject = MediaUtil::getMediaAsJsonObject(mediaListManager->getInstance()->getMediaByIndex(mediaList, selectedMediaIndex));
         emit signalSelectedMediaCover(QVariant(selectedMediaObject["coverImagePath"]));
         emit signalSelectedMedia(QVariant(selectedMediaObject));
     }
@@ -704,8 +721,8 @@ void MainClass::getSelectedMediaData(QVariant selectedMediaGridIndex)
 
 QVariant MainClass::getMediaJsonObjectByGridIndex(QVariant gridIndex)
 {
-    if(activeMediaList.size() > (getPageIndexRange())+gridIndex.toInt())
-        return QVariant(MediaUtil::getMediaAsJsonObject(activeMediaList[(getPageIndexRange())+gridIndex.toInt()]));
+    if(mediaListManager->getInstance()->size(mediaList) > (getPageIndexRange())+gridIndex.toInt())
+        return QVariant(MediaUtil::getMediaAsJsonObject(mediaListManager->getInstance()->getMediaByIndex(mediaList, getPageIndexRange()+gridIndex.toInt())));
     return QVariant("");
 }
 
@@ -724,7 +741,7 @@ void MainClass::openMediaWebpage(QVariant data)
     bool ok;
     data.toInt(&ok);
     if(ok){
-        QDesktopServices::openUrl(QUrl(activeMediaList[selectedMediaIndex]->siteURL));
+        QDesktopServices::openUrl(QUrl(mediaListManager->getInstance()->getMediaByIndex(mediaList,selectedMediaIndex)->siteURL));
     }
 }
 
@@ -738,7 +755,7 @@ void MainClass::selectListSeason(QVariant data)
 
 void MainClass::openMediaFolder()
 {
-    MediaUtil::openMediaFileOrFolder(activeMediaList[selectedMediaIndex]);
+    FileManager::openFileOrFolder(mediaListManager->getInstance()->getMediaByIndex(mediaList,selectedMediaIndex));
 }
 
 void MainClass::refreshMediaList()
@@ -778,7 +795,7 @@ void MainClass::setMediaProgress(int mediaId, int mediaProgress)
 
 void MainClass::buttonSetMediaProgress(QVariant data)
 {
-    QPointer<Media> selectedMedia = activeMediaList.at(selectedMediaIndex);
+    QPointer<Media> selectedMedia = mediaListManager->getInstance()->getMediaByIndex(mediaList,selectedMediaIndex);
     int progress{1};
     //TODO - Fazer enums pra isso
     if(data.toString().compare("diminui") == 0)
@@ -789,7 +806,7 @@ void MainClass::buttonSetMediaProgress(QVariant data)
 
 void MainClass::buttonSetMediaScore(QVariant data)
 {
-    QPointer<Media> selectedMedia = activeMediaList.at(selectedMediaIndex);
+    QPointer<Media> selectedMedia = mediaListManager->getInstance()->getMediaByIndex(mediaList,selectedMediaIndex);
     int score{selectedMedia->personalScore.toInt()};
     int maxScore{10};
     //TODO - Fazer enums pra isso
@@ -805,12 +822,12 @@ void MainClass::buttonSetMediaScore(QVariant data)
 void MainClass::setMediaCustomName(QVariant data)
 {
     if(!data.toString().isEmpty())
-        mediaManager->getInstance()->insertCustomName(activeMediaList.at(selectedMediaIndex)->id, data.toStringList());
+        mediaManager->getInstance()->insertCustomName(mediaListManager->getInstance()->getMediaByIndex(mediaList,selectedMediaIndex)->id, data.toStringList());
 }
 
 void MainClass::removeMediaFromList()
 {
-    QPointer<Media> selectedMedia = activeMediaList.at(selectedMediaIndex);
+    QPointer<Media> selectedMedia = mediaListManager->getInstance()->getMediaByIndex(mediaList,selectedMediaIndex);
     clientManager->addToUpdateQueue(ClientEnums::LIST, selectedMedia->id, Enums::mediaList::NOLIST);
     mediaManager->deleteFromList(selectedMedia->id);
     getMediaList();
@@ -819,7 +836,7 @@ void MainClass::removeMediaFromList()
 void MainClass::buttonNextPage()
 {
     int mediaNumberPerPage{12};
-    if(activeMediaList.size() > mediaNumberPerPage+(getPageIndexRange())){
+    if(mediaListManager->getInstance()->size(mediaList) > mediaNumberPerPage+(getPageIndexRange())){
         selectedPage++;
         getMediaListPage();
     }
@@ -839,8 +856,8 @@ void MainClass::setMediaList(QVariant data)
     //Check if the user is trying to change the entry from list A to list A
     if(mediaList == newMediaList)
         return;
-    mediaManager->updateMediaList(activeMediaList.at(selectedMediaIndex)->id, newMediaList);
-    clientManager->addToUpdateQueue(ClientEnums::updateType::LIST, activeMediaList.at(selectedMediaIndex)->id, newMediaList);
+    mediaManager->updateMediaList(mediaListManager->getInstance()->getMediaByIndex(mediaList,selectedMediaIndex)->id, newMediaList);
+    clientManager->addToUpdateQueue(ClientEnums::updateType::LIST, mediaListManager->getInstance()->getMediaByIndex(mediaList,selectedMediaIndex)->id, newMediaList);
     getMediaList();
 }
 
@@ -869,7 +886,6 @@ void MainClass::buttonSearch(QVariant data)
         QVector<Media*> searchList = mediaSearchManager->searchMedia(data.toString());
         if(!searchList.isEmpty()){
             mediaList = Enums::mediaList::SEARCH;
-            activeMediaList.swap(searchList);
             getMediaList();
         }
     }
@@ -893,7 +909,7 @@ void MainClass::fselecionaTipoManga()
             vindexAnimeSelecionado = 0;
             vpagina = 1;
             finfoAnimeSelecionado(0);
-            mediaDownloader->downloadCoverImages();
+//            mediaDownloader->downloadCoverImages();
             downloadQueue->downloadMedia();
         }
     }
@@ -912,7 +928,7 @@ void MainClass::fselecionaTipoNovel()
             vindexAnimeSelecionado = 0;
             vpagina = 1;
             finfoAnimeSelecionado(0);
-            mediaDownloader->downloadCoverImages();
+//            mediaDownloader->downloadCoverImages();
             downloadQueue->downloadMedia();
         }
     }
@@ -928,7 +944,7 @@ void MainClass::fselecionaTipoSeason(QVariant data)
         vindexAnimeSelecionado = 0;
         vpagina = 1;
         finfoAnimeSelecionado(0);
-        mediaDownloader->downloadCoverImages();
+//        mediaDownloader->downloadCoverImages();
         downloadQueue->downloadMedia();
     }
 }

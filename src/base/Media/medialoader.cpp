@@ -15,7 +15,7 @@ bool MediaLoader::loadMediaFromFile(bool mock)
     QPointer<MediaController> mediaController = new MediaController();
     QString fileName = getFileName(mock);
 
-    if(!MediaUtil::checkIfFileCanBeOpened(fileName))
+    if(!FileManager::checkIfFileCanBeOpened(fileName))
         return false;
 
     QJsonArray mediaList = getMediaListArray(fileName);
@@ -34,8 +34,8 @@ bool MediaLoader::loadMediaFromFile(bool mock)
         mediaListManager = mediaController->instance()->getMediaListManager(mediaTypeEnum);
         mediaListManager->addMedia(media, mediaListEnum);
 
-        if(!DownloadedMediaManager::mediaExists(media->id))
-            DownloadQueue::insertCoverDownloadQueue(media->id, DownloadEnums::imageSize::Big);
+//        if(!DownloadedMediaManager::mediaExists(media->id))//TODO Mudar pra filemanager::fileexists
+//            DownloadQueue::insertCoverDownloadQueue(media->id, DownloadEnums::imageSize::Big);
 
         //Variaveis de controle que verificam se algum anime foi removido da lista desde a última vez que foi lida
         mediaId.insert(media->id, mediaTypeEnum);

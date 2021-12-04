@@ -4,7 +4,6 @@
 #include <QObject>
 #include <QPointer>
 #include "src/utilities/Interfaces/IMediaSearchManager.h"
-#include "src/base/Anime/animelistmanager.h"
 
 //TODO - Fazer singleton
 class MediaSearchManager : public IMediaSearchManager
@@ -31,8 +30,10 @@ public:
     QPointer<Media> fbuscaMediaNoAno(int ano, int id);
 private:
     QPointer<IMediaListManager> mediaListManager;
-
-    // IMediaSearchManager interface
+    Enums::mediaType mediaType;
+    Enums::mediaList mediaList;
+    Enums::hashList hashList;
+    QStringList listNames;
 };
 
 #endif // MEDIASEARCHMANAGER_H

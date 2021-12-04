@@ -2,8 +2,6 @@
 #define IMEDIAMANAGER_H
 
 #include <QObject>
-#include "src/utilities/Enums.h"
-#include "src/base/anime.h"
 #include "src/utilities/Interfaces/IMediaSearchManager.h"
 
 class IMediaManager : public QObject{

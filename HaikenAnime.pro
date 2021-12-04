@@ -40,12 +40,14 @@ HEADERS += \
     src/DTO/ListOrder.h \
     src/DTO/MediaList.h \
     src/DTO/media.h \
-    src/base/Anime/animelistmanager.h \
-    src/base/Anime/animemanager.h \
-    src/base/Anime/mediacontroller.h \
-    src/base/Anime/medialoader.h \
-    src/base/Anime/mediasaver.h \
-    src/base/Anime/mediasearchmanager.h \
+    src/base/Media/mediafile.h \
+    src/base/MediaType/Anime/animelistmanager.h \
+    src/base/MediaType/Anime/animemanager.h \
+    src/base/Media/mediacontroller.h \
+    src/base/Media/medialistmanager.h \
+    src/base/Media/medialoader.h \
+    src/base/Media/mediasaver.h \
+    src/base/Media/mediasearchmanager.h \
     src/base/Download/downloadedmediamanager.h \
     src/base/Download/downloadenums.h \
     src/base/Download/downloadmanager.h \
@@ -55,12 +57,11 @@ HEADERS += \
     src/base/FileManager/filemanagerloader.h \
     src/base/FileManager/filemanagersaver.h \
     src/base/FileManager/mediadirectories.h \
-    src/base/Manga/mangalistmanager.h \
-    src/base/Manga/mangamanager.h \
-    src/base/Media/medialistmanager.h \
+    src/base/MediaType/Manga/mangalistmanager.h \
+    src/base/MediaType/Manga/mangamanager.h \
     src/base/Media/mediamanager.h \
-    src/base/Novel/novellistmanager.h \
-    src/base/Novel/novelmanager.h \
+    src/base/MediaType/Novel/novellistmanager.h \
+    src/base/MediaType/Novel/novelmanager.h \
     src/base/abaconfig.h \
     src/base/abatorrent.h \
     src/base/anime.h \
@@ -113,12 +114,14 @@ SOURCES += \
     lib/robotlib/Window.cc \
     main.cpp \
     mainclass.cpp \
-    src/base/Anime/animelistmanager.cpp \
-    src/base/Anime/animemanager.cpp \
-    src/base/Anime/mediacontroller.cpp \
-    src/base/Anime/medialoader.cpp \
-    src/base/Anime/mediasaver.cpp \
-    src/base/Anime/mediasearchmanager.cpp \
+    src/base/Media/mediafile.cpp \
+    src/base/MediaType/Anime/animelistmanager.cpp \
+    src/base/MediaType/Anime/animemanager.cpp \
+    src/base/Media/mediacontroller.cpp \
+    src/base/Media/medialistmanager.cpp \
+    src/base/Media/medialoader.cpp \
+    src/base/Media/mediasaver.cpp \
+    src/base/Media/mediasearchmanager.cpp \
     src/base/Download/downloadedmediamanager.cpp \
     src/base/Download/downloadmanager.cpp \
     src/base/Download/downloadqueue.cpp \
@@ -127,12 +130,11 @@ SOURCES += \
     src/base/FileManager/filemanagerloader.cpp \
     src/base/FileManager/filemanagersaver.cpp \
     src/base/FileManager/mediadirectories.cpp \
-    src/base/Manga/mangalistmanager.cpp \
-    src/base/Manga/mangamanager.cpp \
-    src/base/Media/medialistmanager.cpp \
+    src/base/MediaType/Manga/mangalistmanager.cpp \
+    src/base/MediaType/Manga/mangamanager.cpp \
     src/base/Media/mediamanager.cpp \
-    src/base/Novel/novellistmanager.cpp \
-    src/base/Novel/novelmanager.cpp \
+    src/base/MediaType/Novel/novellistmanager.cpp \
+    src/base/MediaType/Novel/novelmanager.cpp \
     src/base/abaconfig.cpp \
     src/base/abatorrent.cpp \
     src/base/arquivos.cpp \

@@ -78,11 +78,11 @@ QVector<int> MediaDirectories::getMediaPathsToSearch()
 bool MediaDirectories::updateMediaPath(QVector<int> mediaToSearch, QString path)
 {
     QPointer<AnimeManager> mediaManager = new AnimeManager();
-    int idAnime = MediaUtil::getMediaIdFromFile(path);
+    int idAnime = FileManager::getMediaIdFromFile(path);
     if(mediaToSearch.contains(idAnime)){
         mediaDirectoriesById.insert(idAnime, path);
         mediaToSearch.removeAll(idAnime);
-        mediaManager->instance()->updatePath(idAnime, path);
+        mediaManager->getInstance()->updatePath(idAnime, path);
     }
     return true;
 }

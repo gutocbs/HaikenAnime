@@ -66,25 +66,30 @@ Window {
         var listaIdTemp = idAnime
         var listaEpisodiosEncontradosTemp = episodiosEncontradosAnime
         var mediaJson = mainClass.getMediaJsonObjectByGridIndex(posicaoGrid);
-        idAnime[posicaoGrid] = mediaJson.id
-        if(mediaJson.originalName === "")
-            nomeAnime[posicaoGrid] = mediaJson.englishName
-        else
-            nomeAnime[posicaoGrid] = mediaJson.originalName
-        if(mediaJson.totalEpisodes === 0)
-            episodiosAnime[posicaoGrid] = "Progresso: " + mediaJson.progress+"/?"
-        else
-            episodiosAnime[posicaoGrid] = "Progresso: " + mediaJson.progress+"/"+mediaJson.totalEpisodes
-        notaAnime[posicaoGrid] = "Nota: " + mediaJson.personalScore+"/10"
-        if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "1")
-            listaEpisodiosEncontradosTemp[posicaoGrid] = "1"
-        else if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "-1")
-            listaEpisodiosEncontradosTemp[posicaoGrid] = "-1"
-        else
-            listaEpisodiosEncontradosTemp[posicaoGrid] = "0"
-        idAnime = listaIdTemp
-        episodiosEncontradosAnime = listaEpisodiosEncontradosTemp
-
+        if(mediaJson === ""){
+            idAnime[posicaoGrid] = "null"
+            idAnime = listaIdTemp
+        }
+        else{
+            idAnime[posicaoGrid] = mediaJson.id
+            if(mediaJson.originalName === "")
+                nomeAnime[posicaoGrid] = mediaJson.englishName
+            else
+                nomeAnime[posicaoGrid] = mediaJson.originalName
+            if(mediaJson.totalEpisodes === 0)
+                episodiosAnime[posicaoGrid] = "Progresso: " + mediaJson.progress+"/?"
+            else
+                episodiosAnime[posicaoGrid] = "Progresso: " + mediaJson.progress+"/"+mediaJson.totalEpisodes
+            notaAnime[posicaoGrid] = "Nota: " + mediaJson.personalScore+"/10"
+            if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "1")
+                listaEpisodiosEncontradosTemp[posicaoGrid] = "1"
+            else if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "-1")
+                listaEpisodiosEncontradosTemp[posicaoGrid] = "-1"
+            else
+                listaEpisodiosEncontradosTemp[posicaoGrid] = "0"
+            idAnime = listaIdTemp
+            episodiosEncontradosAnime = listaEpisodiosEncontradosTemp
+        }
     }
 
     function getSelectedMediaData(selectedMediaData){

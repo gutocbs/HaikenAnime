@@ -9,18 +9,16 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include "src/DTO/media.h"
-#include "src/utilities/Media/mediacomparer.h"
+
 class FileManager : public QObject
 {
     Q_OBJECT
 public:
     explicit FileManager(QObject *parent = nullptr);
     bool getFileExtensions();
-    static bool compareFileToMediaName(Media *media, QString fileName);
-    static bool compareFileToMediaEpisode(Media *media, QString fileName, int episode);
     static bool openFileOrFolder(const QByteArray &path);
-    static QString getMediaEpisodePath(Media *media, int episode = 0);
-    static QString getMediaFolderPath(Media *media);
+    static bool openFileOrFolder(Media *media);
+    static bool checkIfFileCanBeOpened(QString filename);
     static inline QStringList fileExtensions;
 };
 

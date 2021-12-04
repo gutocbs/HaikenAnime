@@ -7,7 +7,7 @@
 #include <QDebug>
 #include <QDirIterator>
 #include <QDir>
-#include "src/base/Anime/animemanager.h"
+#include "src/base/MediaType/Anime/animemanager.h"
 #include "src/utilities/Media/mediautil.h"
 #include "src/base/FileManager/filemanager.h"
 

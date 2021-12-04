@@ -4,8 +4,6 @@
 #include <QObject>
 #include <QPointer>
 #include <QVector>
-#include "src/utilities/Enums.h"
-#include "src/DTO/media.h"
 #include "src/utilities/Interfaces/IMediaListManager.h"
 
 class IMediaSearchManager : public QObject{
@@ -26,12 +24,6 @@ public:
     virtual QVector<Media*> getMediaList(const QString &listName) = 0;
     virtual void loadListNames() = 0;
     virtual QStringList getNamesById(int id) = 0;
-
-protected:
-    Enums::mediaType mediaType;
-    Enums::mediaList mediaList;
-    Enums::hashList hashList;
-    QStringList listNames;
 };
 
 #endif // IMEDIASEARCHMANAGER_H

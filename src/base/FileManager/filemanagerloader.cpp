@@ -1,6 +1,6 @@
 #include "filemanagerloader.h"
 
-FileManagerLoader::FileManagerLoader(QObject *parent) : FileManager(parent)
+FileManagerLoader::FileManagerLoader(QObject *parent) : QObject(parent)
 {
 
 }
@@ -9,7 +9,7 @@ FileManagerLoader::FileManagerLoader(QObject *parent) : FileManager(parent)
 bool FileManagerLoader::loadMediaDirectories(bool mock)
 {
     QString fileName = getDirectoriesFileName(mock);
-    if(!MediaUtil::checkIfFileCanBeOpened(fileName))
+    if(!FileManager::checkIfFileCanBeOpened(fileName))
         return false;
     QJsonArray mediaDirectoriesList = getDirectoriesListArray(fileName);
     int listSize = mediaDirectoriesList.size();

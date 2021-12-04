@@ -122,7 +122,7 @@ Item {
                     text: qsTr("Anime")
                     font.family: "Tahoma"
                     onClicked: {
-                        mainClass.fselecionaTipoAnime()
+                        mainClass.selectTypeAnime()
                         nomeBotaoCurrent = "Watching"
                         nomeBotaoCompleted = "Completed"
                         nomeBotaoPaused = "On Hold"
@@ -138,7 +138,7 @@ Item {
                     text: qsTr("Manga")
                     font.family: "Tahoma"
                     onClicked: {
-                        mainClass.fselecionaTipoManga()
+                        mainClass.selectTypeManga()
                         nomeBotaoCurrent = "Reading"
                         nomeBotaoCompleted = "Completed"
                         nomeBotaoPaused = "On Hold"
@@ -155,7 +155,7 @@ Item {
                     font.family: "Tahoma"
 
                     onClicked: {
-                        mainClass.fselecionaTipoNovel()
+                        mainClass.selectTypeNovel()
                         nomeBotaoCurrent = "Reading"
                         nomeBotaoCompleted = "Completed"
                         nomeBotaoPaused = "On Hold"

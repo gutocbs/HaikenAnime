@@ -5,26 +5,17 @@
 #include <QFile>
 #include <QJsonObject>
 #include <QFile>
+#include <QDir>
 #include "src/DTO/media.h"
-#include "src/base/Anime/mediasearchmanager.h"
-#include "src/base/Anime/animelistmanager.h"
-#include "src/base/FileManager/filemanager.h"
 
 class MediaUtil : public QObject
 {
     Q_OBJECT
 public:
-    //TODO - funções
     explicit MediaUtil(QObject *parent = nullptr);
     static int getTotalEpisodes(Media *media);
-    static int getNumberOfWatchedEpisodes(Media *media);
-    static int getMediaIdFromFile(QString fileName);
-    static int getMediaEpisodeFromFile(QString fileName);
-    static QString getMediaNameFromFile(QString fileName);
-    static QString getSeasonFromFile(QString fileName);
-    static bool checkIfFileCanBeOpened(QString filename);
+    static int getNumberOfWatchedEpisodes(Media *media);//TODO - LEMBRAR POR QUE PRECISO DISSO
     static QJsonObject getMediaAsJsonObject(Media *media);
-    static bool openMediaFileOrFolder(Media *media);
 signals:
 
 private:

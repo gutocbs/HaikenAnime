@@ -6,7 +6,6 @@
 #include <QRegExp>
 
 #include "lib/anitomy/anitomy.h"
-#include "src/DTO/media.h"
 #include "src/utilities/Media/mediautil.h"
 
 
@@ -21,8 +20,6 @@ public:
     static bool compareName(QStringList nameList, QString rnome2);
     static bool compareEpisodeNumber(Media *media, int episode);
     static bool isSeasonal(QString listName);
-
-
 
 signals:
 private:

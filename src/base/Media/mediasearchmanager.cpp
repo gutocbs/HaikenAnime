@@ -28,7 +28,7 @@ void MediaSearchManager::loadListNames()
 
 QVector<Media*> MediaSearchManager::getMediaList(const QString &listName){
     Enums::mediaList listEnum = Enums::QStringToMediaList(listName);
-    return mediaListManager->getMediaList(listEnum);
+    return mediaListManager->getInstance()->getMediaList(listEnum);
 }
 
 QPointer<Media> MediaSearchManager::getMediaFromListIndex(Enums::mediaList list, int posicao)
@@ -38,7 +38,7 @@ QPointer<Media> MediaSearchManager::getMediaFromListIndex(Enums::mediaList list,
 
 QStringList MediaSearchManager::getNamesById(int id)
 {
-    QHash<int, Media*> hashMediaById = mediaListManager->getHashMediaById();
+    QHash<int, Media*> hashMediaById = mediaListManager->getInstance()->getHashMediaById();
     QStringList names;
     if(hashMediaById.contains(id)){
         names.append(hashMediaById.value(id)->customNames);
@@ -51,28 +51,28 @@ QStringList MediaSearchManager::getNamesById(int id)
 //TODO - Buscar nas listas de anos também
 QVector<Media*> MediaSearchManager::searchMedia(const QString &rnome)
 {
-    QVector<Media*> mediaListSearch = mediaListManager->getMediaList(Enums::SEARCH);
+    QVector<Media*> mediaListSearch = mediaListManager->getInstance()->getMediaList(Enums::SEARCH);
     mediaListSearch.clear();
-    QHash<int, Media*> hashMediaById = mediaListManager->getHashMediaById();
+    QHash<int, Media*> hashMediaById = mediaListManager->getInstance()->getHashMediaById();
     QHash<int, Media*>::iterator iterator;
     for (iterator = hashMediaById.begin(); iterator != hashMediaById.end(); ++iterator){
         QStringList names = getNamesById(hashMediaById[iterator.key()]->id);
         if(names.contains(rnome))
             mediaListSearch.append(hashMediaById[iterator.key()]);
     }
-    mediaListManager->setMediaList(Enums::mediaList::SEARCH, mediaListSearch);
+    mediaListManager->getInstance()->setMediaList(Enums::mediaList::SEARCH, mediaListSearch);
     return mediaListSearch;
 }
 
 void MediaSearchManager::appendToList(QVector<Media*> &mediaList, Enums::mediaList list, int position){
-    QVector<Media*> tempList = mediaListManager->getMediaList(list);
+    QVector<Media*> tempList = mediaListManager->getInstance()->getMediaList(list);
     if(tempList.size() > position)
         mediaList.append(tempList[position]);
 }
 
 int MediaSearchManager::buscaIDRapido(const QString &rnomemedia)
 {
-    QHash<int, Media*> hashMediaById = mediaListManager->getHashMediaById();
+    QHash<int, Media*> hashMediaById = mediaListManager->getInstance()->getHashMediaById();
 
     QHash<int, Media*>::iterator iterator;
     for (iterator = hashMediaById.begin(); iterator != hashMediaById.end(); ++iterator){
@@ -84,7 +84,7 @@ int MediaSearchManager::buscaIDRapido(const QString &rnomemedia)
 }
 
 QPointer<Media> MediaSearchManager::getMediaFromId(int idMedia){
-    QHash<int, Media*> hashMediaById = mediaListManager->getHashMediaById();
+    QHash<int, Media*> hashMediaById = mediaListManager->getInstance()->getHashMediaById();
     if(hashMediaById.contains(idMedia))
         return hashMediaById.value(idMedia);
     return nullptr;
@@ -93,7 +93,7 @@ QPointer<Media> MediaSearchManager::getMediaFromId(int idMedia){
 QVector<Media*> MediaSearchManager::getMediaListFromId(int idMedia){
     QPointer<Media> media = getMediaFromId(idMedia);
     if(!media.isNull()){
-        QVector<Media*> tempList = mediaListManager->getMediaList(media->mediaList);
+        QVector<Media*> tempList = mediaListManager->getInstance()->getMediaList(media->mediaList);
         return tempList;
     }
     return QVector<Media*>();
@@ -125,7 +125,7 @@ QString MediaSearchManager::getMediaTitleFromId(int idMedia)
 
 int MediaSearchManager::getIdFromMediaTitle(const QString &mediaTitle)
 {
-    QHash<int, Media*> hashMediaById = mediaListManager->getHashMediaById();
+    QHash<int, Media*> hashMediaById = mediaListManager->getInstance()->getHashMediaById();
     QHash<int, Media*>::iterator iterator;
     for (iterator = hashMediaById.begin(); iterator != hashMediaById.end(); ++iterator){
         QStringList names = getNamesById(hashMediaById[iterator.key()]->id);

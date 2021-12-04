@@ -3,17 +3,15 @@
 
 #include <QObject>
 #include <QPointer>
-#include "src/utilities/Enums.h"
-#include "src/base/Anime/animelistmanager.h"
-#include "src/base/Manga/mangalistmanager.h"
-#include "src/base/Novel/novellistmanager.h"
-#include "src/base/Anime/mediasearchmanager.h"
-#include "src/base/Anime/animemanager.h"
-#include "src/base/Manga/mangamanager.h"
-#include "src/base/Novel/novelmanager.h"
 #include "src/utilities/singleton.h"
+#include "src/base/MediaType/Anime/animelistmanager.h"
+#include "src/base/MediaType/Manga/mangalistmanager.h"
+#include "src/base/MediaType/Novel/novellistmanager.h"
+#include "src/base/Media/mediasearchmanager.h"
+#include "src/base/MediaType/Anime/animemanager.h"
+#include "src/base/MediaType/Manga/mangamanager.h"
+#include "src/base/MediaType/Novel/novelmanager.h"
 
-//TODO - Essa classe deverá dar load e save nos animes, além de servir como interface para atualizar os animes no anilist
 class MediaController : public QObject
 {
     Q_OBJECT

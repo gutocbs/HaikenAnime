@@ -18,7 +18,7 @@
 
 
 #include "src/utilities/Enums.h"
-#include "src/base/Anime/animelistmanager.h"
+#include "src/base/MediaType/Anime/animelistmanager.h"
 
 class DownloaderWorker : public QObject
 {
