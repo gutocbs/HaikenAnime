@@ -33,6 +33,8 @@ void MediaController::initializeMedia()
 //Criar funções de controle de mangas e novels
 void MediaController::setMediaManager(Enums::mediaType mediaType)
 {
+    if(animeManager == nullptr)
+        initializeMedia();
     switch (mediaType) {
     case Enums::ANIME:
         mediaManager = animeManager->getInstance();
@@ -48,6 +50,8 @@ void MediaController::setMediaManager(Enums::mediaType mediaType)
 
 void MediaController::setMediaListManager(Enums::mediaType mediaType)
 {
+    if(animeListManager == nullptr)
+        initializeMedia();
     switch (mediaType) {
     case Enums::ANIME:
         mediaListManager = animeListManager->getInstance();
@@ -77,11 +81,6 @@ QPointer<IMediaListManager> MediaController::getMediaListManager(Enums::mediaTyp
     return mediaListManager;
 }
 
-QPointer<IMediaSearchManager> MediaController::getMediaSearchManager()
-{
-    return mediaSearchManager;
-}
-
 QPointer<IMediaManager> MediaController::getMediaManager(Enums::mediaType mediaType)
 {
     switch (mediaType) {
@@ -97,3 +96,9 @@ QPointer<IMediaManager> MediaController::getMediaManager(Enums::mediaType mediaT
     }
     return mediaManager;
 }
+
+QPointer<IMediaSearchManager> MediaController::getMediaSearchManager()
+{
+    return mediaSearchManager;
+}
+

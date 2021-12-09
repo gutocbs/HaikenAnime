@@ -1,6 +1,7 @@
 #ifndef FILEMANAGER_H
 #define FILEMANAGER_H
 
+#include <QDebug>
 #include <QObject>
 #include <QPointer>
 #include <QFile>

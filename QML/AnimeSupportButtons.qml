@@ -106,7 +106,7 @@ Item {
                         height: parent.width
                         text: qsTr("Confirm")
                         anchors.verticalCenter: parent.verticalCenter
-                        onClicked: mainClass.fadicionaNomeAlternativo(inovoNome.text);
+                        onClicked: mainClass.setMediaCustomName(inovoNome.text);
                     }
                 }
             }
@@ -301,7 +301,7 @@ Item {
                         height: parent.width
                         text: qsTr("Remove")
                         anchors.verticalCenter: parent.verticalCenter
-                        onClicked: mainClass.fremoveFromList();
+                        onClicked: mainClass.removeMediaFromList();
                     }
                 }
             }

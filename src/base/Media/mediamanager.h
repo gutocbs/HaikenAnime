@@ -27,8 +27,6 @@ public:
 private:
     QPointer<IMediaSearchManager> mediaSearchManager;
     QPointer<IMediaListManager> mediaListManager;
-signals:
-
 };
 
 #endif // MEDIAMANAGER_H

@@ -2,8 +2,8 @@
 
 MediaPlayer::MediaPlayer(QObject *parent) : QObject(parent)
 {
-    QPointer<IMediaListManager> mediaListManager = new AnimeListManager();
-    mediaSearchManager = new MediaSearchManager(mediaListManager);
+    QPointer<MediaController> mediaController = new MediaController(this);
+    mediaSearchManager = mediaController->instance()->getMediaSearchManager();
 }
 
 QPointer<CurrentMediaPlaying> MediaPlayer::getCurrentMediaPlaying()

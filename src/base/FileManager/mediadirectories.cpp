@@ -56,7 +56,7 @@ QString MediaDirectories::searchForMediaDirectory(Media *media)
             QFileInfo mediaFileInfo(mediaFile.fileName());
             //Checa se o que foi encontrado é um arquivo ou uma pasta e, no caso de ser um arquivo, se é um arquivo de vídeo
             if(mediaFileInfo.isFile() && FileManager::fileExtensions.contains(mediaFileInfo.completeSuffix())
-                    && FileManager::compareFileToMediaName(media, mediaFile.fileName()))
+                    && MediaFile::compareFileToMediaName(media, mediaFile.fileName()))
                     return mediaFileInfo.absoluteFilePath();
         }
     }
@@ -78,7 +78,7 @@ QVector<int> MediaDirectories::getMediaPathsToSearch()
 bool MediaDirectories::updateMediaPath(QVector<int> mediaToSearch, QString path)
 {
     QPointer<AnimeManager> mediaManager = new AnimeManager();
-    int idAnime = FileManager::getMediaIdFromFile(path);
+    int idAnime = MediaFile::getMediaIdFromFile(path);
     if(mediaToSearch.contains(idAnime)){
         mediaDirectoriesById.insert(idAnime, path);
         mediaToSearch.removeAll(idAnime);

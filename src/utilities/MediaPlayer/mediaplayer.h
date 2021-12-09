@@ -8,8 +8,7 @@
 #include "lib/robotlib/Robot.h"
 #include "src/DTO/media.h"
 #include "src/DTO/CurrentMediaPlaying.h"
-#include "src/base/Media/mediasearchmanager.h"
-#include "src/base/MediaType/Anime/animelistmanager.h"
+#include "src/base/Media/mediacontroller.h"
 
 class MediaPlayer : public QObject
 {

@@ -58,17 +58,40 @@ QString MediaFile::getMediaFolderPath(Media *media)
 
 int MediaFile::getMediaIdFromFile(QString fileName)
 {
-
+    QPointer<MediaController> mediaController = new MediaController();
+    QPointer<IMediaListManager> mediaList = mediaController->instance()->getMediaListManager(Enums::mediaType::ANIME);
+    QPointer<IMediaSearchManager> mediaSearch = mediaController->instance()->getMediaSearchManager();
+    QString mediaName = getMediaNameFromFile(fileName);
+    QString mediaSeason = getSeasonFromFile(fileName);
+    if(!mediaSeason.isEmpty())
+        mediaName.append(QString(" " + mediaSeason));
+    int idAnime = mediaSearch->getIdFromMediaTitle(mediaName);
+    return idAnime;
 }
 
 int MediaFile::getMediaEpisodeFromFile(QString fileName)
 {
+    anitomy::Anitomy lanitomy;
+    lanitomy.Parse(fileName.toStdWString());
+    const auto& lelements = lanitomy.elements();
+    int mediaEpisode = QString::fromStdWString(lelements.get(anitomy::kElementEpisodeNumber)).toInt();
+    if(mediaEpisode == 0)
+        mediaEpisode = 1;
+
+    return mediaEpisode;
 
 }
 
 QString MediaFile::getMediaNameFromFile(QString fileName)
 {
-
+    anitomy::Anitomy lanitomy;
+    lanitomy.Parse(fileName.toStdWString());
+    const auto& lelements = lanitomy.elements();
+    QString mediaName = QString::fromStdWString(lelements.get(anitomy::kElementAnimeTitle));
+    QString mediaSeason = QString::fromStdWString(lelements.get(anitomy::kElementAnimeSeason));
+    if(!mediaSeason.isEmpty())
+        mediaName.append(QString(" " + mediaSeason));
+    return mediaName;
 }
 
 QString MediaFile::getSeasonFromFile(QString fileName)

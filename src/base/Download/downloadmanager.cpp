@@ -86,16 +86,16 @@ void DownloadManager::setDownload(DownloadWorker* dw)
 QPointer<Media> DownloadManager::getMedia(int id)
 {
     QPointer<MediaController> mediaController = new MediaController();
-    QPointer<MediaSearchManager> mediaSearchManager = new MediaSearchManager();
+    QPointer<IMediaSearchManager> mediaSearchManager = mediaController->instance()->getMediaSearchManager();
     QPointer<IMediaListManager> listManager;
     QPointer<Media> media;
     while(media.isNull()){
         if(media.isNull() && listManager.isNull())
-            listManager = new AnimeListManager();
+            listManager = mediaController->instance()->getMediaListManager(Enums::mediaType::ANIME);
         else if(media.isNull() && listManager->getMediaType() == Enums::mediaType::ANIME)
-            listManager = new MangaListManager();
+            listManager = mediaController->instance()->getMediaListManager(Enums::mediaType::MANGA);
         else if(media.isNull() && listManager->getMediaType() == Enums::mediaType::MANGA)
-            listManager = new NovelListManager();
+            listManager = mediaController->instance()->getMediaListManager(Enums::mediaType::NOVEL);
         else
             break;
         //TODO - Testar instance em vez de testes

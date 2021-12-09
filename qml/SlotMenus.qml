@@ -44,14 +44,14 @@ Item {
                     text: qsTr("Home")
                     display: AbstractButton.TextBesideIcon
                     font.family: "Tahoma"
-                    onClicked: mainClass.fbotaoHome()
+                    onClicked: mainClass.buttonMenuMedia()
                 }
 
                 Button {
                     id: botaoConfiguracao
                     text: qsTr("Configuration")
                     font.family: "Tahoma"
-                    onClicked: mainClass.fbotaoConfig()
+                    onClicked: mainClass.buttonMenuConfigurations()
                 }
 
                 Button {
@@ -59,7 +59,7 @@ Item {
                     text: qsTr("Torrent")
                     font.family: "Tahoma"
                     onClicked: {
-                        mainClass.fbotaoTorrent()
+                        mainClass.buttonMenuTorrent()
                         nomeBotaoCurrent = "Refresh"
                         nomeBotaoCompleted = "Download"
                         nomeBotaoPaused = "Anime Info"
@@ -254,7 +254,7 @@ Item {
                     id: button13
                     text: qsTr("Refresh")
                     font.family: "Tahoma"
-                    onClicked: mainClass.frefresh()
+                    onClicked: mainClass.refreshMediaList()
                 }
 
                 Label {

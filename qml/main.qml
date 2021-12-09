@@ -81,11 +81,11 @@ Window {
             else
                 episodiosAnime[posicaoGrid] = "Progresso: " + mediaJson.progress+"/"+mediaJson.totalEpisodes
             notaAnime[posicaoGrid] = "Nota: " + mediaJson.personalScore+"/10"
-            if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "1")
-                listaEpisodiosEncontradosTemp[posicaoGrid] = "1"
-            else if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "-1")
-                listaEpisodiosEncontradosTemp[posicaoGrid] = "-1"
-            else
+//            if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "1")
+//                listaEpisodiosEncontradosTemp[posicaoGrid] = "1"
+//            else if(mainClass.fretornaEpisodioAnimeEncontrado(posicaoGrid) === "-1")
+//                listaEpisodiosEncontradosTemp[posicaoGrid] = "-1"
+//            else
                 listaEpisodiosEncontradosTemp[posicaoGrid] = "0"
             idAnime = listaIdTemp
             episodiosEncontradosAnime = listaEpisodiosEncontradosTemp
@@ -132,20 +132,6 @@ Window {
         function onSignalSelectedMediaCover(data){
             imagemAnimeSelecionado = data
         }
-
-        function onSidAnimeSelecionado(data){ idAnimeSelecionado = data }
-        function onSnomeAnimeSelecionado(data){ nomeAnimeSelecionado = data}
-        function onSnomeAlternativoAnimeSelecionado(data){ nomeAlternativoAnimeSelecionado = data}
-        function onSsinopseAnimeSelecionado(data){ sinopseAnimeSelecionado = data}
-        function onSstatusAnimeSelecionado(data){ statusAnimeSelecionado = data}
-        function onSseasonAnimeSelecionado(data){ seasonAnimeSelecionado = data}
-        function onSmediaGloballAnimeSelecionado(data){ mediaGlobalAnimeSelecionado = data}
-        function onSmediaPessoalAnimeSelecionado(data){ mediaPessoalAnimeSelecionado = data}
-        function onSreleaseAnimeSelecionado(data){ releaseAnimeSelecionado = data}
-        function onSepisodiosLancadosAnimeSelecionado(data){ episodiosAnimeSelecionado = data}
-        function onSepisodiosTotaisAnimeSelecionado(data){ episodiosTotaisAnimeSelecionado = data}
-        function onSepisodiosAssistidosAnimeSelecionado(data){ episodiosAssistidosAnimeSelecionado = data}
-        function onStipoAnimeSelecionado(data){ tipoAnimeSelecionado = data}
         function onSproximoEpisodioAnimeSelecionado(data){
             if(data)
                 proximoEpisodioAnimeSelecionado = "#1bd36a"
@@ -165,9 +151,9 @@ Window {
                 stackView.enabled = true;
             }
         }
-        function onSbotaoHome(data){ stackView.push("Home.qml")}
-        function onSbotaoConfig(data){ stackView.push("ConfigPagina.qml")}
-        function onSbotaoTorrent(data){ stackView.push("TorrentPagina.qml")}
+        function onSignalMenuMedia(data){ stackView.push("Home.qml")}
+        function onSignalMenuConfiguration(data){ stackView.push("ConfigPagina.qml")}
+        function onSignalMenuTorrents(data){ stackView.push("TorrentPagina.qml")}
         function onSanimeReconhecidoID(data){
             idanimeReconhecido = dataId
             nomeAnimeReconhecido = dataNome
@@ -176,7 +162,7 @@ Window {
     }
 
     Component.onCompleted: {
-        mainClass.finfoAnimeSelecionado(0)
+        mainClass.getSelectedMediaData(0)
         numeroAnosListas = mainClass.fretornaNumeroAnos()
         imagemAvatar = "file:///"+mainClass.fretornaPathAvatar()
         nomeUsuario = mainClass.fretornaNomeUsuario()

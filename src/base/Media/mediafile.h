@@ -8,6 +8,7 @@
 #include <QDir>
 #include "src/utilities/Media/mediacomparer.h"
 #include "src/base/FileManager/filemanager.h"
+#include "src/base/Media/mediacontroller.h"
 
 class MediaFile : public QObject
 {
@@ -22,9 +23,6 @@ public:
     static int getMediaEpisodeFromFile(QString fileName);
     static QString getMediaNameFromFile(QString fileName);
     static QString getSeasonFromFile(QString fileName);
-
-signals:
-
 };
 
 #endif // MEDIAFILE_H

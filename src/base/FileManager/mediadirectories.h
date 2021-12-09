@@ -9,7 +9,7 @@
 #include <QDir>
 #include "src/base/MediaType/Anime/animemanager.h"
 #include "src/utilities/Media/mediautil.h"
-#include "src/base/FileManager/filemanager.h"
+#include "src/base/Media/mediafile.h"
 
 class MediaDirectories : public QObject
 {

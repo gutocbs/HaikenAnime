@@ -65,7 +65,6 @@ Item {
                         y: 0
                         text: qsTr("Crunchyroll")
                         anchors.fill: parent
-                        onClicked: mainClass.fabreStream()
                     }
                 }
             }
