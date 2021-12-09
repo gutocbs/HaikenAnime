@@ -6,8 +6,6 @@ ClientManager::ClientManager(QObject *parent) : QObject(parent)
 
 ClientManager::~ClientManager()
 {
-    clientThread.requestInterruption();
-    clientThread.wait();
 }
 
 void ClientManager::setClient(ClientEnums::clients clientEnum)
@@ -23,7 +21,6 @@ void ClientManager::setClient(ClientEnums::clients clientEnum)
 void ClientManager::setAuthCode(const QString &user, QVariant authcode)
 {
     client->setAuthCode(user, authcode);
-
 }
 
 void ClientManager::setUpdate()
@@ -35,16 +32,9 @@ void ClientManager::setUpdate()
 
 void ClientManager::downloadMediaList()
 {
-//    anilist test;
-//    QFuture<void> downloadMedia = QtConcurrent::run([=]() {
-//        client->getMediaList();
-//    });
-//    downloadWatcher.setFuture(downloadMedia);
-    if(!clientThread.isRunning()){
-        client->setThread(clientThread);
-        client->moveToThread(&clientThread);
-        clientThread.start();
-    }
+    QFuture<void> downloadMedia = QtConcurrent::run([=]() {
+        client->getAvatarAndMediaList();
+    });
 }
 
 void ClientManager::downloadYearlyLists()
@@ -59,18 +49,17 @@ QString ClientManager::getAvatar()
 
 void ClientManager::setConnections()
 {
-    connect(client, &anilist::downloadFinished, this, &ClientManager::sendDownloadSignal);
-//    connect(&downloadWatcher, &QFutureWatcher<bool>::finished, this, &ClientManager::sendDownloadSignal);
+    ClientEnums::clients clientEnum = ClientEnums::QStringToClient(client->metaObject()->className());
+    switch (clientEnum) {
+    case ClientEnums::ANILIST:
+        connect(dynamic_cast<anilist*>(client.data()), &anilist::downloadFinished, this, &ClientManager::sendDownloadSignal);
+        break;
+    }
 }
 
 void ClientManager::sendDownloadSignal(bool signal)
 {
     emit signalDownloadCompleted(signal);
-}
-
-void ClientManager::downloadMediaLists()
-{
-
 }
 
 bool ClientManager::addToUpdateQueue(ClientEnums::updateType updateType, int mediaId, QVariant updatedValue)

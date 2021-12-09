@@ -9,6 +9,7 @@ class IClient : public QObject{
 public:
     //TODO - Transformar todas as funções voids em bool ou int
     using QObject::QObject;
+    virtual bool getAvatarAndMediaList() = 0;
     virtual void setThread(QThread &cThread) = 0;
     virtual void setAuthCode(const QString &user, QVariant authCode) = 0;
     virtual bool updateList(int mediaId, Enums::mediaList mediaList) = 0;

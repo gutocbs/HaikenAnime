@@ -10,9 +10,7 @@ anilist::anilist(QObject *parent) : IClient(parent)
 anilist::~anilist(){
 }
 
-//TODO - Fazer essa classe usar uma interface
-//TODO - Sair da thread ao fechar o programa
-bool anilist::fgetList(){
+bool anilist::getAvatarAndMediaList(){
     getAvatar();
     getMediaList();
     return true;
@@ -38,6 +36,7 @@ bool anilist::getMediaList()
 
     if(QString(mediaJson).contains("errors")){
         emit downloadFinished(false);
+        //TODO - REMOVER ESSES RETURNS 0
         this->thread()->exit(0);
         return false;
     }
@@ -49,7 +48,6 @@ bool anilist::getMediaList()
 
     emit downloadFinished(true);
     getYearlyLists();
-    this->thread()->exit(0);
     return true;
 }
 
@@ -297,7 +295,12 @@ QString anilist::getAvatar(){
 
 void anilist::setThread(QThread &cThread)
 {
-    connect(&cThread, SIGNAL(started()), this, SLOT(fgetList()), Qt::QueuedConnection);
+//    connect(&cThread, SIGNAL(started()), this, SLOT(fgetList()), Qt::QueuedConnection);
+
+    connect(this, SIGNAL(started()), this, SLOT(fgetList()), Qt::QueuedConnection);
+    emit started();
+    //    QFuture<void> downloadMedia1 = QtConcurrent::run(this,&anilist::fgetList);
+//    fgetList();
 }
 
 void anilist::setAuthCode(const QString &ruser, QVariant rauthcode)

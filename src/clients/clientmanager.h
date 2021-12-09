@@ -2,6 +2,7 @@
 #define CLIENTMANAGER_H
 
 #include <QObject>
+#include <QDebug>
 #include <QVariant>
 #include <QHash>
 #include <QHashIterator>
@@ -25,7 +26,6 @@ public:
     void setUpdate();
     void setConnections();
 public slots:
-    void downloadMediaList();
     void downloadYearlyLists();
     QString getAvatar();
 signals:
@@ -38,7 +38,7 @@ private:
     QFutureWatcher<bool> downloadWatcher;
     void updateClient();
     QThread clientThread;
-    QPointer<anilist> client;
+    QPointer<IClient> client;
     static inline QHash<int, Enums::mediaList> updateQueueList = QHash<int, Enums::mediaList>();
     static inline QHash<int, int> updateQueueScore = QHash<int, int>();
     static inline QHash<int, int> updateQueueProgress = QHash<int, int>();

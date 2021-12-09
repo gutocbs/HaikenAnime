@@ -5,7 +5,8 @@
 #include <QtNetwork>
 #include <QNetworkRequest>
 #include <QScopedPointer>
-
+#include <QFuture>
+#include <QtConcurrent>
 #include <QOAuth2AuthorizationCodeFlow>
 #include <QOAuthHttpServerReplyHandler>
 
@@ -34,13 +35,14 @@ public:
     bool deleteMediaFromList(int mediaId);
     void setThread(QThread &cThread);
     bool getYearlyLists();
+    bool getAvatarAndMediaList();
 
     void setAuthCode(const QString &ruser, QVariant);
 
 signals:
     void downloadFinished(bool);
+    void started();
 public slots:
-    bool fgetList();
 
 private slots:
     bool fgetListaAno(int year);
