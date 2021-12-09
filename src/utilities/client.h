@@ -24,7 +24,7 @@ public:
     QString fretornaAvatar();
 public slots:
     void fselecionaClient(QVariant);
-    void fbaixaListas();
+    void downloadMediaList();
     QString fgetAvatar();
 
 signals:

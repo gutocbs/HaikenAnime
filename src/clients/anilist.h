@@ -14,10 +14,9 @@
 
 #include <QJsonObject>
 #include <QJsonDocument>
-#include <QThread>
+#include "src/clients/IClient.h"
 
-#include "src/utilities/Enums.h"
-class anilist : public QObject
+class anilist : public IClient
 {
     Q_OBJECT
 public:
@@ -27,29 +26,26 @@ public:
     Q_ENUM(AnilistMutationType)
     explicit anilist(QObject *parent = nullptr);
     ~anilist();
-    bool fmudaLista(int, const QString &rNovaLista);
-    bool fmudaNota(int, int);
-    ///id, progresso
-    bool fmudaProgresso(int, int);
-    bool fexcluiAnime(int);
-    bool fgetListasAnoSeason();
+    bool updateList(int mediaId, Enums::mediaList mediaList);
+    bool updateScore(int mediaId, int mediaScore);
+    bool updateProgress(int mediaId, int mediaProgress);
+    QString getAvatar();
+    bool getMediaList();
+    bool deleteMediaFromList(int mediaId);
+    void setThread(QThread &cThread);
+    bool getYearlyLists();
 
-    QString fretornaAvatar();
+    void setAuthCode(const QString &ruser, QVariant);
 
-    void fbaixaListaThread(QThread &cThread);
-    void frecebeAutorizacao(const QString &ruser, QVariant);
-
+signals:
+    void downloadFinished(bool);
 public slots:
     bool fgetList();
 
-signals:
-    void sterminouDownload(bool);
 private slots:
     bool fgetListaAno(int year);
 private:
     QNetworkRequest getRequest(bool auth = false);
-    bool getAvatar();
-    bool getMediaList();
     QJsonDocument getMediaListObject();
     QJsonDocument getMediaYearListObject(int year);
     QString getAvatarURL();

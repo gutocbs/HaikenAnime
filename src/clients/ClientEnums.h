@@ -7,7 +7,9 @@ class ClientEnums : public QObject
 {
     Q_OBJECT
 public:
-    enum updateType{SCORE, PROGRESS, LIST};
+    enum clients{ANILIST};
+    Q_ENUM(clients)
+    enum updateType{SCORE, PROGRESS, LIST, DELETE};
     Q_ENUM(updateType)
 };
 

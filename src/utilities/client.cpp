@@ -19,7 +19,7 @@ void Client::fconnections(){
     switch (clientEscolhido) {
         case abaConfig::ANILIST:
             //Ao terminar de baixar a lista, manda um aviso que devo mandar pra main class
-            connect(clientAnilist, &anilist::sterminouDownload, this, &Client::fdownloadSignal);
+            connect(clientAnilist, &anilist::downloadFinished, this, &Client::fdownloadSignal);
         break;
     }
 }
@@ -41,11 +41,11 @@ void Client::frecebeAutorizacao(const QString &ruser, QVariant rauthcode)
 {
     switch (clientEscolhido) {
         case abaConfig::ANILIST:
-            clientAnilist->frecebeAutorizacao(ruser, rauthcode);
+            clientAnilist->setAuthCode(ruser, rauthcode);
         break;
     }
 }
-void Client::fbaixaListas()
+void Client::downloadMediaList()
 {
     if(!tthreadClient.isRunning()){
         fpassaThread();
@@ -57,7 +57,7 @@ QString Client::fgetAvatar()
 {
     switch (clientEscolhido) {
         case abaConfig::ANILIST:
-            return clientAnilist->fretornaAvatar();
+            return clientAnilist->getAvatar();
         break;
     }
 }
@@ -66,7 +66,7 @@ void Client::fpassaThread()
 {
     switch (clientEscolhido) {
         case abaConfig::ANILIST:
-            clientAnilist->fbaixaListaThread(tthreadClient);
+            clientAnilist->setThread(tthreadClient);
             clientAnilist->moveToThread(&tthreadClient);
         break;
     }
@@ -76,8 +76,8 @@ bool Client::fmudaLista(int ridAnime, const QString &rNovaLista)
 {
     switch (clientEscolhido) {
         case abaConfig::ANILIST:
-            if(clientAnilist->fmudaLista(ridAnime,rNovaLista))
-                    return true;
+            if(clientAnilist->updateList(ridAnime,Enums::QStringToMediaList(rNovaLista)))
+                return true;
         break;
     }
     return false;
@@ -87,7 +87,7 @@ bool Client::fmudaNota(int ridAnime, int rnovaNota)
 {
     switch (clientEscolhido) {
         case abaConfig::ANILIST:
-            if(clientAnilist->fmudaNota(ridAnime,rnovaNota))
+            if(clientAnilist->updateScore(ridAnime,rnovaNota))
                 return true;
         break;
     }
@@ -98,7 +98,7 @@ bool Client::fmudaProgresso(int ridAnime, int rprogresso)
 {
     switch (clientEscolhido) {
         case abaConfig::ANILIST:
-            if(clientAnilist->fmudaProgresso(ridAnime, rprogresso))
+            if(clientAnilist->updateProgress(ridAnime, rprogresso))
                     return true;
         break;
     }
@@ -109,7 +109,7 @@ bool Client::fexcluiAnime(int ridAnime)
 {
     switch (clientEscolhido) {
         case abaConfig::ANILIST:
-            if(clientAnilist->fexcluiAnime(ridAnime))
+            if(clientAnilist->deleteMediaFromList(ridAnime))
                     return true;
         break;
     }
@@ -120,7 +120,7 @@ bool Client::fgetListaPorAno()
 {
     switch (clientEscolhido) {
         case abaConfig::ANILIST:
-            if(clientAnilist->fgetListasAnoSeason())
+            if(clientAnilist->getYearlyLists())
                 return true;
         break;
     }

@@ -3,7 +3,7 @@
 
 const QUrl graphqlUrl("https://graphql.anilist.co");
 
-anilist::anilist(QObject *parent) : QObject(parent)
+anilist::anilist(QObject *parent) : IClient(parent)
 {
 }
 
@@ -31,20 +31,13 @@ QNetworkRequest anilist::getRequest(bool auth)
     return request;
 }
 
-bool anilist::getAvatar()
-{
-    vavatar = getAvatarURL();
-    this->thread()->exit(0);
-    return true;
-}
-
 bool anilist::getMediaList()
 {
     QFile tempAnimeList("Configurações/Temp/animeList.txt");
     QByteArray mediaJson = getMediaListObject().toJson();
 
     if(QString(mediaJson).contains("errors")){
-        emit sterminouDownload(false);
+        emit downloadFinished(false);
         this->thread()->exit(0);
         return false;
     }
@@ -54,8 +47,8 @@ bool anilist::getMediaList()
         tempAnimeList.close();
     }
 
-    emit sterminouDownload(true);
-    fgetListasAnoSeason();
+    emit downloadFinished(true);
+    getYearlyLists();
     this->thread()->exit(0);
     return true;
 }
@@ -231,7 +224,7 @@ int anilist::getMediaId(int anilistId)
 
 }
 
-bool anilist::fgetListasAnoSeason()
+bool anilist::getYearlyLists()
 {
     int anilistStartYear = 1998;
     for(int i = 0; i <  QDate::currentDate().year()-anilistStartYear; i++){
@@ -252,7 +245,7 @@ bool anilist::fgetListaAno(int year){
     QByteArray mediaJson = getMediaYearListObject(year).toJson();
 
     if(QString(mediaJson).contains("errors")){
-        emit sterminouDownload(false);
+        emit downloadFinished(false);
         this->thread()->exit(0);
         return false;
     }
@@ -265,9 +258,9 @@ bool anilist::fgetListaAno(int year){
 }
 
 
-bool anilist::fmudaLista(int id, const QString &rNovaLista){
+bool anilist::updateList(int id, Enums::mediaList mediaList){
     QString query = getMutationQuery(AnilistMutationType::MutationList, id);
-    query.replace("variableNovaLista", rNovaLista);
+    query.replace("variableNovaLista", Enums::enumMediaListToQString(mediaList));
     QByteArray response_data = post(query, true);
     QJsonDocument resposeJson = QJsonDocument::fromJson(response_data);
     QString responseString = resposeJson.toJson();
@@ -276,7 +269,7 @@ bool anilist::fmudaLista(int id, const QString &rNovaLista){
     return true;
 }
 
-bool anilist::fmudaNota(int id, int novaNota){
+bool anilist::updateScore(int id, int novaNota){
     QString query = getMutationQuery(AnilistMutationType::MutationScore, id);
     query.replace("variableScore", QString::number(novaNota));
     QByteArray response_data = post(query, true);
@@ -287,9 +280,9 @@ bool anilist::fmudaNota(int id, int novaNota){
     return true;
 }
 
-bool anilist::fmudaProgresso(int id, int novoProgresso){
-    QString query = getMutationQuery(AnilistMutationType::MutationProgress, id);
-    query.replace("variableProgresso", QString::number(novoProgresso));
+bool anilist::updateProgress(int mediaId, int mediaProgress){
+    QString query = getMutationQuery(AnilistMutationType::MutationProgress, mediaId);
+    query.replace("variableProgresso", QString::number(mediaProgress));
     QByteArray response_data = post(query, true);
     QJsonDocument resposeJson = QJsonDocument::fromJson(response_data);
     QString responseString = resposeJson.toJson();
@@ -298,22 +291,22 @@ bool anilist::fmudaProgresso(int id, int novoProgresso){
     return true;
 }
 
-QString anilist::fretornaAvatar(){
+QString anilist::getAvatar(){
     return "https://s4.anilist.co/file/anilistcdn/user/"+vavatar;
 }
 
-void anilist::fbaixaListaThread(QThread &cThread)
+void anilist::setThread(QThread &cThread)
 {
     connect(&cThread, SIGNAL(started()), this, SLOT(fgetList()), Qt::QueuedConnection);
 }
 
-void anilist::frecebeAutorizacao(const QString &ruser, QVariant rauthcode)
+void anilist::setAuthCode(const QString &ruser, QVariant rauthcode)
 {
     vusername = "\"" + ruser + "\"";
     vtoken = rauthcode.toString();
 }
 
-bool anilist::fexcluiAnime(int id){
+bool anilist::deleteMediaFromList(int id){
     int mediaId = getMediaId(id);
 
     QString query = getMutationQuery(AnilistMutationType::MutationDelete, mediaId);
