@@ -27,12 +27,12 @@ public:
     void setConnections();
 public slots:
     void downloadYearlyLists();
+    void downloadMediaList();
     QString getAvatar();
 signals:
     void signalDownloadCompleted(bool);
 private slots:
     void sendDownloadSignal(bool signal = true);
-    void downloadMediaLists();
 
 private:
     QFutureWatcher<bool> downloadWatcher;
