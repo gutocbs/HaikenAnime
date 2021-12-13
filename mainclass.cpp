@@ -6,23 +6,13 @@
 
 MainClass::MainClass(QObject *parent) : QObject(parent)
 {
-    vmetaEnumLista = QMetaEnum::fromType<lista>();
-    vmetaEnumTipo = QMetaEnum::fromType<Database::type>();
     //Cria todas as variáveis
     cconfiguracoesDiretoriosPadrao = new confBase(nullptr);
     cdatabase = new Database(nullptr);
-//    cdatabase->instance();
     cconfiguracoesUsuarioDiretorios = new confUsuario(nullptr);
-    carquivos = new arquivos(this);
-    cclient = new Client(this);
 //    cdownloader = new Downloader(this);
     cabaConfig = new abaConfig(this);
     cabaTorrent = new abaTorrent(this);
-    downloadQueue = new DownloadQueue(this);
-//    cclient->fselecionaClient(cabaConfig->instance()->fgetService());
-    //cclient->frecebeAutorizacao(configurações->user, configurações->codigo)
-//    cclient->frecebeAutorizacao(cabaConfig->instance()->fgetUsername(), cabaConfig->instance()->fgetAuthCode());
-//    cclient->downloadMediaList();
     cconfiguracoesUsuarioDiretorios->instance()->frecebeConfigs(cabaConfig->instance()->fgetDirectory().toStringList());
 
     cdatabase->instance()->fcarregaIdNomeAno();
@@ -33,7 +23,7 @@ MainClass::MainClass(QObject *parent) : QObject(parent)
     cconfiguracoesDiretoriosPadrao->instance()->fcriaDiretoriosBase();
     cconfiguracoesUsuarioDiretorios->instance()->flePastasArquivos();
 
-    vposicaoGridAnimeSelecionado = 0;
+
     vindexAnimeSelecionado = 0;
     vpagina = 1;
     vcontadorAssistindoEpisodio = 0;
@@ -72,8 +62,6 @@ MainClass::~MainClass()
 void MainClass::fconnections()
 {
     //Ao terminar de baixar a lista, começa a rodar o programa
-    connect(cclient, &Client::sdownloadCompleted, this, &MainClass::ftryClientConnection);
-    //Ao terminar de baixar a lista, começa a rodar o programa
     connect(clientManager, &ClientManager::signalDownloadCompleted, this, &MainClass::ftryClientConnection);
     //Atualiza a tabela de torrents assim que terminar de ler o arquivo XML
     connect(cabaTorrent, &abaTorrent::sfimXML, this, &MainClass::storrentPronto);
@@ -86,6 +74,7 @@ void MainClass::fconnections()
 
 void MainClass::ftryClientConnection(bool connection)
 {
+    //TODO - Usar as novas funções de conexão
     if(!connection)
         fconnectFail();
     else
@@ -99,17 +88,7 @@ void MainClass::fconnectSuccess()
     emit sconnectGUI(false);
     if(tthreadDiretorios.isRunning())
         tthreadDiretorios.requestInterruption();
-    //    cconfiguracoesUsuarioDiretorios->instance()->thread()->requestInterruption();
-//    if(!vlistaSelecionada.isEmpty())
-//        cdatabase->instance()->fdeletaListaAnimes();
-    cdatabase->instance()->freadDatabaseFile();
-    vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
 
-    //We need to check if the list got empy before reading it
-    if(vlistaSelecionada.size() < vindexAnimeSelecionado){
-        vindexAnimeSelecionado = 0;
-        vpagina = 1;
-    }
     loadMediaList();
     getSelectedMediaData(0);
     emit sconnectGUI(true);
@@ -121,13 +100,8 @@ void MainClass::fconnectSuccess()
 
 
     //After, we try to download the cover images
-//    cdownloader->setAvatar(cclient->fgetAvatar());
-//    cdownloader->fsetWorker();
-//    cdownloader->workAvatar(0);
+    //TODO - FALTA BAIXAR O AVATAR
     downloadQueue->downloadMedia();
-    //TODO - COLOCAR SEMPRE QUE PRECISAR MUDAR DE PÁGINA OU BAIXAR UMA NOVA IMAGEM
-    //mediaDownloader->insertDownloadQueue(vlistaAtual, mediaType, mediaList,vlistaSelecionada.size());
-//    mediaDownloader->downloadCoverImages();
 
     //After, will look for anime episodes in your computer
     if(!tthreadDiretorios.isRunning()){
@@ -146,9 +120,10 @@ void MainClass::connectSuccess()
     emit sconnectGUI(true);
     setUpdateTimer();
     setDownloads();
-    //TODO - Ler comentário a baixo sobre ser a primeira conexão
+    //TODO - Ler comentário abaixo sobre ser a primeira conexão
     //Setar uma variável pra ver se é a primeira vez que conecta. Se for, pode dar o setUpdate.
     //Caso não, nào deve dar o setUpdate
+    //É importante evitar dar o setUpdate multiplas vezes, cada vez que eu rodo a função, uma nova thread vai abrir pra rodar ela
     clientManager->setUpdate();
     //TODO - Startar busca por animes
 }
@@ -195,11 +170,18 @@ void MainClass::setObjects()
     mediaPlayer = new MediaPlayer(this);
     mediaController = new MediaController(this);
     mediaController->instance()->initializeMedia();
+    //    clientManager->setClient(cabaConfig->instance()->fgetService());
     clientManager->setClient();
     clientManager->setConnections();
     clientManager->setAuthCode(cabaConfig->instance()->fgetUsername(), cabaConfig->instance()->fgetAuthCode());
     clientManager->downloadMediaList();
     mediaSearchManager = mediaController->instance()->getMediaSearchManager();
+
+    selectedMediaIndex = 0;
+    selectedPage = 1;
+    selectedMediaGridIndex = 0;
+    currentMediaPlayingCounter = 0;
+
     setMedia();
     loadMediaList();
     getSelectedMediaData(0);
@@ -207,10 +189,10 @@ void MainClass::setObjects()
 
 void MainClass::fconnectFail()
 {
-    cclient->frecebeAutorizacao(cabaConfig->instance()->fgetUsername(), cabaConfig->instance()->fgetAuthCode());
+    clientManager->setAuthCode(cabaConfig->instance()->fgetUsername(), cabaConfig->instance()->fgetAuthCode());
     //If the connection fails, we will try to read the anime list and connect again in a few seconds
-    if(!vlistaSelecionada.isEmpty())
-        getSelectedMediaData(vposicaoGridAnimeSelecionado);
+    if(mediaListManager->getInstance()->size(mediaList) != 0)
+        getSelectedMediaData(selectedMediaIndex);
     //After, will look for anime episodes in your computer
     if(!tthreadDiretorios.isRunning()){
         tthreadDiretorios.start();
@@ -306,7 +288,7 @@ void MainClass::fbotaoBusca(QVariant search)
         if(!searchText.isEmpty()){
             qDebug() << "Searching " << searchText;
             vlistaSelecionada = cdatabase->instance()->returnSearchList(searchText.simplified(), vtipoAtual);
-            if(!vlistaSelecionada.isEmpty()){
+            if(mediaListManager->getInstance()->size(mediaList) != 0){
                 vlistaAtual = enumlistaToQString(lista::SEARCH);
                 mediaDownloader->downloadCoverImages();
                 vindexAnimeSelecionado = 0;
@@ -757,7 +739,7 @@ void MainClass::fselecionaTipoSeason(QVariant data)
     vlistaAtual = QString::number(vanoBuscaAnimes);
     vtipoAtual = Database::type::SEASON;
     vlistaSelecionada = cdatabase->instance()->returnSortList(vordemLista, vlistaAtual, vtipoAtual);
-    if(!vlistaSelecionada.isEmpty()){
+    if(mediaListManager->getInstance()->size(mediaList) != 0){
         vindexAnimeSelecionado = 0;
         vpagina = 1;
         getSelectedMediaData(0);
