@@ -7,7 +7,7 @@
 #include <QDebug>
 
 #include "src/utilities/singleton.h"
-
+//REFEITO
 class confBase : public QObject
 {
     Q_OBJECT

@@ -2,28 +2,20 @@
 
 MediaDirectories::MediaDirectories(QObject *parent) : QObject(parent)
 {
-    generalDirectories = QStringList();
+    generalDirectories = QStringList("H:/");
     mediaDirectoriesById = QHash<int,QString>();
-}
-
-bool MediaDirectories::addMediaDirectory(int id, QString path)
-{
-    mediaDirectoriesById.insert(id, path);
-    return true;
 }
 
 bool MediaDirectories::searchForMediaDirectories()
 {
-    QVector<int> mediaToSearch = getMediaPathsToSearch();
     //TODO - Ler vdiretorioAnimes das configurações
     for(int i = 0; i < generalDirectories.size(); i++){
         QDirIterator folderIterator(generalDirectories[i], QDir::Dirs| QDir::NoDotAndDotDot, QDirIterator::Subdirectories);
         while(folderIterator.hasNext()){
-            QFile mediaFile(folderIterator.next());
-            QFileInfo mediaFileInfo(mediaFile.fileName());
-            if(mediaFileInfo.isFile() && FileManager::fileExtensions.contains(mediaFileInfo.completeSuffix())){
-                updateMediaPath(mediaToSearch, mediaFileInfo.path());
-            }
+            QDir folder(folderIterator.next());
+            QString mediaName = MediaFile::getNameFromPath(folder.path());
+            int idAnime = MediaFile::getMediaIdFromFile(mediaName);
+            updateMediaPath(idAnime, folder.path());
         }
     }
     return true;
@@ -40,7 +32,7 @@ QString MediaDirectories::getMediaFolderPath(Media *media)
 
     QString path = searchForMediaDirectory(media);
     if(!path.isEmpty()){
-        addMediaDirectory(media->id, path);
+        updateMediaPath(media->id, path);
         return path;
     }
     return "";
@@ -63,26 +55,16 @@ QString MediaDirectories::searchForMediaDirectory(Media *media)
     return "";
 }
 
-QVector<int> MediaDirectories::getMediaPathsToSearch()
-{
-    QVector<int> idsPathToSearch;
-    QHash<int, QString>::iterator iterator;
-    for(iterator = mediaDirectoriesById.begin(); iterator != mediaDirectoriesById.end(); ++iterator){
-        QDir directory(mediaDirectoriesById[iterator.key()]);
-        if(!directory.exists())
-            idsPathToSearch.append(iterator.key());
-    }
-    return idsPathToSearch;
-}
-
-bool MediaDirectories::updateMediaPath(QVector<int> mediaToSearch, QString path)
+bool MediaDirectories::updateMediaPath(int mediaId, const QString &newDirectoryPath)
 {
     QPointer<AnimeManager> mediaManager = new AnimeManager();
-    int idAnime = MediaFile::getMediaIdFromFile(path);
-    if(mediaToSearch.contains(idAnime)){
-        mediaDirectoriesById.insert(idAnime, path);
-        mediaToSearch.removeAll(idAnime);
-        mediaManager->getInstance()->updatePath(idAnime, path);
-    }
+    mediaDirectoriesById.insert(mediaId,newDirectoryPath);
+    mediaManager->getInstance()->updatePath(mediaId, newDirectoryPath);
     return true;
+}
+
+void MediaDirectories::setSearch()
+{
+    QTimer::singleShot(5, this, &MediaDirectories::searchForMediaDirectories);
+    //TODO - Emitir sinal
 }

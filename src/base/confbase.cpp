@@ -1,5 +1,5 @@
 #include "confbase.h"
-
+///////////////////////////////////////////REFEITO DirectoriesConfigurationLoader
 confBase *confBase::createInstance()
 {
     return new confBase();

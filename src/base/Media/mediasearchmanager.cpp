@@ -49,19 +49,28 @@ QStringList MediaSearchManager::getNamesById(int id)
 }
 
 //TODO - Buscar nas listas de anos também
-QVector<Media*> MediaSearchManager::searchMedia(const QString &rnome)
+bool MediaSearchManager::searchMedia(const QString &rnome)
 {
     QVector<Media*> mediaListSearch = mediaListManager->getInstance()->getMediaList(Enums::SEARCH);
-    mediaListSearch.clear();
-    QHash<int, Media*> hashMediaById = mediaListManager->getInstance()->getHashMediaById();
-    QHash<int, Media*>::iterator iterator;
-    for (iterator = hashMediaById.begin(); iterator != hashMediaById.end(); ++iterator){
-        QStringList names = getNamesById(hashMediaById[iterator.key()]->id);
-        if(names.contains(rnome))
-            mediaListSearch.append(hashMediaById[iterator.key()]);
+    if(rnome.contains(QRegExp("\\S"))){
+        mediaListSearch.clear();
+        QHash<int, Media*> hashMediaById = mediaListManager->getInstance()->getHashMediaById();
+        QHash<int, Media*>::iterator iterator;
+        for (iterator = hashMediaById.begin(); iterator != hashMediaById.end(); ++iterator){
+            QStringList names = getNamesById(hashMediaById[iterator.key()]->id);
+            for (const auto& name : names )
+            {
+                if(name.contains(rnome, Qt::CaseInsensitive)){
+                    mediaListSearch.append(hashMediaById[iterator.key()]);
+                    break;
+                }
+            }
+        }
     }
-    mediaListManager->getInstance()->setMediaList(Enums::mediaList::SEARCH, mediaListSearch);
-    return mediaListSearch;
+    bool hasMedia = mediaListSearch.isEmpty() ? false : true;
+    if(hasMedia)
+        mediaListManager->getInstance()->setMediaList(Enums::mediaList::SEARCH, mediaListSearch);
+    return hasMedia;
 }
 
 void MediaSearchManager::appendToList(QVector<Media*> &mediaList, Enums::mediaList list, int position){
@@ -125,12 +134,15 @@ QString MediaSearchManager::getMediaTitleFromId(int idMedia)
 
 int MediaSearchManager::getIdFromMediaTitle(const QString &mediaTitle)
 {
-    QHash<int, Media*> hashMediaById = mediaListManager->getInstance()->getHashMediaById();
-    QHash<int, Media*>::iterator iterator;
-    for (iterator = hashMediaById.begin(); iterator != hashMediaById.end(); ++iterator){
-        QStringList names = getNamesById(hashMediaById[iterator.key()]->id);
-        if(names.contains(mediaTitle))
-            return iterator.key();
+    //Verifica se o titulo é válido, ou seja, não é só um espaço em branco
+    if(mediaTitle.contains(QRegExp("\\S"))){
+        QHash<int, Media*> hashMediaById = mediaListManager->getInstance()->getHashMediaById();
+        QHash<int, Media*>::iterator iterator;
+        for (iterator = hashMediaById.begin(); iterator != hashMediaById.end(); ++iterator){
+            QStringList names = getNamesById(hashMediaById[iterator.key()]->id);
+            if(names.contains(mediaTitle, Qt::CaseInsensitive))
+                return iterator.key();
+        }
     }
     return 0;
 }

@@ -18,7 +18,7 @@
 #include "src/utilities/logger.h"
 #include "src/utilities/formatapalavras.h"
 #include "lib/anitomy/anitomy.h"
-
+//REFEITO
 class arquivos : public QObject
 {
     Q_OBJECT

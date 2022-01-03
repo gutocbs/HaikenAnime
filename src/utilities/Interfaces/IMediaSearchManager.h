@@ -10,7 +10,7 @@ class IMediaSearchManager : public QObject{
 public:
     using QObject::QObject;
     virtual void setMediaListManager(IMediaListManager* mediaListManager) = 0;
-    virtual QVector<Media*> searchMedia(const QString &rnome) = 0;
+    virtual bool searchMedia(const QString &rnome) = 0;
     virtual int buscaIDRapido(const QString &rnomeAnime) = 0;
     virtual int getMediaEpisodeFromId(int id) = 0;
     virtual QString getMediaScoreFromId(int id) = 0;

@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QMetaEnum>
 #include <QVariant>
-
+//OK
 class Enums : public QObject{
     Q_OBJECT
 public:

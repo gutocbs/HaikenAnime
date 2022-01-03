@@ -51,7 +51,7 @@ QString MediaLoader::getFileName(bool mock)
     if(mock)
         return ":/Anilist/qrc/Mocks/Anilist/MediaListMock.json";
     else
-        return "Configurações/Temp/animeList.txt";
+        return "Configurations/Temp/animeList.txt";
 }
 
 QJsonArray MediaLoader::getMediaListArray(QString fileName)

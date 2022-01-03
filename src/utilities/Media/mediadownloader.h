@@ -8,7 +8,7 @@
 #include "src/DTO/MediaList.h"
 #include "src/utilities/Media/mediacomparer.h"
 #include "src/utilities/downloader.h"
-
+//APAGAR?
 class MediaDownloader : public QObject
 {
     Q_OBJECT

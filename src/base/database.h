@@ -14,7 +14,7 @@
 
 #include "src/base/anime.h"
 #include "src/utilities/formatapalavras.h"
-
+//REFEITO
 class Database : public QObject
 {
     Q_OBJECT

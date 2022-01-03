@@ -4,7 +4,7 @@
 #include <QObject>
 #include "src/base/abaconfig.h"
 #include "lib/anitomy/anitomy.h"
-
+//REFEITO 50%
 class playerRecognition : public QObject
 {
     Q_OBJECT

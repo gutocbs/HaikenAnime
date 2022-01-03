@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include "src/base/anime.h"
-
+//?????
 class ArquivoAnime : public QObject
 {
     Q_OBJECT

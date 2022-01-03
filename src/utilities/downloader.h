@@ -6,7 +6,7 @@
 #include <QDebug>
 #include "src/base/downloaderworker.h"
 #include "src/utilities/Enums.h"
-
+//Falta fazer o avatar, xml e torrent
 class Downloader : public QObject
 {
     Q_OBJECT

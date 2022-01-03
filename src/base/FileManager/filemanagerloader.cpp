@@ -14,9 +14,14 @@ bool FileManagerLoader::loadMediaDirectories(bool mock)
     QJsonArray mediaDirectoriesList = getDirectoriesListArray(fileName);
     int listSize = mediaDirectoriesList.size();
     QJsonObject directoryObject;
+    QString directoryPath;
+    QDir directory;
     for(int i = 0; i < listSize; i++){
         directoryObject = mediaDirectoriesList.at(i).toObject();
-        MediaDirectories::addMediaDirectory(getIdFromJson(directoryObject), getPathFromJson(directoryObject));
+        directoryPath = getPathFromJson(directoryObject);
+        directory.cd(directoryPath);
+        if(directory.exists(directoryPath) && !directory.isEmpty())
+            MediaDirectories::updateMediaPath(getIdFromJson(directoryObject), directoryPath);
     }
     return true;
 }
@@ -26,7 +31,7 @@ QString FileManagerLoader::getDirectoriesFileName(bool mock)
     if(mock)
         return ":/FileManager/qrc/Mocks/FileManager/DirectoriesFileMock.json";
     else
-        return "Configurações/Temp/animeFolders.txt";
+        return "Configurations/Temp/mediaFolders.txt";
 }
 
 int FileManagerLoader::getIdFromJson(QJsonObject object)
@@ -53,4 +58,14 @@ QJsonArray FileManagerLoader::getDirectoriesListArray(QString fileName)
     QJsonDocument jsonMediaList = QJsonDocument::fromJson(jsonData);
     QVariantList jsonVariantList = qvariant_cast<QVariantList>(jsonMediaList["directories"]);
     return QJsonArray::fromVariantList(jsonVariantList);
+}
+
+bool FileManagerLoader::searchMediaDirectories()
+{
+    bool loaded = loadMediaDirectories();
+    if(loaded){
+        emit directoriesLoaded();
+        return true;
+    }
+    return false;
 }

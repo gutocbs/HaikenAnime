@@ -33,14 +33,15 @@ QString MediaPlayer::getCleanWindowName(std::string windowName)
     return name;
 }
 
+//TODO
 QString MediaPlayer::getMediaName(QString windowName)
 {
-
+    return "";
 }
-
+//TODO
 int MediaPlayer::getEpisode(QString windowName)
 {
-
+    return 0;
 }
 
 bool MediaPlayer::compareWindowNameToMediaPlayer(QString windowName)
@@ -48,7 +49,7 @@ bool MediaPlayer::compareWindowNameToMediaPlayer(QString windowName)
     //Pego o nome de todos os players selecionados nas configurações para reconhecimento
     //TODO - Pegar lista de players nas configurações
     //    QStringList mediaPLayers = cabaConfig->instance()->fgetPlayers();
-    QStringList mediaPlayers("meida");
+    QStringList mediaPlayers("media");
     QList<QString>::const_iterator mediaPlayersIterator;
     for (mediaPlayersIterator = mediaPlayers.constBegin(); mediaPlayersIterator != mediaPlayers.constEnd(); ++mediaPlayersIterator){
         if(windowName.contains(*mediaPlayersIterator, Qt::CaseInsensitive))

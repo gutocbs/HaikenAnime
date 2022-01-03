@@ -7,7 +7,7 @@
 
 #include "lib/anitomy/anitomy.h"
 
-
+//REFEITO MediaComparer
 class FormataPalavras : public QObject
 {
     Q_OBJECT

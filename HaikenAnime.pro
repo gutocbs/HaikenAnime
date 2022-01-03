@@ -72,6 +72,8 @@ HEADERS += \
     src/base/downloaderworker.h \
     src/base/leitorlistaanimes.h \
     src/base/torrentinfo.h \
+    src/base/Directory/directoriesconfigurationloader.h \
+    src/base/Directory/directoryenums.h \
     src/clients/ClientEnums.h \
     src/clients/IClient.h \
     src/clients/anilist.h \
@@ -143,6 +145,7 @@ SOURCES += \
     src/base/database.cpp \
     src/base/downloaderworker.cpp \
     src/base/leitorlistaanimes.cpp \
+    src/base/Directory/directoriesconfigurationloader.cpp \
     src/clients/anilist.cpp \
     src/clients/clientmanager.cpp \
     src/utilities/Media/mediadownloader.cpp \

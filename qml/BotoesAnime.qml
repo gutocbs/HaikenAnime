@@ -726,7 +726,7 @@ Item {
                                     novaLista = 'DROPPED'
                                 else if(comboBoxMudaLista.currentText === 'Plan to Watch')
                                     novaLista = 'PLANNING'
-                                mainClass.fmudaListaAnime(novaLista)
+                                mainClass.setMediaList(novaLista)
                                 progress = 0
                             }
                         }

@@ -19,7 +19,7 @@ confUsuario *confUsuario::instance()
     return  Singleton<confUsuario>::instance(confUsuario::createInstance);
 }
 
-
+//existe
 QString confUsuario::fretornaDiretorioEspecifico(int id){
     if(vterminouChecagem)
         return vdiretorioEspecificoAnime[QString::number(id)];
@@ -30,6 +30,7 @@ QVector<QString> confUsuario::fretornaDiretoriosAnimes(){
     return vdiretorioAnimes.toVector();
 }
 
+//existe
 void confUsuario::fbuscaDiretoriosAnimes(){
     anitomy::Anitomy lanitomy;
     if(this->thread()->isInterruptionRequested() || vdiretorioAnimes.isEmpty()){
@@ -73,7 +74,7 @@ void confUsuario::fgetThread(QThread &dThread)
     connect(&dThread, &QThread::started, this, &confUsuario::fsetupListasPraBusca, Qt::QueuedConnection);
     qDebug()<< "Buscando diretorios";
 }
-
+//existe - FileManagerSaver
 void confUsuario::fsalvaPastasArquivos()
 {
     QFile t("Configurações/Temp/animeFoldersTemp.txt");
@@ -92,7 +93,7 @@ void confUsuario::fsalvaPastasArquivos()
     else
         t.rename("Configurações/Temp/animeFolders.txt");
 }
-
+//existe - FileManagerLoader::loadMediaDirectories
 void confUsuario::flePastasArquivos()
 {
     QFile t("Configurações/Temp/animeFolders.txt");

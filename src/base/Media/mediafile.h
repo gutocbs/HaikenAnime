@@ -18,11 +18,12 @@ public:
     static bool compareFileToMediaName(Media *media, QString fileName);
     static bool compareFileToMediaEpisode(Media *media, QString fileName, int episode);
     static QString getMediaEpisodePath(Media *media, int episode = 0);
-    static QString getMediaFolderPath(Media *media);
     static int getMediaIdFromFile(QString fileName);
     static int getMediaEpisodeFromFile(QString fileName);
     static QString getMediaNameFromFile(QString fileName);
     static QString getSeasonFromFile(QString fileName);
+    static QString getNameFromPath(QString path);
+    static QString getFolder(QString path);
 };
 
 #endif // MEDIAFILE_H

@@ -19,7 +19,7 @@
 
 #include "src/utilities/Enums.h"
 #include "src/base/MediaType/Anime/animelistmanager.h"
-
+//FALTA AVATAR, TORRENT, XML
 class DownloaderWorker : public QObject
 {
     Q_OBJECT

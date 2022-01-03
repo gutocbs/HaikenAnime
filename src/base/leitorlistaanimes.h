@@ -15,7 +15,7 @@
 
 #include "src/base/anime.h"
 #include "src/utilities/formatapalavras.h"
-
+//REFEITO
 class leitorlistaanimes : public QObject
 {
     Q_OBJECT

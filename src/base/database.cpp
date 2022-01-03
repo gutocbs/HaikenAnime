@@ -1,5 +1,5 @@
 #include "database.h"
-
+///////////////////////////////////////////REFEITO
 Database *Database::createInstance()
 {
     return new Database();

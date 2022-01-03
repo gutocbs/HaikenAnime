@@ -1,5 +1,5 @@
 #include "downloaderworker.h"
-
+///////////////////////////////////////////REFEITO quase inteiro
 DownloaderWorker::DownloaderWorker(QObject *parent) : QObject(parent)
 {
     vmanager = new QNetworkAccessManager(this);

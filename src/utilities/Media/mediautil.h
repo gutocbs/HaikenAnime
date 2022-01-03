@@ -6,6 +6,7 @@
 #include <QJsonObject>
 #include <QFile>
 #include <QDir>
+#include "src/base/Directory/directoriesconfigurationloader.h"
 #include "src/DTO/media.h"
 
 class MediaUtil : public QObject

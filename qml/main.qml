@@ -154,17 +154,17 @@ Window {
         function onSignalMenuMedia(data){ stackView.push("Home.qml")}
         function onSignalMenuConfiguration(data){ stackView.push("ConfigPagina.qml")}
         function onSignalMenuTorrents(data){ stackView.push("TorrentPagina.qml")}
-        function onSanimeReconhecidoID(data){
+        function onCurrentMediaPlayer(data){
             idanimeReconhecido = dataId
-            nomeAnimeReconhecido = dataNome
-            episodiosAnimeReconhecido = dataEpisodio
+            nomeAnimeReconhecido = dataName
+            episodiosAnimeReconhecido = dataEpisode
         }
     }
 
     Component.onCompleted: {
         mainClass.getSelectedMediaData(0)
-        numeroAnosListas = mainClass.fretornaNumeroAnos()
-        imagemAvatar = "file:///"+mainClass.fretornaPathAvatar()
+        numeroAnosListas = new Date().getFullYear()-1998
+        imagemAvatar = "file:///"+mainClass.getUserAvatar()
         nomeUsuario = mainClass.fretornaNomeUsuario()
     }
 

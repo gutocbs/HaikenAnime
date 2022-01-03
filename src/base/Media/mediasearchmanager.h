@@ -3,6 +3,8 @@
 
 #include <QObject>
 #include <QPointer>
+#include <QRegExp>
+#include <QListIterator>
 #include "src/utilities/Interfaces/IMediaSearchManager.h"
 
 //TODO - Fazer singleton
@@ -12,7 +14,7 @@ class MediaSearchManager : public IMediaSearchManager
 public:
     explicit MediaSearchManager(QObject *parent = nullptr, IMediaListManager* mediaListManager = nullptr);
     void setMediaListManager(IMediaListManager *mediaListManager);
-    QVector<Media*> searchMedia(const QString &rnome);
+    bool searchMedia(const QString &rnome);
     int buscaIDRapido(const QString &rnomeAnime);
     QPointer<Media> fbuscaAnimeNoAno(int, int idAnime);
     QPointer<Media> getMediaFromId(int rid);

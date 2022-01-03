@@ -44,6 +44,8 @@
 #include "src/base/Media/mediasearchmanager.h"
 #include "src/utilities/Media/mediautil.h"
 #include "src/utilities/MediaPlayer/mediaplayer.h"
+#include "src/base/FileManager/filemanagerloader.h"
+#include "src/base/Directory/directoriesconfigurationloader.h"
 class MainClass : public QObject
 {
     Q_OBJECT
@@ -85,14 +87,8 @@ public slots:
     void fbotaoDownloadTorrents();
 
     //Remover, mas verificar no QML antes
-    Q_DECL_UNUSED void fclientUpdate();
-    Q_DECL_UNUSED QVariant fretornaNumeroAnos(); //Só remover, mas ver onde uso isso no qml. Acho que é pra pegar o número de anos disponíveis na busca
     Q_DECL_UNUSED QVariant fretornaNomeUsuario();
-    Q_DECL_UNUSED QVariant fretornaPathAvatar();
     Q_DECL_UNUSED void fselecionaTipoSeason(QVariant);
-    Q_DECL_UNUSED void fchecaAnimeAssistido(); //getCurrentMediaPlaying
-    Q_DECL_UNUSED void fresetRequests(); //removido
-    Q_DECL_UNUSED void fmudaListaAnime(QVariant); //setMediaList
 
     //Falta terminar de refazer
     Q_DECL_DEPRECATED void fconnectSuccess();
@@ -136,8 +132,6 @@ public slots:
     void buttonSearch(QVariant data);
 
 signals:
-    //Antigos
-    void sanimeReconhecidoID(QVariant dataId, QVariant dataNome, QVariant dataEpisodio);
     //Não feitos ainda
     void sdirImagensGrandes(QVariant data);
     void sdirImagensMedias(QVariant data);
@@ -184,11 +178,6 @@ private:
 
     //Classes
     Database *cdatabase;
-    confBase *cconfiguracoesDiretoriosPadrao;
-    arquivos *carquivos;
-    confUsuario *cconfiguracoesUsuarioDiretorios;
-    Client *cclient;
-    Downloader *cdownloader;
     abaConfig *cabaConfig;
     abaTorrent *cabaTorrent;
     QVector<anime*> vlistaSelecionada;
@@ -230,6 +219,8 @@ private:
     QPointer<IMediaSearchManager> mediaSearchManager;
     QPointer<IMediaManager> mediaManager;
     QPointer<MediaController> mediaController;
+    QPointer<MediaDirectories> mediaDirectories;
+    QPointer<FileManagerLoader> fileManagerLoader;
 //    QVector<Media*> activeMediaList;
 
     //TODO - Novas classes de controle

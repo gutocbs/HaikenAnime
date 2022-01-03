@@ -28,7 +28,7 @@ bool MediaFile::compareFileToMediaEpisode(Media *media, QString fileName, int me
 
 QString MediaFile::getMediaEpisodePath(Media *media, int episode)
 {
-    QString mediaFolder = getMediaFolderPath(media);
+    QString mediaFolder = media->mediaPath;
 
     //Verifica se a função retorna um valor que não está vazio, ou seja
     //Se existe uma pasta com o nome do anime
@@ -46,13 +46,6 @@ QString MediaFile::getMediaEpisodePath(Media *media, int episode)
             }
         }
     }
-    return "";
-
-}
-
-//TODO - FAZER FUNÇÃO
-QString MediaFile::getMediaFolderPath(Media *media)
-{
     return "";
 }
 
@@ -97,4 +90,22 @@ QString MediaFile::getMediaNameFromFile(QString fileName)
 QString MediaFile::getSeasonFromFile(QString fileName)
 {
 
+}
+
+QString MediaFile::getNameFromPath(QString path)
+{
+    QFileInfo file(path);
+    if(file.exists() && file.isDir())
+        return file.baseName();
+    else if(file.exists() && file.isFile())
+        return file.fileName();
+    return "";
+}
+
+QString MediaFile::getFolder(QString path)
+{
+    QFileInfo file(path);
+    if(file.exists())
+        return file.baseName();
+    return "";
 }

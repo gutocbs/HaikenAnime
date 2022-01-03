@@ -36,5 +36,10 @@ bool FileManager::openFileOrFolder(const QByteArray &path)
 
 bool FileManager::openFileOrFolder(Media *media)
 {
-
+    QScopedPointer<QDesktopServices> openFile(new QDesktopServices);
+    if(!media->mediaPath.isEmpty()){
+        openFile->openUrl(QUrl("file:///"+media->mediaPath,QUrl::TolerantMode));
+        return true;
+    }
+    return false;
 }

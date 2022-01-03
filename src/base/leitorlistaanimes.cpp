@@ -1,5 +1,6 @@
 #include "leitorlistaanimes.h"
 
+///////////////////////////////////////////REFEITO
 leitorlistaanimes *leitorlistaanimes::createInstance()
 {
     return new leitorlistaanimes();

@@ -86,6 +86,7 @@ Item {
         localCor = listaCorTemp
         localImagem = listaImaemTemp
         localCorEpisodios = listaCorEpisodiosTemp
+        console.log(localImagem)
     }
 
     Column {

@@ -7,7 +7,7 @@
 
 #include "src/clients/anilist.h"
 #include "src/base/abaconfig.h"
-
+//REFEITO
 class Client : public QObject
 {
     Q_OBJECT

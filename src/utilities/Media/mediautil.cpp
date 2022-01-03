@@ -28,14 +28,13 @@ QJsonObject MediaUtil::getMediaAsJsonObject(Media *media)
 //        hasNextEpisode = true;
 
     QString coverImagePath;
-    QString imgDir = QDir::currentPath() + QDir::separator() + "Configurações" + QDir::separator() + "Imagens" + QDir::separator();
-    //TODO - Fazer classe de diretorios padrão
-    if(QFile::exists(imgDir + "Grande" + QDir::separator() + QString::number(media->id) +".png"))
-        coverImagePath = imgDir + "Grande" + QDir::separator() + QString::number(media->id) +".png";
-    else if(QFile::exists(imgDir + "Grande" + QDir::separator() + QString::number(media->id)+".jpg"))
-        coverImagePath = imgDir + "Grande" + QDir::separator() + QString::number(media->id)+".jpg";
+    QString currentPath = QDir::currentPath() + QDir::separator();
+    if(QFile::exists(currentPath + DirectoriesConfigurationLoader::vdiretorioImagensGrandes + QDir::separator() + QString::number(media->id) +".png"))
+        coverImagePath = currentPath + DirectoriesConfigurationLoader::vdiretorioImagensGrandes + QDir::separator() + QString::number(media->id) +".png";
+    else if(QFile::exists(currentPath + DirectoriesConfigurationLoader::vdiretorioImagensGrandes + QDir::separator() + QString::number(media->id)+".jpg"))
+        coverImagePath = currentPath + DirectoriesConfigurationLoader::vdiretorioImagensGrandes + QDir::separator() + QString::number(media->id)+".jpg";
     else
-        coverImagePath = imgDir + "Medio" + QDir::separator() + QString::number(media->id)+".jpg";
+        coverImagePath = currentPath + DirectoriesConfigurationLoader::vdiretorioImagensMedio + QDir::separator() + QString::number(media->id)+".jpg";
 
     QJsonObject mediaJsonObject{
         {"originalName", media->originalName},

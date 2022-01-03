@@ -96,5 +96,10 @@ bool MediaManager::insertCustomName(int mediaId, const QStringList &mediaTitle)
 
 bool MediaManager::updatePath(int id, const QString &mediaPath)
 {
+    QPointer<Media> tempMedia = mediaSearchManager->getMediaFromId(id);
+    if(tempMedia.isNull())
+        return false;
 
+    tempMedia->mediaPath = mediaPath;
+    return true;
 }

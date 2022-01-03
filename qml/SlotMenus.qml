@@ -343,7 +343,7 @@ Item {
                             y: 0
                             text: "Search"
                             font.family: "Tahoma"
-                            onClicked: mainClass.fbotaoBusca(searchBar.text)
+                            onClicked: mainClass.buttonSearch(searchBar.text)
                         }
                     }
                 }
