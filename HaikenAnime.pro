@@ -40,6 +40,7 @@ HEADERS += \
     src/DTO/ListOrder.h \
     src/DTO/MediaList.h \
     src/DTO/media.h \
+    src/base/Media/MediaObjects.h \
     src/base/Media/mediafile.h \
     src/base/MediaType/Anime/animelistmanager.h \
     src/base/MediaType/Anime/animemanager.h \
@@ -78,6 +79,9 @@ HEADERS += \
     src/clients/IClient.h \
     src/clients/anilist.h \
     src/clients/clientmanager.h \
+    src/controllers/mediadatacontroller.h \
+    src/controllers/mediainformationcontroller.h \
+    src/controllers/medialistcontroller.h \
     src/utilities/Enums.h \
     src/utilities/Interfaces/IMediaListManager.h \
     src/utilities/Interfaces/IMediaManager.h \
@@ -148,6 +152,9 @@ SOURCES += \
     src/base/Directory/directoriesconfigurationloader.cpp \
     src/clients/anilist.cpp \
     src/clients/clientmanager.cpp \
+    src/controllers/mediadatacontroller.cpp \
+    src/controllers/mediainformationcontroller.cpp \
+    src/controllers/medialistcontroller.cpp \
     src/utilities/Media/mediadownloader.cpp \
     src/utilities/Media/mediautil.cpp \
     src/utilities/Media/mediacomparer.cpp \

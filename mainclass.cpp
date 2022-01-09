@@ -46,49 +46,21 @@ MainClass::~MainClass()
 void MainClass::fconnections()
 {
     //Ao terminar de baixar a lista, começa a rodar o programa
-    connect(clientManager, &ClientManager::signalDownloadCompleted, this, &MainClass::ftryClientConnection);
+    connect(clientManager, &ClientManager::signalDownloadCompleted, this, &MainClass::clientConnection);
     //Atualiza a tabela de torrents assim que terminar de ler o arquivo XML
     connect(cabaTorrent, &abaTorrent::sfimXML, this, &MainClass::storrentPronto);
     //Dá update no timer
-    connect(listUpdateCountdown, &QTimer::timeout, this, QOverload<>::of(&MainClass::fupdateTimer));
+    connect(listUpdateCountdown, &QTimer::timeout, this, QOverload<>::of(&MainClass::updateTimer));
 
 }
 
-void MainClass::ftryClientConnection(bool connection)
+void MainClass::clientConnection(bool connected)
 {
     //TODO - Usar as novas funções de conexão
-    if(!connection)
-        fconnectFail();
+    if(!connected)
+        connectFail();
     else
         connectSuccess();
-}
-
-void MainClass::fconnectSuccess()
-{
-    ///TODO: BLOQUEAR BOTÕES
-    //If the list is not empty, we have to empty it first.
-    emit sconnectGUI(false);
-    if(tthreadDiretorios.isRunning())
-        tthreadDiretorios.requestInterruption();
-
-    loadMediaList();
-    getSelectedMediaData(0);
-    emit sconnectGUI(true);
-
-    //The auto-update timer starts
-    time = QTime::fromString("10","m");
-    vtimerCountdown->setInterval(1000);
-    vtimerCountdown->start();
-
-
-    //After, we try to download the cover images
-    //TODO - FALTA BAIXAR O AVATAR
-    downloadQueue->downloadMedia();
-
-    //After, will look for anime episodes in your computer
-    if(!tthreadDiretorios.isRunning()){
-        tthreadDiretorios.start();
-    }
 }
 
 void MainClass::connectSuccess()
@@ -104,11 +76,24 @@ void MainClass::connectSuccess()
     setDownloads();
     //Search for animes in the computer
     mediaDirectories->setSearch();
-    //TODO - Ler comentário abaixo sobre ser a primeira conexão
-    //Setar uma variável pra ver se é a primeira vez que conecta. Se for, pode dar o setUpdate.
-    //Caso não, não deve dar o setUpdate
-    //É importante evitar dar o setUpdate multiplas vezes, cada vez que eu rodo a função, uma nova thread vai abrir pra rodar ela
-    clientManager->setUpdate();
+    //É importante evitar dar o setUpdate multiplas vezes. Cada vez que eu rodo essa função, uma nova thread será aberta
+    if(!firstConnection){
+        clientManager->setUpdate();
+        firstConnection = true;
+    }
+}
+
+void MainClass::connectFail()
+{
+    clientManager->setAuthCode(cabaConfig->instance()->fgetUsername(), cabaConfig->instance()->fgetAuthCode());
+    //If the connection fails, we will try to read the anime list and connect again in a few seconds
+    loadMediaList();
+    if(mediaListManager->getInstance()->size(mediaList) != 0)
+        getSelectedMediaData(selectedMediaIndex);
+    //After, will look for anime episodes in your computer
+    mediaDirectories->setSearch();
+
+    QTimer::singleShot(10000, clientManager, &ClientManager::downloadMediaList);
 }
 
 void MainClass::loadMediaList()
@@ -171,20 +156,6 @@ void MainClass::setObjects()
     loadMediaList();
     getSelectedMediaData(0);
     getCurrentMediaPlaying();
-}
-
-void MainClass::fconnectFail()
-{
-    clientManager->setAuthCode(cabaConfig->instance()->fgetUsername(), cabaConfig->instance()->fgetAuthCode());
-    //If the connection fails, we will try to read the anime list and connect again in a few seconds
-    if(mediaListManager->getInstance()->size(mediaList) != 0)
-        getSelectedMediaData(selectedMediaIndex);
-    //After, will look for anime episodes in your computer
-    if(!tthreadDiretorios.isRunning()){
-        tthreadDiretorios.start();
-    }
-
-    QTimer::singleShot(10000, clientManager, &ClientManager::downloadMediaList);
 }
 
 void MainClass::fsetauthCode(QVariant auth)
@@ -307,7 +278,7 @@ QVariant MainClass::fretornaNomeUsuario()
     return QVariant(cabaConfig->instance()->fgetUsername());
 }
 
-void MainClass::fupdateTimer()
+void MainClass::updateTimer()
 {
     if(listUpdateTimer == QTime(0,0,0)){
         listUpdateTimer = QTime::fromString("10","m");
@@ -715,7 +686,7 @@ void MainClass::fselecionaTipoSeason(QVariant data)
 //}
 
 
-void MainClass::fselecionaPastaespecificaAnime(QVariant dir)
+void MainClass::buttonSetMediaFolder(QVariant dir)
 {
     if(dir.toString() != ""){
         QPointer<Media> selectedMedia = mediaListManager->getInstance()->getMediaByIndex(mediaList,selectedMediaIndex);

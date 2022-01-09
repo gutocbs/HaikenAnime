@@ -67,10 +67,6 @@ public slots:
     //TODO - Mudar isso vai foder tudo no qml. Vou ter que olhar bem lá para resolver
     //Organizar aqui pra por todos os gets e sets juntos
     //Na hora de refatorar, deixar aqui só as funções que lidam com a interface. O resto vai pra outra classe
-    void fupdateTimer();
-    void fselecionaPastaespecificaAnime(QVariant);
-    void ftryClientConnection(bool);
-    void fconnectFail();
     void fsetauthCode(QVariant);
     void fsetUsername(QVariant);
     void fsetClient(QVariant);
@@ -91,45 +87,53 @@ public slots:
     Q_DECL_UNUSED void fselecionaTipoSeason(QVariant);
 
     //Falta terminar de refazer
-    Q_DECL_DEPRECATED void fconnectSuccess();
     Q_DECL_DEPRECATED void fbotaoBusca(QVariant); //buttonSearch
 
     //Novos
+    //MediaGridController
     void getMediaList(QVariant order = "Title", QVariant year = 0, bool changeOrder = false);
-
-    void selectTypeAnime();
-    void selectTypeManga();
-    void selectTypeNovel();
-    void setMedia();
+    void getSelectedMediaData(QVariant selectedMediaGridIndex);
+    void getMediaListPage();
+    int getPageIndexRange();
+    QVariant getMediaJsonObjectByGridIndex(QVariant gridIndex);
+    void setMediaList(QVariant data);
+    //MediaListController
     void selectListCurrent();
     void selectListCompleted();
     void selectListPaused();
     void selectListDropped();
     void selectListPlanning();
-    void playNextEpisode();
-    void getMediaListPage();
-    void emitSignalIdMedia(int listMediaIndex, bool nullSignal = false);
-    void getSelectedMediaData(QVariant selectedMediaGridIndex);
-    QVariant getMediaJsonObjectByGridIndex(QVariant gridIndex);
-    QVariant getUsername();
-    QVariant getUserAvatar();
-    void openMediaWebpage(QVariant data);
+    void selectTypeAnime();
+    void selectTypeManga();
+    void selectTypeNovel();
     void selectListSeason(QVariant data);
+    void setMedia();
+    //MediaDataController
+    void playNextEpisode();
+    void openMediaWebpage(QVariant data);
     void openMediaFolder();
-    void refreshMediaList();
-    void getCurrentMediaPlaying();
     void setMediaProgress(int mediaId, int mediaProgress);
-    void buttonSetMediaProgress(QVariant data);
-    void buttonSetMediaScore(QVariant data);
     void setMediaCustomName(QVariant data);
     void removeMediaFromList();
+
+    //GUIController
+    void buttonSetMediaProgress(QVariant data);
+    void buttonSetMediaScore(QVariant data);
     void buttonNextPage();
     void buttonLastPage();
-    void setMediaList(QVariant data);
     void buttonMenuMedia();
     void buttonMenuConfigurations();
     void buttonMenuTorrent();
     void buttonSearch(QVariant data);
+    void buttonSetMediaFolder(QVariant);
+
+
+    QVariant getUsername();
+    QVariant getUserAvatar();
+    void refreshMediaList();
+    void getCurrentMediaPlaying();
+    void clientConnection(bool connected);
+    void emitSignalIdMedia(int listMediaIndex, bool nullSignal = false);
 
 signals:
     //Não feitos ainda
@@ -145,6 +149,7 @@ signals:
 
 
     //Novos
+    void signalMediaGrid(QVariant gridId, QVariant mediaData);
     void signalIdMediaGrid0(QVariant data);
     void signalIdMediaGrid1(QVariant data);
     void signalIdMediaGrid2(QVariant data);
@@ -170,10 +175,11 @@ private:
 
     //Connect and update lists
     void connectSuccess();
+    void connectFail();
     void loadMediaList();
     void setUpdateTimer();
+    void updateTimer();
     void setDownloads();
-    int getPageIndexRange();
     void setObjects();
 
     //Classes
@@ -241,6 +247,7 @@ private:
     int selectedPage;
     int selectedMediaGridIndex;
     int currentMediaPlayingCounter;
+    bool firstConnection = false;
     QTime listUpdateTimer;
     QPointer<QTimer> listUpdateCountdown;
 

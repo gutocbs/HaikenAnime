@@ -14,6 +14,7 @@
 #include "src/clients/IClient.h"
 #include "src/clients/anilist.h"
 
+//FAZER SINGLETON
 class ClientManager : public QObject
 {
     Q_OBJECT
