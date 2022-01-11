@@ -33,7 +33,7 @@ public:
     }
 
 private:
-    static inline Enums::mediaOrder order = Enums::mediaOrder::Title;
+    static inline Enums::mediaOrder order = Enums::mediaOrder::StartDate;
     static inline Enums::orderType orderType = Enums::orderType::Ascending;
 };
 

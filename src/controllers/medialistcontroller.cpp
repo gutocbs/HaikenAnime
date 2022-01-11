@@ -10,51 +10,54 @@ MediaListController::MediaListController(QObject *parent) : QObject(parent)
     mediaSearchManager = mediaController->instance()->getMediaSearchManager();
 }
 
-void MediaListController::selectListCurrent()
+void MediaListController::setList(Enums::mediaList newMediaList, int data)
 {
-    if(mediaList != Enums::mediaList::CURRENT){
-        mediaList = Enums::mediaList::CURRENT;
-        mediaInformationController->instance()->getMediaList();
+    if(MediaInformationController::mediaList != newMediaList){
+        MediaInformationController::mediaList = newMediaList;
+        if(MediaInformationController::mediaList != Enums::mediaList::YEAR)
+            mediaInformationController->instance()->getMediaList();
+        else
+            mediaInformationController->instance()->getMediaList(Enums::mediaOrder::StartDate, data);
     }
 }
 
 void MediaListController::selectListCompleted()
 {
-    if(mediaList != Enums::mediaList::COMPLETED){
-        mediaList = Enums::mediaList::COMPLETED;
+    if(MediaInformationController::mediaList != Enums::mediaList::COMPLETED){
+        MediaInformationController::mediaList = Enums::mediaList::COMPLETED;
         mediaInformationController->instance()->getMediaList();
     }
 }
 
 void MediaListController::selectListPaused()
 {
-    if(mediaList != Enums::mediaList::PAUSED){
-        mediaList = Enums::mediaList::PAUSED;
+    if(MediaInformationController::mediaList != Enums::mediaList::PAUSED){
+        MediaInformationController::mediaList = Enums::mediaList::PAUSED;
         mediaInformationController->instance()->getMediaList();
     }
 }
 
 void MediaListController::selectListDropped()
 {
-    if(mediaList != Enums::mediaList::DROPPED){
-        mediaList = Enums::mediaList::DROPPED;
+    if(MediaInformationController::mediaList != Enums::mediaList::DROPPED){
+        MediaInformationController::mediaList = Enums::mediaList::DROPPED;
         mediaInformationController->instance()->getMediaList();
     }
 }
 
 void MediaListController::selectListPlanning()
 {
-    if(mediaList != Enums::mediaList::PLANNING){
-        mediaList = Enums::mediaList::PLANNING;
+    if(MediaInformationController::mediaList != Enums::mediaList::PLANNING){
+        MediaInformationController::mediaList = Enums::mediaList::PLANNING;
         mediaInformationController->instance()->getMediaList();
     }
 }
 
-void MediaListController::selectTypeAnime()
+void MediaListController::setMediaType(Enums::mediaType newMediaType)
 {
-    if(mediaType != Enums::mediaType::ANIME){
-        mediaType = Enums::mediaType::ANIME;
-        mediaList = Enums::mediaList::CURRENT;
+    if(MediaInformationController::mediaType != newMediaType){
+        MediaInformationController::mediaType = newMediaType;
+        MediaInformationController::mediaList = Enums::mediaList::CURRENT;
         setMedia();
         mediaInformationController->instance()->getMediaList();
     }
@@ -62,9 +65,9 @@ void MediaListController::selectTypeAnime()
 
 void MediaListController::selectTypeManga()
 {
-    if(mediaType != Enums::mediaType::MANGA){
-        mediaType = Enums::mediaType::MANGA;
-        mediaList = Enums::mediaList::CURRENT;
+    if(MediaInformationController::mediaType != Enums::mediaType::MANGA){
+        MediaInformationController::mediaType = Enums::mediaType::MANGA;
+        MediaInformationController::mediaList = Enums::mediaList::CURRENT;
         setMedia();
         mediaInformationController->instance()->getMediaList();
     }
@@ -72,9 +75,9 @@ void MediaListController::selectTypeManga()
 
 void MediaListController::selectTypeNovel()
 {
-    if(mediaType != Enums::mediaType::NOVEL){
-        mediaType = Enums::mediaType::NOVEL;
-        mediaList = Enums::mediaList::CURRENT;
+    if(MediaInformationController::mediaType != Enums::mediaType::NOVEL){
+        MediaInformationController::mediaType = Enums::mediaType::NOVEL;
+        MediaInformationController::mediaList = Enums::mediaList::CURRENT;
         setMedia();
         mediaInformationController->instance()->getMediaList();
     }
@@ -82,8 +85,8 @@ void MediaListController::selectTypeNovel()
 
 void MediaListController::setMedia()
 {
-    mediaListManager = mediaController->instance()->getMediaListManager(mediaType);
-    mediaManager = mediaController->instance()->getMediaManager(mediaType);
+    mediaListManager = mediaController->instance()->getMediaListManager(MediaInformationController::mediaType);
+    mediaManager = mediaController->instance()->getMediaManager(MediaInformationController::mediaType);
     mediaSearchManager->setMediaListManager(mediaListManager);
     mediaManager->getInstance()->setMediaListManager(mediaListManager);
     mediaManager->getInstance()->setMediaSearchManager(mediaSearchManager);

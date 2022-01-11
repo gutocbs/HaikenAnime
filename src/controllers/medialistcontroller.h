@@ -9,18 +9,16 @@ class MediaListController : public QObject
     Q_OBJECT
 public:
     explicit MediaListController(QObject *parent = nullptr);
-    void selectListCurrent();
+    void setList(Enums::mediaList newMediaList, int data = 0);
     void selectListCompleted();
     void selectListPaused();
     void selectListDropped();
     void selectListPlanning();
-    void selectTypeAnime();
+    void setMediaType(Enums::mediaType newMediaType);
     void selectTypeManga();
     void selectTypeNovel();
     void selectListSeason(QVariant data);
     void setMedia();
-    static Enums::mediaList mediaList;
-    static Enums::mediaType mediaType;
 signals:
 private:
     QPointer<MediaInformationController> mediaInformationController;

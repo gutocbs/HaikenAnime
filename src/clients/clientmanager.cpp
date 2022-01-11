@@ -87,27 +87,35 @@ void ClientManager::updateClient()
     ///TODO - Colocar a variável requestsPerSecondLimit em algum arquivo de configuração e ler de lá
     int requestsPerSecondLimit = 90;
     int resquestsDone = 0;
-    QHash<int, Enums::mediaList>::iterator updateQueueListIterator;
-    for (updateQueueListIterator = updateQueueList.begin(); updateQueueListIterator != updateQueueList.end(); ++updateQueueListIterator){
-        if(updateQueueListIterator.value() != Enums::mediaList::NOLIST && client->updateList(updateQueueListIterator.key(), updateQueueListIterator.value()))
-            updateQueueList.remove(updateQueueListIterator.key());
-        else if(updateQueueListIterator.value() == Enums::mediaList::NOLIST && client->deleteMediaFromList(updateQueueListIterator.key()))
-            updateQueueList.remove(updateQueueListIterator.key());
-        if(++resquestsDone >= requestsPerSecondLimit)
-            return;
+    if(!updateQueueList.isEmpty()){
+        QHash<int, Enums::mediaList>::iterator updateQueueListIterator;
+        for (updateQueueListIterator = updateQueueList.begin(); updateQueueListIterator != updateQueueList.end(); updateQueueListIterator++){
+            if(updateQueueListIterator.value() != Enums::mediaList::NOLIST && client->updateList(updateQueueListIterator.key(), updateQueueListIterator.value()))
+                updateQueueList.remove(updateQueueListIterator.key());
+            else if(updateQueueListIterator.value() == Enums::mediaList::NOLIST && client->deleteMediaFromList(updateQueueListIterator.key()))
+                updateQueueList.remove(updateQueueListIterator.key());
+            if(++resquestsDone >= requestsPerSecondLimit)
+                return;
+        }
     }
-    QHash<int, int>::iterator updateQueueScoreIterator;
-    for (updateQueueScoreIterator = updateQueueScore.begin(); updateQueueScoreIterator != updateQueueScore.end(); ++updateQueueScoreIterator){
-        if(client->updateScore(updateQueueScoreIterator.key(), updateQueueScoreIterator.value()))
-            updateQueueScore.remove(updateQueueScoreIterator.key());
-        if(++resquestsDone >= requestsPerSecondLimit)
-            return;
+    if(!updateQueueScore.isEmpty()){
+        QHash<int, int>::iterator updateQueueScoreIterator;
+        for (updateQueueScoreIterator = updateQueueScore.begin(); updateQueueScoreIterator != updateQueueScore.end(); updateQueueScoreIterator++){
+            if(client->updateScore(updateQueueScoreIterator.key(), updateQueueScoreIterator.value()))
+                updateQueueScore.erase(updateQueueScoreIterator);
+            if(++resquestsDone >= requestsPerSecondLimit)
+                return;
+        }
     }
-    QHash<int, int>::iterator updateQueueProgressIterator;
-    for (updateQueueProgressIterator = updateQueueProgress.begin(); updateQueueProgressIterator != updateQueueProgress.end(); ++updateQueueProgressIterator){
-        if(client->updateProgress(updateQueueProgressIterator.key(), updateQueueProgressIterator.value()))
-            updateQueueProgress.remove(updateQueueProgressIterator.key());
-        if(++resquestsDone >= requestsPerSecondLimit)
-            return;
+    if(!updateQueueProgress.isEmpty()){
+        QHash<int, int>::iterator updateQueueProgressIterator = updateQueueProgress.begin();
+        while (updateQueueProgressIterator != updateQueueProgress.end()) {
+            QHash<int, int>::iterator prev = updateQueueProgressIterator;
+            ++updateQueueProgressIterator;
+            if(client->updateProgress(prev.key(), prev.value()))
+                updateQueueProgress.erase(prev);
+            if(++resquestsDone >= requestsPerSecondLimit)
+                return;
+        }
     }
 }

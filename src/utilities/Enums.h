@@ -14,7 +14,7 @@ public:
     Q_ENUM(mediaType)
     enum mediaList{CURRENT, COMPLETED, PAUSED, DROPPED, PLANNING, SEARCH, WINTER, SUMMER, FALL, SPRING, YEAR, NOLIST = 0};
     Q_ENUM(mediaList)
-    enum mediaOrder{Title, StartDate, Progress, Score, Type};
+    enum mediaOrder{Title, StartDate, Progress, Score, Type, NoOrder};
     Q_ENUM(mediaOrder)
     enum orderType{Ascending, Descending};
     Q_ENUM(orderType)

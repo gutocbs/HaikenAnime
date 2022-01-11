@@ -22,6 +22,7 @@ void MediaController::initializeMedia()
     mediaListManager = new AnimeListManager(this);
     mediaManager = new AnimeManager(this);
     mediaSearchManager = new MediaSearchManager(this);
+    mediaSearchManager->setMediaListManager(mediaListManager);
     animeListManager = new AnimeListManager(this);
     mangaListManager = new MangaListManager(this);
     novelListManager = new NovelListManager(this);

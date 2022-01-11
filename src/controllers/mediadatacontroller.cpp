@@ -34,6 +34,7 @@ void MediaDataController::setMediaProgress(int mediaId, int mediaProgress)
 {
     mediaManager->getInstance()->updateProgress(mediaId, mediaProgress);
     clientManager->addToUpdateQueue(ClientEnums::PROGRESS, mediaId, mediaProgress);
+    ListOrder::setNewOrder(Enums::mediaOrder::NoOrder);
     mediaInformationController->instance()->getMediaList();
 }
 
@@ -49,7 +50,7 @@ void MediaDataController::removeMediaFromList()
 {
     QPointer<Media> selectedMedia = mediaListManager->getInstance()->getMediaByIndex(MediaInformationController::mediaList,MediaInformationController::selectedMediaIndex);
     clientManager->addToUpdateQueue(ClientEnums::LIST, selectedMedia->id, Enums::mediaList::NOLIST);
-    mediaManager->deleteFromList(selectedMedia->id);
+    mediaManager->getInstance()->deleteFromList(selectedMedia->id);
     mediaInformationController->instance()->getMediaList();
 }
 
@@ -59,7 +60,7 @@ void MediaDataController::setMediaList(QVariant data)
     //Check if the user is trying to change the entry from list A to list A
     if(MediaInformationController::mediaList == newMediaList)
         return;
-    mediaManager->updateMediaList(mediaListManager->getInstance()->getMediaByIndex(MediaInformationController::mediaList,MediaInformationController::selectedMediaIndex)->id, newMediaList);
+    mediaManager->getInstance()->updateMediaList(mediaListManager->getInstance()->getMediaByIndex(MediaInformationController::mediaList,MediaInformationController::selectedMediaIndex)->id, newMediaList);
     clientManager->addToUpdateQueue(ClientEnums::updateType::LIST, mediaListManager->getInstance()->getMediaByIndex(MediaInformationController::mediaList,MediaInformationController::selectedMediaIndex)->id, newMediaList);
     mediaInformationController->instance()->getMediaList();
 }

@@ -46,6 +46,9 @@
 #include "src/utilities/MediaPlayer/mediaplayer.h"
 #include "src/base/FileManager/filemanagerloader.h"
 #include "src/base/Directory/directoriesconfigurationloader.h"
+#include "src/controllers/mediainformationcontroller.h"
+#include "src/controllers/mediadatacontroller.h"
+#include "src/controllers/medialistcontroller.h"
 class MainClass : public QObject
 {
     Q_OBJECT
@@ -93,10 +96,7 @@ public slots:
     //MediaGridController
     void getMediaList(QVariant order = "Title", QVariant year = 0, bool changeOrder = false);
     void getSelectedMediaData(QVariant selectedMediaGridIndex);
-    void getMediaListPage();
-    int getPageIndexRange();
     QVariant getMediaJsonObjectByGridIndex(QVariant gridIndex);
-    void setMediaList(QVariant data);
     //MediaListController
     void selectListCurrent();
     void selectListCompleted();
@@ -107,7 +107,7 @@ public slots:
     void selectTypeManga();
     void selectTypeNovel();
     void selectListSeason(QVariant data);
-    void setMedia();
+//    void setMedia();
     //MediaDataController
     void playNextEpisode();
     void openMediaWebpage(QVariant data);
@@ -115,6 +115,7 @@ public slots:
     void setMediaProgress(int mediaId, int mediaProgress);
     void setMediaCustomName(QVariant data);
     void removeMediaFromList();
+    void setMediaList(QVariant data);
 
     //GUIController
     void buttonSetMediaProgress(QVariant data);
@@ -133,7 +134,9 @@ public slots:
     void refreshMediaList();
     void getCurrentMediaPlaying();
     void clientConnection(bool connected);
-    void emitSignalIdMedia(int listMediaIndex, bool nullSignal = false);
+    void emitSignalIdMedia(int listMediaInde, bool nullSignal = false);
+//    void emitSignalIdMedia();
+    void emitSignalSelectedMedia(QJsonObject selectedMediaObject);
 
 signals:
     //Não feitos ainda
@@ -227,6 +230,9 @@ private:
     QPointer<MediaController> mediaController;
     QPointer<MediaDirectories> mediaDirectories;
     QPointer<FileManagerLoader> fileManagerLoader;
+    QPointer<MediaInformationController> mediaInformationController;
+    QPointer<MediaListController> mediaListController;
+    QPointer<MediaDataController> mediaDataController;
 //    QVector<Media*> activeMediaList;
 
     //TODO - Novas classes de controle

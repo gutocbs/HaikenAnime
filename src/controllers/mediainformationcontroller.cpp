@@ -23,6 +23,8 @@ MediaInformationController::MediaInformationController(QObject *parent) : QObjec
 
 void MediaInformationController::getMediaList(QVariant order, QVariant year, bool changeOrder)
 {
+    mediaListManager = mediaController->instance()->getMediaListManager(mediaType);
+    mediaManager = mediaController->instance()->getMediaManager(mediaType);
     if(changeOrder)
         mediaListManager->getInstance()->setListOrder(order);
     mediaListManager->getInstance()->sortList(mediaList, year);
@@ -46,8 +48,7 @@ void MediaInformationController::getSelectedMediaData(QVariant selectedMediaGrid
 
     if(mediaListManager->getInstance()->size(mediaList) > selectedMediaIndex){
         QJsonObject selectedMediaObject = MediaUtil::getMediaAsJsonObject(mediaListManager->getInstance()->getMediaByIndex(mediaList, selectedMediaIndex));
-        emit signalSelectedMediaCover(QVariant(selectedMediaObject["coverImagePath"]));
-        emit signalSelectedMedia(QVariant(selectedMediaObject));
+        emit signalSelectedMedia(selectedMediaObject);
     }
     getMediaListPage();
 }
@@ -72,6 +73,16 @@ int MediaInformationController::getPageIndexRange()
     int mediaNumberPerPage{12};
     //-1 since the page starts at 1, not 0
     return mediaNumberPerPage*(selectedPage-1);
+}
+
+void MediaInformationController::setPage(int numberPages)
+{
+    int mediaNumberPerPage{12};
+    if((numberPages > 0 && mediaListManager->getInstance()->size(mediaList) > mediaNumberPerPage+(getPageIndexRange())) ||
+       (numberPages < 0 && selectedPage > 1)){
+        selectedPage += numberPages;
+        getMediaListPage();
+    }
 }
 
 QVariant MediaInformationController::getMediaJsonObjectByGridIndex(QVariant gridIndex)

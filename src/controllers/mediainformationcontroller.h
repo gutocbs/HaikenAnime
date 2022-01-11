@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QPointer>
+#include <QJsonObject>
 #include "src/utilities/singleton.h"
 #include "src/utilities/Enums.h"
 #include "src/base/Media/mediacontroller.h"
@@ -19,18 +20,21 @@ public:
     QVariant getMediaJsonObjectByGridIndex(QVariant gridIndex);
     void getSelectedMediaData(QVariant selectedMediaGridIndex);
     void getMediaList(QVariant order = "Title", QVariant year = 0, bool changeOrder = false);
-    static int selectedPage;
-    static int selectedMediaGridIndex;
-    static int selectedMediaIndex;
-    static Enums::mediaList mediaList;
+    int getPageIndexRange();
+    void setPage(int numberPages);
+
+    static inline int selectedPage = 0;
+    static inline int selectedMediaGridIndex = 0;
+    static inline int selectedMediaIndex = 0;
+    static inline Enums::mediaList mediaList = Enums::mediaList::CURRENT;
+    static inline Enums::mediaType mediaType = Enums::mediaType::ANIME;
 
 signals:
-    void signalSelectedMedia(QVariant data);
-    void signalSelectedMediaCover(QVariant data);
+    void signalSelectedMedia(QJsonObject data);
     void signalIdMedia(int listMediaIndex, bool nullSignal = false);
+//    void signalIdMedia();
 
 private:
-    int getPageIndexRange();
     QPointer<IMediaListManager> mediaListManager;
     QPointer<IMediaManager> mediaManager;
     QPointer<MediaController> mediaController;
