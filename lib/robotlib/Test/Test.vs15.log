@@ -1,0 +1,16 @@
+﻿  Clipboard.cc
+  Keyboard.cc
+  Main.cc
+  Memory.cc
+  Mouse.cc
+  Process.cc
+  Screen.cc
+  Targa.cc
+  Timer.cc
+  Types.cc
+  Window.cc
+  Generating code
+  All 1888 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  Test.vs15.vcxproj -> C:\Users\Guto\Desktop\robot-2.0.0\\Binaries\Win32\Test.exe
+  Test.vs15.vcxproj -> C:\Users\Guto\Desktop\robot-2.0.0\\Binaries\Win32\Test.pdb (Full PDB)

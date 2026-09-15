@@ -1,0 +1,14 @@
+query ($id: Int) {
+	Page (page: 1 perPage: 50) {
+  		pageInfo{
+			total
+			currentPage
+  			lastPage
+  			hasNextPage
+			perPage
+  		}
+                media(id: $id, seasonYear: variableAno, isAdult: false, sort: ID) {
+  			status
+  		}
+	} 
+}

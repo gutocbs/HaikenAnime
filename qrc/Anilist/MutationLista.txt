@@ -1,0 +1,6 @@
+mutation{
+        SaveMediaListEntry (mediaId: variableID, status: variableNovaLista) {
+		id
+		status
+	}
+}

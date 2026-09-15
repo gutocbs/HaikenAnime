@@ -1,0 +1,37 @@
+query ($id: Int, $perPage: Int) {  	 	
+        Page (page: variablePagina, perPage: $perPage) {
+                media(id: $id, seasonYear: variableAno, isAdult: false, sort: ID) {
+			status    			 			 				 				 			
+			format 				 				 			
+			averageScore 				 				 			
+			id 				 				 			
+			title{ 					 					 				
+				romaji 					 					 				
+				english 				 				 			
+			} 				 				 			
+			synonyms 				 				 			
+			description 				 				 			
+			status 				 				 			
+			coverImage{ 					 					 				
+				large 				 				 			
+			} 				 				 			
+			season 				 				 			
+			startDate{ 					 					 				
+				year
+				month
+			}
+			chapters
+			volumes
+			episodes
+			nextAiringEpisode{
+				airingAt
+				episode
+			}
+			siteUrl
+			streamingEpisodes{
+				site
+				url
+			}
+		}
+	}
+}
