@@ -1,0 +1,215 @@
+# Integração com o AniList
+
+## Objetivo
+
+Preparar a integração da V2 com a API do AniList, que utiliza GraphQL, mantendo a implementação separada por responsabilidades e permitindo testar o fluxo inicialmente sem depender da API externa.
+
+A primeira versão deverá ler dados de um fixture local, aplicar filtros opcionais, simular o mesmo contrato que será usado pelo cliente GraphQL, persistir os dados no SQLite e executar a sincronização fora da thread principal.
+
+## Estado atual
+
+- Passo 1 concluído: estrutura-base da V2 confirmada.
+- Passo 2 pendente: definição dos contratos da aplicação.
+- A V1 é somente referência e não deve ser modificada.
+- Todo o desenvolvimento desta funcionalidade deve ocorrer em `V2/`.
+
+## Decisões arquiteturais
+
+### Organização por responsabilidade
+
+A integração não será concentrada em uma única classe. As responsabilidades serão distribuídas entre `domain`, `application` e `infrastructure`:
+
+```text
+V2/src/
+├── domain/
+│   ├── media/
+│   └── anilist/
+├── application/
+│   └── anilist/
+└── infrastructure/
+    ├── anilist/
+    ├── secrets/
+    └── database/
+```
+
+- `domain`: modelos e regras independentes de Qt Network, SQLite e filesystem.
+- `application`: contratos, filtros e caso de uso de sincronização.
+- `infrastructure`: HTTP, GraphQL, secrets, fixture local e persistência.
+- `presentation`: integração futura com QML, fora do escopo inicial.
+
+### Comunicação com a API
+
+- O AniList será acessado através de GraphQL.
+- As operações serão enviadas por `POST`, seguindo o padrão da API.
+- O endpoint será configurável, com o padrão esperado do AniList definido na infraestrutura.
+- A requisição terá `Content-Type: application/json` e `Accept: application/json`.
+- O payload deverá separar `query` e `variables`.
+- A autenticação usará `Authorization: Bearer <token>` quando houver token disponível.
+- O cliente GraphQL não será responsável por paginação de negócio, persistência ou controle de UI.
+
+### Secrets e autorização
+
+Será criada uma abstração para armazenamento de secrets, permitindo trocar a implementação sem alterar o cliente AniList:
+
+```text
+ISecretStore
+    └── FileSecretStore       # implementação inicial
+    └── SqliteSecretStore      # etapa futura
+```
+
+Na primeira etapa:
+
+- os secrets serão lidos e gravados em um arquivo de texto local;
+- não haverá criptografia real;
+- tokens não serão incluídos no código, fixtures ou logs;
+- a interface já deverá representar a futura leitura e descriptografia.
+
+Uma classe separada, como `AniListAuthManager`, recuperará os dados por meio do `ISecretStore` e fornecerá as credenciais necessárias ao cliente GraphQL. Autorização e transporte HTTP permanecerão separados.
+
+### Fonte de dados local e fonte GraphQL
+
+O fluxo de aplicação dependerá de uma abstração de fonte de dados. Haverá duas implementações compatíveis:
+
+```text
+IAniListDataSource
+    ├── FileAniListDataSource       # primeira etapa
+    └── GraphQlAniListDataSource    # preparada para uso real
+```
+
+O fixture atual está em:
+
+```text
+V2/tests/fixtures/media-library.json
+```
+
+Quando necessário, serão adicionados fixtures que representem o envelope GraphQL real, incluindo paginação, erros e campos ausentes.
+
+### Filtros
+
+A sincronização receberá um filtro opcional, representado por um objeto próprio, como `AniListSyncFilter`.
+
+O filtro poderá contemplar, conforme o contrato final:
+
+- usuário;
+- tipo de mídia;
+- lista/status;
+- página inicial;
+- quantidade por página;
+- demais critérios suportados pelo query GraphQL.
+
+Quando o filtro não for informado, o fluxo deverá permitir uma sincronização geral, especialmente útil na primeira execução do programa.
+
+### Paginação
+
+- As páginas começarão em `1`.
+- `perPage` será configurável e terá um valor padrão definido pelo serviço.
+- A execução continuará enquanto `hasNextPage` for verdadeiro.
+- Cada página poderá ser persistida em uma transação independente.
+- A sincronização deverá poder ser interrompida entre páginas.
+- A resposta GraphQL não será interpretada por busca textual; será desserializada como JSON estruturado.
+
+### Erros GraphQL
+
+O fluxo deverá diferenciar:
+
+- erro de transporte ou rede;
+- erro HTTP;
+- JSON inválido;
+- erro GraphQL dentro de uma resposta HTTP válida;
+- dados incompletos ou incompatíveis;
+- falha de persistência;
+- cancelamento da operação.
+
+Respostas GraphQL contendo `errors` devem ser tratadas mesmo quando o status HTTP for bem-sucedido. O caso `data: null` não pode ser convertido em uma falha genérica de desserialização.
+
+### Persistência
+
+A persistência será feita pelo repositório SQLite da infraestrutura, por meio de uma interface consumida pela aplicação.
+
+Regras iniciais:
+
+- usar o ID externo do AniList como identificador da mídia;
+- realizar insert/update idempotente;
+- não criar duplicatas em sincronizações repetidas;
+- usar transações;
+- usar banco temporário nos testes;
+- preservar dados controlados pelo usuário, como progresso e nota pessoal, quando apropriado;
+- separar dados externos do catálogo de dados locais do usuário.
+
+### Execução assíncrona
+
+A sincronização será executada em uma thread separada da thread principal.
+
+O worker deverá:
+
+- ser iniciado e encerrado por um controlador próprio;
+- emitir sinais de início, progresso, conclusão e erro;
+- permitir cancelamento;
+- respeitar interrupções entre requisições e páginas;
+- criar e usar objetos de rede na thread de execução;
+- criar e usar a conexão SQLite na thread correta;
+- aguardar o encerramento antes de destruir seus objetos.
+
+A thread principal não deverá executar chamadas bloqueantes de rede ou persistência durante o fluxo normal.
+
+## Componentes planejados
+
+```text
+application/anilist/
+├── AniListSyncFilter
+├── AniListSyncService
+├── IAniListDataSource
+├── IMediaRepository
+└── ISecretStore
+
+infrastructure/anilist/
+├── AniListGraphQlClient
+├── GraphQlAniListDataSource
+├── FileAniListDataSource
+├── AniListAuthManager
+└── HttpFactory
+
+infrastructure/secrets/
+└── FileSecretStore
+
+infrastructure/database/
+└── SqliteMediaRepository
+```
+
+Os nomes poderão ser ajustados durante o passo de definição dos contratos, desde que as responsabilidades permaneçam separadas.
+
+## Plano de execução
+
+1. Confirmar a estrutura-base da V2. **Concluído.**
+2. Definir os contratos da aplicação para secrets, autenticação, fonte de dados, repositório e sincronização.
+3. Criar os modelos de filtro, paginação, envelope GraphQL, erros e DTOs de mídia.
+4. Implementar o armazenamento inicial de secrets em arquivo texto.
+5. Implementar o gerenciador de autorização do AniList.
+6. Implementar `HttpFactory` e o cliente GraphQL com `POST`.
+7. Implementar os providers local e GraphQL sob o mesmo contrato.
+8. Implementar filtros opcionais e sincronização paginada.
+9. Implementar persistência idempotente no SQLite.
+10. Implementar o worker em thread separada, com progresso, erro e cancelamento.
+11. Adicionar fixtures e testes unitários/de integração local.
+12. Integrar fontes e testes ao CMake e validar com build, CTest e `git diff --check`.
+13. Substituir futuramente o armazenamento em arquivo por secrets criptografados no SQLite.
+
+## Critérios de validação
+
+- O fluxo local deve funcionar sem acesso à internet.
+- Uma sincronização repetida não deve duplicar mídias.
+- Um filtro informado deve restringir os dados processados.
+- Um filtro ausente deve permitir busca geral.
+- Erros GraphQL devem ser expostos de forma distinta de erros de rede.
+- O cancelamento não deve deixar a thread ou a conexão SQLite em estado inválido.
+- Nenhum token deve aparecer em logs, fixtures ou mensagens de erro.
+- Os testes devem utilizar fixtures e bancos temporários.
+
+## Fora do escopo inicial
+
+- OAuth completo e fluxo de login interativo.
+- Criptografia real dos secrets.
+- Armazenamento criptografado no SQLite.
+- Mutations para alterar listas, notas ou progresso no AniList.
+- Sincronização automática periódica.
+- Integração final com QML.
