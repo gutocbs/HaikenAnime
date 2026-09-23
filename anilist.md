@@ -26,6 +26,9 @@ A primeira versão deverá ler dados de um fixture local, aplicar filtros opcion
 - Base do merge implementada: `AniListField`, `AniListMergePolicy`, `AniListMergeResult` e `AniListMergePolicyResolver` centralizam as regras por campo.
 - Passo 2 do update iniciado: modelo `AniListPendingChange` e factory de validação criados para representar alterações locais pendentes.
 - Passo 3 do update iniciado: tabela `anilist_pending_changes` e contrato `IPendingChangeRepository` criados para a outbox.
+- Passo 4 do update iniciado: mutations GraphQL externas para progresso, nota, status/lista e exclusão criadas.
+- Passo 5 do update iniciado: contrato e cliente de mutations criados, separados do cliente GraphQL genérico.
+- Passo 6 do update iniciado: `AniListMergeService` aplica políticas por campo e retorna decisões explícitas.
 - Queries SQL de persistência também são mantidas em arquivos externos e fornecidas aos repositórios pelo construtor.
 - Passo 8 iniciado: `AniListSyncService` implementa filtros, paginação, mapeamento para `Media` e persistência por página.
 - A V1 é somente referência e não deve ser modificada.

@@ -31,6 +31,7 @@ add_executable(HaikenAnime main.cpp
         src/domain/anilist/AniListMergeResult.h
         src/domain/anilist/AniListPendingChangeStatus.h
         src/domain/anilist/AniListPendingChange.h
+        src/domain/anilist/AniListMergeDecision.h
         src/domain/anilist/AniListSettings.h
         src/domain/http/HttpSettings.h
         src/application/configuration/Settings.h
@@ -47,7 +48,12 @@ add_executable(HaikenAnime main.cpp
         src/application/anilist/AniListMergePolicyResolver.cpp
         src/application/anilist/AniListPendingChangeFactory.h
         src/application/anilist/AniListPendingChangeFactory.cpp
+        src/application/anilist/AniListMergeService.h
+        src/application/anilist/AniListMergeService.cpp
         src/application/anilist/IPendingChangeRepository.h
+        src/application/anilist/IAniListUpdateClient.h
+        src/application/anilist/AniListUpdateClient.h
+        src/application/anilist/AniListUpdateClient.cpp
         src/application/anilist/AniListAuthManager.h
         src/application/anilist/AniListAuthManager.cpp
         src/infrastructure/database/SqliteDatabase.h
@@ -171,6 +177,22 @@ target_link_libraries(AniListPendingChangeFactoryTests
 )
 
 add_test(NAME AniListPendingChangeFactoryTests COMMAND AniListPendingChangeFactoryTests)
+
+add_executable(AniListMergeServiceTests
+        tests/unit/AniListMergeServiceTests.cpp
+        src/application/anilist/AniListMergePolicyResolver.h
+        src/application/anilist/AniListMergePolicyResolver.cpp
+        src/application/anilist/AniListMergeService.h
+        src/application/anilist/AniListMergeService.cpp
+)
+
+target_link_libraries(AniListMergeServiceTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME AniListMergeServiceTests COMMAND AniListMergeServiceTests)
 
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX)
