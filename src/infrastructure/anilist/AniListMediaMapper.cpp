@@ -19,7 +19,7 @@ AniListMediaDto AniListMediaMapper::fromFixtureJson(const QJsonObject &object) {
     return media;
 }
 
-AniListMediaDto AniListMediaMapper::fromGraphQlJson(const QJsonObject &object) {
+AniListMediaDto AniListMediaMapper::FromGraphQlJson(const QJsonObject &object) {
     AniListMediaDto media;
     media.id = object.value(QStringLiteral("id")).toInt();
     media.type = object.value(QStringLiteral("type")).toString();
@@ -37,5 +37,38 @@ AniListMediaDto AniListMediaMapper::fromGraphQlJson(const QJsonObject &object) {
     media.coverImageUrl = object.value(QStringLiteral("coverImage")).toObject()
                               .value(QStringLiteral("large")).toString();
     media.description = object.value(QStringLiteral("description")).toString();
+    return media;
+}
+
+Media AniListMediaMapper::ToDomainMedia(const AniListMediaDto &externalMedia) {
+    Media media;
+    media.Id = externalMedia.id;
+    media.Name = externalMedia.titleRomaji;
+    media.EnglishName = externalMedia.titleEnglish;
+    media.OriginalName = externalMedia.titleNative;
+    media.AlternativeNames = externalMedia.titleSynonyms;
+    media.TotalChapters = externalMedia.episodes > 0 ? externalMedia.episodes : externalMedia.chapters;
+    media.AverageScore = externalMedia.averageScore;
+    media.CoverUrl = externalMedia.coverImageUrl;
+    media.Synopsis = externalMedia.description;
+
+    if (externalMedia.type.compare(QStringLiteral("MANGA"), Qt::CaseInsensitive) == 0) {
+        media.Type = Manga;
+    } else if (externalMedia.type.compare(QStringLiteral("NOVEL"), Qt::CaseInsensitive) == 0) {
+        media.Type = Novel;
+    } else {
+        media.Type = Anime;
+    }
+
+    if (externalMedia.status.compare(QStringLiteral("RELEASING"), Qt::CaseInsensitive) == 0
+        || externalMedia.status.compare(QStringLiteral("Releasing"), Qt::CaseInsensitive) == 0) {
+        media.Status = Releasing;
+    } else if (externalMedia.status.compare(QStringLiteral("FINISHED"), Qt::CaseInsensitive) == 0
+               || externalMedia.status.compare(QStringLiteral("Finished Airing"), Qt::CaseInsensitive) == 0
+               || externalMedia.status.compare(QStringLiteral("RELEASED"), Qt::CaseInsensitive) == 0) {
+        media.Status = Released;
+    } else {
+        media.Status = NotReleased;
+    }
     return media;
 }
