@@ -7,6 +7,7 @@
 
 // Temporary composition used to validate the synchronization worker.
 #include "src/application/anilist/AniListSyncWorker.h"
+#include "src/domain/media/MediaEnumFormatter.h"
 #include "src/infrastructure/anilist/FileAniListDataSource.h"
 
 class TestMediaRepository final : public IMediaRepository {
@@ -50,8 +51,8 @@ int RunSynchronizationTest() {
                       .arg(media.Id)
                       .arg(media.Name)
                       .arg(media.EnglishName)
-                      .arg(static_cast<int>(media.Type))
-                      .arg(static_cast<int>(media.Status));
+                      .arg(MediaEnumFormatter::TypeToString(media.Type))
+                      .arg(MediaEnumFormatter::StatusToString(media.Status));
     }
     output.flush();
     return 0;

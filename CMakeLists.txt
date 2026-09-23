@@ -20,6 +20,8 @@ add_executable(HaikenAnime main.cpp
         src/domain/media/Media.h
         src/domain/media/MediaType.h
         src/domain/media/MediaStatus.h
+        src/domain/media/MediaEnumFormatter.h
+        src/domain/media/MediaEnumFormatter.cpp
         src/domain/anilist/AniListCredentials.h
         src/domain/anilist/AniListSyncFilter.h
         src/domain/anilist/AniListGraphQlError.h
