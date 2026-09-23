@@ -36,6 +36,8 @@ add_executable(HaikenAnime main.cpp
         src/application/anilist/IMediaRepository.h
         src/application/anilist/AniListSyncService.h
         src/application/anilist/AniListSyncService.cpp
+        src/application/anilist/AniListSyncWorker.h
+        src/application/anilist/AniListSyncWorker.cpp
         src/application/anilist/AniListAuthManager.h
         src/application/anilist/AniListAuthManager.cpp
         src/infrastructure/database/SqliteDatabase.h
