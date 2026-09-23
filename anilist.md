@@ -23,6 +23,7 @@ A primeira versão deverá ler dados de um fixture local, aplicar filtros opcion
 - Passo 11 iniciado: fixtures GraphQL e testes do fluxo local de filtro, paginação e sincronização adicionados.
 - Passo 12 concluído inicialmente: CMake, dependências Qt, build e CTest integrados.
 - Passo 13 concluído como preparação: `ISecretStore` foi mantido como contrato estável e `FileSecretStore` foi explicitamente marcado como implementação temporária.
+- Base do merge implementada: `AniListField`, `AniListMergePolicy`, `AniListMergeResult` e `AniListMergePolicyResolver` centralizam as regras por campo.
 - Queries SQL de persistência também são mantidas em arquivos externos e fornecidas aos repositórios pelo construtor.
 - Passo 8 iniciado: `AniListSyncService` implementa filtros, paginação, mapeamento para `Media` e persistência por página.
 - A V1 é somente referência e não deve ser modificada.
@@ -219,6 +220,73 @@ Os nomes poderão ser ajustados durante o passo de definição dos contratos, de
 - O cancelamento não deve deixar a thread ou a conexão SQLite em estado inválido.
 - Nenhum token deve aparecer em logs, fixtures ou mensagens de erro.
 - Os testes devem utilizar fixtures e bancos temporários.
+
+## Mapeamento inicial de merge do update
+
+As regras de merge serão definidas por campo. A sincronização deverá identificar a origem da informação e aplicar a política correspondente antes de persistir ou enfileirar uma alteração.
+
+| Campo ou grupo | Origem principal | Regra inicial |
+|---|---|---|
+| ID externo | AniList | Identifica a mídia e não deve ser alterado localmente. |
+| Título e títulos alternativos | AniList | O valor recebido do AniList sobrescreve o valor local. |
+| Capa, descrição e dados de catálogo | AniList | O valor remoto sobrescreve o valor local. |
+| Tipo e status de publicação | AniList | O valor remoto atualiza o catálogo local. |
+| Progresso | Usuário | O maior valor entre local e remoto deve prevalecer. |
+| Nota pessoal | Usuário | A alteração local deve ser enfileirada e enviada conforme a regra do campo. |
+| Lista/status do usuário | Usuário, com prioridade local | A alteração local prevalece sobre o valor remoto e deve ser enviada ao AniList. |
+| Arquivos locais e dados de consumo | Usuário | O estado local não deve ser sobrescrito pelo catálogo remoto. |
+| Exclusões | Requer confirmação | Uma exclusão remota não deve ser aplicada automaticamente. |
+
+Essas regras poderão evoluir para políticas individuais por campo, mas não devem ser codificadas diretamente no cliente GraphQL ou no repositório SQLite.
+
+## Possível representação no código
+
+Uma alternativa simples é representar a política como um enum e centralizar a decisão em um componente de merge:
+
+```text
+AniListFieldPolicy
+├── RemoteWins
+├── LocalWins
+├── MaxValue
+├── QueueLocalChange
+└── RequiresConfirmation
+
+AniListMergePolicy
+└── policyFor(field)
+
+AniListMergeService
+└── merge(local, remote, pendingChanges)
+```
+
+O mapeamento pode ser uma tabela explícita entre um identificador de campo e sua política. Isso evita espalhar `if` pelo sincronizador e permite testar cada regra isoladamente. Como o projeto ainda não possui reflexão de propriedades para `Media`, a primeira implementação deverá usar identificadores explícitos ou funções de merge por campo, em vez de tentar descobrir campos automaticamente.
+
+### Decisão para a representação das políticas
+
+Será usado um enum para identificar os campos sincronizáveis e outro enum para identificar a política aplicada:
+
+```text
+AniListField
+├── ExternalId
+├── Title
+├── AlternativeTitles
+├── CoverUrl
+├── Synopsis
+├── Progress
+├── PersonalScore
+├── ListStatus
+└── LocalFiles
+
+AniListMergePolicy
+├── RemoteWins
+├── LocalWins
+├── MaxValue
+├── QueueLocalChange
+└── RequiresConfirmation
+```
+
+Uma função central, como `PolicyFor(field)`, associará cada campo à sua política. A aplicação da política ficará em funções separadas, como `MergeRemoteWins`, `MergeLocalWins`, `MergeMaxValue`, `QueueLocalChange` e `RequiresConfirmation`.
+
+O merge não deverá depender de nomes de propriedades ou reflexão. Cada campo será processado explicitamente, permitindo associar políticas diferentes a campos que hoje pertencem ao mesmo grupo e tornando os conflitos individualmente testáveis.
 
 ## Fora do escopo inicial
 
