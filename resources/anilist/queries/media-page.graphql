@@ -1,0 +1,27 @@
+query MediaPage($page: Int, $perPage: Int) {
+  Page(page: $page, perPage: $perPage) {
+    pageInfo {
+      currentPage
+      lastPage
+      hasNextPage
+    }
+    media {
+      id
+      type
+      status
+      title {
+        romaji
+        english
+        native
+        synonyms
+      }
+      episodes
+      chapters
+      averageScore
+      coverImage {
+        large
+      }
+      description
+    }
+  }
+}
