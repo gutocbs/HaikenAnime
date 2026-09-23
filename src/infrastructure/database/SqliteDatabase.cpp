@@ -68,7 +68,20 @@ bool SqliteDatabase::migrate() {
         "type INTEGER NOT NULL,"
         "status INTEGER NOT NULL"
         ")"));
-    const bool versionRecorded = mediaCreated && query.exec(QStringLiteral(
+    const bool pendingChangesCreated = mediaCreated && query.exec(QStringLiteral(
+        "CREATE TABLE IF NOT EXISTS anilist_pending_changes ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "media_id INTEGER NOT NULL,"
+        "field INTEGER NOT NULL,"
+        "previous_value TEXT NOT NULL,"
+        "new_value TEXT NOT NULL,"
+        "created_at TEXT NOT NULL,"
+        "attempts INTEGER NOT NULL DEFAULT 0,"
+        "status INTEGER NOT NULL,"
+        "last_error TEXT NOT NULL DEFAULT '',"
+        "FOREIGN KEY(media_id) REFERENCES media(id)"
+        ")"));
+    const bool versionRecorded = pendingChangesCreated && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (1)"));
 
     if (versionRecorded) {

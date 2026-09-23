@@ -24,6 +24,8 @@ A primeira versão deverá ler dados de um fixture local, aplicar filtros opcion
 - Passo 12 concluído inicialmente: CMake, dependências Qt, build e CTest integrados.
 - Passo 13 concluído como preparação: `ISecretStore` foi mantido como contrato estável e `FileSecretStore` foi explicitamente marcado como implementação temporária.
 - Base do merge implementada: `AniListField`, `AniListMergePolicy`, `AniListMergeResult` e `AniListMergePolicyResolver` centralizam as regras por campo.
+- Passo 2 do update iniciado: modelo `AniListPendingChange` e factory de validação criados para representar alterações locais pendentes.
+- Passo 3 do update iniciado: tabela `anilist_pending_changes` e contrato `IPendingChangeRepository` criados para a outbox.
 - Queries SQL de persistência também são mantidas em arquivos externos e fornecidas aos repositórios pelo construtor.
 - Passo 8 iniciado: `AniListSyncService` implementa filtros, paginação, mapeamento para `Media` e persistência por página.
 - A V1 é somente referência e não deve ser modificada.

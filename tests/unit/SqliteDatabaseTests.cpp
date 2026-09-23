@@ -13,6 +13,7 @@ private slots:
     void opensAndCreatesDatabaseFile();
     void migrationCreatesMediaSchema();
     void migrationIsIdempotent();
+    void migrationCreatesPendingChangesTable();
 };
 
 void SqliteDatabaseTests::opensAndCreatesDatabaseFile() {
@@ -79,6 +80,21 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toInt(), 1);
+}
+
+void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'anilist_pending_changes'")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("anilist_pending_changes"));
 }
 
 QTEST_MAIN(SqliteDatabaseTests)
