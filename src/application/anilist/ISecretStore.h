@@ -9,8 +9,11 @@ class ISecretStore {
 public:
     virtual ~ISecretStore() = default;
 
+    /** Loads the stored AniList credentials and reports failures through error. */
     [[nodiscard]] virtual bool loadAniListCredentials(AniListCredentials &credentials,
                                                        QString &error) = 0;
+
+    /** Stores the AniList credentials and reports failures through error. */
     virtual bool saveAniListCredentials(const AniListCredentials &credentials,
                                         QString &error) = 0;
 };
