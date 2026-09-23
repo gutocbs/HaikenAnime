@@ -114,6 +114,26 @@ target_link_libraries(AniListAuthManagerTests
 
 add_test(NAME AniListAuthManagerTests COMMAND AniListAuthManagerTests)
 
+add_executable(AniListFlowTests
+        tests/unit/AniListFlowTests.cpp
+        src/application/anilist/AniListSyncService.h
+        src/application/anilist/AniListSyncService.cpp
+        src/application/anilist/IAniListDataSource.h
+        src/application/anilist/IMediaRepository.h
+        src/infrastructure/anilist/FileAniListDataSource.h
+        src/infrastructure/anilist/FileAniListDataSource.cpp
+        src/infrastructure/anilist/AniListMediaMapper.h
+        src/infrastructure/anilist/AniListMediaMapper.cpp
+)
+
+target_link_libraries(AniListFlowTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME AniListFlowTests COMMAND AniListFlowTests)
+
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX)
     if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
