@@ -17,7 +17,7 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 
 ## Secrets e segurança
 
-- Substituir o `FileSecretStore` por armazenamento no SQLite.
+- Substituir o `FileSecretStore` por armazenamento no SQLite. **Contrato `ISecretStore` já preparado; implementação pendente.**
 - Criptografar os secrets em repouso.
 - Definir como a chave de criptografia será protegida no Windows.
 - Evitar que tokens apareçam em logs, dumps, mensagens de erro ou arquivos temporários.

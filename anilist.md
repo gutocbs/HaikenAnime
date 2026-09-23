@@ -13,6 +13,18 @@ A primeira versão deverá ler dados de um fixture local, aplicar filtros opcion
 - Passo 3 concluído: modelos iniciais de filtro, paginação, GraphQL, erros e DTO de mídia criados.
 - Passo 4 concluído inicialmente: armazenamento de secrets em arquivo texto criado.
 - Passo 5 concluído inicialmente: gerenciador de autorização desacoplado do armazenamento criado.
+- Passo 6 concluído inicialmente: fábrica HTTP e cliente GraphQL com POST criados.
+- Configurações e queries devem permanecer fora das classes: `Settings.json` fornece valores e arquivos `.graphql` fornecem operações.
+- Passo 7 concluído inicialmente: providers local e GraphQL criados sob o mesmo contrato.
+- O mapeamento de JSON para `AniListMediaDto` é centralizado em `AniListMediaMapper`, com métodos distintos para fixture e GraphQL.
+- O mapeamento de `AniListMediaDto` para `Media`, incluindo tipo e status, também pertence ao `AniListMediaMapper`.
+- Passo 9 iniciado: repositório SQLite com upsert transacional e preservação de campos locais criado.
+- Passo 10 iniciado: worker de sincronização em `QThread` conectado temporariamente ao `main.cpp` para teste local.
+- Passo 11 iniciado: fixtures GraphQL e testes do fluxo local de filtro, paginação e sincronização adicionados.
+- Passo 12 concluído inicialmente: CMake, dependências Qt, build e CTest integrados.
+- Passo 13 concluído como preparação: `ISecretStore` foi mantido como contrato estável e `FileSecretStore` foi explicitamente marcado como implementação temporária.
+- Queries SQL de persistência também são mantidas em arquivos externos e fornecidas aos repositórios pelo construtor.
+- Passo 8 iniciado: `AniListSyncService` implementa filtros, paginação, mapeamento para `Media` e persistência por página.
 - A V1 é somente referência e não deve ser modificada.
 - Todo o desenvolvimento desta funcionalidade deve ocorrer em `V2/`.
 
@@ -188,14 +200,14 @@ Os nomes poderão ser ajustados durante o passo de definição dos contratos, de
 3. Criar os modelos de filtro, paginação, envelope GraphQL, erros e DTOs de mídia. **Concluído inicialmente.**
 4. Implementar o armazenamento inicial de secrets em arquivo texto. **Concluído inicialmente.**
 5. Implementar o gerenciador de autorização do AniList. **Concluído inicialmente.**
-6. Implementar `HttpFactory` e o cliente GraphQL com `POST`.
+6. Implementar `HttpFactory` e o cliente GraphQL com `POST`. **Concluído inicialmente.**
 7. Implementar os providers local e GraphQL sob o mesmo contrato.
 8. Implementar filtros opcionais e sincronização paginada.
 9. Implementar persistência idempotente no SQLite.
 10. Implementar o worker em thread separada, com progresso, erro e cancelamento.
 11. Adicionar fixtures e testes unitários/de integração local.
 12. Integrar fontes e testes ao CMake e validar com build, CTest e `git diff --check`.
-13. Substituir futuramente o armazenamento em arquivo por secrets criptografados no SQLite.
+13. Substituir futuramente o armazenamento em arquivo por secrets criptografados no SQLite. **Contrato preparado; implementação futura.**
 
 ## Critérios de validação
 
