@@ -41,6 +41,11 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 ## Sincronização
 
 - Implementar o `AniListSyncService` completo.
+- Executar uma sincronização inicial durante a inicialização do programa.
+- Verificar alterações pendentes durante a sincronização inicial antes de considerar o estado sincronizado.
+- Reprocessar alterações pendentes na próxima execução caso não seja possível concluí-las durante a inicialização.
+- Adicionar schedulers para sincronizações recorrentes.
+- Tornar o intervalo do scheduler configurável pelo `Settings.json`.
 - Aplicar filtros por usuário, tipo, lista e status na query GraphQL.
 - Permitir sincronização geral na primeira execução.
 - Persistir cada página de forma idempotente.
@@ -50,6 +55,44 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 - Definir conflitos entre dados remotos e dados locais.
 - Adicionar cancelamento cooperativo entre páginas e requisições.
 - Emitir progresso detalhado sem expor informações sensíveis.
+
+## Regras de merge do update
+
+As regras de merge serão definidas por campo ou grupo de campos, e não por uma política única para toda a mídia.
+
+### Dados pertencentes ao AniList
+
+- Título, títulos alternativos, capa, descrição e demais informações de catálogo serão atualizados pelo valor recebido do AniList.
+- Alterações locais nesses campos não terão prioridade sobre o estado remoto.
+
+### Dados pertencentes ao usuário
+
+- Progresso, nota pessoal e outros dados de consumo serão tratados como dados locais.
+- Alterações locais serão colocadas em uma fila de sincronização.
+- A fila será processada após a sincronização do estado remoto.
+- O valor local será descartado ou enviado ao AniList conforme a regra específica do campo.
+- Para progresso, o maior valor deverá ser utilizado por padrão.
+
+### Alterações de lista/status
+
+- Alterações locais terão prioridade sobre alterações remotas.
+- Exemplo: se o AniList indicar `PLAN TO WATCH` e o estado local indicar `WATCHING`, o estado local `WATCHING` será preservado e enviado ao AniList quando aplicável.
+- A regra deverá considerar a alteração pendente local antes de removê-la da fila.
+
+### Exclusões
+
+- Exclusões remotas não serão aplicadas automaticamente.
+- O sistema deverá registrar a exclusão como pendência que exige confirmação do usuário.
+- A confirmação deverá ser persistida antes de remover a mídia ou seus dados locais.
+- Uma configuração futura poderá permitir aceitar exclusões automaticamente; essa opção permanece fora do escopo inicial.
+
+## Scheduler
+
+- O scheduler deverá ser iniciado junto com o programa após a sincronização inicial.
+- O intervalo será lido do `Settings.json`.
+- O scheduler não deverá iniciar uma nova sincronização enquanto outra estiver em execução.
+- Falhas não deverão bloquear as próximas execuções programadas.
+- O estado da última execução e da próxima tentativa deverá estar disponível para diagnóstico.
 
 ## Threading e ciclo de vida
 
