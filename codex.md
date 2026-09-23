@@ -2,11 +2,11 @@
 
 ## Organização de versões
 
-- O repositório mantém a V1 e a V2 em pastas diferentes, dentro da mesma branch.
-- Todo desenvolvimento, alteração de código e criação de arquivos deve ser feito exclusivamente em `V2/`.
-- `V1/` é somente uma referência para consultar regras de negócio, comportamentos existentes, contratos, telas e decisões da versão anterior.
-- Não modificar, mover, renomear ou excluir arquivos de `V1/` durante o desenvolvimento da V2, salvo solicitação explícita.
-- Não criar uma branch separada para alternar entre V1 e V2. A coexistência das duas pastas é intencional para manter as regras de negócio acessíveis.
+- A V2 é o projeto ativo deste repositório e fica na raiz de `F:\HaikenAnime`.
+- Todo desenvolvimento, alteração de código e criação de arquivos da V2 deve ser feito na raiz do repositório, respeitando sua organização por responsabilidade.
+- A V1 foi movida para `F:\Haiken V1` e deve ser tratada somente como referência para consultar regras de negócio, comportamentos existentes, contratos, telas e decisões da versão anterior.
+- Não modificar, mover, renomear ou excluir arquivos de `F:\Haiken V1` durante o desenvolvimento da V2, salvo solicitação explícita.
+- A separação entre os diretórios é intencional: a V2 evolui na raiz e a V1 permanece disponível para consulta.
 - Ao consultar a V1, adaptar o comportamento para a arquitetura da V2; não copiar automaticamente limitações, organização de arquivos ou decisões técnicas da V1.
 
 ## Instruções para assistentes
@@ -14,8 +14,9 @@
 - Antes de implementar uma regra de negócio na V2, consultar a V1 quando o comportamento anterior for relevante.
 - Tratar a V1 como fonte de referência, não como área de trabalho.
 - Priorizar a arquitetura, contratos e padrões definidos na V2.
-- Manter alterações da V2 isoladas em `V2/`.
+- Manter alterações da V2 isoladas na raiz de `F:\HaikenAnime`.
 - Usar sempre nomes em inglês para variáveis, classes e métodos na V2, incluindo propriedades de entidades, chaves de JSON e APIs internas.
+- Documentar o código público criado na V2. Interfaces, classes públicas e seus métodos devem ter comentários curtos explicando sua responsabilidade, parâmetros relevantes, resultado esperado e condições de erro quando aplicável.
 
 ## Testes
 
@@ -30,7 +31,6 @@
 A nova implementação deve usar uma organização por responsabilidade, e não apenas por tipo de arquivo. A estrutura de referência é:
 
 ```text
-V2/
 ├── CMakeLists.txt
 ├── CMakePresets.json
 ├── src/
@@ -48,7 +48,7 @@ V2/
 └── docs/
 ```
 
-Os arquivos `.h` e `.cpp` devem permanecer juntos dentro do módulo ao qual pertencem. A separação entre `domain`, `application`, `infrastructure` e `presentation` deve ser preservada:
+Os arquivos `.h` e `.cpp` devem permanecer juntos dentro do módulo ao qual pertencem. A separação entre `domain`, `application`, `infrastructure` e `presentation` deve ser preservada na raiz do projeto:
 
 - `domain` não deve depender de QML, SQLite, AniList ou filesystem.
 - `application` deve conter casos de uso e depender de interfaces, não de implementações concretas.

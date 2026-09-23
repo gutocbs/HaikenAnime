@@ -9,7 +9,10 @@ A primeira versão deverá ler dados de um fixture local, aplicar filtros opcion
 ## Estado atual
 
 - Passo 1 concluído: estrutura-base da V2 confirmada.
-- Passo 2 pendente: definição dos contratos da aplicação.
+- Passo 2 concluído: contratos iniciais da aplicação criados.
+- Passo 3 concluído: modelos iniciais de filtro, paginação, GraphQL, erros e DTO de mídia criados.
+- Passo 4 concluído inicialmente: armazenamento de secrets em arquivo texto criado.
+- Passo 5 concluído inicialmente: gerenciador de autorização desacoplado do armazenamento criado.
 - A V1 é somente referência e não deve ser modificada.
 - Todo o desenvolvimento desta funcionalidade deve ocorrer em `V2/`.
 
@@ -181,10 +184,10 @@ Os nomes poderão ser ajustados durante o passo de definição dos contratos, de
 ## Plano de execução
 
 1. Confirmar a estrutura-base da V2. **Concluído.**
-2. Definir os contratos da aplicação para secrets, autenticação, fonte de dados, repositório e sincronização.
-3. Criar os modelos de filtro, paginação, envelope GraphQL, erros e DTOs de mídia.
-4. Implementar o armazenamento inicial de secrets em arquivo texto.
-5. Implementar o gerenciador de autorização do AniList.
+2. Definir os contratos da aplicação para secrets, autenticação, fonte de dados, repositório e sincronização. **Concluído inicialmente.**
+3. Criar os modelos de filtro, paginação, envelope GraphQL, erros e DTOs de mídia. **Concluído inicialmente.**
+4. Implementar o armazenamento inicial de secrets em arquivo texto. **Concluído inicialmente.**
+5. Implementar o gerenciador de autorização do AniList. **Concluído inicialmente.**
 6. Implementar `HttpFactory` e o cliente GraphQL com `POST`.
 7. Implementar os providers local e GraphQL sob o mesmo contrato.
 8. Implementar filtros opcionais e sincronização paginada.

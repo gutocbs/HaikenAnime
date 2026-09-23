@@ -21,14 +21,22 @@ add_executable(HaikenAnime main.cpp
         src/domain/media/MediaType.h
         src/domain/media/MediaStatus.h
         src/domain/anilist/AniListCredentials.h
+        src/domain/anilist/AniListSyncFilter.h
+        src/domain/anilist/AniListGraphQlError.h
+        src/domain/anilist/AniListGraphQlResponse.h
+        src/domain/anilist/AniListMediaDto.h
         src/domain/anilist/AniListPage.h
         src/application/anilist/ISecretStore.h
         src/application/anilist/IAniListAuthProvider.h
         src/application/anilist/IAniListDataSource.h
         src/application/anilist/IMediaRepository.h
         src/application/anilist/AniListSyncService.h
+        src/application/anilist/AniListAuthManager.h
+        src/application/anilist/AniListAuthManager.cpp
         src/infrastructure/database/SqliteDatabase.h
         src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/secrets/FileSecretStore.h
+        src/infrastructure/secrets/FileSecretStore.cpp
 )
 
 target_link_libraries(HaikenAnime
@@ -51,6 +59,34 @@ target_link_libraries(SqliteDatabaseTests
 )
 
 add_test(NAME SqliteDatabaseTests COMMAND SqliteDatabaseTests)
+
+add_executable(FileSecretStoreTests
+        tests/unit/FileSecretStoreTests.cpp
+        src/infrastructure/secrets/FileSecretStore.h
+        src/infrastructure/secrets/FileSecretStore.cpp
+)
+
+target_link_libraries(FileSecretStoreTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME FileSecretStoreTests COMMAND FileSecretStoreTests)
+
+add_executable(AniListAuthManagerTests
+        tests/unit/AniListAuthManagerTests.cpp
+        src/application/anilist/AniListAuthManager.h
+        src/application/anilist/AniListAuthManager.cpp
+)
+
+target_link_libraries(AniListAuthManagerTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME AniListAuthManagerTests COMMAND AniListAuthManagerTests)
 
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX)
