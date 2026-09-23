@@ -7,6 +7,7 @@ class IAniListAuthProvider {
 public:
     virtual ~IAniListAuthProvider() = default;
 
+    /** Returns the credentials that should be used by an AniList request. */
     [[nodiscard]] virtual AniListCredentials credentials() const = 0;
 };
 
