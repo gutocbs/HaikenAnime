@@ -1,5 +1,6 @@
 #include <QCoreApplication>
 #include <QDebug>
+#include <QDir>
 #include <QThread>
 #include <QList>
 
@@ -19,7 +20,9 @@ public:
 };
 
 int RunSynchronizationTest() {
-    FileAniListDataSource dataSource(QStringLiteral("tests/fixtures/media-library.json"));
+    const auto fixturePath = QDir(QCoreApplication::applicationDirPath())
+                                 .filePath(QStringLiteral("../tests/fixtures/media-library.json"));
+    FileAniListDataSource dataSource(QDir::cleanPath(fixturePath));
     TestMediaRepository repository;
     AniListSyncService service(dataSource, repository);
     AniListSyncWorker worker(service);
