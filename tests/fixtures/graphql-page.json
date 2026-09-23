@@ -1,0 +1,28 @@
+{
+  "data": {
+    "Page": {
+      "pageInfo": {
+        "currentPage": 1,
+        "lastPage": 2,
+        "hasNextPage": true
+      },
+      "media": [
+        {
+          "id": 154587,
+          "type": "ANIME",
+          "status": "FINISHED",
+          "title": {
+            "romaji": "Sousou no Frieren",
+            "english": "Frieren: Beyond Journey's End",
+            "native": "葬送のフリーレン",
+            "synonyms": ["Frieren at the Funeral"]
+          },
+          "episodes": 28,
+          "averageScore": 91,
+          "coverImage": { "large": "https://example.invalid/frieren.png" },
+          "description": "A mage elf continues after the hero's journey."
+        }
+      ]
+    }
+  }
+}
