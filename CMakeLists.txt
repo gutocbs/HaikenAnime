@@ -40,6 +40,10 @@ add_executable(HaikenAnime main.cpp
         src/application/anilist/AniListAuthManager.cpp
         src/infrastructure/database/SqliteDatabase.h
         src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/database/SqliteMediaRepository.h
+        src/infrastructure/database/SqliteMediaRepository.cpp
+        src/infrastructure/database/SqlQueryStore.h
+        src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/secrets/FileSecretStore.h
         src/infrastructure/secrets/FileSecretStore.cpp
         src/infrastructure/anilist/HttpFactory.h

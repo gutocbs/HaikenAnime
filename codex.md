@@ -17,6 +17,7 @@
 - Manter alterações da V2 isoladas na raiz de `F:\HaikenAnime`.
 - Usar sempre nomes em inglês para variáveis, classes e métodos na V2, incluindo propriedades de entidades, chaves de JSON e APIs internas.
 - Documentar o código público criado na V2. Interfaces, classes públicas e seus métodos devem ter comentários curtos explicando sua responsabilidade, parâmetros relevantes, resultado esperado e condições de erro quando aplicável.
+- Quando possível, não manter queries SQL ou GraphQL hardcoded em classes C++; armazená-las em arquivos separados e carregá-las pela infraestrutura de configuração/composição.
 
 ## Testes
 
