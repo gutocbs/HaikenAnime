@@ -29,8 +29,12 @@ bool SqliteQueryConfiguration::load(QString &error) {
 
     upsertMediaPath = queries.value(QStringLiteral("upsertMedia")).toString();
     readMediaPath = queries.value(QStringLiteral("readMedia")).toString();
-    if (upsertMediaPath.isEmpty() || readMediaPath.isEmpty()) {
-        error = QStringLiteral("SQLite query configuration must define upsertMedia and readMedia.");
+    enqueuePendingChangePath = queries.value(QStringLiteral("enqueuePendingChange")).toString();
+    readPendingChangesPath = queries.value(QStringLiteral("readPendingChanges")).toString();
+    updatePendingChangePath = queries.value(QStringLiteral("updatePendingChange")).toString();
+    if (upsertMediaPath.isEmpty() || readMediaPath.isEmpty() || enqueuePendingChangePath.isEmpty()
+        || readPendingChangesPath.isEmpty() || updatePendingChangePath.isEmpty()) {
+        error = QStringLiteral("SQLite query configuration is incomplete.");
         if (logger) logger->error(LogCategory::QueryConfiguration, error);
         return false;
     }

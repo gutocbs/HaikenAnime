@@ -5,6 +5,7 @@
 #include "../infrastructure/database/SqlQueryStore.h"
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "../infrastructure/database/SqliteMediaRepository.h"
+#include "../infrastructure/database/SqlitePendingChangeRepository.h"
 #include "../infrastructure/database/SqliteQueryConfiguration.h"
 #include "../infrastructure/configuration/JsonSettingsReader.h"
 
@@ -55,6 +56,9 @@ ApplicationContext createApplicationContext() {
 
     QString upsertQuery;
     QString readQuery;
+    QString enqueuePendingQuery;
+    QString readPendingQuery;
+    QString updatePendingQuery;
     QString queryError;
     SqliteQueryConfiguration queryConfiguration;
     queryConfiguration.setLogger(context.logger.get());
@@ -78,9 +82,24 @@ ApplicationContext createApplicationContext() {
         return context;
     }
 
+    SqlQueryStore enqueueStore(queryConfiguration.enqueuePendingChangePath);
+    SqlQueryStore readPendingStore(queryConfiguration.readPendingChangesPath);
+    SqlQueryStore updatePendingStore(queryConfiguration.updatePendingChangePath);
+    if (!enqueueStore.load(enqueuePendingQuery, queryError)
+        || !readPendingStore.load(readPendingQuery, queryError)
+        || !updatePendingStore.load(updatePendingQuery, queryError)) {
+        context.initializationError = initializationFailure(
+            QStringLiteral("loading the pending-change queries"), queryError);
+        context.database.reset();
+        return context;
+    }
+
     context.mediaRepository = std::make_unique<SqliteMediaRepository>(
         context.database->connection(), std::move(upsertQuery), std::move(readQuery));
     static_cast<SqliteMediaRepository *>(context.mediaRepository.get())->setLogger(context.logger.get());
+    context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(
+        context.database->connection(), std::move(enqueuePendingQuery),
+        std::move(readPendingQuery), std::move(updatePendingQuery));
     context.initialSync = std::make_unique<InitialSyncCoordinator>(
         context.database->databasePath(),
         QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("../tests/fixtures/media-library.json")),

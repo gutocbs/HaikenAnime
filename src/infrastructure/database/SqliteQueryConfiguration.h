@@ -7,6 +7,9 @@ class AsyncLogger;
 struct SqliteQueryConfiguration final {
     QString upsertMediaPath;
     QString readMediaPath;
+    QString enqueuePendingChangePath;
+    QString readPendingChangesPath;
+    QString updatePendingChangePath;
 
     [[nodiscard]] bool load(QString &error) ;
     void setLogger(AsyncLogger *logger);

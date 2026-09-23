@@ -67,7 +67,11 @@ void AsyncLogger::stop() {
         stopping_ = true;
         condition_.wakeOne();
     }
-    thread_.wait(2000);
+    // A QThread cannot be destroyed while it is still running. The logger
+    // drains its queue and exits after stopping_ is set, so wait for the
+    // actual completion instead of allowing destruction after a timeout.
+    thread_.quit();
+    thread_.wait();
     QMutexLocker locker(&mutex_);
     running_ = false;
 }

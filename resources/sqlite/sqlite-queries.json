@@ -1,6 +1,9 @@
 {
   "queries": {
     "upsertMedia": ":/sqlite/queries/upsert-media.sql",
-    "readMedia": ":/sqlite/queries/read-media.sql"
+    "readMedia": ":/sqlite/queries/read-media.sql",
+    "enqueuePendingChange": ":/sqlite/queries/enqueue-pending-change.sql",
+    "readPendingChanges": ":/sqlite/queries/read-pending-changes.sql",
+    "updatePendingChange": ":/sqlite/queries/update-pending-change.sql"
   }
 }

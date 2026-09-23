@@ -77,6 +77,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqliteDatabase.cpp
         src/infrastructure/database/SqliteMediaRepository.h
         src/infrastructure/database/SqliteMediaRepository.cpp
+        src/infrastructure/database/SqlitePendingChangeRepository.h
+        src/infrastructure/database/SqlitePendingChangeRepository.cpp
         src/infrastructure/database/SqliteMediaMapper.h
         src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqlQueryStore.h
@@ -121,6 +123,9 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         resources/sqlite/sqlite-queries.json
         resources/sqlite/queries/upsert-media.sql
         resources/sqlite/queries/read-media.sql
+        resources/sqlite/queries/enqueue-pending-change.sql
+        resources/sqlite/queries/read-pending-changes.sql
+        resources/sqlite/queries/update-pending-change.sql
 )
 
 qt_add_qml_module(HaikenAnime
@@ -148,6 +153,8 @@ add_executable(SqliteDatabaseTests
         tests/unit/SqliteDatabaseTests.cpp
         src/infrastructure/database/SqliteDatabase.h
         src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/logging/AsyncLogger.h
+        src/infrastructure/logging/AsyncLogger.cpp
 )
 
 target_link_libraries(SqliteDatabaseTests

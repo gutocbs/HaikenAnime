@@ -9,6 +9,11 @@ int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
 
     auto context = createApplicationContext();
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, [&context]() {
+        if (context.logger) {
+            context.logger->stop();
+        }
+    });
     HomeScreenController homeController(context.mediaRepository.get(), context.initializationError);
 
     if (context.initialSync) {
