@@ -14,6 +14,7 @@ private slots:
     void migrationCreatesMediaSchema();
     void migrationIsIdempotent();
     void migrationCreatesPendingChangesTable();
+    void pendingChangesTableStoresVersionColumns();
 };
 
 void SqliteDatabaseTests::opensAndCreatesDatabaseFile() {
@@ -95,6 +96,26 @@ void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'anilist_pending_changes'")));
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toString(), QStringLiteral("anilist_pending_changes"));
+}
+
+void SqliteDatabaseTests::pendingChangesTableStoresVersionColumns() {
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("PRAGMA table_info(anilist_pending_changes)")));
+    QStringList columns;
+    while (query.next()) {
+        columns.append(query.value(1).toString());
+    }
+
+    QVERIFY(columns.contains(QStringLiteral("local_updated_at")));
+    QVERIFY(columns.contains(QStringLiteral("remote_observed_at")));
+    QVERIFY(columns.contains(QStringLiteral("remote_version")));
 }
 
 QTEST_MAIN(SqliteDatabaseTests)

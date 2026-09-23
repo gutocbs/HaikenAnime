@@ -15,5 +15,6 @@ bool AniListPendingChangeFactory::Create(const int mediaId, const AniListField f
     change.previousValue = previousValue;
     change.newValue = newValue;
     change.createdAt = QDateTime::currentDateTimeUtc();
+    change.localUpdatedAt = change.createdAt;
     return true;
 }

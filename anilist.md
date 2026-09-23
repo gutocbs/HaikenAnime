@@ -29,6 +29,8 @@ A primeira versão deverá ler dados de um fixture local, aplicar filtros opcion
 - Passo 4 do update iniciado: mutations GraphQL externas para progresso, nota, status/lista e exclusão criadas.
 - Passo 5 do update iniciado: contrato e cliente de mutations criados, separados do cliente GraphQL genérico.
 - Passo 6 do update iniciado: `AniListMergeService` aplica políticas por campo e retorna decisões explícitas.
+- Passo 7 do update iniciado: alterações pendentes agora possuem timestamps local/remoto observado e versão remota.
+- Passo 8 do update iniciado: retries HTTP configuráveis por `Settings.json` e limitados a timeout/falhas de transporte.
 - Queries SQL de persistência também são mantidas em arquivos externos e fornecidas aos repositórios pelo construtor.
 - Passo 8 iniciado: `AniListSyncService` implementa filtros, paginação, mapeamento para `Media` e persistência por página.
 - A V1 é somente referência e não deve ser modificada.

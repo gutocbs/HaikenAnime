@@ -35,9 +35,12 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
     settings.aniList.endpoint = aniList.value(QStringLiteral("endpoint")).toString();
     settings.aniList.mediaQueryFile = aniList.value(QStringLiteral("mediaQueryFile")).toString();
     settings.http.timeoutMs = http.value(QStringLiteral("timeoutMs")).toInt(30000);
+    settings.http.maxRetries = http.value(QStringLiteral("maxRetries")).toInt(2);
+    settings.http.retryDelayMs = http.value(QStringLiteral("retryDelayMs")).toInt(1000);
 
     if (settings.aniList.endpoint.isEmpty() || settings.aniList.mediaQueryFile.isEmpty()
-        || settings.http.timeoutMs <= 0) {
+        || settings.http.timeoutMs <= 0 || settings.http.maxRetries < 0
+        || settings.http.retryDelayMs < 0) {
         error = QStringLiteral("Settings.json contains invalid AniList or HTTP settings.");
         return false;
     }

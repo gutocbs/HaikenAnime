@@ -17,7 +17,8 @@ public:
     explicit AniListGraphQlClient(QNetworkAccessManager &networkManager,
                                   IAniListAuthProvider *authProvider = nullptr,
                                   QUrl endpoint = QUrl(QStringLiteral("https://graphql.anilist.co")),
-                                  int timeoutMs = 30000);
+                                  int timeoutMs = 30000, int maxRetries = 0,
+                                  int retryDelayMs = 0);
 
     /**
      * Sends a GraphQL POST request and parses both data and GraphQL errors.
@@ -30,10 +31,16 @@ public:
     [[nodiscard]] QUrl endpoint() const;
 
 private:
+    [[nodiscard]] bool ExecuteWithAttempt(const QString &query, const QJsonObject &variables,
+                                          AniListGraphQlResponse &response, QString &error,
+                                          int attempt) const;
+
     QNetworkAccessManager &networkManager_;
     IAniListAuthProvider *authProvider_;
     QUrl endpoint_;
     int timeoutMs_;
+    int maxRetries_;
+    int retryDelayMs_;
 };
 
 #endif // HAIKENANIME_ANILISTGRAPHQLCLIENT_H

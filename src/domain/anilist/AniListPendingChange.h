@@ -18,6 +18,9 @@ struct AniListPendingChange {
     AniListFieldValue previousValue = QString();
     AniListFieldValue newValue = QString();
     QDateTime createdAt;
+    QDateTime localUpdatedAt;
+    QDateTime remoteObservedAt;
+    QString remoteVersion;
     int attempts = 0;
     AniListPendingChangeStatus status = AniListPendingChangeStatus::Pending;
     QString lastError;

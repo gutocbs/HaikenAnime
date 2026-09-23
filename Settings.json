@@ -4,6 +4,8 @@
     "mediaQueryFile": "resources/anilist/queries/media-page.graphql"
   },
   "http": {
-    "timeoutMs": 30000
+    "timeoutMs": 30000,
+    "maxRetries": 2,
+    "retryDelayMs": 1000
   }
 }

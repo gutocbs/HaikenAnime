@@ -7,18 +7,25 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QTimer>
+#include <QThread>
 
 #include <utility>
 
 AniListGraphQlClient::AniListGraphQlClient(QNetworkAccessManager &networkManager,
                                            IAniListAuthProvider *authProvider, QUrl endpoint,
-                                           int timeoutMs)
+                                           int timeoutMs, int maxRetries, int retryDelayMs)
     : networkManager_(networkManager), authProvider_(authProvider), endpoint_(std::move(endpoint)),
-      timeoutMs_(timeoutMs) {
+      timeoutMs_(timeoutMs), maxRetries_(maxRetries), retryDelayMs_(retryDelayMs) {
 }
 
 bool AniListGraphQlClient::execute(const QString &query, const QJsonObject &variables,
                                    AniListGraphQlResponse &response, QString &error) const {
+    return ExecuteWithAttempt(query, variables, response, error, 0);
+}
+
+bool AniListGraphQlClient::ExecuteWithAttempt(const QString &query, const QJsonObject &variables,
+                                             AniListGraphQlResponse &response, QString &error,
+                                             const int attempt) const {
     response = {};
     error.clear();
     QNetworkRequest request(endpoint_);
@@ -50,12 +57,20 @@ bool AniListGraphQlClient::execute(const QString &query, const QJsonObject &vari
         reply->abort();
         error = QStringLiteral("AniList request timed out.");
         reply->deleteLater();
+        if (attempt < maxRetries_) {
+            QThread::msleep(static_cast<unsigned long>(retryDelayMs_));
+            return ExecuteWithAttempt(query, variables, response, error, attempt + 1);
+        }
         return false;
     }
 
     if (reply->error() != QNetworkReply::NoError) {
         error = reply->errorString();
         reply->deleteLater();
+        if (attempt < maxRetries_) {
+            QThread::msleep(static_cast<unsigned long>(retryDelayMs_));
+            return ExecuteWithAttempt(query, variables, response, error, attempt + 1);
+        }
         return false;
     }
 
