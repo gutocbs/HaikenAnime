@@ -3,12 +3,15 @@
 
 #include <QObject>
 
+class AsyncLogger;
+
 class InitialSyncCoordinator final : public QObject {
     Q_OBJECT
 public:
     explicit InitialSyncCoordinator(QString databasePath, QString fixturePath,
                                     QString upsertQueryPath, QString readQueryPath,
                                     QObject *parent = nullptr);
+    void setLogger(AsyncLogger *logger);
 public slots:
     void start();
 signals:
@@ -20,6 +23,7 @@ private:
     QString fixturePath_;
     QString upsertQueryPath_;
     QString readQueryPath_;
+    AsyncLogger *logger_ = nullptr;
 };
 
 #endif

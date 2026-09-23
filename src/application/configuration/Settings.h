@@ -8,6 +8,7 @@
 struct Settings {
     AniListSettings aniList;
     HttpSettings http;
+    int logRetentionDays = 7;
 };
 
 #endif // HAIKENANIME_SETTINGS_H

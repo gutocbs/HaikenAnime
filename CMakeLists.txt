@@ -99,6 +99,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/anilist/AniListMediaMapper.cpp
         src/infrastructure/configuration/JsonSettingsReader.h
         src/infrastructure/configuration/JsonSettingsReader.cpp
+        src/infrastructure/logging/AsyncLogger.h
+        src/infrastructure/logging/AsyncLogger.cpp
         src/presentation/home/HomeScreenController.h
         src/presentation/home/HomeScreenController.cpp
 )

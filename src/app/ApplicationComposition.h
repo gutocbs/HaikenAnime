@@ -6,9 +6,11 @@
 #include "../application/anilist/IMediaRepository.h"
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "InitialSyncCoordinator.h"
+#include "../infrastructure/logging/AsyncLogger.h"
 
 
 struct ApplicationContext final {
+    std::unique_ptr<AsyncLogger> logger;
     std::unique_ptr<SqliteDatabase> database;
     std::unique_ptr<IMediaRepository> mediaRepository;
     std::unique_ptr<InitialSyncCoordinator> initialSync;

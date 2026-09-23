@@ -5,6 +5,7 @@
 #include "../infrastructure/database/SqlQueryStore.h"
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "../infrastructure/database/SqliteMediaRepository.h"
+#include "../infrastructure/logging/AsyncLogger.h"
 
 #include <QDir>
 #include <QMetaObject>
@@ -18,18 +19,27 @@ InitialSyncCoordinator::InitialSyncCoordinator(QString databasePath, QString fix
       upsertQueryPath_(std::move(upsertQueryPath)), readQueryPath_(std::move(readQueryPath)) {
 }
 
+void InitialSyncCoordinator::setLogger(AsyncLogger *logger) {
+    logger_ = logger;
+}
+
 void InitialSyncCoordinator::start() {
+    if (logger_) {
+        logger_->info(LogCategory::Sync, QStringLiteral("Initial synchronization started."));
+    }
     emit started();
     auto *thread = QThread::create([this]() {
         QString error;
         SqliteDatabase database(databasePath_);
         if (!database.open() || !database.migrate()) {
             error = database.lastError();
+            if (logger_) logger_->error(LogCategory::Sync, error);
         } else {
             QString upsertQuery;
             QString readQuery;
             if (!SqlQueryStore(upsertQueryPath_).load(upsertQuery, error)
                 || !SqlQueryStore(readQueryPath_).load(readQuery, error)) {
+                if (logger_) logger_->error(LogCategory::QueryStore, error);
             } else {
                 SqliteMediaRepository repository(database.connection(), std::move(upsertQuery), std::move(readQuery));
                 FileAniListDataSource source(QDir::cleanPath(fixturePath_));
@@ -38,6 +48,7 @@ void InitialSyncCoordinator::start() {
                 if (!service.Synchronize(filter, error) && error.isEmpty()) {
                     error = QStringLiteral("Media synchronization failed.");
                 }
+                if (logger_ && !error.isEmpty()) logger_->error(LogCategory::Sync, error);
             }
         }
         QMetaObject::invokeMethod(this, [this, error = std::move(error)]() {
