@@ -47,6 +47,12 @@ add_executable(HaikenAnime main.cpp
         src/infrastructure/anilist/AniListGraphQlClient.cpp
         src/infrastructure/anilist/GraphQlQueryStore.h
         src/infrastructure/anilist/GraphQlQueryStore.cpp
+        src/infrastructure/anilist/FileAniListDataSource.h
+        src/infrastructure/anilist/FileAniListDataSource.cpp
+        src/infrastructure/anilist/GraphQlAniListDataSource.h
+        src/infrastructure/anilist/GraphQlAniListDataSource.cpp
+        src/infrastructure/anilist/AniListMediaMapper.h
+        src/infrastructure/anilist/AniListMediaMapper.cpp
         src/infrastructure/configuration/JsonSettingsReader.h
         src/infrastructure/configuration/JsonSettingsReader.cpp
 )
@@ -135,7 +141,7 @@ if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
                 "${QT_INSTALL_PATH}/plugins/sqldrivers/qsqlite${DEBUG_SUFFIX}.dll"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/sqldrivers/")
     endif ()
-    foreach (QT_LIB Core Sql)
+    foreach (QT_LIB Core Network Sql)
         add_custom_command(TARGET HaikenAnime POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy
                 "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"
