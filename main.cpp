@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QThread>
 #include <QList>
+#include <QTextStream>
 
 // Temporary composition used to validate the synchronization worker.
 #include "src/application/anilist/AniListSyncWorker.h"
@@ -41,6 +42,18 @@ int RunSynchronizationTest() {
 
     thread.start();
     thread.wait();
+
+    QTextStream output(stdout);
+    output << "Media saved by synchronization: " << repository.storedMedia.size() << '\n';
+    for (const auto &media : repository.storedMedia) {
+        output << QStringLiteral("- id=%1, name=%2, englishName=%3, type=%4, status=%5\n")
+                      .arg(media.Id)
+                      .arg(media.Name)
+                      .arg(media.EnglishName)
+                      .arg(static_cast<int>(media.Type))
+                      .arg(static_cast<int>(media.Status));
+    }
+    output.flush();
     return 0;
 }
 

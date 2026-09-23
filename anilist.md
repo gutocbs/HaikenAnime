@@ -31,6 +31,48 @@ A primeira versão deverá ler dados de um fixture local, aplicar filtros opcion
 - Passo 6 do update iniciado: `AniListMergeService` aplica políticas por campo e retorna decisões explícitas.
 - Passo 7 do update iniciado: alterações pendentes agora possuem timestamps local/remoto observado e versão remota.
 - Passo 8 do update iniciado: retries HTTP configuráveis por `Settings.json` e limitados a timeout/falhas de transporte.
+- Passo 9 do update iniciado: processador da outbox criado, confirmando alterações somente após sucesso da mutation.
+- Passo 10 do update iniciado: worker dedicado para processar mutations em thread separada criado.
+- Passo 11 do update iniciado: testes de sucesso, falha, retry lógico e exclusão sem confirmação adicionados.
+- Passo 13 do update concluído inicialmente: contrato do fluxo documentado e primeira suíte completa validada.
+
+## Contrato do fluxo de update
+
+O fluxo de update deverá seguir esta sequência:
+
+```text
+Alteração local
+    -> AniListPendingChangeFactory
+    -> IPendingChangeRepository.Enqueue
+    -> AniListMergeService
+    -> AniListPendingChangeProcessor
+    -> IAniListUpdateClient
+    -> mutation GraphQL
+    -> confirmação da API
+    -> status Succeeded ou Failed
+```
+
+Garantias do fluxo:
+
+- uma alteração local deve ser persistida antes do envio remoto;
+- uma mutation só será considerada concluída após resposta GraphQL válida sem erros;
+- falhas devem permanecer disponíveis para retry;
+- erros GraphQL não devem ser tratados como sucesso apenas por possuírem HTTP 200;
+- exclusões exigem confirmação explícita;
+- políticas de merge devem ser aplicadas por campo;
+- o cliente GraphQL não deve conhecer a outbox nem as regras de merge;
+- o repositório não deve conhecer detalhes de HTTP ou GraphQL;
+- workers não devem executar operações de rede ou banco na thread principal.
+
+Estados previstos para uma alteração pendente:
+
+```text
+Pending -> Processing -> Succeeded
+                    \-> Failed -> Pending
+Pending -> RequiresConfirmation
+```
+
+O estado `RequiresConfirmation` não poderá ser enviado automaticamente pelo processador.
 - Queries SQL de persistência também são mantidas em arquivos externos e fornecidas aos repositórios pelo construtor.
 - Passo 8 iniciado: `AniListSyncService` implementa filtros, paginação, mapeamento para `Media` e persistência por página.
 - A V1 é somente referência e não deve ser modificada.

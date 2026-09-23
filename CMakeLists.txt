@@ -54,6 +54,10 @@ add_executable(HaikenAnime main.cpp
         src/application/anilist/IAniListUpdateClient.h
         src/application/anilist/AniListUpdateClient.h
         src/application/anilist/AniListUpdateClient.cpp
+        src/application/anilist/AniListPendingChangeProcessor.h
+        src/application/anilist/AniListPendingChangeProcessor.cpp
+        src/application/anilist/AniListUpdateWorker.h
+        src/application/anilist/AniListUpdateWorker.cpp
         src/application/anilist/AniListAuthManager.h
         src/application/anilist/AniListAuthManager.cpp
         src/infrastructure/database/SqliteDatabase.h
@@ -193,6 +197,20 @@ target_link_libraries(AniListMergeServiceTests
 )
 
 add_test(NAME AniListMergeServiceTests COMMAND AniListMergeServiceTests)
+
+add_executable(AniListPendingChangeProcessorTests
+        tests/unit/AniListPendingChangeProcessorTests.cpp
+        src/application/anilist/AniListPendingChangeProcessor.h
+        src/application/anilist/AniListPendingChangeProcessor.cpp
+)
+
+target_link_libraries(AniListPendingChangeProcessorTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME AniListPendingChangeProcessorTests COMMAND AniListPendingChangeProcessorTests)
 
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX)

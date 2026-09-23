@@ -94,6 +94,32 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 - Falhas não deverão bloquear as próximas execuções programadas.
 - O estado da última execução e da próxima tentativa deverá estar disponível para diagnóstico.
 
+## Política de logs
+
+- Definir uma abstração de logging para que application, infrastructure e workers não dependam diretamente de uma implementação concreta.
+- Definir quais camadas podem gerar logs e quais devem retornar erros por contrato.
+- Separar níveis de log, como diagnóstico, informação, aviso e erro.
+- Definir destino, formato e ciclo de vida dos arquivos de log.
+- Evitar que tokens, secrets, payloads sensíveis ou dados pessoais sejam registrados.
+- Permitir que a configuração de logging seja controlada sem espalhar dependências pela aplicação.
+- Definir como logs de rede, sincronização, mutations, retry e scheduler serão correlacionados.
+- Adicionar rotação, limite de tamanho e política de retenção dos arquivos.
+- Testar logging sem acoplar os testes de domínio a filesystem ou Qt Network.
+
+## Scheduler para listas grandes
+
+- Revisar o scheduler atual antes de definir uma frequência fixa para a sincronização completa.
+- Considerar que uma lista grande pode tornar uma sincronização integral frequente custosa ou desnecessária.
+- Avaliar particionamento por lista/status e tipo de mídia, como anime, manga e novel.
+- Definir se cada partição terá seu próprio intervalo, prioridade e estado de última execução.
+- Permitir que partições falhas sejam retomadas sem repetir toda a sincronização.
+- Avaliar sincronização incremental, paginação por partição e limites por execução.
+- Evitar execuções simultâneas da mesma partição e controlar concorrência entre partições.
+- Considerar uma sincronização completa inicial e ciclos posteriores menores e direcionados.
+- Permitir configuração futura de prioridade, frequência e ativação por lista/tipo no `Settings.json`.
+- Registrar métricas de duração, páginas processadas, itens atualizados e falhas por partição.
+- Definir como alterações pendentes do usuário serão priorizadas em relação às tarefas agendadas.
+
 ## Threading e ciclo de vida
 
 - Implementar o worker assíncrono definitivo.
@@ -138,3 +164,7 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 ## Critério para considerar a integração pronta
 
 A integração somente deverá ser considerada pronta quando o provider GraphQL real, a autenticação segura, a persistência definitiva, o tratamento de falhas e os testes de rede/paginação estiverem implementados e validados separadamente do fixture local.
+
+## Contrato do update
+
+O update deverá persistir a intenção local antes de enviar uma mutation, aplicar a política de merge específica do campo e somente finalizar a alteração após confirmação GraphQL sem erros. Falhas permanecem na outbox para retry; exclusões permanecem bloqueadas até confirmação do usuário.
