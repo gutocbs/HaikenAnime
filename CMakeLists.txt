@@ -12,7 +12,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Sql Test)
+find_package(Qt6 REQUIRED COMPONENTS Core Network Sql Test)
 
 enable_testing()
 
@@ -26,6 +26,10 @@ add_executable(HaikenAnime main.cpp
         src/domain/anilist/AniListGraphQlResponse.h
         src/domain/anilist/AniListMediaDto.h
         src/domain/anilist/AniListPage.h
+        src/domain/anilist/AniListSettings.h
+        src/domain/http/HttpSettings.h
+        src/application/configuration/Settings.h
+        src/application/configuration/ISettingsReader.h
         src/application/anilist/ISecretStore.h
         src/application/anilist/IAniListAuthProvider.h
         src/application/anilist/IAniListDataSource.h
@@ -37,11 +41,20 @@ add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqliteDatabase.cpp
         src/infrastructure/secrets/FileSecretStore.h
         src/infrastructure/secrets/FileSecretStore.cpp
+        src/infrastructure/anilist/HttpFactory.h
+        src/infrastructure/anilist/HttpFactory.cpp
+        src/infrastructure/anilist/AniListGraphQlClient.h
+        src/infrastructure/anilist/AniListGraphQlClient.cpp
+        src/infrastructure/anilist/GraphQlQueryStore.h
+        src/infrastructure/anilist/GraphQlQueryStore.cpp
+        src/infrastructure/configuration/JsonSettingsReader.h
+        src/infrastructure/configuration/JsonSettingsReader.cpp
 )
 
 target_link_libraries(HaikenAnime
         PRIVATE
         Qt6::Core
+        Qt6::Network
         Qt6::Sql
 )
 
