@@ -1,9 +1,47 @@
 #include <QCoreApplication>
+#include <QDebug>
+#include <QThread>
+#include <QList>
 
-int main(int argc, char *argv[])
-{
-    QCoreApplication app(argc, argv);
+// Temporary composition used to validate the synchronization worker.
+#include "src/application/anilist/AniListSyncWorker.h"
+#include "src/infrastructure/anilist/FileAniListDataSource.h"
 
-    // return app.exec();
+class TestMediaRepository final : public IMediaRepository {
+public:
+    bool upsert(const QList<Media> &media, QString &error) override {
+        Q_UNUSED(error)
+        storedMedia.append(media);
+        return true;
+    }
+
+    QList<Media> storedMedia;
+};
+
+int RunSynchronizationTest() {
+    FileAniListDataSource dataSource(QStringLiteral("tests/fixtures/media-library.json"));
+    TestMediaRepository repository;
+    AniListSyncService service(dataSource, repository);
+    AniListSyncWorker worker(service);
+    QThread thread;
+    worker.moveToThread(&thread);
+
+    const AniListSyncFilter filter;
+    QObject::connect(&thread, &QThread::started, &worker, [&worker, filter]() { worker.Run(filter); },
+                     Qt::DirectConnection);
+    QObject::connect(&worker, &AniListSyncWorker::Completed, &thread, &QThread::quit,
+                     Qt::DirectConnection);
+    QObject::connect(&worker, &AniListSyncWorker::Failed, &thread, [&thread](const QString &message) {
+        qCritical() << message;
+        thread.quit();
+    }, Qt::DirectConnection);
+
+    thread.start();
+    thread.wait();
     return 0;
+}
+
+int main(int argc, char *argv[]) {
+    QCoreApplication app(argc, argv);
+    return RunSynchronizationTest();
 }
