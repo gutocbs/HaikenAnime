@@ -6,6 +6,7 @@
 #include <QSqlQuery>
 #include <QStandardPaths>
 #include <QUuid>
+#include "../logging/AsyncLogger.h"
 
 #include <utility>
 
@@ -17,6 +18,8 @@ SqliteDatabase::SqliteDatabase(QString databasePath)
         databasePath_ = QDir(appDataPath).filePath(QStringLiteral("haikenanime.sqlite"));
     }
 }
+
+void SqliteDatabase::setLogger(AsyncLogger *logger) { logger_ = logger; }
 
 SqliteDatabase::~SqliteDatabase() {
     close();
@@ -34,7 +37,12 @@ bool SqliteDatabase::open() {
 
     database_ = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), connectionName_);
     database_.setDatabaseName(databasePath_);
-    return database_.open();
+    const bool opened = database_.open();
+    if (logger_) {
+        (opened ? logger_->info(LogCategory::Database, QStringLiteral("SQLite database opened: %1").arg(databasePath_))
+                : logger_->error(LogCategory::Database, database_.lastError().text()));
+    }
+    return opened;
 }
 
 bool SqliteDatabase::migrate() {
@@ -88,10 +96,16 @@ bool SqliteDatabase::migrate() {
         "INSERT OR IGNORE INTO schema_version (version) VALUES (1)"));
 
     if (versionRecorded) {
-        return database_.commit();
+        const bool committed = database_.commit();
+        if (logger_) {
+            committed ? logger_->info(LogCategory::Migration, QStringLiteral("SQLite migration completed."))
+                      : logger_->error(LogCategory::Migration, database_.lastError().text());
+        }
+        return committed;
     }
 
     database_.rollback();
+    if (logger_) logger_->error(LogCategory::Migration, query.lastError().text());
     return false;
 }
 

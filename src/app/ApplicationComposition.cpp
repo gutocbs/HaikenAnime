@@ -35,6 +35,7 @@ ApplicationContext createApplicationContext() {
         context.logger->warning(LogCategory::Configuration, settingsError);
     }
     context.database = std::make_unique<SqliteDatabase>();
+    context.database->setLogger(context.logger.get());
 
     if (!context.database->open()) {
         context.logger->error(LogCategory::Database, context.database->lastError());
@@ -56,6 +57,7 @@ ApplicationContext createApplicationContext() {
     QString readQuery;
     QString queryError;
     SqliteQueryConfiguration queryConfiguration;
+    queryConfiguration.setLogger(context.logger.get());
     if (!queryConfiguration.load(queryError)) {
         context.logger->error(LogCategory::QueryConfiguration, queryError);
         context.initializationError = initializationFailure(
@@ -63,8 +65,12 @@ ApplicationContext createApplicationContext() {
         context.database.reset();
         return context;
     }
-    if (!SqlQueryStore(queryConfiguration.upsertMediaPath).load(upsertQuery, queryError)
-        || !SqlQueryStore(queryConfiguration.readMediaPath).load(readQuery, queryError)) {
+    SqlQueryStore upsertStore(queryConfiguration.upsertMediaPath);
+    SqlQueryStore readStore(queryConfiguration.readMediaPath);
+    upsertStore.setLogger(context.logger.get());
+    readStore.setLogger(context.logger.get());
+    if (!upsertStore.load(upsertQuery, queryError)
+        || !readStore.load(readQuery, queryError)) {
         context.logger->error(LogCategory::QueryStore, queryError);
         context.initializationError = initializationFailure(
             QStringLiteral("loading the configured media queries"), queryError);
@@ -74,6 +80,7 @@ ApplicationContext createApplicationContext() {
 
     context.mediaRepository = std::make_unique<SqliteMediaRepository>(
         context.database->connection(), std::move(upsertQuery), std::move(readQuery));
+    static_cast<SqliteMediaRepository *>(context.mediaRepository.get())->setLogger(context.logger.get());
     context.initialSync = std::make_unique<InitialSyncCoordinator>(
         context.database->databasePath(),
         QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("../tests/fixtures/media-library.json")),

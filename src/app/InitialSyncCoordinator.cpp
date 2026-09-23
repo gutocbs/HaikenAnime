@@ -31,17 +31,23 @@ void InitialSyncCoordinator::start() {
     auto *thread = QThread::create([this]() {
         QString error;
         SqliteDatabase database(databasePath_);
+        database.setLogger(logger_);
         if (!database.open() || !database.migrate()) {
             error = database.lastError();
             if (logger_) logger_->error(LogCategory::Sync, error);
         } else {
             QString upsertQuery;
             QString readQuery;
-            if (!SqlQueryStore(upsertQueryPath_).load(upsertQuery, error)
-                || !SqlQueryStore(readQueryPath_).load(readQuery, error)) {
+            SqlQueryStore upsertStore(upsertQueryPath_);
+            SqlQueryStore readStore(readQueryPath_);
+            upsertStore.setLogger(logger_);
+            readStore.setLogger(logger_);
+            if (!upsertStore.load(upsertQuery, error)
+                || !readStore.load(readQuery, error)) {
                 if (logger_) logger_->error(LogCategory::QueryStore, error);
             } else {
                 SqliteMediaRepository repository(database.connection(), std::move(upsertQuery), std::move(readQuery));
+                repository.setLogger(logger_);
                 FileAniListDataSource source(QDir::cleanPath(fixturePath_));
                 AniListSyncService service(source, repository);
                 MediaSyncFilter filter;

@@ -7,12 +7,15 @@
 #include <QSqlQuery>
 
 #include "SqliteMediaMapper.h"
+#include "../logging/AsyncLogger.h"
 
 #include <utility>
 
 SqliteMediaRepository::SqliteMediaRepository(QSqlDatabase database, QString upsertQuery, QString readQuery)
     : database_(std::move(database)), upsertQuery_(std::move(upsertQuery)), readQuery_(std::move(readQuery)) {
 }
+
+void SqliteMediaRepository::setLogger(AsyncLogger *logger) { logger_ = logger; }
 
 QList<Media> SqliteMediaRepository::ReadAll(QString &error) {
     if (!database_.isOpen()) {
@@ -28,6 +31,7 @@ QList<Media> SqliteMediaRepository::ReadAll(QString &error) {
     QSqlQuery query(database_);
     if (!query.exec(readQuery_)) {
         error = query.lastError().text();
+        if (logger_) logger_->error(LogCategory::Database, error);
         return {};
     }
 
@@ -35,6 +39,7 @@ QList<Media> SqliteMediaRepository::ReadAll(QString &error) {
     while (query.next()) {
         media.append(SqliteMediaMapper::Map(query));
     }
+    if (logger_) logger_->info(LogCategory::Database, QStringLiteral("Read %1 media records from SQLite.").arg(media.size()));
     return media;
 }
 
@@ -71,6 +76,7 @@ bool SqliteMediaRepository::Upsert(const QList<Media> &media, QString &error) {
 
         if (!query.exec()) {
             error = query.lastError().text();
+            if (logger_) logger_->error(LogCategory::Database, error);
             database_.rollback();
             return false;
         }
@@ -81,5 +87,6 @@ bool SqliteMediaRepository::Upsert(const QList<Media> &media, QString &error) {
         database_.rollback();
         return false;
     }
+    if (logger_) logger_->info(LogCategory::Database, QStringLiteral("Upserted %1 media records into SQLite.").arg(media.size()));
     return true;
 }

@@ -3,10 +3,12 @@
 
 #include <QSqlDatabase>
 #include <QString>
+class AsyncLogger;
 
 class SqliteDatabase {
 public:
     explicit SqliteDatabase(QString databasePath = {});
+    void setLogger(AsyncLogger *logger);
     ~SqliteDatabase();
 
     bool open();
@@ -22,6 +24,7 @@ private:
     QString connectionName_;
     QString databasePath_;
     QSqlDatabase database_;
+    AsyncLogger *logger_ = nullptr;
 };
 
 #endif // HAIKENANIME_SQLITEDATABASE_H
