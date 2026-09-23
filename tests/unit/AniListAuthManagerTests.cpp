@@ -53,6 +53,7 @@ void AniListAuthManagerTests::doesNotReplaceCacheWhenLoadFails() {
     const AniListCredentials expected{QStringLiteral("user"), QStringLiteral("token")};
 
     QVERIFY(manager.save(expected, error));
+    store.available = false;
     QVERIFY(!manager.load(error));
     QCOMPARE(manager.credentials().username, expected.username);
     QCOMPARE(manager.credentials().token, expected.token);

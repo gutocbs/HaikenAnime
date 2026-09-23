@@ -5,7 +5,7 @@
 
 #include "../../application/anilist/ISecretStore.h"
 
-/** Stores AniList credentials in a plain-text file until secure storage is implemented. */
+/** Temporary plain-text store; production use requires a secure replacement. */
 class FileSecretStore final : public ISecretStore {
 public:
     /** Creates a store using the supplied path or the application config path by default. */
