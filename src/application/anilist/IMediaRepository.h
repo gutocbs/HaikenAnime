@@ -10,6 +10,7 @@ class IMediaRepository {
 public:
     virtual ~IMediaRepository() = default;
 
+    /** Inserts or updates the supplied media and reports persistence failures through error. */
     [[nodiscard]] virtual bool upsert(const QList<Media> &media, QString &error) = 0;
 };
 
