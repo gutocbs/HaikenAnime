@@ -198,105 +198,79 @@ Item {
                         color: line
                     }
 
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: controller.state === "error" ? 68 : 52
-                        radius: 6
-                        color: controller.state === "error" ? "#fff0f0" : surfaceSoft
-                        border.color: controller.state === "error" ? "#e6a6aa" : line
-                        border.width: 1
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 12
-                            spacing: 6
-
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 10
-
-                                Label {
-                                    text: controller.state === "error"
-                                          ? qsTr("ERRO DE SINCRONIZAÇÃO")
-                                          : qsTr("SINCRONIZAÇÃO")
-                                    color: controller.state === "error" ? "#b13b43" : accent
-                                    font.pixelSize: 10
-                                    font.weight: Font.DemiBold
-                                    font.letterSpacing: 1.1
-                                }
-
-                                Label {
-                                    Layout.fillWidth: true
-                                    text: controller.state === "loading"
-                                          ? (controller.synchronizationProgressKnown
-                                             ? qsTr("%1% concluído").arg(controller.synchronizationProgress)
-                                             : qsTr("Em andamento"))
-                                          : controller.state === "error"
-                                            ? qsTr("Atenção necessária")
-                                            : controller.statusMessage
-                                    color: controller.state === "error" ? "#b13b43" : ink
-                                    font.pixelSize: 12
-                                    font.weight: Font.DemiBold
-                                    elide: Text.ElideRight
-                                }
-                            }
-
-                            ProgressBar {
-                                Layout.fillWidth: true
-                                visible: controller.state === "loading"
-                                from: 0
-                                to: 100
-                                value: controller.synchronizationProgress
-                                indeterminate: !controller.synchronizationProgressKnown
-                            }
-
-                            Label {
-                                Layout.fillWidth: true
-                                visible: controller.state === "error"
-                                text: controller.errorMessage
-                                color: "#8f3038"
-                                font.pixelSize: 11
-                                elide: Text.ElideRight
-                            }
-                        }
-                    }
                 }
             }
         }
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: 74
-            color: surfaceSoft
+            Layout.preferredHeight: controller.state === "error" ? 94 : 82
+            color: controller.state === "error" ? "#fff0f0" : surfaceSoft
             radius: 8
-            border.color: line
+            border.color: controller.state === "error" ? "#e6a6aa" : line
             border.width: 1
 
-            RowLayout {
+            ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 18
-                spacing: 20
+                anchors.margins: 16
+                spacing: 7
 
-                Label {
-                    text: qsTr("PRÓXIMO PASSO")
-                    color: accent
-                    font.pixelSize: 11
-                    font.weight: Font.DemiBold
-                    font.letterSpacing: 1.2
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 14
+
+                    Label {
+                        text: controller.state === "error"
+                              ? qsTr("ERRO DE SINCRONIZAÇÃO")
+                              : qsTr("SINCRONIZAÇÃO")
+                        color: controller.state === "error" ? "#b13b43" : accent
+                        font.pixelSize: 11
+                        font.weight: Font.DemiBold
+                        font.letterSpacing: 1.1
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: controller.state === "loading"
+                              ? (controller.synchronizationProgressKnown
+                                 ? qsTr("%1% concluído").arg(controller.synchronizationProgress)
+                                 : qsTr("Em andamento"))
+                              : controller.state === "error"
+                                ? qsTr("Atenção necessária")
+                                : controller.statusMessage
+                        color: controller.state === "error" ? "#b13b43" : ink
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                    }
+
+                    Label {
+                        text: controller.state === "loading"
+                              ? qsTr("Atualizando")
+                              : controller.state === "error"
+                                ? qsTr("Verifique os detalhes")
+                                : qsTr("Sincronização automática")
+                        color: controller.state === "error" ? "#b13b43" : muted
+                        font.pixelSize: 11
+                    }
+                }
+
+                ProgressBar {
+                    Layout.fillWidth: true
+                    visible: controller.state === "loading"
+                    from: 0
+                    to: 100
+                    value: controller.synchronizationProgress
+                    indeterminate: !controller.synchronizationProgressKnown
                 }
 
                 Label {
                     Layout.fillWidth: true
-                    text: qsTr("Conectar esta tela aos dados salvos no banco local através da camada de integração.")
-                    color: muted
-                    font.pixelSize: 13
-                    elide: Text.ElideRight
-                }
-
-                Label {
-                    text: qsTr("V2 · somente leitura")
-                    color: muted
+                    visible: controller.state === "error"
+                    text: controller.errorMessage
+                    color: "#8f3038"
                     font.pixelSize: 11
+                    elide: Text.ElideRight
                 }
             }
         }
