@@ -105,6 +105,16 @@ qt_add_executable(HaikenAnime main.cpp
         src/presentation/home/HomeScreenController.cpp
 )
 
+set_source_files_properties(
+        resources/sqlite/sqlite-queries.json
+        PROPERTIES QT_RESOURCE_ALIAS "sqlite-queries.json")
+set_source_files_properties(
+        resources/sqlite/queries/upsert-media.sql
+        PROPERTIES QT_RESOURCE_ALIAS "upsert-media.sql")
+set_source_files_properties(
+        resources/sqlite/queries/read-media.sql
+        PROPERTIES QT_RESOURCE_ALIAS "read-media.sql")
+
 qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
         FILES

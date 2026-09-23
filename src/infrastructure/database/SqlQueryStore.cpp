@@ -14,14 +14,15 @@ void SqlQueryStore::setLogger(AsyncLogger *logger) { logger_ = logger; }
 bool SqlQueryStore::load(QString &query, QString &error) const {
     QFile file(filePath_);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        error = QStringLiteral("Could not open SQL query file: %1").arg(file.errorString());
+        error = QStringLiteral("Could not open SQL query file '%1': %2")
+                    .arg(filePath_, file.errorString());
         if (logger_) logger_->error(LogCategory::QueryStore, error);
         return false;
     }
 
     query = QString::fromUtf8(file.readAll()).trimmed();
     if (query.isEmpty()) {
-        error = QStringLiteral("SQL query file is empty.");
+        error = QStringLiteral("SQL query file '%1' is empty.").arg(filePath_);
         if (logger_) logger_->error(LogCategory::QueryStore, error);
         return false;
     }

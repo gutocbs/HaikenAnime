@@ -19,16 +19,31 @@ InitialSyncCoordinator::InitialSyncCoordinator(QString databasePath, QString fix
       upsertQueryPath_(std::move(upsertQueryPath)), readQueryPath_(std::move(readQueryPath)) {
 }
 
+InitialSyncCoordinator::~InitialSyncCoordinator() {
+    if (thread_) {
+        thread_->wait();
+        delete thread_;
+        thread_ = nullptr;
+    }
+}
+
 void InitialSyncCoordinator::setLogger(AsyncLogger *logger) {
     logger_ = logger;
 }
 
 void InitialSyncCoordinator::start() {
+    if (thread_ && thread_->isRunning()) {
+        return;
+    }
+    if (thread_) {
+        delete thread_;
+        thread_ = nullptr;
+    }
     if (logger_) {
         logger_->info(LogCategory::Sync, QStringLiteral("Initial synchronization started."));
     }
     emit started();
-    auto *thread = QThread::create([this]() {
+    thread_ = QThread::create([this]() {
         QString error;
         SqliteDatabase database(databasePath_);
         database.setLogger(logger_);
@@ -61,6 +76,5 @@ void InitialSyncCoordinator::start() {
             error.isEmpty() ? emit completed() : emit failed(error);
         }, Qt::QueuedConnection);
     });
-    connect(thread, &QThread::finished, thread, &QObject::deleteLater);
-    thread->start();
+    thread_->start();
 }
