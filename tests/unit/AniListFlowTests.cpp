@@ -29,6 +29,7 @@ class AniListFlowTests : public QObject {
 private slots:
     void fixtureAppliesFilterAndPagination();
     void synchronizationPersistsEveryPage();
+    void invalidFixtureReturnsError();
 };
 
 static QString fixturePath() {
@@ -64,6 +65,15 @@ void AniListFlowTests::synchronizationPersistsEveryPage() {
     QCOMPARE(repository.batches.size(), 2);
     QCOMPARE(repository.batches.at(0).first().Id, 154587);
     QCOMPARE(repository.batches.at(1).first().Id, 116807);
+}
+
+void AniListFlowTests::invalidFixtureReturnsError() {
+    FileAniListDataSource source(QDir(QCoreApplication::applicationDirPath())
+                                     .filePath(QStringLiteral("../tests/fixtures/invalid-media-library.json")));
+    MediaPage page;
+    QString error;
+    QVERIFY(!source.fetchPage({}, page, error));
+    QVERIFY(error.contains(QStringLiteral("Invalid AniList fixture")));
 }
 
 QTEST_MAIN(AniListFlowTests)

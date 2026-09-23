@@ -4,6 +4,7 @@
 #include <QObject>
 
 class QThread;
+class QTimer;
 
 class AsyncLogger;
 
@@ -12,6 +13,8 @@ class InitialSyncCoordinator final : public QObject {
 public:
     explicit InitialSyncCoordinator(QString databasePath, QString fixturePath,
                                     QString upsertQueryPath, QString readQueryPath,
+                                    int syncTimeoutMs = 60000,
+                                    int syncIntervalMs = 3600000,
                                     QObject *parent = nullptr);
     ~InitialSyncCoordinator() override;
     void setLogger(AsyncLogger *logger);
@@ -26,6 +29,9 @@ private:
     QString fixturePath_;
     QString upsertQueryPath_;
     QString readQueryPath_;
+    int syncTimeoutMs_;
+    int syncIntervalMs_;
+    QTimer *scheduler_ = nullptr;
     AsyncLogger *logger_ = nullptr;
     QThread *thread_ = nullptr;
 };

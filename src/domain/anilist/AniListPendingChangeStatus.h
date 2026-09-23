@@ -7,7 +7,8 @@ enum class AniListPendingChangeStatus {
     Processing,
     Succeeded,
     Failed,
-    RequiresConfirmation
+    RequiresConfirmation,
+    Superseded
 };
 
 #endif // HAIKENANIME_ANILISTPENDINGCHANGESTATUS_H

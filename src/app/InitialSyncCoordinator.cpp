@@ -10,13 +10,21 @@
 #include <QDir>
 #include <QMetaObject>
 #include <QThread>
+#include <QTimer>
 
 #include <utility>
 
 InitialSyncCoordinator::InitialSyncCoordinator(QString databasePath, QString fixturePath,
-                                               QString upsertQueryPath, QString readQueryPath, QObject *parent)
+                                               QString upsertQueryPath, QString readQueryPath,
+                                               const int syncTimeoutMs, const int syncIntervalMs,
+                                               QObject *parent)
     : QObject(parent), databasePath_(std::move(databasePath)), fixturePath_(std::move(fixturePath)),
-      upsertQueryPath_(std::move(upsertQueryPath)), readQueryPath_(std::move(readQueryPath)) {
+      upsertQueryPath_(std::move(upsertQueryPath)), readQueryPath_(std::move(readQueryPath)),
+      syncTimeoutMs_(syncTimeoutMs), syncIntervalMs_(syncIntervalMs),
+      scheduler_(new QTimer(this)) {
+    scheduler_->setSingleShot(false);
+    scheduler_->setInterval(syncIntervalMs_);
+    connect(scheduler_, &QTimer::timeout, this, &InitialSyncCoordinator::start);
 }
 
 InitialSyncCoordinator::~InitialSyncCoordinator() {
@@ -64,7 +72,7 @@ void InitialSyncCoordinator::start() {
                 SqliteMediaRepository repository(database.connection(), std::move(upsertQuery), std::move(readQuery));
                 repository.setLogger(logger_);
                 FileAniListDataSource source(QDir::cleanPath(fixturePath_));
-                AniListSyncService service(source, repository);
+                AniListSyncService service(source, repository, nullptr, syncTimeoutMs_);
                 MediaSyncFilter filter;
                 if (!service.Synchronize(filter, error) && error.isEmpty()) {
                     error = QStringLiteral("Media synchronization failed.");
@@ -74,6 +82,9 @@ void InitialSyncCoordinator::start() {
         }
         QMetaObject::invokeMethod(this, [this, error = std::move(error)]() {
             error.isEmpty() ? emit completed() : emit failed(error);
+            if (scheduler_ && !scheduler_->isActive()) {
+                scheduler_->start();
+            }
         }, Qt::QueuedConnection);
     });
     thread_->start();

@@ -15,8 +15,6 @@ public:
     [[nodiscard]] bool Process(int mediaId, QString &error);
 
 private:
-    [[nodiscard]] bool Send(const AniListPendingChange &change, QString &error) const;
-
     IPendingChangeRepository &repository_;
     IAniListUpdateClient &updateClient_;
 };

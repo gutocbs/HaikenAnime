@@ -19,6 +19,7 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 ## Integração com o AniList
 
 - Substituir o provider baseado em fixture pelo provider GraphQL real.
+- Consolidar o transporte de update em uma única mutation `SaveMediaListEntry` por mídia. O contrato `IAniListUpdateClient` já recebe os campos agrupados por mídia, mas a implementação inicial ainda utiliza internamente as mutations específicas existentes.
 - Utilizar o endpoint oficial configurável do AniList.
 - Confirmar e implementar as queries GraphQL definitivas para anime, manga e novels.
 - Usar `POST` com `query` e `variables`, seguindo o contrato oficial da API.
@@ -27,6 +28,7 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 - Implementar renovação, invalidação e atualização segura de tokens.
 - Adicionar tratamento de rate limit, backoff e retry controlado.
 - Definir timeouts, limites de payload e política para indisponibilidade do serviço.
+- Adicionar cancelamento explícito ao contrato do cliente GraphQL. O timeout global já interrompe o fluxo entre páginas e etapas, mas ainda não consegue cancelar uma requisição síncrona bloqueada dentro de `fetchPage`.
 - Versionar ou identificar as queries GraphQL usadas pela aplicação.
 
 ## Secrets e segurança
@@ -178,6 +180,11 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 ## Critério para considerar a integração pronta
 
 A integração somente deverá ser considerada pronta quando o provider GraphQL real, a autenticação segura, a persistência definitiva, o tratamento de falhas e os testes de rede/paginação estiverem implementados e validados separadamente do fixture local.
+
+## Pontos abertos do fluxo de sincronização
+
+- Definir como tratar falhas parciais em mutations agrupadas por mídia. Inicialmente, a mídia inteira será considerada como falha.
+- Avaliar se será necessário registrar o resultado individual de cada campo após os testes com mocks e a API real.
 
 ## Contrato do update
 

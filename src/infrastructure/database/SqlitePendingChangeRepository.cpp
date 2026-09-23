@@ -69,6 +69,7 @@ bool SqlitePendingChangeRepository::GetPending(int mediaId, QList<AniListPending
     }
     while (query.next()) {
         AniListPendingChange change;
+        change.id = query.value(QStringLiteral("id")).toLongLong();
         change.mediaId = query.value(QStringLiteral("media_id")).toInt();
         change.field = static_cast<AniListField>(query.value(QStringLiteral("field")).toInt());
         change.previousValue = DecodeValue(query.value(QStringLiteral("previous_value")).toString());
@@ -87,8 +88,7 @@ bool SqlitePendingChangeRepository::GetPending(int mediaId, QList<AniListPending
 bool SqlitePendingChangeRepository::UpdateStatus(const AniListPendingChange &change, QString &error) {
     QSqlQuery query(database_);
     query.prepare(updateStatusQuery_);
-    query.bindValue(QStringLiteral(":media_id"), change.mediaId);
-    query.bindValue(QStringLiteral(":field"), static_cast<int>(change.field));
+    query.bindValue(QStringLiteral(":id"), change.id);
     query.bindValue(QStringLiteral(":status"), static_cast<int>(change.status));
     query.bindValue(QStringLiteral(":attempts"), change.attempts);
     query.bindValue(QStringLiteral(":last_error"), change.lastError);

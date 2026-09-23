@@ -13,6 +13,7 @@ AniListMergeDecision AniListMergeService::Merge(
         decision.value = remoteValue;
         break;
     case AniListMergePolicy::LocalWins:
+    case AniListMergePolicy::LocalWinsLatest:
         decision.value = localValue;
         break;
     case AniListMergePolicy::MaxValue:

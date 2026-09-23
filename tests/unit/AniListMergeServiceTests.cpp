@@ -8,6 +8,7 @@ class AniListMergeServiceTests : public QObject {
 private slots:
     void remoteWinsForCatalogField();
     void maxValueKeepsHighestProgress();
+    void localWinsLatestKeepsLocalValue();
     void localStatusIsQueuedForUpdate();
     void deletionRequiresConfirmation();
 };
@@ -22,6 +23,14 @@ void AniListMergeServiceTests::remoteWinsForCatalogField() {
 void AniListMergeServiceTests::maxValueKeepsHighestProgress() {
     const auto decision = AniListMergeService::Merge(AniListField::Progress, 12, 10);
     QCOMPARE(std::get<int>(decision.value), 12);
+}
+
+void AniListMergeServiceTests::localWinsLatestKeepsLocalValue() {
+    const auto decision = AniListMergeService::Merge(
+        AniListField::ListStatus, QStringLiteral("WATCHING"), QStringLiteral("COMPLETED"));
+    QCOMPARE(std::get<QString>(decision.value), QStringLiteral("WATCHING"));
+    QCOMPARE(decision.policy, AniListMergePolicy::LocalWinsLatest);
+    QCOMPARE(decision.result, AniListMergeResult::Applied);
 }
 
 void AniListMergeServiceTests::localStatusIsQueuedForUpdate() {

@@ -8,6 +8,8 @@
 struct Settings {
     AniListSettings aniList;
     HttpSettings http;
+    int syncTimeoutMs = 60000;
+    int syncIntervalMs = 3600000;
     int logRetentionDays = 7;
 };
 

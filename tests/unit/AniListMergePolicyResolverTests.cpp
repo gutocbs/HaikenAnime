@@ -23,7 +23,7 @@ void AniListMergePolicyResolverTests::mapsUserFieldsToExpectedPolicies() {
     QCOMPARE(AniListMergePolicyResolver::PolicyFor(AniListField::Progress),
              AniListMergePolicy::MaxValue);
     QCOMPARE(AniListMergePolicyResolver::PolicyFor(AniListField::ListStatus),
-             AniListMergePolicy::LocalWins);
+             AniListMergePolicy::LocalWinsLatest);
     QCOMPARE(AniListMergePolicyResolver::PolicyFor(AniListField::PersonalScore),
              AniListMergePolicy::QueueLocalChange);
     QCOMPARE(AniListMergePolicyResolver::PolicyFor(AniListField::Deletion),

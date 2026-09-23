@@ -25,7 +25,9 @@ ApplicationContext createApplicationContext() {
     ApplicationContext context;
     Settings settings;
     QString settingsError;
-    JsonSettingsReader settingsReader(QStringLiteral("Settings.json"));
+    // Settings is packaged as a Qt resource so startup does not depend on the
+    // process working directory chosen by the IDE, service manager or shell.
+    JsonSettingsReader settingsReader(QStringLiteral(":/config/Settings.json"));
     if (!settingsReader.read(settings, settingsError)) {
         settings.logRetentionDays = 7;
     }
@@ -103,7 +105,8 @@ ApplicationContext createApplicationContext() {
     context.initialSync = std::make_unique<InitialSyncCoordinator>(
         context.database->databasePath(),
         QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("../tests/fixtures/media-library.json")),
-        queryConfiguration.upsertMediaPath, queryConfiguration.readMediaPath);
+        queryConfiguration.upsertMediaPath, queryConfiguration.readMediaPath,
+        settings.syncTimeoutMs, settings.syncIntervalMs);
     context.initialSync->setLogger(context.logger.get());
     context.logger->info(LogCategory::Application, QStringLiteral("Application composition completed."));
     return context;

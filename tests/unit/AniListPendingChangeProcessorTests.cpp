@@ -1,6 +1,8 @@
 #include <QtTest>
 
 #include "../../src/application/anilist/AniListPendingChangeProcessor.h"
+#include "../../src/application/anilist/AniListPendingChangeCompactor.h"
+#include "../../src/application/anilist/AniListPendingChangeGrouper.h"
 
 class FakePendingRepository final : public IPendingChangeRepository {
 public:
@@ -32,43 +34,33 @@ public:
 
 class FakeUpdateClient final : public IAniListUpdateClient {
 public:
-    bool UpdateProgress(int, int, QString &error) override {
-        progressCalls++;
+    bool UpdateMedia(const AniListMediaPendingChanges &changes, QString &error) override {
+        mediaCalls++;
+        lastGroup = changes;
+        for (const auto &change : changes.changes) {
+            if (change.field == AniListField::Deletion &&
+                change.status != AniListPendingChangeStatus::RequiresConfirmation) {
+                error = QStringLiteral("Deletion requires confirmation.");
+                return false;
+            }
+        }
         if (!succeeds) {
             error = QStringLiteral("update failed");
         }
         return succeeds;
     }
 
-    bool UpdateScore(int, double, QString &error) override {
-        Q_UNUSED(error)
-        scoreCalls++;
-        return succeeds;
-    }
-
-    bool UpdateListStatus(int, const QString &, QString &error) override {
-        Q_UNUSED(error)
-        listStatusCalls++;
-        return succeeds;
-    }
-
-    bool DeleteListEntry(int, QString &error) override {
-        Q_UNUSED(error)
-        deleteCalls++;
-        return succeeds;
-    }
-
     bool succeeds = true;
-    int progressCalls = 0;
-    int scoreCalls = 0;
-    int listStatusCalls = 0;
-    int deleteCalls = 0;
+    int mediaCalls = 0;
+    AniListMediaPendingChanges lastGroup;
 };
 
 class AniListPendingChangeProcessorTests : public QObject {
     Q_OBJECT
 
 private slots:
+    void compactsLocalWinsLatestByLocalUpdatedAt();
+    void groupsChangesByMedia();
     void marksSuccessfulMutationAsSucceeded();
     void preservesFailedMutationForRetry();
     void blocksUnconfirmedDeletion();
@@ -84,6 +76,50 @@ static AniListPendingChange progressChange(AniListPendingChangeStatus status =
     return change;
 }
 
+void AniListPendingChangeProcessorTests::compactsLocalWinsLatestByLocalUpdatedAt() {
+    auto older = progressChange();
+    older.field = AniListField::ListStatus;
+    older.id = 1;
+    older.localUpdatedAt = QDateTime::fromString(QStringLiteral("2026-09-23T10:00:00"), Qt::ISODate);
+    older.newValue = QStringLiteral("WATCHING");
+
+    auto newer = older;
+    newer.id = 2;
+    newer.localUpdatedAt = QDateTime::fromString(QStringLiteral("2026-09-23T11:00:00"), Qt::ISODate);
+    newer.newValue = QStringLiteral("COMPLETED");
+
+    const auto compacted = AniListPendingChangeCompactor::Compact({newer, older});
+    QCOMPARE(compacted.size(), 2);
+    QCOMPARE(compacted.first().id, qint64(1));
+    QCOMPARE(compacted.first().status, AniListPendingChangeStatus::Superseded);
+    QCOMPARE(compacted.last().id, qint64(2));
+}
+
+void AniListPendingChangeProcessorTests::groupsChangesByMedia() {
+    auto firstMediaProgress = progressChange();
+    firstMediaProgress.mediaId = 2;
+    firstMediaProgress.id = 1;
+    firstMediaProgress.localUpdatedAt = QDateTime::fromString(
+        QStringLiteral("2026-09-23T10:00:00"), Qt::ISODate);
+
+    auto firstMediaStatus = firstMediaProgress;
+    firstMediaStatus.id = 2;
+    firstMediaStatus.field = AniListField::ListStatus;
+    firstMediaStatus.newValue = QStringLiteral("WATCHING");
+
+    auto secondMediaProgress = firstMediaProgress;
+    secondMediaProgress.mediaId = 1;
+    secondMediaProgress.id = 3;
+
+    const auto groups = AniListPendingChangeGrouper::Group(
+        {firstMediaProgress, firstMediaStatus, secondMediaProgress});
+    QCOMPARE(groups.size(), 2);
+    QCOMPARE(groups.first().mediaId, 1);
+    QCOMPARE(groups.first().changes.size(), 1);
+    QCOMPARE(groups.last().mediaId, 2);
+    QCOMPARE(groups.last().changes.size(), 2);
+}
+
 void AniListPendingChangeProcessorTests::marksSuccessfulMutationAsSucceeded() {
     FakePendingRepository repository;
     repository.changes.append(progressChange());
@@ -92,7 +128,7 @@ void AniListPendingChangeProcessorTests::marksSuccessfulMutationAsSucceeded() {
     QString error;
 
     QVERIFY(processor.Process(154587, error));
-    QCOMPARE(client.progressCalls, 1);
+    QCOMPARE(client.mediaCalls, 1);
     QCOMPARE(repository.statuses.size(), 2);
     QCOMPARE(repository.statuses.last(), AniListPendingChangeStatus::Succeeded);
 }
@@ -120,7 +156,7 @@ void AniListPendingChangeProcessorTests::blocksUnconfirmedDeletion() {
     QString error;
 
     QVERIFY(!processor.Process(154587, error));
-    QCOMPARE(client.deleteCalls, 0);
+    QCOMPARE(client.mediaCalls, 1);
     QCOMPARE(repository.statuses.last(), AniListPendingChangeStatus::Failed);
 }
 

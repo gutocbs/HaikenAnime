@@ -37,12 +37,16 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
     settings.http.timeoutMs = http.value(QStringLiteral("timeoutMs")).toInt(30000);
     settings.http.maxRetries = http.value(QStringLiteral("maxRetries")).toInt(2);
     settings.http.retryDelayMs = http.value(QStringLiteral("retryDelayMs")).toInt(1000);
+    const auto sync = root.value(QStringLiteral("sync")).toObject();
+    settings.syncTimeoutMs = sync.value(QStringLiteral("timeoutMs")).toInt(60000);
+    settings.syncIntervalMs = sync.value(QStringLiteral("intervalMs")).toInt(3600000);
     const auto logging = root.value(QStringLiteral("logging")).toObject();
     settings.logRetentionDays = logging.value(QStringLiteral("retentionDays")).toInt(7);
 
     if (settings.aniList.endpoint.isEmpty() || settings.aniList.mediaQueryFile.isEmpty()
         || settings.http.timeoutMs <= 0 || settings.http.maxRetries < 0
-        || settings.http.retryDelayMs < 0) {
+        || settings.http.retryDelayMs < 0 || settings.syncTimeoutMs <= 0
+        || settings.syncIntervalMs <= 0) {
         error = QStringLiteral("Settings.json contains invalid AniList or HTTP settings.");
         return false;
     }

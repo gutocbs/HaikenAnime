@@ -55,6 +55,16 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/anilist/IMediaRepository.h
         src/application/anilist/AniListSyncService.h
         src/application/anilist/AniListSyncService.cpp
+        src/application/anilist/AniListSyncErrorClassifier.h
+        src/application/anilist/AniListSyncErrorClassifier.cpp
+        src/application/anilist/AniListPendingChangeProcessor.h
+        src/application/anilist/AniListPendingChangeProcessor.cpp
+        src/application/anilist/AniListPendingChangeCompactor.h
+        src/application/anilist/AniListPendingChangeCompactor.cpp
+        src/application/anilist/AniListPendingChangeGrouper.h
+        src/application/anilist/AniListPendingChangeGrouper.cpp
+        src/application/anilist/AniListMergePolicyResolver.h
+        src/application/anilist/AniListMergePolicyResolver.cpp
         src/application/anilist/AniListSyncWorker.h
         src/application/anilist/AniListSyncWorker.cpp
         src/application/anilist/AniListMergePolicyResolver.h
@@ -69,6 +79,13 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/anilist/AniListUpdateClient.cpp
         src/application/anilist/AniListPendingChangeProcessor.h
         src/application/anilist/AniListPendingChangeProcessor.cpp
+        src/application/anilist/AniListPendingChangeCompactor.h
+        src/application/anilist/AniListPendingChangeCompactor.cpp
+        src/application/anilist/AniListMediaPendingChanges.h
+        src/application/anilist/AniListPendingChangeGrouper.h
+        src/application/anilist/AniListPendingChangeGrouper.cpp
+        src/application/anilist/AniListMergePolicyResolver.h
+        src/application/anilist/AniListMergePolicyResolver.cpp
         src/application/anilist/AniListUpdateWorker.h
         src/application/anilist/AniListUpdateWorker.cpp
         src/application/anilist/AniListAuthManager.h
@@ -116,6 +133,18 @@ set_source_files_properties(
 set_source_files_properties(
         resources/sqlite/queries/read-media.sql
         PROPERTIES QT_RESOURCE_ALIAS "read-media.sql")
+set_source_files_properties(
+        resources/sqlite/queries/enqueue-pending-change.sql
+        PROPERTIES QT_RESOURCE_ALIAS "enqueue-pending-change.sql")
+set_source_files_properties(
+        resources/sqlite/queries/read-pending-changes.sql
+        PROPERTIES QT_RESOURCE_ALIAS "read-pending-changes.sql")
+set_source_files_properties(
+        resources/sqlite/queries/update-pending-change.sql
+        PROPERTIES QT_RESOURCE_ALIAS "update-pending-change.sql")
+set_source_files_properties(
+        Settings.json
+        PROPERTIES QT_RESOURCE_ALIAS "Settings.json")
 
 qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
@@ -126,6 +155,12 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         resources/sqlite/queries/enqueue-pending-change.sql
         resources/sqlite/queries/read-pending-changes.sql
         resources/sqlite/queries/update-pending-change.sql
+)
+
+qt_add_resources(HaikenAnime application_config_resource
+        PREFIX "/config"
+        FILES
+        Settings.json
 )
 
 qt_add_qml_module(HaikenAnime
@@ -198,6 +233,16 @@ add_executable(AniListFlowTests
         tests/unit/AniListFlowTests.cpp
         src/application/anilist/AniListSyncService.h
         src/application/anilist/AniListSyncService.cpp
+        src/application/anilist/AniListSyncErrorClassifier.h
+        src/application/anilist/AniListSyncErrorClassifier.cpp
+        src/application/anilist/AniListPendingChangeProcessor.h
+        src/application/anilist/AniListPendingChangeProcessor.cpp
+        src/application/anilist/AniListPendingChangeCompactor.h
+        src/application/anilist/AniListPendingChangeCompactor.cpp
+        src/application/anilist/AniListPendingChangeGrouper.h
+        src/application/anilist/AniListPendingChangeGrouper.cpp
+        src/application/anilist/AniListMergePolicyResolver.h
+        src/application/anilist/AniListMergePolicyResolver.cpp
         src/application/anilist/IAniListDataSource.h
         src/application/anilist/IMediaRepository.h
         src/application/media/IMediaDataSource.h
@@ -214,6 +259,20 @@ target_link_libraries(AniListFlowTests
 )
 
 add_test(NAME AniListFlowTests COMMAND AniListFlowTests)
+
+add_executable(AniListSyncErrorClassifierTests
+        tests/unit/AniListSyncErrorClassifierTests.cpp
+        src/application/anilist/AniListSyncErrorClassifier.h
+        src/application/anilist/AniListSyncErrorClassifier.cpp
+)
+
+target_link_libraries(AniListSyncErrorClassifierTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME AniListSyncErrorClassifierTests COMMAND AniListSyncErrorClassifierTests)
 
 add_executable(AniListMergePolicyResolverTests
         tests/unit/AniListMergePolicyResolverTests.cpp
@@ -263,6 +322,13 @@ add_executable(AniListPendingChangeProcessorTests
         tests/unit/AniListPendingChangeProcessorTests.cpp
         src/application/anilist/AniListPendingChangeProcessor.h
         src/application/anilist/AniListPendingChangeProcessor.cpp
+        src/application/anilist/AniListPendingChangeCompactor.h
+        src/application/anilist/AniListPendingChangeCompactor.cpp
+        src/application/anilist/AniListMergePolicyResolver.h
+        src/application/anilist/AniListMergePolicyResolver.cpp
+        src/application/anilist/AniListMediaPendingChanges.h
+        src/application/anilist/AniListPendingChangeGrouper.h
+        src/application/anilist/AniListPendingChangeGrouper.cpp
 )
 
 target_link_libraries(AniListPendingChangeProcessorTests
@@ -286,6 +352,24 @@ target_link_libraries(HomeScreenControllerTests
 )
 
 add_test(NAME HomeScreenControllerTests COMMAND HomeScreenControllerTests)
+
+# Unit tests are separate executables and do not receive the deployment step
+# used by the application target. Make Qt runtime DLLs available to CTest.
+set(HAIKENANIME_TESTS
+        SqliteDatabaseTests
+        FileSecretStoreTests
+        AniListAuthManagerTests
+        AniListFlowTests
+        AniListSyncErrorClassifierTests
+        AniListMergePolicyResolverTests
+        AniListPendingChangeFactoryTests
+        AniListMergeServiceTests
+        AniListPendingChangeProcessorTests
+        HomeScreenControllerTests
+)
+set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;$ENV{PATH}"
+)
 
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX)

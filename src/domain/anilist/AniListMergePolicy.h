@@ -5,6 +5,7 @@
 enum class AniListMergePolicy {
     RemoteWins,
     LocalWins,
+    LocalWinsLatest,
     MaxValue,
     QueueLocalChange,
     RequiresConfirmation

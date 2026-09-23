@@ -18,20 +18,15 @@ public:
                         GraphQlQueryStore &listStatusQuery,
                         GraphQlQueryStore &deleteQuery);
 
-    /** Sends the progress mutation. */
-    [[nodiscard]] bool UpdateProgress(int mediaId, int progress, QString &error) override;
-
-    /** Sends the score mutation. */
-    [[nodiscard]] bool UpdateScore(int mediaId, double score, QString &error) override;
-
-    /** Sends the list-status mutation. */
-    [[nodiscard]] bool UpdateListStatus(int mediaId, const QString &status,
-                                        QString &error) override;
-
-    /** Sends the delete mutation after confirmation. */
-    [[nodiscard]] bool DeleteListEntry(int mediaId, QString &error) override;
+    /** Sends all changes for one media item through the update operation. */
+    [[nodiscard]] bool UpdateMedia(const AniListMediaPendingChanges &changes,
+                                   QString &error) override;
 
 private:
+    [[nodiscard]] bool UpdateProgress(int mediaId, int progress, QString &error);
+    [[nodiscard]] bool UpdateScore(int mediaId, double score, QString &error);
+    [[nodiscard]] bool UpdateListStatus(int mediaId, const QString &status, QString &error);
+    [[nodiscard]] bool DeleteListEntry(int mediaId, QString &error);
     [[nodiscard]] bool Execute(GraphQlQueryStore &queryStore, const QJsonObject &variables,
                                QString &error) const;
 

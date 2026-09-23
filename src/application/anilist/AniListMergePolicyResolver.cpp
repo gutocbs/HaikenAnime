@@ -13,6 +13,7 @@ AniListMergePolicy AniListMergePolicyResolver::PolicyFor(const AniListField fiel
     case AniListField::PersonalScore:
         return AniListMergePolicy::QueueLocalChange;
     case AniListField::ListStatus:
+        return AniListMergePolicy::LocalWinsLatest;
     case AniListField::LocalFiles:
         return AniListMergePolicy::LocalWins;
     case AniListField::Deletion:

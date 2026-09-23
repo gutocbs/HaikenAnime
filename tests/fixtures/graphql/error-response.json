@@ -1,0 +1,6 @@
+{
+  "data": null,
+  "errors": [
+    { "message": "Invalid credentials", "status": 401 }
+  ]
+}

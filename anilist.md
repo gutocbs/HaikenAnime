@@ -337,6 +337,16 @@ Uma função central, como `PolicyFor(field)`, associará cada campo à sua pol�
 
 O merge não deverá depender de nomes de propriedades ou reflexão. Cada campo será processado explicitamente, permitindo associar políticas diferentes a campos que hoje pertencem ao mesmo grupo e tornando os conflitos individualmente testáveis.
 
+## Decisões do fluxo de sincronização
+
+Para `LocalWinsLatest`, a alteração mais recente será identificada por `localUpdatedAt`. Não usaremos uma sequência adicional no teste inicial; ela só será considerada se timestamps empatados exigirem uma ordenação total.
+
+O timeout global será independente do timeout HTTP individual e será configurado em `sync.timeoutMs` no `Settings.json`. Ao expirar, a execução será cancelada, as alterações não concluídas permanecerão na outbox e a falha será considerada temporária.
+
+As alterações serão agrupadas por mídia e enviadas em um único request por mídia. Inicialmente, qualquer falha da mutation marcará a mídia inteira como falha. O tratamento de falhas parciais ficará aberto para revisão após os testes com mocks e a validação da API real.
+
+A sincronização inicial será executada imediatamente. O scheduler somente começará após sua conclusão, e nenhuma nova sincronização poderá iniciar enquanto outra estiver em andamento.
+
 ## Fora do escopo inicial
 
 - OAuth completo e fluxo de login interativo.

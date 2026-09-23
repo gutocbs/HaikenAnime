@@ -13,6 +13,7 @@ using AniListFieldValue = std::variant<QString, int>;
 
 /** Represents one local field change that may need to be sent to AniList. */
 struct AniListPendingChange {
+    qint64 id = 0;
     int mediaId = 0;
     AniListField field = AniListField::ExternalId;
     AniListFieldValue previousValue = QString();

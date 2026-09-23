@@ -104,6 +104,7 @@ void HomeScreenController::reload() {
         model_.setMedia({});
         emit mediaCountChanged();
         setState(QStringLiteral("error"));
+        setStatusMessage(QStringLiteral("A sincronização falhou."));
         return;
     }
 
