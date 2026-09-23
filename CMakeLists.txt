@@ -22,7 +22,13 @@ endif ()
 enable_testing()
 
 qt_add_executable(HaikenAnime main.cpp
+        src/app/ApplicationComposition.h
+        src/app/ApplicationComposition.cpp
+        src/app/InitialSyncCoordinator.h
+        src/app/InitialSyncCoordinator.cpp
         src/domain/media/Media.h
+        src/domain/media/MediaPage.h
+        src/domain/media/MediaSyncFilter.h
         src/domain/media/MediaType.h
         src/domain/media/MediaStatus.h
         src/domain/media/MediaEnumFormatter.h
@@ -75,6 +81,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqlQueryStore.h
         src/infrastructure/database/SqlQueryStore.cpp
+        src/infrastructure/database/SqliteQueryConfiguration.h
+        src/infrastructure/database/SqliteQueryConfiguration.cpp
         src/infrastructure/secrets/FileSecretStore.h
         src/infrastructure/secrets/FileSecretStore.cpp
         src/infrastructure/anilist/HttpFactory.h
@@ -95,9 +103,10 @@ qt_add_executable(HaikenAnime main.cpp
         src/presentation/home/HomeScreenController.cpp
 )
 
-qt_add_resources(HaikenAnime sqlite_queries
+qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
         FILES
+        resources/sqlite/sqlite-queries.json
         resources/sqlite/queries/upsert-media.sql
         resources/sqlite/queries/read-media.sql
 )
@@ -172,6 +181,7 @@ add_executable(AniListFlowTests
         src/application/anilist/AniListSyncService.cpp
         src/application/anilist/IAniListDataSource.h
         src/application/anilist/IMediaRepository.h
+        src/application/media/IMediaDataSource.h
         src/infrastructure/anilist/FileAniListDataSource.h
         src/infrastructure/anilist/FileAniListDataSource.cpp
         src/infrastructure/anilist/AniListMediaMapper.h

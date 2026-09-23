@@ -19,6 +19,17 @@
 - Documentar o código público criado na V2 quando o nome não for autoexplicativo. O comentário deve explicar o que a função faz, seus argumentos, retorno e condições de erro quando aplicável; não é necessário adicionar comentários redundantes para métodos cujo nome já comunique claramente seu comportamento.
 - Quando possível, não manter queries SQL ou GraphQL hardcoded em classes C++; armazená-las em arquivos separados e carregá-las pela infraestrutura de configuração/composição.
 
+## Composição da aplicação e sincronização
+
+- `main.cpp` deve permanecer focado na inicialização do Qt/QML e não deve conhecer queries, caminhos de fixtures, repositories, data sources ou detalhes do SQLite.
+- A abertura do banco, migrações, carregamento de queries e criação das dependências devem ficar na composição da aplicação, em `src/app/`, preferencialmente por meio de uma factory que retorne um contexto explícito.
+- Falhas de infraestrutura não devem impedir a abertura da janela. O contexto deve retornar dependências válidas ou uma mensagem de erro controlada; repositories parcialmente inicializados não podem ser utilizados.
+- A sincronização deve depender de uma interface agnóstica de data source. AniList, arquivos mock e futuras fontes devem ser implementações substituíveis, não dependências fixas do serviço de sincronização.
+- Filtros e páginas de sincronização devem ser conceitos genéricos da aplicação; nomes específicos de AniList devem permanecer nas implementações e adapters da integração.
+- A sincronização inicial deve executar em uma thread separada e usar uma conexão SQLite própria da thread. A conexão criada para a leitura inicial da apresentação não deve ser reutilizada em outra thread.
+- O controller de apresentação deve expor estado, progresso/mensagem e erro da sincronização por propriedades e sinais Qt. O QML apenas apresenta esses estados e solicita uma nova leitura quando receber o sinal de dados atualizados.
+- Os dados persistidos devem ser lidos na inicialização antes do início da sincronização, garantindo que a última versão local apareça enquanto a atualização ocorre em background.
+
 ## Testes
 
 - Toda mudança concluída na V2 deve ter testes unitários correspondentes. Testes são uma prioridade do projeto e devem cobrir o comportamento esperado, regras de negócio e casos de erro relevantes.

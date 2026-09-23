@@ -12,7 +12,7 @@ public:
     explicit FileAniListDataSource(QString filePath);
 
     /** Reads, filters and paginates one fixture page. */
-    [[nodiscard]] bool fetchPage(const AniListSyncFilter &filter, AniListPage &result,
+    [[nodiscard]] bool fetchPage(const MediaSyncFilter &filter, MediaPage &result,
                                  QString &error) override;
 
 private:

@@ -3,10 +3,17 @@
 #include <QtTest>
 
 #include "../../src/application/anilist/AniListSyncService.h"
+#include "../../src/domain/media/MediaSyncFilter.h"
+#include "../../src/domain/media/MediaPage.h"
 #include "../../src/infrastructure/anilist/FileAniListDataSource.h"
 
 class CollectingRepository final : public IMediaRepository {
 public:
+    QList<Media> ReadAll(QString &error) override {
+        error.clear();
+        return {};
+    }
+
     bool Upsert(const QList<Media> &media, QString &error) override {
         Q_UNUSED(error)
         batches.append(media);
@@ -31,24 +38,24 @@ static QString fixturePath() {
 
 void AniListFlowTests::fixtureAppliesFilterAndPagination() {
     FileAniListDataSource source(QDir::cleanPath(fixturePath()));
-    AniListSyncFilter filter;
+    MediaSyncFilter filter;
     filter.type = QStringLiteral("TV");
     filter.perPage = 1;
 
-    AniListPage page;
+    MediaPage page;
     QString error;
     QVERIFY(source.fetchPage(filter, page, error));
-    QCOMPARE(page.externalMedia.size(), 1);
+    QCOMPARE(page.media.size(), 1);
     QCOMPARE(page.currentPage, 1);
     QVERIFY(page.hasNextPage);
-    QCOMPARE(page.externalMedia.first().id, 154587);
+    QCOMPARE(page.media.first().Id, 154587);
 }
 
 void AniListFlowTests::synchronizationPersistsEveryPage() {
     FileAniListDataSource source(QDir::cleanPath(fixturePath()));
     CollectingRepository repository;
     AniListSyncService service(source, repository);
-    AniListSyncFilter filter;
+    MediaSyncFilter filter;
     filter.type = QStringLiteral("TV");
     filter.perPage = 1;
     QString error;

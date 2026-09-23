@@ -1,0 +1,6 @@
+{
+  "queries": {
+    "upsertMedia": ":/sqlite/queries/upsert-media.sql",
+    "readMedia": ":/sqlite/queries/read-media.sql"
+  }
+}

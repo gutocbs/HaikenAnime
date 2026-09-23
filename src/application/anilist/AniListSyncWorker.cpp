@@ -4,7 +4,7 @@ AniListSyncWorker::AniListSyncWorker(AniListSyncService &service, QObject *paren
     : QObject(parent), service_(service) {
 }
 
-void AniListSyncWorker::Run(const AniListSyncFilter &filter) {
+void AniListSyncWorker::Run(const MediaSyncFilter &filter) {
     emit Started();
     QString error;
     if (!service_.Synchronize(filter, error)) {

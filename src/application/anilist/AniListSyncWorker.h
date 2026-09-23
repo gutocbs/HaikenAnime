@@ -4,6 +4,7 @@
 #include <QObject>
 
 #include "AniListSyncService.h"
+#include "../../domain/media/MediaSyncFilter.h"
 
 /** Runs AniList synchronization on the thread that owns this worker. */
 class AniListSyncWorker final : public QObject {
@@ -15,7 +16,7 @@ public:
 
 public slots:
     /** Runs one synchronization and emits the corresponding lifecycle signal. */
-    void Run(const AniListSyncFilter &filter);
+    void Run(const MediaSyncFilter &filter);
 
 signals:
     void Started();

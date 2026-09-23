@@ -11,7 +11,7 @@
 
 namespace {
 
-bool matchesFilter(const QJsonObject &object, const AniListSyncFilter &filter) {
+bool matchesFilter(const QJsonObject &object, const MediaSyncFilter &filter) {
     const auto format = object.value(QStringLiteral("format")).toString();
     const auto status = object.value(QStringLiteral("status")).toString();
     const auto list = object.value(QStringLiteral("list")).toString();
@@ -27,7 +27,7 @@ FileAniListDataSource::FileAniListDataSource(QString filePath)
     : filePath_(std::move(filePath)) {
 }
 
-bool FileAniListDataSource::fetchPage(const AniListSyncFilter &filter, AniListPage &result,
+bool FileAniListDataSource::fetchPage(const MediaSyncFilter &filter, MediaPage &result,
                                       QString &error) {
     QFile file(filePath_);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -64,7 +64,8 @@ bool FileAniListDataSource::fetchPage(const AniListSyncFilter &filter, AniListPa
 
     for (int index = offset; index < qMin(offset + perPage, filtered.size()); ++index) {
         const auto object = filtered.at(index);
-        result.externalMedia.append(AniListMediaMapper::fromFixtureJson(object));
+            result.media.append(AniListMediaMapper::ToDomainMedia(
+                AniListMediaMapper::fromFixtureJson(object)));
     }
 
     return true;

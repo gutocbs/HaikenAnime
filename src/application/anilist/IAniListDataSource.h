@@ -3,16 +3,8 @@
 
 #include <QString>
 
-#include "../../domain/anilist/AniListPage.h"
-#include "../../domain/anilist/AniListSyncFilter.h"
+#include "../media/IMediaDataSource.h"
 
-class IAniListDataSource {
-public:
-    virtual ~IAniListDataSource() = default;
-
-    /** Fetches one page using the filter pagination values and reports failures through error. */
-    [[nodiscard]] virtual bool fetchPage(const AniListSyncFilter &filter, AniListPage &result,
-                                         QString &error) = 0;
-};
+using IAniListDataSource = IMediaDataSource;
 
 #endif // HAIKENANIME_IANILISTDATASOURCE_H

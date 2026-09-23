@@ -15,7 +15,7 @@ public:
     GraphQlAniListDataSource(AniListGraphQlClient &client, GraphQlQueryStore &queryStore);
 
     /** Fetches one GraphQL page using the supplied filter. */
-    [[nodiscard]] bool fetchPage(const AniListSyncFilter &filter, AniListPage &result,
+    [[nodiscard]] bool fetchPage(const MediaSyncFilter &filter, MediaPage &result,
                                  QString &error) override;
 
 private:

@@ -12,7 +12,7 @@ GraphQlAniListDataSource::GraphQlAniListDataSource(AniListGraphQlClient &client,
     : client_(client), queryStore_(queryStore) {
 }
 
-bool GraphQlAniListDataSource::fetchPage(const AniListSyncFilter &filter, AniListPage &result,
+bool GraphQlAniListDataSource::fetchPage(const MediaSyncFilter &filter, MediaPage &result,
                                          QString &error) {
     QString query;
     if (!queryStore_.load(query, error)) {
@@ -41,7 +41,8 @@ bool GraphQlAniListDataSource::fetchPage(const AniListSyncFilter &filter, AniLis
 
     for (const auto &value : pageObject.value(QStringLiteral("media")).toArray()) {
         const auto object = value.toObject();
-        result.externalMedia.append(AniListMediaMapper::FromGraphQlJson(object));
+        result.media.append(AniListMediaMapper::ToDomainMedia(
+            AniListMediaMapper::FromGraphQlJson(object)));
     }
 
     return true;

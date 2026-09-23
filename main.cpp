@@ -2,26 +2,24 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 
-#include "src/infrastructure/database/SqliteDatabase.h"
-#include "src/infrastructure/database/SqliteMediaRepository.h"
-#include "src/infrastructure/database/SqlQueryStore.h"
+#include "src/app/ApplicationComposition.h"
 #include "src/presentation/home/HomeScreenController.h"
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
 
-    SqliteDatabase database;
-    database.open();
-    database.migrate();
-    SqlQueryStore upsertQueryStore(QStringLiteral(":/sqlite/queries/upsert-media.sql"));
-    SqlQueryStore readQueryStore(QStringLiteral(":/sqlite/queries/read-media.sql"));
-    QString queryError;
-    QString upsertQuery;
-    QString readQuery;
-    upsertQueryStore.load(upsertQuery, queryError);
-    readQueryStore.load(readQuery, queryError);
-    SqliteMediaRepository mediaRepository(database.connection(), upsertQuery, readQuery);
-    HomeScreenController homeController(mediaRepository);
+    auto context = createApplicationContext();
+    HomeScreenController homeController(context.mediaRepository.get(), context.initializationError);
+
+    if (context.initialSync) {
+        QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::started,
+                         &homeController, &HomeScreenController::notifySynchronizationStarted);
+        QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::completed,
+                         &homeController, &HomeScreenController::notifySynchronizationCompleted);
+        QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::failed,
+                         &homeController, &HomeScreenController::notifySynchronizationFailed);
+        context.initialSync->start();
+    }
 
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("homeController"), &homeController);

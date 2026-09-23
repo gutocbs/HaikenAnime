@@ -3,6 +3,9 @@
 
 #include "IAniListDataSource.h"
 #include "IMediaRepository.h"
+#include "../media/IMediaDataSource.h"
+#include "../../domain/media/MediaPage.h"
+#include "../../domain/media/MediaSyncFilter.h"
 
 class AniListSyncService {
 public:
@@ -12,10 +15,10 @@ public:
     }
 
     /** Fetches and persists all pages selected by filter, or all available data when empty. */
-    [[nodiscard]] bool Synchronize(const AniListSyncFilter &filter, QString &error);
+    [[nodiscard]] bool Synchronize(const MediaSyncFilter &filter, QString &error);
 
 private:
-    IAniListDataSource &dataSource_;
+    IMediaDataSource &dataSource_;
     IMediaRepository &mediaRepository_;
 };
 

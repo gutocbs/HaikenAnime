@@ -57,7 +57,14 @@ void HomeMediaModel::setMedia(QList<Media> media) {
 }
 
 HomeScreenController::HomeScreenController(IMediaRepository &repository, QObject *parent)
-    : QObject(parent), repository_(repository), model_(this) {
+    : HomeScreenController(&repository, {}, parent) {
+}
+
+HomeScreenController::HomeScreenController(IMediaRepository *repository, QString initializationError, QObject *parent)
+    : QObject(parent), repository_(repository), model_(this), errorMessage_(std::move(initializationError)) {
+    if (repository_ == nullptr && !errorMessage_.isEmpty()) {
+        state_ = QStringLiteral("error");
+    }
 }
 
 HomeMediaModel *HomeScreenController::mediaModel() {
@@ -68,8 +75,20 @@ QString HomeScreenController::state() const {
     return state_;
 }
 
+QString HomeScreenController::statusMessage() const {
+    return statusMessage_;
+}
+
 QString HomeScreenController::errorMessage() const {
     return errorMessage_;
+}
+
+int HomeScreenController::synchronizationProgress() const {
+    return synchronizationProgress_;
+}
+
+bool HomeScreenController::synchronizationProgressKnown() const {
+    return synchronizationProgressKnown_;
 }
 
 int HomeScreenController::mediaCount() const {
@@ -77,10 +96,22 @@ int HomeScreenController::mediaCount() const {
 }
 
 void HomeScreenController::reload() {
+    if (repository_ == nullptr) {
+        if (errorMessage_.isEmpty()) {
+            errorMessage_ = QStringLiteral("Media repository is unavailable.");
+            emit errorMessageChanged();
+        }
+        model_.setMedia({});
+        emit mediaCountChanged();
+        setState(QStringLiteral("error"));
+        return;
+    }
+
     setState(QStringLiteral("loading"));
+    setStatusMessage(QStringLiteral("Carregando dados locais."));
 
     QString error;
-    auto media = repository_.ReadAll(error);
+    auto media = repository_->ReadAll(error);
     if (!error.isEmpty()) {
         if (errorMessage_ != error) {
             errorMessage_ = std::move(error);
@@ -89,6 +120,7 @@ void HomeScreenController::reload() {
         model_.setMedia({});
         emit mediaCountChanged();
         setState(QStringLiteral("error"));
+        setStatusMessage(QStringLiteral("Não foi possível carregar os dados locais."));
         return;
     }
 
@@ -99,6 +131,62 @@ void HomeScreenController::reload() {
     model_.setMedia(std::move(media));
     emit mediaCountChanged();
     setState(model_.rowCount() == 0 ? QStringLiteral("empty") : QStringLiteral("ready"));
+    setStatusMessage(model_.rowCount() == 0
+                         ? QStringLiteral("Nenhum dado disponível.")
+                         : QStringLiteral("Dados locais carregados."));
+}
+
+void HomeScreenController::notifySynchronizationCompleted() {
+    synchronizationProgress_ = 100;
+    synchronizationProgressKnown_ = true;
+    emit synchronizationProgressChanged();
+    setStatusMessage(QStringLiteral("Sincronização concluída. Atualizando dados."));
+    emit synchronizationCompleted();
+    emit mediaUpdated();
+}
+
+void HomeScreenController::notifySynchronizationStarted() {
+    synchronizationProgress_ = 0;
+    synchronizationProgressKnown_ = false;
+    emit synchronizationProgressChanged();
+    setState(QStringLiteral("loading"));
+    setStatusMessage(QStringLiteral("Sincronizando dados em segundo plano..."));
+}
+
+void HomeScreenController::notifySynchronizationProgress(const int processedItems, const int totalItems) {
+    if (totalItems <= 0) {
+        if (synchronizationProgressKnown_) {
+            synchronizationProgressKnown_ = false;
+            emit synchronizationProgressChanged();
+        }
+        return;
+    }
+
+    const auto progress = qBound(0, (processedItems * 100) / totalItems, 100);
+    if (synchronizationProgress_ == progress && synchronizationProgressKnown_) {
+        return;
+    }
+    synchronizationProgress_ = progress;
+    synchronizationProgressKnown_ = true;
+    emit synchronizationProgressChanged();
+}
+
+void HomeScreenController::notifySynchronizationFailed(const QString &error) {
+    synchronizationProgressKnown_ = false;
+    emit synchronizationProgressChanged();
+    errorMessage_ = error;
+    emit errorMessageChanged();
+    setState(QStringLiteral("error"));
+    setStatusMessage(QStringLiteral("A sincronização falhou."));
+    emit synchronizationError();
+}
+
+void HomeScreenController::setStatusMessage(QString message) {
+    if (statusMessage_ == message) {
+        return;
+    }
+    statusMessage_ = std::move(message);
+    emit statusMessageChanged();
 }
 
 void HomeScreenController::setState(QString state) {

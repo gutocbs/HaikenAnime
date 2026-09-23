@@ -180,7 +180,7 @@ Item {
                         Layout.fillHeight: true
                         title: qsTr("Nenhum título selecionado")
                         description: controller.state === "error"
-                                     ? controller.errorMessage
+                                     ? qsTr("A sincronização não foi concluída. Consulte o aviso abaixo para ver o motivo.")
                                      : qsTr("Os detalhes da mídia selecionada aparecerão aqui quando sua biblioteca tiver dados.")
                         stateLabel: controller.state === "loading"
                                     ? qsTr("CARREGANDO")
@@ -198,29 +198,66 @@ Item {
                         color: line
                     }
 
-                    RowLayout {
+                    Rectangle {
                         Layout.fillWidth: true
-                        spacing: 10
+                        Layout.preferredHeight: controller.state === "error" ? 68 : 52
+                        radius: 6
+                        color: controller.state === "error" ? "#fff0f0" : surfaceSoft
+                        border.color: controller.state === "error" ? "#e6a6aa" : line
+                        border.width: 1
 
-                        Label {
-                            text: qsTr("Carregamento")
-                            color: muted
-                            font.pixelSize: 12
-                        }
+                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: 12
+                            spacing: 6
 
-                        Label {
-                            text: qsTr("Pronto para integração")
-                            color: ink
-                            font.pixelSize: 12
-                            font.weight: Font.DemiBold
-                        }
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 10
 
-                        Item { Layout.fillWidth: true }
+                                Label {
+                                    text: controller.state === "error"
+                                          ? qsTr("ERRO DE SINCRONIZAÇÃO")
+                                          : qsTr("SINCRONIZAÇÃO")
+                                    color: controller.state === "error" ? "#b13b43" : accent
+                                    font.pixelSize: 10
+                                    font.weight: Font.DemiBold
+                                    font.letterSpacing: 1.1
+                                }
 
-                        Label {
-                            text: qsTr("Sem conexão")
-                            color: muted
-                            font.pixelSize: 12
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: controller.state === "loading"
+                                          ? (controller.synchronizationProgressKnown
+                                             ? qsTr("%1% concluído").arg(controller.synchronizationProgress)
+                                             : qsTr("Em andamento"))
+                                          : controller.state === "error"
+                                            ? qsTr("Atenção necessária")
+                                            : controller.statusMessage
+                                    color: controller.state === "error" ? "#b13b43" : ink
+                                    font.pixelSize: 12
+                                    font.weight: Font.DemiBold
+                                    elide: Text.ElideRight
+                                }
+                            }
+
+                            ProgressBar {
+                                Layout.fillWidth: true
+                                visible: controller.state === "loading"
+                                from: 0
+                                to: 100
+                                value: controller.synchronizationProgress
+                                indeterminate: !controller.synchronizationProgressKnown
+                            }
+
+                            Label {
+                                Layout.fillWidth: true
+                                visible: controller.state === "error"
+                                text: controller.errorMessage
+                                color: "#8f3038"
+                                font.pixelSize: 11
+                                elide: Text.ElideRight
+                            }
                         }
                     }
                 }
@@ -266,4 +303,11 @@ Item {
     }
 
     Component.onCompleted: controller.reload()
+
+    Connections {
+        target: controller
+        function onMediaUpdated() {
+            controller.reload()
+        }
+    }
 }
