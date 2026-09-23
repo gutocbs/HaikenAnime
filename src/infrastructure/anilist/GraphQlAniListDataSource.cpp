@@ -41,7 +41,7 @@ bool GraphQlAniListDataSource::fetchPage(const AniListSyncFilter &filter, AniLis
 
     for (const auto &value : pageObject.value(QStringLiteral("media")).toArray()) {
         const auto object = value.toObject();
-        result.externalMedia.append(AniListMediaMapper::fromGraphQlJson(object));
+        result.externalMedia.append(AniListMediaMapper::FromGraphQlJson(object));
     }
 
     return true;
