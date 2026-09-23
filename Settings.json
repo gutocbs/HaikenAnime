@@ -1,0 +1,9 @@
+{
+  "anilist": {
+    "endpoint": "https://graphql.anilist.co",
+    "mediaQueryFile": "resources/anilist/queries/media-page.graphql"
+  },
+  "http": {
+    "timeoutMs": 30000
+  }
+}
