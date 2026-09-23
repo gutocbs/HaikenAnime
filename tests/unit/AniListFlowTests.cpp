@@ -7,7 +7,7 @@
 
 class CollectingRepository final : public IMediaRepository {
 public:
-    bool upsert(const QList<Media> &media, QString &error) override {
+    bool Upsert(const QList<Media> &media, QString &error) override {
         Q_UNUSED(error)
         batches.append(media);
         return true;

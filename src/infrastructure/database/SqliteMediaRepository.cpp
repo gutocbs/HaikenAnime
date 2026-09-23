@@ -6,13 +6,39 @@
 #include <QSqlError>
 #include <QSqlQuery>
 
+#include "SqliteMediaMapper.h"
+
 #include <utility>
 
-SqliteMediaRepository::SqliteMediaRepository(QSqlDatabase database, QString upsertQuery)
-    : database_(std::move(database)), upsertQuery_(std::move(upsertQuery)) {
+SqliteMediaRepository::SqliteMediaRepository(QSqlDatabase database, QString upsertQuery, QString readQuery)
+    : database_(std::move(database)), upsertQuery_(std::move(upsertQuery)), readQuery_(std::move(readQuery)) {
 }
 
-bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
+QList<Media> SqliteMediaRepository::ReadAll(QString &error) {
+    if (!database_.isOpen()) {
+        error = QStringLiteral("SQLite database is not open.");
+        return {};
+    }
+
+    if (readQuery_.isEmpty()) {
+        error = QStringLiteral("SQLite read query is empty.");
+        return {};
+    }
+
+    QSqlQuery query(database_);
+    if (!query.exec(readQuery_)) {
+        error = query.lastError().text();
+        return {};
+    }
+
+    QList<Media> media;
+    while (query.next()) {
+        media.append(SqliteMediaMapper::Map(query));
+    }
+    return media;
+}
+
+bool SqliteMediaRepository::Upsert(const QList<Media> &media, QString &error) {
     if (!database_.isOpen()) {
         error = QStringLiteral("SQLite database is not open.");
         return false;

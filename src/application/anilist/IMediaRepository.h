@@ -10,8 +10,10 @@ class IMediaRepository {
 public:
     virtual ~IMediaRepository() = default;
 
+    [[nodiscard]] virtual QList<Media> ReadAll(QString &error) = 0;
+
     /** Inserts or updates the supplied media and reports persistence failures through error. */
-    [[nodiscard]] virtual bool upsert(const QList<Media> &media, QString &error) = 0;
+    [[nodiscard]] virtual bool Upsert(const QList<Media> &media, QString &error) = 0;
 };
 
 #endif // HAIKENANIME_IMEDIAREPOSITORY_H

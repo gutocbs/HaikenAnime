@@ -18,7 +18,7 @@ bool AniListSyncService::Synchronize(const AniListSyncFilter &filter, QString &e
             media.append(AniListMediaMapper::ToDomainMedia(externalMedia));
         }
 
-        if (!media.isEmpty() && !mediaRepository_.upsert(media, error)) {
+        if (!media.isEmpty() && !mediaRepository_.Upsert(media, error)) {
             return false;
         }
 

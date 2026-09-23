@@ -1,5 +1,19 @@
 # Planejamento de melhorias futuras
 
+## Frontend e integração com o backend
+
+- Implementar inicialmente uma única tela QML, mantendo a organização e o comportamento geral da V1.
+- Manter a primeira etapa sem conexão, autenticação, persistência ou ações funcionais no frontend.
+- Representar os estados de carregamento, vazio e erro desde a primeira versão visual.
+- Criar uma camada de integração entre a apresentação e os casos de uso do backend.
+- Criar controllers ou view models específicos para cada tela, evitando um novo objeto central monolítico.
+- Fazer a camada de integração determinar quais dados serão exibidos, incluindo ordenação, filtragem, separação e agrupamento.
+- Manter o QML responsável apenas pela renderização dos dados e estados recebidos.
+- Integrar inicialmente somente dados de leitura já salvos no banco local.
+- Validar a integração com testes controlados antes de adicionar chamadas externas ou operações de escrita.
+- Evoluir o frontend de forma intercalada com o backend após o primeiro fluxo de leitura funcionar.
+- Avaliar melhorias visuais adicionais somente depois que a tela tiver o funcionamento básico validado.
+
 Este arquivo registra melhorias, endurecimentos e integrações que não fazem parte do fluxo mínimo do teste inicial, mas devem ser considerados antes de tratar a integração com o AniList como pronta para produção.
 
 ## Integração com o AniList

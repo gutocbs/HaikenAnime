@@ -12,11 +12,16 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Network Sql Test)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Qml Quick QuickControls2 Sql Test)
+
+if (COMMAND qt_policy)
+    qt_policy(SET QTP0001 NEW)
+    qt_policy(SET QTP0004 NEW)
+endif ()
 
 enable_testing()
 
-add_executable(HaikenAnime main.cpp
+qt_add_executable(HaikenAnime main.cpp
         src/domain/media/Media.h
         src/domain/media/MediaType.h
         src/domain/media/MediaStatus.h
@@ -66,6 +71,8 @@ add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqliteDatabase.cpp
         src/infrastructure/database/SqliteMediaRepository.h
         src/infrastructure/database/SqliteMediaRepository.cpp
+        src/infrastructure/database/SqliteMediaMapper.h
+        src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqlQueryStore.h
         src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/secrets/FileSecretStore.h
@@ -84,12 +91,35 @@ add_executable(HaikenAnime main.cpp
         src/infrastructure/anilist/AniListMediaMapper.cpp
         src/infrastructure/configuration/JsonSettingsReader.h
         src/infrastructure/configuration/JsonSettingsReader.cpp
+        src/presentation/home/HomeScreenController.h
+        src/presentation/home/HomeScreenController.cpp
+)
+
+qt_add_resources(HaikenAnime sqlite_queries
+        PREFIX "/sqlite/queries"
+        FILES
+        resources/sqlite/queries/upsert-media.sql
+        resources/sqlite/queries/read-media.sql
+)
+
+qt_add_qml_module(HaikenAnime
+        URI HaikenAnime
+        VERSION 1.0
+        QML_FILES
+        resources/qml/Main.qml
+        resources/qml/Home.qml
+        resources/qml/MediaCard.qml
+        resources/qml/StatePanel.qml
 )
 
 target_link_libraries(HaikenAnime
         PRIVATE
         Qt6::Core
+        Qt6::Gui
         Qt6::Network
+        Qt6::Qml
+        Qt6::Quick
+        Qt6::QuickControls2
         Qt6::Sql
 )
 
@@ -214,6 +244,20 @@ target_link_libraries(AniListPendingChangeProcessorTests
 
 add_test(NAME AniListPendingChangeProcessorTests COMMAND AniListPendingChangeProcessorTests)
 
+add_executable(HomeScreenControllerTests
+        tests/unit/HomeScreenControllerTests.cpp
+        src/presentation/home/HomeScreenController.h
+        src/presentation/home/HomeScreenController.cpp
+)
+
+target_link_libraries(HomeScreenControllerTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME HomeScreenControllerTests COMMAND HomeScreenControllerTests)
+
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX)
     if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
@@ -248,13 +292,6 @@ if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
                 "${QT_INSTALL_PATH}/plugins/sqldrivers/qsqlite${DEBUG_SUFFIX}.dll"
                 "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins/sqldrivers/")
     endif ()
-    foreach (QT_LIB Core Network Sql Test)
-        add_custom_command(TARGET HaikenAnime POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy
-                "${QT_INSTALL_PATH}/bin/Qt6${QT_LIB}${DEBUG_SUFFIX}.dll"
-                "$<TARGET_FILE_DIR:HaikenAnime>")
-    endforeach (QT_LIB)
-
     if (MINGW)
         get_filename_component(MINGW_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
         foreach (MINGW_RUNTIME libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll)
@@ -263,5 +300,15 @@ if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
                     "${MINGW_BIN_DIR}/${MINGW_RUNTIME}"
                     "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
         endforeach ()
+    endif ()
+
+    if (EXISTS "${QT_INSTALL_PATH}/bin/windeployqt.exe")
+        add_custom_command(TARGET HaikenAnime POST_BUILD
+                COMMAND "${QT_INSTALL_PATH}/bin/windeployqt.exe"
+                --no-translations
+                --compiler-runtime
+                --qmldir "${CMAKE_CURRENT_SOURCE_DIR}/resources/qml"
+                "$<TARGET_FILE:HaikenAnime>"
+                COMMENT "Deploying Qt and QML runtime dependencies")
     endif ()
 endif ()
