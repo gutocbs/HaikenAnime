@@ -1,7 +1,7 @@
 #include "AniListUpdateClient.h"
 
-#include "../../infrastructure/anilist/AniListGraphQlClient.h"
-#include "../../infrastructure/anilist/GraphQlQueryStore.h"
+#include "AniListGraphQlClient.h"
+#include "GraphQlQueryStore.h"
 
 #include <QJsonObject>
 

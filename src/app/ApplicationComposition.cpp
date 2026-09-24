@@ -96,9 +96,10 @@ ApplicationContext createApplicationContext() {
         return context;
     }
 
-    context.mediaRepository = std::make_unique<SqliteMediaRepository>(
+    auto mediaRepository = std::make_unique<SqliteMediaRepository>(
         context.database->connection(), std::move(upsertQuery), std::move(readQuery));
-    static_cast<SqliteMediaRepository *>(context.mediaRepository.get())->setLogger(context.logger.get());
+    mediaRepository->setLogger(context.logger.get());
+    context.mediaRepository = std::move(mediaRepository);
     context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(
         context.database->connection(), std::move(enqueuePendingQuery),
         std::move(readPendingQuery), std::move(updatePendingQuery));

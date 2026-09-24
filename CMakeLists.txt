@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.21)
 
 project(HaikenAnime LANGUAGES CXX)
 
-if (MINGW)
-    set(CMAKE_PREFIX_PATH "C:/Qt/6.8.3/mingw_64" CACHE PATH "Qt installation" FORCE)
+if (MINGW AND NOT CMAKE_PREFIX_PATH)
+    set(CMAKE_PREFIX_PATH "C:/Qt/6.8.3/mingw_64" CACHE PATH "Qt installation")
 endif ()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -12,14 +12,17 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Qml Quick QuickControls2 Sql Test)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Qml Quick QuickControls2 Sql)
+
+include(CTest)
+if (BUILD_TESTING)
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+endif ()
 
 if (COMMAND qt_policy)
     qt_policy(SET QTP0001 NEW)
     qt_policy(SET QTP0004 NEW)
 endif ()
-
-enable_testing()
 
 qt_add_executable(HaikenAnime main.cpp
         src/app/ApplicationComposition.h
@@ -67,25 +70,15 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/anilist/AniListMergePolicyResolver.cpp
         src/application/anilist/AniListSyncWorker.h
         src/application/anilist/AniListSyncWorker.cpp
-        src/application/anilist/AniListMergePolicyResolver.h
-        src/application/anilist/AniListMergePolicyResolver.cpp
         src/application/anilist/AniListPendingChangeFactory.h
         src/application/anilist/AniListPendingChangeFactory.cpp
         src/application/anilist/AniListMergeService.h
         src/application/anilist/AniListMergeService.cpp
         src/application/anilist/IPendingChangeRepository.h
         src/application/anilist/IAniListUpdateClient.h
-        src/application/anilist/AniListUpdateClient.h
-        src/application/anilist/AniListUpdateClient.cpp
-        src/application/anilist/AniListPendingChangeProcessor.h
-        src/application/anilist/AniListPendingChangeProcessor.cpp
-        src/application/anilist/AniListPendingChangeCompactor.h
-        src/application/anilist/AniListPendingChangeCompactor.cpp
+        src/infrastructure/anilist/AniListUpdateClient.h
+        src/infrastructure/anilist/AniListUpdateClient.cpp
         src/application/anilist/AniListMediaPendingChanges.h
-        src/application/anilist/AniListPendingChangeGrouper.h
-        src/application/anilist/AniListPendingChangeGrouper.cpp
-        src/application/anilist/AniListMergePolicyResolver.h
-        src/application/anilist/AniListMergePolicyResolver.cpp
         src/application/anilist/AniListUpdateWorker.h
         src/application/anilist/AniListUpdateWorker.cpp
         src/application/anilist/AniListAuthManager.h
@@ -184,6 +177,7 @@ target_link_libraries(HaikenAnime
         Qt6::Sql
 )
 
+if (BUILD_TESTING)
 add_executable(SqliteDatabaseTests
         tests/unit/SqliteDatabaseTests.cpp
         src/infrastructure/database/SqliteDatabase.h
@@ -370,23 +364,16 @@ set(HAIKENANIME_TESTS
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;$ENV{PATH}"
 )
+endif ()
 
 if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     set(DEBUG_SUFFIX)
     if (MSVC AND CMAKE_BUILD_TYPE MATCHES "Debug")
         set(DEBUG_SUFFIX "d")
     endif ()
-    if (MINGW)
-        set(QT_INSTALL_PATH "C:/Qt/6.8.3/mingw_64")
-    else ()
-        set(QT_INSTALL_PATH "${CMAKE_PREFIX_PATH}")
-    endif ()
-    if (NOT EXISTS "${QT_INSTALL_PATH}/bin")
-        set(QT_INSTALL_PATH "${QT_INSTALL_PATH}/..")
-        if (NOT EXISTS "${QT_INSTALL_PATH}/bin")
-            set(QT_INSTALL_PATH "${QT_INSTALL_PATH}/..")
-        endif ()
-    endif ()
+    get_target_property(QT_QMAKE_EXECUTABLE Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(QT_BIN_PATH "${QT_QMAKE_EXECUTABLE}" DIRECTORY)
+    get_filename_component(QT_INSTALL_PATH "${QT_BIN_PATH}" DIRECTORY)
     if (EXISTS "${QT_INSTALL_PATH}/plugins/platforms/qwindows${DEBUG_SUFFIX}.dll")
         add_custom_command(TARGET HaikenAnime POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E make_directory

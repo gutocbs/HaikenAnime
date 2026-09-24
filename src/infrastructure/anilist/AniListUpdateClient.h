@@ -3,7 +3,7 @@
 
 #include <QJsonObject>
 
-#include "IAniListUpdateClient.h"
+#include "../../application/anilist/IAniListUpdateClient.h"
 
 class AniListGraphQlClient;
 class GraphQlQueryStore;
