@@ -5,7 +5,7 @@
 #include <QObject>
 #include <QString>
 
-#include "../../application/anilist/IMediaRepository.h"
+#include "../../application/media/IMediaReader.h"
 
 class HomeMediaModel final : public QAbstractListModel {
     Q_OBJECT
@@ -43,8 +43,8 @@ class HomeScreenController final : public QObject {
     Q_PROPERTY(int mediaCount READ mediaCount NOTIFY mediaCountChanged)
 
 public:
-    explicit HomeScreenController(IMediaRepository &repository, QObject *parent = nullptr);
-    explicit HomeScreenController(IMediaRepository *repository, QString initializationError = {}, QObject *parent = nullptr);
+    explicit HomeScreenController(IMediaReader &reader, QObject *parent = nullptr);
+    explicit HomeScreenController(IMediaReader *reader, QString initializationError = {}, QObject *parent = nullptr);
 
     HomeMediaModel *mediaModel();
     QString state() const;
@@ -74,7 +74,7 @@ private:
     void setState(QString state);
     void setStatusMessage(QString message);
 
-    IMediaRepository *repository_ = nullptr;
+    IMediaReader *reader_ = nullptr;
     HomeMediaModel model_;
     QString state_ = QStringLiteral("idle");
     QString statusMessage_ = QStringLiteral("Aguardando sincronização.");

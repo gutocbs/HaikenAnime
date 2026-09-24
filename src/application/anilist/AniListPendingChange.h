@@ -4,12 +4,9 @@
 #include <QDateTime>
 #include <QString>
 
-#include <variant>
-
-#include "AniListField.h"
+#include "../../domain/anilist/AniListField.h"
+#include "../../domain/anilist/AniListFieldValue.h"
 #include "AniListPendingChangeStatus.h"
-
-using AniListFieldValue = std::variant<QString, int>;
 
 /** Represents one local field change that may need to be sent to AniList. */
 struct AniListPendingChange {

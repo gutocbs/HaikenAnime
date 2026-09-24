@@ -3,7 +3,7 @@
 
 #include <QList>
 
-#include "../../domain/anilist/AniListPendingChange.h"
+#include "AniListPendingChange.h"
 
 /** Represents all active local changes that will be sent for one media item. */
 struct AniListMediaPendingChanges {

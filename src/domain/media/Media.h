@@ -13,20 +13,20 @@
 
 class Media {
 public:
-    int Id;
+    int Id = 0;
     QString Name;
     QString EnglishName;
     QString OriginalName;
     QStringList AlternativeNames;
-    int TotalChapters;
-    int ConsumedChapters;
-    int NextChapter;
-    int AverageScore;
-    int PersonalScore;
+    int TotalChapters = 0;
+    int ConsumedChapters = 0;
+    int NextChapter = 0;
+    int AverageScore = 0;
+    int PersonalScore = 0;
     QString CoverUrl;
     QString Synopsis;
-    MediaStatus Status;
-    MediaType Type;
+    MediaStatus Status = MediaStatus::Unknown;
+    MediaType Type = MediaType::Unknown;
 };
 
 

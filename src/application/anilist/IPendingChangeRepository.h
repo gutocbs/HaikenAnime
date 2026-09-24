@@ -4,22 +4,22 @@
 #include <QList>
 #include <QString>
 
-#include "../../domain/anilist/AniListPendingChange.h"
+#include "AniListPendingChange.h"
 
 /** Persists local changes that still need to be reconciled with AniList. */
 class IPendingChangeRepository {
 public:
     virtual ~IPendingChangeRepository() = default;
 
-    /** Adds a pending change to durable storage. */
-    [[nodiscard]] virtual bool Enqueue(const AniListPendingChange &change, QString &error) = 0;
+    /** Adds a pending change to durable storage and clears error on success. */
+    [[nodiscard]] virtual bool enqueue(const AniListPendingChange &change, QString &error) = 0;
 
-    /** Returns pending changes for one media item in creation order. */
-    [[nodiscard]] virtual bool GetPending(int mediaId, QList<AniListPendingChange> &changes,
+    /** Replaces changes with pending items in creation order and clears error on success. */
+    [[nodiscard]] virtual bool getPending(int mediaId, QList<AniListPendingChange> &changes,
                                           QString &error) = 0;
 
-    /** Updates the lifecycle state and last error of a pending change. */
-    [[nodiscard]] virtual bool UpdateStatus(const AniListPendingChange &change,
+    /** Updates the lifecycle state and last error of a pending change, clearing error on success. */
+    [[nodiscard]] virtual bool updateStatus(const AniListPendingChange &change,
                                              QString &error) = 0;
 };
 

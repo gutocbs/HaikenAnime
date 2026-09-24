@@ -14,6 +14,8 @@ GraphQlAniListDataSource::GraphQlAniListDataSource(AniListGraphQlClient &client,
 
 bool GraphQlAniListDataSource::fetchPage(const MediaSyncFilter &filter, MediaPage &result,
                                          QString &error) {
+    result = {};
+    error.clear();
     QString query;
     if (!queryStore_.load(query, error)) {
         return false;
@@ -34,7 +36,6 @@ bool GraphQlAniListDataSource::fetchPage(const MediaSyncFilter &filter, MediaPag
 
     const auto pageObject = response.data.value(QStringLiteral("Page")).toObject();
     const auto pageInfo = pageObject.value(QStringLiteral("pageInfo")).toObject();
-    result = {};
     result.currentPage = pageInfo.value(QStringLiteral("currentPage")).toInt();
     result.totalPages = pageInfo.value(QStringLiteral("lastPage")).toInt();
     result.hasNextPage = pageInfo.value(QStringLiteral("hasNextPage")).toBool();

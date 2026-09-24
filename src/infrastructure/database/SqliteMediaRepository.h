@@ -3,7 +3,7 @@
 
 #include <QSqlDatabase>
 
-#include "../../application/anilist/IMediaRepository.h"
+#include "../../application/media/IMediaRepository.h"
 class AsyncLogger;
 
 /** Persists AniList media in the application's SQLite database. */
@@ -14,10 +14,10 @@ public:
     void setLogger(AsyncLogger *logger);
 
     /** Upserts external media in one transaction while preserving local user fields. */
-    [[nodiscard]] bool Upsert(const QList<Media> &media, QString &error) override;
+    [[nodiscard]] bool upsert(const QList<Media> &media, QString &error) override;
 
     /** Reads persisted media using the supplied ordered SELECT query. */
-    [[nodiscard]] QList<Media> ReadAll(QString &error) override;
+    [[nodiscard]] bool readAll(QList<Media> &media, QString &error) override;
 
 private:
     QSqlDatabase database_;

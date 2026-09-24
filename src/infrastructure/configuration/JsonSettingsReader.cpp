@@ -11,6 +11,8 @@ JsonSettingsReader::JsonSettingsReader(QString filePath)
 }
 
 bool JsonSettingsReader::read(Settings &settings, QString &error) {
+    settings = {};
+    error.clear();
     QFile file(filePath_);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         error = QStringLiteral("Could not open Settings.json: %1").arg(file.errorString());

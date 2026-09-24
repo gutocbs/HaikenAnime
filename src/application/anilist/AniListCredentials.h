@@ -1,0 +1,11 @@
+#ifndef HAIKENANIME_APPLICATION_ANILISTCREDENTIALS_H
+#define HAIKENANIME_APPLICATION_ANILISTCREDENTIALS_H
+
+#include <QString>
+
+struct AniListCredentials {
+    QString username;
+    QString token;
+};
+
+#endif // HAIKENANIME_APPLICATION_ANILISTCREDENTIALS_H

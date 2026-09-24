@@ -11,8 +11,8 @@ public:
     AniListPendingChangeProcessor(IPendingChangeRepository &repository,
                                   IAniListUpdateClient &updateClient);
 
-    /** Processes all pending changes for mediaId and reports unrecoverable errors. */
-    [[nodiscard]] bool Process(int mediaId, QString &error);
+    /** Processes sendable changes for mediaId; confirmation-gated deletions remain queued. */
+    [[nodiscard]] bool process(int mediaId, QString &error);
 
 private:
     IPendingChangeRepository &repository_;

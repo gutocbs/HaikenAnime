@@ -3,7 +3,7 @@
 
 #include <QString>
 
-#include "../../domain/anilist/AniListCredentials.h"
+#include "AniListCredentials.h"
 
 class ISecretStore {
 public:
@@ -13,11 +13,11 @@ public:
      * Stable storage contract for credentials. Implementations may later encrypt or use SQLite
      * without changing authorization or transport consumers.
      */
-    /** Loads the stored AniList credentials and reports failures through error. */
+    /** Replaces credentials with the stored value and clears error on success. */
     [[nodiscard]] virtual bool loadAniListCredentials(AniListCredentials &credentials,
                                                        QString &error) = 0;
 
-    /** Stores the AniList credentials and reports failures through error. */
+    /** Stores the AniList credentials and clears error on success. */
     virtual bool saveAniListCredentials(const AniListCredentials &credentials,
                                         QString &error) = 0;
 };

@@ -34,7 +34,8 @@ bool AniListUpdateClient::Execute(GraphQlQueryStore &queryStore, const QJsonObje
     return response.hasData();
 }
 
-bool AniListUpdateClient::UpdateMedia(const AniListMediaPendingChanges &changes, QString &error) {
+bool AniListUpdateClient::updateMedia(const AniListMediaPendingChanges &changes, QString &error) {
+    error.clear();
     if (changes.mediaId <= 0 || changes.changes.isEmpty()) {
         error = QStringLiteral("A media update must contain a valid media id and at least one change.");
         return false;

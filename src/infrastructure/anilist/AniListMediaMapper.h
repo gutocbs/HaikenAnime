@@ -3,7 +3,7 @@
 
 #include <QJsonObject>
 
-#include "../../domain/anilist/AniListMediaDto.h"
+#include "AniListMediaDto.h"
 #include "../../domain/media/Media.h"
 
 /** Converts source-specific JSON objects into the common AniList media DTO. */

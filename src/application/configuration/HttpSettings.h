@@ -1,5 +1,5 @@
-#ifndef HAIKENANIME_HTTPSETTINGS_H
-#define HAIKENANIME_HTTPSETTINGS_H
+#ifndef HAIKENANIME_APPLICATION_HTTPSETTINGS_H
+#define HAIKENANIME_APPLICATION_HTTPSETTINGS_H
 
 /** Runtime settings used to manage HTTP requests. */
 struct HttpSettings {
@@ -8,4 +8,4 @@ struct HttpSettings {
     int retryDelayMs = 1000;
 };
 
-#endif // HAIKENANIME_HTTPSETTINGS_H
+#endif // HAIKENANIME_APPLICATION_HTTPSETTINGS_H

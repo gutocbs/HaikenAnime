@@ -3,13 +3,13 @@
 
 #include <QString>
 
-#include "../../application/anilist/IAniListDataSource.h"
+#include "../../application/media/IMediaDataSource.h"
 
 class AniListGraphQlClient;
 class GraphQlQueryStore;
 
 /** Loads paged AniList media through the GraphQL client and an external query file. */
-class GraphQlAniListDataSource final : public IAniListDataSource {
+class GraphQlAniListDataSource final : public IMediaDataSource {
 public:
     /** Creates a source from an already configured client and query store. */
     GraphQlAniListDataSource(AniListGraphQlClient &client, GraphQlQueryStore &queryStore);

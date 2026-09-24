@@ -21,6 +21,7 @@ AniListMergeDecision AniListMergeService::Merge(
             decision.value = std::max(std::get<int>(localValue), std::get<int>(remoteValue));
         } else {
             decision.value = localValue;
+            decision.result = AniListMergeResult::Conflict;
         }
         break;
     case AniListMergePolicy::QueueLocalChange:

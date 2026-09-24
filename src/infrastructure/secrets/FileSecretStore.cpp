@@ -18,6 +18,8 @@ FileSecretStore::FileSecretStore(QString filePath)
 }
 
 bool FileSecretStore::loadAniListCredentials(AniListCredentials &credentials, QString &error) {
+    credentials = {};
+    error.clear();
     QFile file(filePath_);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         error = QStringLiteral("Could not open AniList secrets file: %1").arg(file.errorString());
@@ -54,6 +56,7 @@ bool FileSecretStore::loadAniListCredentials(AniListCredentials &credentials, QS
 }
 
 bool FileSecretStore::saveAniListCredentials(const AniListCredentials &credentials, QString &error) {
+    error.clear();
     const QFileInfo fileInfo(filePath_);
     if (!QDir().mkpath(fileInfo.absolutePath())) {
         error = QStringLiteral("Could not create the secrets directory.");

@@ -19,7 +19,7 @@ public:
                         GraphQlQueryStore &deleteQuery);
 
     /** Sends all changes for one media item through the update operation. */
-    [[nodiscard]] bool UpdateMedia(const AniListMediaPendingChanges &changes,
+    [[nodiscard]] bool updateMedia(const AniListMediaPendingChanges &changes,
                                    QString &error) override;
 
 private:

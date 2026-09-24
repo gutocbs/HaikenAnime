@@ -28,12 +28,13 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 - Implementar renovação, invalidação e atualização segura de tokens.
 - Adicionar tratamento de rate limit, backoff e retry controlado.
 - Definir timeouts, limites de payload e política para indisponibilidade do serviço.
-- Adicionar cancelamento explícito ao contrato do cliente GraphQL. O timeout global já interrompe o fluxo entre páginas e etapas, mas ainda não consegue cancelar uma requisição síncrona bloqueada dentro de `fetchPage`.
+- Introduzir cancelamento ponta a ponta no caso de uso, em `IMediaDataSource`, em `IAniListUpdateClient` e no transporte HTTP, chegando a `QNetworkReply::abort()`. Um `bool cancelled` apenas no serviço daria uma falsa garantia, pois não interromperia `fetchPage` ou `updateMedia` bloqueados.
 - Versionar ou identificar as queries GraphQL usadas pela aplicação.
 
 ## Secrets e segurança
 
 - Substituir o `FileSecretStore` por armazenamento no SQLite. **Contrato `ISecretStore` já preparado; implementação pendente.**
+- Adicionar ao armazenamento de secrets uma operação explícita para apagar ou invalidar credenciais, necessária para logout e revogação segura.
 - Criptografar os secrets em repouso.
 - Definir como a chave de criptografia será protegida no Windows.
 - Evitar que tokens apareçam em logs, dumps, mensagens de erro ou arquivos temporários.
@@ -44,6 +45,8 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 
 ## Persistência
 
+- Tornar explícitas as regras de ownership entre dados de catálogo, entrada da lista e dados do usuário. Atualizações remotas não devem depender apenas de uma lista implícita de colunas preservadas pela query SQL.
+- Avaliar a separação de `Media` em modelos ou agregados com ciclos de vida próprios para catálogo, progresso e estado da lista antes de ampliar os fluxos de escrita.
 - Finalizar o schema que separa catálogo externo e dados controlados pelo usuário.
 - Adicionar identificador da fonte e identificador externo da mídia.
 - Registrar data da última sincronização por mídia e por execução.
@@ -60,6 +63,7 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 - Executar uma sincronização inicial durante a inicialização do programa.
 - Verificar alterações pendentes durante a sincronização inicial antes de considerar o estado sincronizado.
 - Reprocessar alterações pendentes na próxima execução caso não seja possível concluí-las durante a inicialização.
+- Definir, junto com o scheduler e a política de retry, uma leitura global ou em lotes da outbox. O contrato atual `getPending(mediaId)` serve ao fluxo por mídia, mas não permite que um worker descubra sozinho todas as pendências prontas para nova tentativa.
 - Adicionar schedulers para sincronizações recorrentes.
 - Tornar o intervalo do scheduler configurável pelo `Settings.json`.
 - Aplicar filtros por usuário, tipo, lista e status na query GraphQL.
@@ -119,6 +123,7 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 - Evitar que tokens, secrets, payloads sensíveis ou dados pessoais sejam registrados.
 - Permitir que a configuração de logging seja controlada sem espalhar dependências pela aplicação.
 - Definir como logs de rede, sincronização, mutations, retry e scheduler serão correlacionados.
+- Substituir erros descritos apenas por `QString` por um resultado estruturado com categoria, mensagem segura para apresentação e detalhe técnico opcional. A mudança deve ser coordenada entre infraestrutura, casos de uso, logging e apresentação para eliminar classificação baseada no texto da mensagem.
 - Adicionar rotação, limite de tamanho e política de retenção dos arquivos.
 - Testar logging sem acoplar os testes de domínio a filesystem ou Qt Network.
 
@@ -138,6 +143,7 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 
 ## Threading e ciclo de vida
 
+- Revisar a política completa de encerramento, concorrência e ciclo de vida registrada em `review.md`, incluindo a ordem entre cancelamento dos workers, espera das threads, destruição das dependências e parada do logger.
 - Implementar o worker assíncrono definitivo.
 - Garantir que `QNetworkAccessManager` seja criado e usado na thread de execução.
 - Garantir uma conexão SQLite própria para cada thread que acessar o banco.
@@ -148,6 +154,8 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 
 ## Qualidade e testes
 
+- Avaliar o encapsulamento de `Media` depois de definir invariantes para identificador, progresso, total, próxima mídia, notas e ownership dos campos. Evitar adicionar getters e setters que não protejam nenhuma regra.
+- Avaliar a criação de bibliotecas internas por camada no CMake depois que as fronteiras arquiteturais estiverem consolidadas. O objetivo é evitar recompilar as mesmas fontes em vários executáveis de teste e fazer aplicação e testes consumirem os mesmos módulos.
 - Adicionar fixtures no formato real de respostas GraphQL.
 - Testar respostas com `data: null` e `errors`.
 - Testar campos opcionais, valores nulos e mudanças de schema.
@@ -180,6 +188,10 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 ## Critério para considerar a integração pronta
 
 A integração somente deverá ser considerada pronta quando o provider GraphQL real, a autenticação segura, a persistência definitiva, o tratamento de falhas e os testes de rede/paginação estiverem implementados e validados separadamente do fixture local.
+
+## Dívidas identificadas durante a revisão do core
+
+As dívidas, seus motivos, trade-offs e a parte responsável por revisá-las são mantidos nas seções "Dívidas identificadas, mas não corrigidas nesta parte" de `review.md`, incluindo arquitetura, domínio, contratos e casos de uso. Este planejamento mantém apenas essa referência para evitar duplicação e divergência entre duas listas.
 
 ## Pontos abertos do fluxo de sincronização
 

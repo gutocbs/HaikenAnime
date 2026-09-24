@@ -7,7 +7,7 @@ AniListSyncWorker::AniListSyncWorker(AniListSyncService &service, QObject *paren
 void AniListSyncWorker::Run(const MediaSyncFilter &filter) {
     emit Started();
     QString error;
-    if (!service_.Synchronize(filter, error)) {
+    if (!service_.synchronize(filter, error)) {
         emit Failed(error);
         return;
     }

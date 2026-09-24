@@ -3,10 +3,10 @@
 
 #include <QString>
 
-#include "../../application/anilist/IAniListDataSource.h"
+#include "../../application/media/IMediaDataSource.h"
 
 /** Reads AniList-compatible media data from a local JSON fixture. */
-class FileAniListDataSource final : public IAniListDataSource {
+class FileAniListDataSource final : public IMediaDataSource {
 public:
     /** Creates a source for the supplied fixture path. */
     explicit FileAniListDataSource(QString filePath);

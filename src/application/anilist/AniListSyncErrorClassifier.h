@@ -1,7 +1,7 @@
 #ifndef HAIKENANIME_ANILISTSYNCERRORCLASSIFIER_H
 #define HAIKENANIME_ANILISTSYNCERRORCLASSIFIER_H
 
-#include "../../domain/anilist/AniListSyncErrorCategory.h"
+#include "AniListSyncErrorCategory.h"
 #include <QString>
 
 /** Maps current infrastructure error messages to synchronization categories. */

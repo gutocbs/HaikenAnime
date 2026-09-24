@@ -10,8 +10,8 @@ class IAniListUpdateClient {
 public:
     virtual ~IAniListUpdateClient() = default;
 
-    /** Sends all active changes for one media item as one update operation. */
-    [[nodiscard]] virtual bool UpdateMedia(const AniListMediaPendingChanges &changes,
+    /** Sends all active changes for one media item and clears error on success. */
+    [[nodiscard]] virtual bool updateMedia(const AniListMediaPendingChanges &changes,
                                            QString &error) = 0;
 
 };

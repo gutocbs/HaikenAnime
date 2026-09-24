@@ -6,10 +6,11 @@
 #define HAIKENANIME_MEDIATYPE_H
 
 
-enum MediaType {
-    Anime,   // 0
-    Manga,  // 1
-    Novel   // 2
+enum class MediaType {
+    Unknown = -1,
+    Anime = 0,
+    Manga = 1,
+    Novel = 2
 };
 
 

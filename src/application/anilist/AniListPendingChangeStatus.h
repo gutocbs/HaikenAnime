@@ -1,7 +1,7 @@
 #ifndef HAIKENANIME_ANILISTPENDINGCHANGESTATUS_H
 #define HAIKENANIME_ANILISTPENDINGCHANGESTATUS_H
 
-/** Describes the lifecycle state of a local change awaiting AniList synchronization. */
+/** Describes the application lifecycle of a local change awaiting AniList synchronization. */
 enum class AniListPendingChangeStatus {
     Pending,
     Processing,

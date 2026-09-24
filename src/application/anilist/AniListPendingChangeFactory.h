@@ -3,12 +3,12 @@
 
 #include <QString>
 
-#include "../../domain/anilist/AniListPendingChange.h"
+#include "AniListPendingChange.h"
 
 /** Creates validated pending changes from local field transitions. */
 class AniListPendingChangeFactory final {
 public:
-    /** Creates a pending change or returns false when its media identifier is invalid. */
+    /** Creates a writable, typed transition; deletions start awaiting confirmation. */
     [[nodiscard]] static bool Create(int mediaId, AniListField field,
                                      const AniListFieldValue &previousValue,
                                      const AniListFieldValue &newValue,

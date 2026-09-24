@@ -3,24 +3,31 @@
 #include <QtTest>
 
 #include "../../src/application/anilist/AniListSyncService.h"
-#include "../../src/domain/media/MediaSyncFilter.h"
-#include "../../src/domain/media/MediaPage.h"
+#include "../../src/application/media/MediaSyncFilter.h"
+#include "../../src/application/media/MediaPage.h"
 #include "../../src/infrastructure/anilist/FileAniListDataSource.h"
+#include "../../src/infrastructure/anilist/AniListMediaMapper.h"
 
-class CollectingRepository final : public IMediaRepository {
+class CollectingWriter final : public IMediaWriter {
 public:
-    QList<Media> ReadAll(QString &error) override {
+    bool upsert(const QList<Media> &media, QString &error) override {
         error.clear();
-        return {};
-    }
-
-    bool Upsert(const QList<Media> &media, QString &error) override {
-        Q_UNUSED(error)
         batches.append(media);
         return true;
     }
 
     QList<QList<Media>> batches;
+};
+
+class WrongPageDataSource final : public IMediaDataSource {
+public:
+    bool fetchPage(const MediaSyncFilter &, MediaPage &page, QString &error) override {
+        error.clear();
+        page = {};
+        page.currentPage = 1;
+        page.hasNextPage = true;
+        return true;
+    }
 };
 
 class AniListFlowTests : public QObject {
@@ -30,6 +37,10 @@ private slots:
     void fixtureAppliesFilterAndPagination();
     void synchronizationPersistsEveryPage();
     void invalidFixtureReturnsError();
+    void mapperUsesNeutralValuesForUnknownExternalEnums();
+    void successfulSynchronizationClearsPreviousError();
+    void rejectsInvalidPaginationBeforeReading();
+    void rejectsDataSourceThatDoesNotReturnRequestedPage();
 };
 
 static QString fixturePath() {
@@ -54,17 +65,17 @@ void AniListFlowTests::fixtureAppliesFilterAndPagination() {
 
 void AniListFlowTests::synchronizationPersistsEveryPage() {
     FileAniListDataSource source(QDir::cleanPath(fixturePath()));
-    CollectingRepository repository;
-    AniListSyncService service(source, repository);
+    CollectingWriter writer;
+    AniListSyncService service(source, writer);
     MediaSyncFilter filter;
     filter.type = QStringLiteral("TV");
     filter.perPage = 1;
     QString error;
 
-    QVERIFY(service.Synchronize(filter, error));
-    QCOMPARE(repository.batches.size(), 2);
-    QCOMPARE(repository.batches.at(0).first().Id, 154587);
-    QCOMPARE(repository.batches.at(1).first().Id, 116807);
+    QVERIFY(service.synchronize(filter, error));
+    QCOMPARE(writer.batches.size(), 2);
+    QCOMPARE(writer.batches.at(0).first().Id, 154587);
+    QCOMPARE(writer.batches.at(1).first().Id, 116807);
 }
 
 void AniListFlowTests::invalidFixtureReturnsError() {
@@ -74,6 +85,57 @@ void AniListFlowTests::invalidFixtureReturnsError() {
     QString error;
     QVERIFY(!source.fetchPage({}, page, error));
     QVERIFY(error.contains(QStringLiteral("Invalid AniList fixture")));
+}
+
+void AniListFlowTests::mapperUsesNeutralValuesForUnknownExternalEnums() {
+    AniListMediaDto externalMedia;
+    externalMedia.id = 42;
+    externalMedia.type = QStringLiteral("UNSUPPORTED_TYPE");
+    externalMedia.status = QStringLiteral("CANCELLED");
+
+    const auto media = AniListMediaMapper::ToDomainMedia(externalMedia);
+
+    QCOMPARE(media.Type, MediaType::Unknown);
+    QCOMPARE(media.Status, MediaStatus::Unknown);
+    QCOMPARE(media.ConsumedChapters, 0);
+    QCOMPARE(media.NextChapter, 0);
+    QCOMPARE(media.PersonalScore, 0);
+}
+
+void AniListFlowTests::successfulSynchronizationClearsPreviousError() {
+    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
+    CollectingWriter writer;
+    AniListSyncService service(source, writer);
+    QString error = QStringLiteral("stale error");
+
+    QVERIFY(service.synchronize({}, error));
+    QVERIFY(error.isEmpty());
+}
+
+void AniListFlowTests::rejectsInvalidPaginationBeforeReading() {
+    WrongPageDataSource source;
+    CollectingWriter writer;
+    AniListSyncService service(source, writer);
+    MediaSyncFilter filter;
+    filter.perPage = 0;
+    QString error;
+
+    QVERIFY(!service.synchronize(filter, error));
+    QCOMPARE(service.lastErrorCategory(), AniListSyncErrorCategory::InvalidData);
+    QVERIFY(error.contains(QStringLiteral("positive")));
+}
+
+void AniListFlowTests::rejectsDataSourceThatDoesNotReturnRequestedPage() {
+    WrongPageDataSource source;
+    CollectingWriter writer;
+    AniListSyncService service(source, writer);
+    MediaSyncFilter filter;
+    filter.startingPage = 2;
+    QString error;
+
+    QVERIFY(!service.synchronize(filter, error));
+    QCOMPARE(service.lastErrorCategory(), AniListSyncErrorCategory::InvalidData);
+    QVERIFY(error.contains(QStringLiteral("page 1")));
 }
 
 QTEST_MAIN(AniListFlowTests)

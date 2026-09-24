@@ -3,7 +3,7 @@
 
 #include "AniListMergePolicy.h"
 #include "AniListMergeResult.h"
-#include "AniListPendingChange.h"
+#include "AniListFieldValue.h"
 
 /** Contains the selected value and outcome of merging one field. */
 struct AniListMergeDecision {

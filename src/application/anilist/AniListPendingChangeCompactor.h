@@ -3,7 +3,7 @@
 
 #include <QList>
 
-#include "../../domain/anilist/AniListPendingChange.h"
+#include "AniListPendingChange.h"
 
 /** Removes obsolete local changes while preserving the newest change per field. */
 class AniListPendingChangeCompactor final {

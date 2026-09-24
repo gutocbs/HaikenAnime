@@ -84,7 +84,9 @@ Item {
             spacing: 18
 
             Rectangle {
-                Layout.preferredWidth: 540
+                Layout.fillWidth: true
+                Layout.minimumWidth: 680
+                Layout.horizontalStretchFactor: 3
                 Layout.fillHeight: true
                 color: surface
                 radius: 8
@@ -134,7 +136,7 @@ Item {
                     GridLayout {
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        columns: 2
+                        columns: width >= 760 ? 3 : 2
                         columnSpacing: 12
                         rowSpacing: 12
 
@@ -156,6 +158,8 @@ Item {
 
             Rectangle {
                 Layout.fillWidth: true
+                Layout.minimumWidth: 400
+                Layout.horizontalStretchFactor: 2
                 Layout.fillHeight: true
                 color: surface
                 radius: 8

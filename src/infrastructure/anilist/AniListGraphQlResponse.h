@@ -6,7 +6,7 @@
 
 #include "AniListGraphQlError.h"
 
-/** Contains the data and errors returned by an AniList GraphQL operation. */
+/** Contains the transport data and errors returned by an AniList GraphQL operation. */
 struct AniListGraphQlResponse {
     QJsonObject data;
     QList<AniListGraphQlError> errors;

@@ -3,7 +3,7 @@
 
 #include <QStringList>
 
-/** Represents one error returned inside a valid GraphQL response. */
+/** Represents one transport error returned inside a valid GraphQL response. */
 struct AniListGraphQlError {
     QString message;
     QStringList path;

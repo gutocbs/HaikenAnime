@@ -9,19 +9,30 @@ AniListPendingChangeProcessor::AniListPendingChangeProcessor(
     : repository_(repository), updateClient_(updateClient) {
 }
 
-bool AniListPendingChangeProcessor::Process(const int mediaId, QString &error) {
+bool AniListPendingChangeProcessor::process(const int mediaId, QString &error) {
+    error.clear();
     QList<AniListPendingChange> changes;
-    if (!repository_.GetPending(mediaId, changes, error)) {
+    if (!repository_.getPending(mediaId, changes, error)) {
         return false;
     }
 
     changes = AniListPendingChangeCompactor::Compact(std::move(changes));
     QList<AniListPendingChange> activeChanges;
-    for (const auto &change : changes) {
+    for (auto change : changes) {
         if (change.status == AniListPendingChangeStatus::Superseded) {
             QString statusError;
-            if (!repository_.UpdateStatus(change, statusError)) {
+            if (!repository_.updateStatus(change, statusError)) {
                 error = statusError;
+                return false;
+            }
+            continue;
+        }
+        if (change.status == AniListPendingChangeStatus::RequiresConfirmation) {
+            continue;
+        }
+        if (change.field == AniListField::Deletion) {
+            change.status = AniListPendingChangeStatus::RequiresConfirmation;
+            if (!repository_.updateStatus(change, error)) {
                 return false;
             }
             continue;
@@ -34,19 +45,19 @@ bool AniListPendingChangeProcessor::Process(const int mediaId, QString &error) {
         QList<AniListPendingChange> processingChanges;
         for (auto change : group.changes) {
             change.status = AniListPendingChangeStatus::Processing;
-            if (!repository_.UpdateStatus(change, error)) {
+            if (!repository_.updateStatus(change, error)) {
                 return false;
             }
             processingChanges.append(change);
         }
 
         QString operationError;
-        if (updateClient_.UpdateMedia(group, operationError)) {
+        if (updateClient_.updateMedia(group, operationError)) {
             for (auto change : processingChanges) {
-            change.status = AniListPendingChangeStatus::Succeeded;
-            change.lastError.clear();
+                change.status = AniListPendingChangeStatus::Succeeded;
+                change.lastError.clear();
                 QString statusError;
-                if (!repository_.UpdateStatus(change, statusError)) {
+                if (!repository_.updateStatus(change, statusError)) {
                     error = statusError;
                     return false;
                 }
@@ -57,7 +68,7 @@ bool AniListPendingChangeProcessor::Process(const int mediaId, QString &error) {
                 change.lastError = operationError;
                 ++change.attempts;
                 QString statusError;
-                if (!repository_.UpdateStatus(change, statusError)) {
+                if (!repository_.updateStatus(change, statusError)) {
                     error = statusError;
                     return false;
                 }

@@ -2,17 +2,17 @@
 
 #include "../../src/presentation/home/HomeScreenController.h"
 
-class FakeMediaRepository final : public IMediaRepository {
+class FakeMediaReader final : public IMediaReader {
 public:
     QList<Media> result;
     QString failure;
 
-    QList<Media> ReadAll(QString &error) override {
+    bool readAll(QList<Media> &media, QString &error) override {
         error = failure;
-        return result;
+        media = result;
+        return failure.isEmpty();
     }
 
-    bool Upsert(const QList<Media> &, QString &) override { return true; }
 };
 
 class HomeScreenControllerTests final : public QObject {
@@ -26,7 +26,7 @@ private slots:
 };
 
 void HomeScreenControllerTests::exposesReadyMedia() {
-    FakeMediaRepository reader;
+    FakeMediaReader reader;
     Media media;
     media.Id = 42;
     media.Name = QStringLiteral("Frieren");
@@ -49,7 +49,7 @@ void HomeScreenControllerTests::exposesReadyMedia() {
 }
 
 void HomeScreenControllerTests::exposesEmptyState() {
-    FakeMediaRepository reader;
+    FakeMediaReader reader;
     HomeScreenController controller(reader);
 
     controller.reload();
@@ -59,7 +59,7 @@ void HomeScreenControllerTests::exposesEmptyState() {
 }
 
 void HomeScreenControllerTests::exposesErrorState() {
-    FakeMediaRepository reader;
+    FakeMediaReader reader;
     reader.failure = QStringLiteral("Database unavailable");
     HomeScreenController controller(reader);
 

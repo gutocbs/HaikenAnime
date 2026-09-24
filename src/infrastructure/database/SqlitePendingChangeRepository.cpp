@@ -35,7 +35,8 @@ SqlitePendingChangeRepository::SqlitePendingChangeRepository(
       pendingQuery_(std::move(pendingQuery)), updateStatusQuery_(std::move(updateStatusQuery)) {
 }
 
-bool SqlitePendingChangeRepository::Enqueue(const AniListPendingChange &change, QString &error) {
+bool SqlitePendingChangeRepository::enqueue(const AniListPendingChange &change, QString &error) {
+    error.clear();
     QSqlQuery query(database_);
     query.prepare(enqueueQuery_);
     query.bindValue(QStringLiteral(":media_id"), change.mediaId);
@@ -58,8 +59,10 @@ bool SqlitePendingChangeRepository::Enqueue(const AniListPendingChange &change, 
     return true;
 }
 
-bool SqlitePendingChangeRepository::GetPending(int mediaId, QList<AniListPendingChange> &changes,
+bool SqlitePendingChangeRepository::getPending(int mediaId, QList<AniListPendingChange> &changes,
                                                QString &error) {
+    changes.clear();
+    error.clear();
     QSqlQuery query(database_);
     query.prepare(pendingQuery_);
     query.bindValue(QStringLiteral(":media_id"), mediaId);
@@ -85,7 +88,8 @@ bool SqlitePendingChangeRepository::GetPending(int mediaId, QList<AniListPending
     return true;
 }
 
-bool SqlitePendingChangeRepository::UpdateStatus(const AniListPendingChange &change, QString &error) {
+bool SqlitePendingChangeRepository::updateStatus(const AniListPendingChange &change, QString &error) {
+    error.clear();
     QSqlQuery query(database_);
     query.prepare(updateStatusQuery_);
     query.bindValue(QStringLiteral(":id"), change.id);

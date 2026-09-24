@@ -6,13 +6,13 @@
 
 class FakePendingRepository final : public IPendingChangeRepository {
 public:
-    bool Enqueue(const AniListPendingChange &change, QString &error) override {
+    bool enqueue(const AniListPendingChange &change, QString &error) override {
         Q_UNUSED(error)
         changes.append(change);
         return true;
     }
 
-    bool GetPending(int mediaId, QList<AniListPendingChange> &result, QString &error) override {
+    bool getPending(int mediaId, QList<AniListPendingChange> &result, QString &error) override {
         Q_UNUSED(error)
         for (const auto &change : changes) {
             if (change.mediaId == mediaId && change.status != AniListPendingChangeStatus::Succeeded) {
@@ -22,7 +22,7 @@ public:
         return true;
     }
 
-    bool UpdateStatus(const AniListPendingChange &change, QString &error) override {
+    bool updateStatus(const AniListPendingChange &change, QString &error) override {
         Q_UNUSED(error)
         statuses.append(change.status);
         return true;
@@ -34,7 +34,7 @@ public:
 
 class FakeUpdateClient final : public IAniListUpdateClient {
 public:
-    bool UpdateMedia(const AniListMediaPendingChanges &changes, QString &error) override {
+    bool updateMedia(const AniListMediaPendingChanges &changes, QString &error) override {
         mediaCalls++;
         lastGroup = changes;
         for (const auto &change : changes.changes) {
@@ -63,7 +63,8 @@ private slots:
     void groupsChangesByMedia();
     void marksSuccessfulMutationAsSucceeded();
     void preservesFailedMutationForRetry();
-    void blocksUnconfirmedDeletion();
+    void leavesUnconfirmedDeletionQueued();
+    void successfulProcessingClearsPreviousError();
 };
 
 static AniListPendingChange progressChange(AniListPendingChangeStatus status =
@@ -127,7 +128,7 @@ void AniListPendingChangeProcessorTests::marksSuccessfulMutationAsSucceeded() {
     AniListPendingChangeProcessor processor(repository, client);
     QString error;
 
-    QVERIFY(processor.Process(154587, error));
+    QVERIFY(processor.process(154587, error));
     QCOMPARE(client.mediaCalls, 1);
     QCOMPARE(repository.statuses.size(), 2);
     QCOMPARE(repository.statuses.last(), AniListPendingChangeStatus::Succeeded);
@@ -141,12 +142,12 @@ void AniListPendingChangeProcessorTests::preservesFailedMutationForRetry() {
     AniListPendingChangeProcessor processor(repository, client);
     QString error;
 
-    QVERIFY(!processor.Process(154587, error));
+    QVERIFY(!processor.process(154587, error));
     QVERIFY(!error.isEmpty());
     QCOMPARE(repository.statuses.last(), AniListPendingChangeStatus::Failed);
 }
 
-void AniListPendingChangeProcessorTests::blocksUnconfirmedDeletion() {
+void AniListPendingChangeProcessorTests::leavesUnconfirmedDeletionQueued() {
     FakePendingRepository repository;
     auto change = progressChange();
     change.field = AniListField::Deletion;
@@ -155,9 +156,21 @@ void AniListPendingChangeProcessorTests::blocksUnconfirmedDeletion() {
     AniListPendingChangeProcessor processor(repository, client);
     QString error;
 
-    QVERIFY(!processor.Process(154587, error));
-    QCOMPARE(client.mediaCalls, 1);
-    QCOMPARE(repository.statuses.last(), AniListPendingChangeStatus::Failed);
+    QVERIFY(processor.process(154587, error));
+    QVERIFY(error.isEmpty());
+    QCOMPARE(client.mediaCalls, 0);
+    QCOMPARE(repository.statuses.size(), 1);
+    QCOMPARE(repository.statuses.last(), AniListPendingChangeStatus::RequiresConfirmation);
+}
+
+void AniListPendingChangeProcessorTests::successfulProcessingClearsPreviousError() {
+    FakePendingRepository repository;
+    FakeUpdateClient client;
+    AniListPendingChangeProcessor processor(repository, client);
+    QString error = QStringLiteral("stale error");
+
+    QVERIFY(processor.process(154587, error));
+    QVERIFY(error.isEmpty());
 }
 
 QTEST_MAIN(AniListPendingChangeProcessorTests)

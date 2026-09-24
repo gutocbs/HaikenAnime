@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "../application/anilist/IMediaRepository.h"
+#include "../application/media/IMediaRepository.h"
 #include "../application/anilist/IPendingChangeRepository.h"
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "InitialSyncCoordinator.h"

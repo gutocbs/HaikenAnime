@@ -8,7 +8,7 @@ AniListUpdateWorker::AniListUpdateWorker(AniListPendingChangeProcessor &processo
 void AniListUpdateWorker::Run(const int mediaId) {
     emit Started();
     QString error;
-    if (!processor_.Process(mediaId, error)) {
+    if (!processor_.process(mediaId, error)) {
         emit Failed(error);
         return;
     }

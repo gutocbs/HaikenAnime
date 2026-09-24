@@ -1,7 +1,7 @@
 #ifndef HAIKENANIME_IANILISTAUTHPROVIDER_H
 #define HAIKENANIME_IANILISTAUTHPROVIDER_H
 
-#include "../../domain/anilist/AniListCredentials.h"
+#include "AniListCredentials.h"
 
 class IAniListAuthProvider {
 public:

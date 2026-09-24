@@ -3,6 +3,7 @@
 
 #include <QString>
 
+/** Selects and paginates media requested from an application data source. */
 struct MediaSyncFilter {
     QString username;
     QString type;

@@ -56,13 +56,13 @@ void HomeMediaModel::setMedia(QList<Media> media) {
     endResetModel();
 }
 
-HomeScreenController::HomeScreenController(IMediaRepository &repository, QObject *parent)
-    : HomeScreenController(&repository, {}, parent) {
+HomeScreenController::HomeScreenController(IMediaReader &reader, QObject *parent)
+    : HomeScreenController(&reader, {}, parent) {
 }
 
-HomeScreenController::HomeScreenController(IMediaRepository *repository, QString initializationError, QObject *parent)
-    : QObject(parent), repository_(repository), model_(this), errorMessage_(std::move(initializationError)) {
-    if (repository_ == nullptr && !errorMessage_.isEmpty()) {
+HomeScreenController::HomeScreenController(IMediaReader *reader, QString initializationError, QObject *parent)
+    : QObject(parent), reader_(reader), model_(this), errorMessage_(std::move(initializationError)) {
+    if (reader_ == nullptr && !errorMessage_.isEmpty()) {
         state_ = QStringLiteral("error");
     }
 }
@@ -96,7 +96,7 @@ int HomeScreenController::mediaCount() const {
 }
 
 void HomeScreenController::reload() {
-    if (repository_ == nullptr) {
+    if (reader_ == nullptr) {
         if (errorMessage_.isEmpty()) {
             errorMessage_ = QStringLiteral("Media repository is unavailable.");
             emit errorMessageChanged();
@@ -112,8 +112,8 @@ void HomeScreenController::reload() {
     setStatusMessage(QStringLiteral("Carregando dados locais."));
 
     QString error;
-    auto media = repository_->ReadAll(error);
-    if (!error.isEmpty()) {
+    QList<Media> media;
+    if (!reader_->readAll(media, error)) {
         if (errorMessage_ != error) {
             errorMessage_ = std::move(error);
             emit errorMessageChanged();

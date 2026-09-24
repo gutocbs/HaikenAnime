@@ -9,6 +9,7 @@ class FileSecretStoreTests : public QObject {
 private slots:
     void savesAndLoadsCredentials();
     void rejectsIncompleteFile();
+    void successfulOperationsClearPreviousError();
 };
 
 void FileSecretStoreTests::savesAndLoadsCredentials() {
@@ -44,6 +45,22 @@ void FileSecretStoreTests::rejectsIncompleteFile() {
     QString error;
     QVERIFY(!store.loadAniListCredentials(credentials, error));
     QVERIFY(!error.isEmpty());
+}
+
+void FileSecretStoreTests::successfulOperationsClearPreviousError() {
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+    FileSecretStore store(temporaryDirectory.filePath(QStringLiteral("secrets.txt")));
+    QString error = QStringLiteral("stale error");
+
+    QVERIFY(store.saveAniListCredentials(
+        {QStringLiteral("user"), QStringLiteral("token")}, error));
+    QVERIFY(error.isEmpty());
+
+    error = QStringLiteral("another stale error");
+    AniListCredentials credentials;
+    QVERIFY(store.loadAniListCredentials(credentials, error));
+    QVERIFY(error.isEmpty());
 }
 
 QTEST_MAIN(FileSecretStoreTests)

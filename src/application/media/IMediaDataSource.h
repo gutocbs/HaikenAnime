@@ -3,13 +3,14 @@
 
 #include <QString>
 
-#include "../../domain/media/MediaPage.h"
-#include "../../domain/media/MediaSyncFilter.h"
+#include "MediaPage.h"
+#include "MediaSyncFilter.h"
 
 class IMediaDataSource {
 public:
     virtual ~IMediaDataSource() = default;
 
+    /** Replaces result with one page and clears error on success. */
     [[nodiscard]] virtual bool fetchPage(const MediaSyncFilter &filter, MediaPage &result,
                                          QString &error) = 0;
 };

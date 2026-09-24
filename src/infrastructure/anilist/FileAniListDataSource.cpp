@@ -29,6 +29,8 @@ FileAniListDataSource::FileAniListDataSource(QString filePath)
 
 bool FileAniListDataSource::fetchPage(const MediaSyncFilter &filter, MediaPage &result,
                                       QString &error) {
+    result = {};
+    error.clear();
     QFile file(filePath_);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         error = QStringLiteral("Could not open AniList fixture: %1").arg(file.errorString());
@@ -57,7 +59,6 @@ bool FileAniListDataSource::fetchPage(const MediaSyncFilter &filter, MediaPage &
     const int page = qMax(1, filter.startingPage);
     const int perPage = qMax(1, filter.perPage);
     const int offset = (page - 1) * perPage;
-    result = {};
     result.currentPage = page;
     result.totalPages = (filtered.size() + perPage - 1) / perPage;
     result.hasNextPage = page < result.totalPages;

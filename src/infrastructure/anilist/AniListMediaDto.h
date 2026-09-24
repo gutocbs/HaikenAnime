@@ -4,7 +4,7 @@
 #include <QString>
 #include <QStringList>
 
-/** Represents the external AniList shape before domain mapping. */
+/** Represents the external AniList payload before domain mapping. */
 struct AniListMediaDto {
     int id = 0;
     QString type;

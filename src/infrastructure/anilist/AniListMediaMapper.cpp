@@ -53,22 +53,27 @@ Media AniListMediaMapper::ToDomainMedia(const AniListMediaDto &externalMedia) {
     media.Synopsis = externalMedia.description;
 
     if (externalMedia.type.compare(QStringLiteral("MANGA"), Qt::CaseInsensitive) == 0) {
-        media.Type = Manga;
+        media.Type = MediaType::Manga;
     } else if (externalMedia.type.compare(QStringLiteral("NOVEL"), Qt::CaseInsensitive) == 0) {
-        media.Type = Novel;
+        media.Type = MediaType::Novel;
+    } else if (externalMedia.type.compare(QStringLiteral("ANIME"), Qt::CaseInsensitive) == 0
+               || externalMedia.type.compare(QStringLiteral("TV"), Qt::CaseInsensitive) == 0) {
+        media.Type = MediaType::Anime;
     } else {
-        media.Type = Anime;
+        media.Type = MediaType::Unknown;
     }
 
     if (externalMedia.status.compare(QStringLiteral("RELEASING"), Qt::CaseInsensitive) == 0
         || externalMedia.status.compare(QStringLiteral("Releasing"), Qt::CaseInsensitive) == 0) {
-        media.Status = Releasing;
+        media.Status = MediaStatus::Releasing;
     } else if (externalMedia.status.compare(QStringLiteral("FINISHED"), Qt::CaseInsensitive) == 0
                || externalMedia.status.compare(QStringLiteral("Finished Airing"), Qt::CaseInsensitive) == 0
                || externalMedia.status.compare(QStringLiteral("RELEASED"), Qt::CaseInsensitive) == 0) {
-        media.Status = Released;
+        media.Status = MediaStatus::Released;
+    } else if (externalMedia.status.compare(QStringLiteral("NOT_YET_RELEASED"), Qt::CaseInsensitive) == 0) {
+        media.Status = MediaStatus::NotReleased;
     } else {
-        media.Status = NotReleased;
+        media.Status = MediaStatus::Unknown;
     }
     return media;
 }

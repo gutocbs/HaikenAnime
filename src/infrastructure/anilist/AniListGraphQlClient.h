@@ -6,7 +6,7 @@
 #include <QUrl>
 
 #include "../../application/anilist/IAniListAuthProvider.h"
-#include "../../domain/anilist/AniListGraphQlResponse.h"
+#include "AniListGraphQlResponse.h"
 
 class QNetworkAccessManager;
 

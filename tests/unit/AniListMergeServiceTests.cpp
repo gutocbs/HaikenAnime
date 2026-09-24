@@ -11,6 +11,7 @@ private slots:
     void localWinsLatestKeepsLocalValue();
     void localStatusIsQueuedForUpdate();
     void deletionRequiresConfirmation();
+    void incompatibleProgressValuesProduceConflict();
 };
 
 void AniListMergeServiceTests::remoteWinsForCatalogField() {
@@ -44,6 +45,12 @@ void AniListMergeServiceTests::deletionRequiresConfirmation() {
     const auto decision = AniListMergeService::Merge(
         AniListField::Deletion, QStringLiteral("keep"), QStringLiteral("delete"));
     QCOMPARE(decision.result, AniListMergeResult::RequiresConfirmation);
+}
+
+void AniListMergeServiceTests::incompatibleProgressValuesProduceConflict() {
+    const auto decision = AniListMergeService::Merge(
+        AniListField::Progress, QStringLiteral("twelve"), 13);
+    QCOMPARE(decision.result, AniListMergeResult::Conflict);
 }
 
 QTEST_MAIN(AniListMergeServiceTests)

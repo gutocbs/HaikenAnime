@@ -9,7 +9,7 @@ class ISettingsReader {
 public:
     virtual ~ISettingsReader() = default;
 
-    /** Reads application settings from the configured source and reports errors through error. */
+    /** Replaces settings with configured values and clears error on success. */
     [[nodiscard]] virtual bool read(Settings &settings, QString &error) = 0;
 };
 

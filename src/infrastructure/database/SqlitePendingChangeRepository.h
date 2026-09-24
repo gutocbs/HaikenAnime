@@ -12,10 +12,10 @@ public:
     SqlitePendingChangeRepository(QSqlDatabase database, QString enqueueQuery,
                                   QString pendingQuery, QString updateStatusQuery);
 
-    [[nodiscard]] bool Enqueue(const AniListPendingChange &change, QString &error) override;
-    [[nodiscard]] bool GetPending(int mediaId, QList<AniListPendingChange> &changes,
+    [[nodiscard]] bool enqueue(const AniListPendingChange &change, QString &error) override;
+    [[nodiscard]] bool getPending(int mediaId, QList<AniListPendingChange> &changes,
                                   QString &error) override;
-    [[nodiscard]] bool UpdateStatus(const AniListPendingChange &change,
+    [[nodiscard]] bool updateStatus(const AniListPendingChange &change,
                                      QString &error) override;
 
 private:

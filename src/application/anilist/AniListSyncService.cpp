@@ -4,6 +4,7 @@
 
 #include <QElapsedTimer>
 #include <QList>
+#include <QSet>
 
 namespace {
 bool HasTimedOut(const QElapsedTimer &timer, const int timeoutMs) {
@@ -11,14 +12,19 @@ bool HasTimedOut(const QElapsedTimer &timer, const int timeoutMs) {
 }
 }
 
-bool AniListSyncService::Synchronize(const MediaSyncFilter &filter, QString &error) {
+bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &error) {
+    error.clear();
     lastErrorCategory_ = AniListSyncErrorCategory::None;
     QElapsedTimer timer;
     timer.start();
+    if (filter.startingPage <= 0 || filter.perPage <= 0) {
+        error = QStringLiteral("AniList synchronization pagination must use positive values.");
+        lastErrorCategory_ = AniListSyncErrorCategory::InvalidData;
+        return false;
+    }
     MediaSyncFilter pageFilter = filter;
-    pageFilter.startingPage = qMax(1, pageFilter.startingPage);
-    pageFilter.perPage = qMax(1, pageFilter.perPage);
     QList<int> synchronizedMediaIds;
+    QSet<int> seenMediaIds;
 
     while (true) {
         if (HasTimedOut(timer, timeoutMs_)) {
@@ -32,13 +38,24 @@ bool AniListSyncService::Synchronize(const MediaSyncFilter &filter, QString &err
             return false;
         }
 
-        if (!page.media.isEmpty() && !mediaRepository_.Upsert(page.media, error)) {
+        if (page.currentPage != pageFilter.startingPage) {
+            error = QStringLiteral("AniList data source returned page %1 while page %2 was requested.")
+                        .arg(page.currentPage)
+                        .arg(pageFilter.startingPage);
+            lastErrorCategory_ = AniListSyncErrorCategory::InvalidData;
+            return false;
+        }
+
+        if (!page.media.isEmpty() && !mediaWriter_.upsert(page.media, error)) {
             lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
             return false;
         }
 
         for (const auto &media : page.media) {
-            synchronizedMediaIds.append(media.Id);
+            if (!seenMediaIds.contains(media.Id)) {
+                seenMediaIds.insert(media.Id);
+                synchronizedMediaIds.append(media.Id);
+            }
         }
 
         if (HasTimedOut(timer, timeoutMs_)) {
@@ -61,7 +78,7 @@ bool AniListSyncService::Synchronize(const MediaSyncFilter &filter, QString &err
                 lastErrorCategory_ = AniListSyncErrorCategory::Timeout;
                 return false;
             }
-            if (!pendingProcessor_->Process(mediaId, error)) {
+            if (!pendingProcessor_->process(mediaId, error)) {
                 lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
                 return false;
             }

@@ -17,33 +17,35 @@ SqliteMediaRepository::SqliteMediaRepository(QSqlDatabase database, QString upse
 
 void SqliteMediaRepository::setLogger(AsyncLogger *logger) { logger_ = logger; }
 
-QList<Media> SqliteMediaRepository::ReadAll(QString &error) {
+bool SqliteMediaRepository::readAll(QList<Media> &media, QString &error) {
+    media.clear();
+    error.clear();
     if (!database_.isOpen()) {
         error = QStringLiteral("SQLite database is not open.");
-        return {};
+        return false;
     }
 
     if (readQuery_.isEmpty()) {
         error = QStringLiteral("SQLite read query is empty.");
-        return {};
+        return false;
     }
 
     QSqlQuery query(database_);
     if (!query.exec(readQuery_)) {
         error = query.lastError().text();
         if (logger_) logger_->error(LogCategory::Database, error);
-        return {};
+        return false;
     }
 
-    QList<Media> media;
     while (query.next()) {
         media.append(SqliteMediaMapper::Map(query));
     }
     if (logger_) logger_->info(LogCategory::Database, QStringLiteral("Read %1 media records from SQLite.").arg(media.size()));
-    return media;
+    return true;
 }
 
-bool SqliteMediaRepository::Upsert(const QList<Media> &media, QString &error) {
+bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
+    error.clear();
     if (!database_.isOpen()) {
         error = QStringLiteral("SQLite database is not open.");
         return false;

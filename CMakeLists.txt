@@ -2,8 +2,9 @@ cmake_minimum_required(VERSION 3.21)
 
 project(HaikenAnime LANGUAGES CXX)
 
-if (MINGW AND NOT CMAKE_PREFIX_PATH)
-    set(CMAKE_PREFIX_PATH "C:/Qt/6.8.3/mingw_64" CACHE PATH "Qt installation")
+if (MINGW AND (NOT CMAKE_PREFIX_PATH OR CMAKE_PREFIX_PATH MATCHES "/msvc"))
+    set(CMAKE_PREFIX_PATH "C:/Qt/6.8.3/mingw_64" CACHE PATH
+            "Qt installation compatible with the MinGW compiler" FORCE)
 endif ()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -11,6 +12,22 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
+
+# Help Qt's WrapVulkanHeaders package find a standard Windows Vulkan SDK
+# installation even when the SDK installer has not exported VULKAN_SDK to the
+# current terminal process.
+if (WIN32 AND NOT DEFINED ENV{VULKAN_SDK})
+    file(GLOB VULKAN_SDK_CANDIDATES "C:/VulkanSDK/*")
+    if (VULKAN_SDK_CANDIDATES)
+        list(SORT VULKAN_SDK_CANDIDATES COMPARE NATURAL ORDER DESCENDING)
+        list(GET VULKAN_SDK_CANDIDATES 0 VULKAN_SDK_ROOT)
+        set(ENV{VULKAN_SDK} "${VULKAN_SDK_ROOT}")
+    endif ()
+endif ()
+if (DEFINED ENV{VULKAN_SDK} AND EXISTS "$ENV{VULKAN_SDK}/Include/vulkan/vulkan.h")
+    set(Vulkan_INCLUDE_DIR "$ENV{VULKAN_SDK}/Include" CACHE PATH
+            "Vulkan SDK include directory")
+endif ()
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Qml Quick QuickControls2 Sql)
 
@@ -30,36 +47,35 @@ qt_add_executable(HaikenAnime main.cpp
         src/app/InitialSyncCoordinator.h
         src/app/InitialSyncCoordinator.cpp
         src/domain/media/Media.h
-        src/domain/media/MediaPage.h
-        src/domain/media/MediaSyncFilter.h
+        src/application/media/MediaPage.h
+        src/application/media/MediaSyncFilter.h
         src/domain/media/MediaType.h
         src/domain/media/MediaStatus.h
-        src/domain/media/MediaEnumFormatter.h
-        src/domain/media/MediaEnumFormatter.cpp
-        src/domain/anilist/AniListCredentials.h
-        src/domain/anilist/AniListSyncFilter.h
-        src/domain/anilist/AniListGraphQlError.h
-        src/domain/anilist/AniListGraphQlResponse.h
-        src/domain/anilist/AniListMediaDto.h
-        src/domain/anilist/AniListPage.h
+        src/application/anilist/AniListCredentials.h
+        src/infrastructure/anilist/AniListGraphQlError.h
+        src/infrastructure/anilist/AniListGraphQlResponse.h
+        src/infrastructure/anilist/AniListMediaDto.h
         src/domain/anilist/AniListField.h
+        src/domain/anilist/AniListFieldValue.h
         src/domain/anilist/AniListMergePolicy.h
         src/domain/anilist/AniListMergeResult.h
-        src/domain/anilist/AniListPendingChangeStatus.h
-        src/domain/anilist/AniListPendingChange.h
+        src/application/anilist/AniListPendingChangeStatus.h
+        src/application/anilist/AniListPendingChange.h
         src/domain/anilist/AniListMergeDecision.h
-        src/domain/anilist/AniListSettings.h
-        src/domain/http/HttpSettings.h
+        src/application/configuration/AniListSettings.h
+        src/application/configuration/HttpSettings.h
         src/application/configuration/Settings.h
         src/application/configuration/ISettingsReader.h
         src/application/anilist/ISecretStore.h
         src/application/anilist/IAniListAuthProvider.h
-        src/application/anilist/IAniListDataSource.h
-        src/application/anilist/IMediaRepository.h
+        src/application/media/IMediaRepository.h
+        src/application/media/IMediaReader.h
+        src/application/media/IMediaWriter.h
         src/application/anilist/AniListSyncService.h
         src/application/anilist/AniListSyncService.cpp
         src/application/anilist/AniListSyncErrorClassifier.h
         src/application/anilist/AniListSyncErrorClassifier.cpp
+        src/application/anilist/AniListSyncErrorCategory.h
         src/application/anilist/AniListPendingChangeProcessor.h
         src/application/anilist/AniListPendingChangeProcessor.cpp
         src/application/anilist/AniListPendingChangeCompactor.h
@@ -178,6 +194,21 @@ target_link_libraries(HaikenAnime
 )
 
 if (BUILD_TESTING)
+add_executable(MediaDomainTests
+        tests/unit/MediaDomainTests.cpp
+        src/domain/media/Media.h
+        src/domain/media/MediaStatus.h
+        src/domain/media/MediaType.h
+)
+
+target_link_libraries(MediaDomainTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME MediaDomainTests COMMAND MediaDomainTests)
+
 add_executable(SqliteDatabaseTests
         tests/unit/SqliteDatabaseTests.cpp
         src/infrastructure/database/SqliteDatabase.h
@@ -237,8 +268,9 @@ add_executable(AniListFlowTests
         src/application/anilist/AniListPendingChangeGrouper.cpp
         src/application/anilist/AniListMergePolicyResolver.h
         src/application/anilist/AniListMergePolicyResolver.cpp
-        src/application/anilist/IAniListDataSource.h
-        src/application/anilist/IMediaRepository.h
+        src/application/media/IMediaRepository.h
+        src/application/media/IMediaReader.h
+        src/application/media/IMediaWriter.h
         src/application/media/IMediaDataSource.h
         src/infrastructure/anilist/FileAniListDataSource.h
         src/infrastructure/anilist/FileAniListDataSource.cpp
@@ -350,6 +382,7 @@ add_test(NAME HomeScreenControllerTests COMMAND HomeScreenControllerTests)
 # Unit tests are separate executables and do not receive the deployment step
 # used by the application target. Make Qt runtime DLLs available to CTest.
 set(HAIKENANIME_TESTS
+        MediaDomainTests
         SqliteDatabaseTests
         FileSecretStoreTests
         AniListAuthManagerTests
@@ -401,6 +434,29 @@ if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
                     "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
         endforeach ()
     endif ()
+
+    # DXC is not deployed by windeployqt, but Qt's Windows deployment can
+    # require these DirectX Shader Compiler runtime libraries. Keep them next
+    # to the executable so the packaged application can load them reliably.
+    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+        set(DXC_ARCH x64)
+    else ()
+        set(DXC_ARCH x86)
+    endif ()
+    set(DXC_REDIST_DIR
+            "C:/Program Files (x86)/Windows Kits/10/Redist/D3D/${DXC_ARCH}")
+    foreach (DXC_RUNTIME dxcompiler.dll dxil.dll)
+        if (EXISTS "${DXC_REDIST_DIR}/${DXC_RUNTIME}")
+            add_custom_command(TARGET HaikenAnime POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "${DXC_REDIST_DIR}/${DXC_RUNTIME}"
+                    "$<TARGET_FILE_DIR:HaikenAnime>/${DXC_RUNTIME}"
+                    COMMENT "Deploying ${DXC_RUNTIME}")
+        else ()
+            message(WARNING
+                    "${DXC_RUNTIME} was not found in ${DXC_REDIST_DIR}")
+        endif ()
+    endforeach ()
 
     if (EXISTS "${QT_INSTALL_PATH}/bin/windeployqt.exe")
         add_custom_command(TARGET HaikenAnime POST_BUILD

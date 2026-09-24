@@ -74,7 +74,7 @@ void InitialSyncCoordinator::start() {
                 FileAniListDataSource source(QDir::cleanPath(fixturePath_));
                 AniListSyncService service(source, repository, nullptr, syncTimeoutMs_);
                 MediaSyncFilter filter;
-                if (!service.Synchronize(filter, error) && error.isEmpty()) {
+                if (!service.synchronize(filter, error) && error.isEmpty()) {
                     error = QStringLiteral("Media synchronization failed.");
                 }
                 if (logger_ && !error.isEmpty()) logger_->error(LogCategory::Sync, error);

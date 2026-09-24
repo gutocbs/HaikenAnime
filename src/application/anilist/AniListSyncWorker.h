@@ -4,7 +4,7 @@
 #include <QObject>
 
 #include "AniListSyncService.h"
-#include "../../domain/media/MediaSyncFilter.h"
+#include "../media/MediaSyncFilter.h"
 
 /** Runs AniList synchronization on the thread that owns this worker. */
 class AniListSyncWorker final : public QObject {

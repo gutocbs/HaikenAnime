@@ -3,7 +3,7 @@
 
 #include <QList>
 
-#include "Media.h"
+#include "../../domain/media/Media.h"
 
 struct MediaPage {
     QList<Media> media;

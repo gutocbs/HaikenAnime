@@ -1,7 +1,7 @@
 #ifndef HAIKENANIME_ANILISTSYNCERRORCATEGORY_H
 #define HAIKENANIME_ANILISTSYNCERRORCATEGORY_H
 
-/** Categorizes a synchronization failure and whether a later run may retry it. */
+/** Categorizes an application synchronization failure and whether a later run may retry it. */
 enum class AniListSyncErrorCategory {
     None, Authentication, Authorization, RateLimit, GraphQl, Network, Timeout,
     Persistence, InvalidData, Cancelled, Unknown

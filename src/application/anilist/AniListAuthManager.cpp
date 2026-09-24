@@ -5,6 +5,7 @@ AniListAuthManager::AniListAuthManager(ISecretStore &secretStore)
 }
 
 bool AniListAuthManager::load(QString &error) {
+    error.clear();
     AniListCredentials loadedCredentials;
     if (!secretStore_.loadAniListCredentials(loadedCredentials, error)) {
         return false;
@@ -15,6 +16,7 @@ bool AniListAuthManager::load(QString &error) {
 }
 
 bool AniListAuthManager::save(const AniListCredentials &credentials, QString &error) {
+    error.clear();
     if (!secretStore_.saveAniListCredentials(credentials, error)) {
         return false;
     }
