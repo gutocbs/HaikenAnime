@@ -71,6 +71,9 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/configuration/Settings.h
         src/application/covers/CoverQuality.h
         src/application/covers/CoverSettings.h
+        src/application/covers/CoverCacheEntry.h
+        src/application/covers/ICoverCacheRepository.h
+        src/application/covers/ICoverFileStore.h
         src/application/configuration/ISettingsReader.h
         src/application/anilist/ISecretStore.h
         src/application/anilist/IAniListAuthProvider.h
@@ -119,6 +122,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/database/SqliteQueryConfiguration.h
         src/infrastructure/database/SqliteQueryConfiguration.cpp
+        src/infrastructure/covers/CoverFileStore.h
+        src/infrastructure/covers/CoverFileStore.cpp
         src/infrastructure/secrets/FileSecretStore.h
         src/infrastructure/secrets/FileSecretStore.cpp
         src/infrastructure/anilist/HttpFactory.h
@@ -378,6 +383,16 @@ target_link_libraries(CoverSettingsTests
 
 add_test(NAME CoverSettingsTests COMMAND CoverSettingsTests)
 
+add_executable(CoverFileStoreTests
+        tests/unit/CoverFileStoreTests.cpp
+        src/infrastructure/covers/CoverFileStore.h
+        src/infrastructure/covers/CoverFileStore.cpp
+)
+
+target_include_directories(CoverFileStoreTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(CoverFileStoreTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+add_test(NAME CoverFileStoreTests COMMAND CoverFileStoreTests)
+
 add_executable(AniListAuthManagerTests
         tests/unit/AniListAuthManagerTests.cpp
         src/application/anilist/AniListAuthManager.h
@@ -613,6 +628,7 @@ set(HAIKENANIME_TESTS
         FileSecretStoreTests
         JsonSettingsReaderTests
         CoverSettingsTests
+        CoverFileStoreTests
         AniListAuthManagerTests
         AniListFlowTests
         AniListGraphQlParsingTests
