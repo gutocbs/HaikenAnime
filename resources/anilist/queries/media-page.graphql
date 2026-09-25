@@ -8,18 +8,21 @@ query MediaPage($page: Int, $perPage: Int) {
     media {
       id
       type
+      format
       status
       title {
         romaji
         english
         native
-        synonyms
       }
+      synonyms
       episodes
       chapters
       averageScore
       coverImage {
+        medium
         large
+        extraLarge
       }
       description
     }

@@ -61,6 +61,20 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
     settings.aniList.mediaQueryFile = aniList.value(QStringLiteral("mediaQueryFile")).toString();
     const auto sync = root.value(QStringLiteral("sync")).toObject();
     const auto logging = root.value(QStringLiteral("logging")).toObject();
+    const auto covers = root.value(QStringLiteral("covers")).toObject();
+    const auto coverQuality = covers.value(QStringLiteral("quality"));
+    if (!coverQuality.isUndefined()) {
+        if (!coverQuality.isString()) {
+            error = QStringLiteral("Settings.json cover quality must be a string.");
+            return false;
+        }
+        const auto parsedQuality = ParseCoverQuality(coverQuality.toString());
+        if (!parsedQuality.has_value()) {
+            error = QStringLiteral("Settings.json contains an unsupported cover quality.");
+            return false;
+        }
+        settings.covers.quality = parsedQuality.value();
+    }
     if (!readInteger(http, QStringLiteral("timeoutMs"), 30000, settings.http.timeoutMs)
         || !readInteger(http, QStringLiteral("maxRetries"), 2, settings.http.maxRetries)
         || !readInteger(http, QStringLiteral("retryDelayMs"), 1000,
@@ -69,7 +83,23 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
         || !readInteger(sync, QStringLiteral("intervalMs"), 3600000,
                         settings.syncIntervalMs)
         || !readInteger(logging, QStringLiteral("retentionDays"), 7,
-                        settings.logRetentionDays)) {
+                        settings.logRetentionDays)
+        || !readInteger(covers, QStringLiteral("maxConcurrentDownloads"), 3,
+                        settings.covers.maxConcurrentDownloads)
+        || !readInteger(covers, QStringLiteral("timeoutMs"), 30000,
+                        settings.covers.timeoutMs)
+        || !readInteger(covers, QStringLiteral("maxRetries"), 2,
+                        settings.covers.maxRetries)
+        || !readInteger(covers, QStringLiteral("retryDelayMs"), 1000,
+                        settings.covers.retryDelayMs)
+        || !readInteger(covers, QStringLiteral("maxResponseBytes"), 5 * 1024 * 1024,
+                        settings.covers.maxResponseBytes)
+        || !readInteger(covers, QStringLiteral("minDimension"), 32,
+                        settings.covers.minDimension)
+        || !readInteger(covers, QStringLiteral("maxDimension"), 4096,
+                        settings.covers.maxDimension)
+        || !readInteger(covers, QStringLiteral("failureCooldownMs"), 5 * 60 * 1000,
+                        settings.covers.failureCooldownMs)) {
         error = QStringLiteral("Settings.json numeric settings must contain whole numbers.");
         return false;
     }
@@ -83,6 +113,14 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
     }
     if (settings.logRetentionDays <= 0) {
         error = QStringLiteral("Settings.json contains an invalid logging retention period.");
+        return false;
+    }
+    if (settings.covers.maxConcurrentDownloads <= 0 || settings.covers.timeoutMs <= 0
+        || settings.covers.maxRetries < 0 || settings.covers.retryDelayMs < 0
+        || settings.covers.maxResponseBytes <= 0 || settings.covers.minDimension <= 0
+        || settings.covers.maxDimension < settings.covers.minDimension
+        || settings.covers.failureCooldownMs < 0) {
+        error = QStringLiteral("Settings.json contains invalid cover settings.");
         return false;
     }
 

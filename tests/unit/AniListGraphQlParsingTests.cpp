@@ -2,6 +2,7 @@
 
 #include "../../src/infrastructure/anilist/AniListGraphQlPageParser.h"
 #include "../../src/infrastructure/anilist/AniListGraphQlResponseParser.h"
+#include "../../src/infrastructure/anilist/AniListMediaMapper.h"
 
 class AniListGraphQlParsingTests final : public QObject {
     Q_OBJECT
@@ -12,6 +13,7 @@ private slots:
     void rejectsEnvelopeWithoutDataOrErrors();
     void clearsPartialDataWhenEnvelopeIsMalformed();
     void rejectsMalformedPageInsteadOfReturningAnEmptySuccess();
+    void preservesEveryCoverVariant();
 };
 
 void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
@@ -21,18 +23,21 @@ void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
                 "pageInfo": {"currentPage": 1, "lastPage": 2, "hasNextPage": true},
                 "media": [{
                     "id": 154587,
-                    "type": "ANIME",
+                    "type": "MANGA",
+                    "format": "NOVEL",
                     "status": "FINISHED",
                     "title": {
                         "romaji": "Sousou no Frieren",
                         "english": "Frieren: Beyond Journey's End",
-                        "native": "葬送のフリーレン",
-                        "synonyms": ["Frieren at the Funeral"]
+                        "native": "葬送のフリーレン"
                     },
-                    "episodes": 28,
+                    "synonyms": ["Frieren at the Funeral"],
+                    "episodes": null,
+                    "chapters": 64,
                     "averageScore": 91,
                     "coverImage": {"large": "https://example.invalid/frieren.png"},
-                    "description": "A mage elf continues after the hero's journey."
+                    "description": "A mage elf continues after the hero's journey.",
+                    "siteUrl": "https://anilist.co/manga/154587"
                 }]
             }
         }
@@ -54,6 +59,8 @@ void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
     QCOMPARE(page.media.first().Name, QStringLiteral("Sousou no Frieren"));
     QCOMPARE(page.media.first().AlternativeNames,
              QStringList{QStringLiteral("Frieren at the Funeral")});
+    QCOMPARE(page.media.first().Type, MediaType::Novel);
+    QCOMPARE(page.media.first().TotalChapters, 64);
 }
 
 void AniListGraphQlParsingTests::preservesGraphQlErrorsWhenDataIsNull() {
@@ -109,6 +116,20 @@ void AniListGraphQlParsingTests::rejectsMalformedPageInsteadOfReturningAnEmptySu
     QVERIFY(!error.isEmpty());
     QCOMPARE(page.currentPage, 0);
     QVERIFY(page.media.isEmpty());
+}
+
+void AniListGraphQlParsingTests::preservesEveryCoverVariant() {
+    const QJsonObject object{
+        {QStringLiteral("coverImage"),
+         QJsonObject{{QStringLiteral("medium"), QStringLiteral("https://img/medium.jpg")},
+                     {QStringLiteral("large"), QStringLiteral("https://img/large.jpg")},
+                     {QStringLiteral("extraLarge"), QJsonValue::Null}}}};
+
+    const auto media = AniListMediaMapper::FromGraphQlJson(object);
+
+    QCOMPARE(media.coverImages.medium, QStringLiteral("https://img/medium.jpg"));
+    QCOMPARE(media.coverImages.large, QStringLiteral("https://img/large.jpg"));
+    QVERIFY(media.coverImages.extraLarge.isEmpty());
 }
 
 QTEST_MAIN(AniListGraphQlParsingTests)

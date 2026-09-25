@@ -69,6 +69,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/configuration/AniListSettings.h
         src/application/configuration/HttpSettings.h
         src/application/configuration/Settings.h
+        src/application/covers/CoverQuality.h
+        src/application/covers/CoverSettings.h
         src/application/configuration/ISettingsReader.h
         src/application/anilist/ISecretStore.h
         src/application/anilist/IAniListAuthProvider.h
@@ -327,6 +329,18 @@ target_link_libraries(JsonSettingsReaderTests
 
 add_test(NAME JsonSettingsReaderTests COMMAND JsonSettingsReaderTests)
 
+add_executable(CoverSettingsTests
+        tests/unit/CoverSettingsTests.cpp
+)
+
+target_link_libraries(CoverSettingsTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME CoverSettingsTests COMMAND CoverSettingsTests)
+
 add_executable(AniListAuthManagerTests
         tests/unit/AniListAuthManagerTests.cpp
         src/application/anilist/AniListAuthManager.h
@@ -560,6 +574,7 @@ set(HAIKENANIME_TESTS
         SqliteQueryConfigurationTests
         FileSecretStoreTests
         JsonSettingsReaderTests
+        CoverSettingsTests
         AniListAuthManagerTests
         AniListFlowTests
         AniListGraphQlParsingTests

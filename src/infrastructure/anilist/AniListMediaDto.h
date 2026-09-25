@@ -3,19 +3,28 @@
 
 #include <QString>
 #include <QStringList>
+#include <optional>
+
+struct AniListCoverImagesDto {
+    QString medium;
+    QString large;
+    QString extraLarge;
+};
 
 /** Represents the external AniList payload before domain mapping. */
 struct AniListMediaDto {
     int id = 0;
-    QString type;
+    QString mediaType;
+    QString mediaFormat;
     QString status;
     QString titleRomaji;
     QString titleEnglish;
     QString titleNative;
     QStringList titleSynonyms;
-    int episodes = 0;
-    int chapters = 0;
-    int averageScore = 0;
+    std::optional<int> episodes;
+    std::optional<int> chapters;
+    std::optional<int> averageScore;
+    AniListCoverImagesDto coverImages;
     QString coverImageUrl;
     QString description;
 };

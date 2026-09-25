@@ -18,6 +18,9 @@ A primeira versão deverá ler dados de um fixture local, aplicar filtros opcion
 - Passo 7 concluído inicialmente: providers local e GraphQL criados sob o mesmo contrato.
 - O mapeamento de JSON para `AniListMediaDto` é centralizado em `AniListMediaMapper`, com métodos distintos para fixture e GraphQL.
 - O mapeamento de `AniListMediaDto` para `Media`, incluindo tipo e status, também pertence ao `AniListMediaMapper`.
+- Os campos de catálogo usados nesta etapa foram validados contra o schema oficial do AniList: `id`, `type`, `format`, `status`, `title`, `synonyms`, `episodes`, `chapters`, `averageScore`, `coverImage.large` e `description`.
+- `synonyms` pertence ao objeto `Media`, fora de `title`. `type` identifica anime ou mangá; `format` é mantido separadamente para distinguir novels de outros mangás.
+- `episodes`, `chapters` e `averageScore` são anuláveis no contrato externo. O DTO preserva essa ausência e somente o mapeamento para o domínio converte valores ausentes para o valor neutro atual.
 - Passo 9 iniciado: repositório SQLite com upsert transacional e preservação de campos locais criado.
 - Passo 10 evoluído: `InitialSyncCoordinator` executa a sincronização em `QThread`, agenda novas execuções e é conectado ao `HomeScreenController` pelo `main.cpp`. Os workers experimentais permanecem fora da composição até a definição do ciclo de vida definitivo.
 - Passo 11 iniciado: fixtures GraphQL e testes do fluxo local de filtro, paginação e sincronização adicionados.
@@ -111,6 +114,24 @@ src/
 - O payload deverá separar `query` e `variables`.
 - A autenticação usará `Authorization: Bearer <token>` quando houver token disponível.
 - O cliente GraphQL não será responsável por paginação de negócio, persistência ou controle de UI.
+
+### Campos de catálogo usados
+
+O contrato GraphQL de leitura solicita somente campos com consumidor no modelo e na persistência atuais:
+
+| Campo AniList | Uso interno |
+|---|---|
+| `id` | Identificador externo de `Media`. |
+| `type` e `format` | `type` separa anime de mangá; `format` permite reconhecer `NOVEL`. |
+| `status` | Estado de publicação da mídia. |
+| `title.romaji`, `title.english`, `title.native` | Nomes principal, inglês e original. |
+| `synonyms` | Títulos alternativos. O campo pertence a `Media`, não a `MediaTitle`. |
+| `episodes` e `chapters` | Total conhecido conforme o tipo de mídia. Ambos podem ser nulos. |
+| `averageScore` | Nota média pública, anulável. |
+| `coverImage.large` | URL da capa usada pela apresentação. |
+| `description` | Sinopse persistida e apresentada. |
+
+`season`, `seasonYear`, `startDate`, `endDate`, `volumes`, `siteUrl`, `nextAiringEpisode` e `streamingEpisodes` não possuem consumidor no domínio ou na apresentação atuais. Eles permanecem fora da query e do DTO até existir um requisito concreto, evitando ampliar o modelo apenas porque o AniList os disponibiliza.
 
 ### Secrets e autorização
 

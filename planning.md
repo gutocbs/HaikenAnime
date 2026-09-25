@@ -26,7 +26,7 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 - Confirmar e implementar as queries GraphQL definitivas para anime, manga e novels.
 - Usar `POST` com `query` e `variables`, seguindo o contrato oficial da API.
 - Validar o formato real das respostas, incluindo `data`, `errors`, `Page`, `media` e `pageInfo`.
-- Confirmar o schema das queries e mutations contra a API real. Em especial, a posição de campos como `synonyms` ainda reflete o contrato das fixtures e não foi validada externamente.
+- Confirmar as mutations contra o schema e a API real antes de ativar updates. A query de catálogo já teve seus campos de leitura conferidos no schema oficial; `synonyms` foi corrigido para o nível de `Media`, e `type`/`format` permanecem separados.
 - Implementar autenticação OAuth completa quando o fluxo de login for definido.
 - Implementar renovação, invalidação e atualização segura de tokens.
 - Adicionar tratamento de rate limit, backoff e retry controlado.
@@ -169,6 +169,7 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 - Adicionar fixtures no formato real de respostas GraphQL.
 - Testar respostas com `data: null` e `errors`.
 - Testar campos opcionais, valores nulos e mudanças de schema.
+- Reavaliar `season`, `seasonYear`, datas, volumes, URL pública, próximo episódio e streaming somente quando alguma tela ou regra de negócio passar a consumi-los.
 - Adicionar testes do provider GraphQL com um transporte controlado.
 - Adicionar testes de paginação com múltiplas páginas.
 - Adicionar testes de retry e rate limit.

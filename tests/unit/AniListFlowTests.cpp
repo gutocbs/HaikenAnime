@@ -99,7 +99,7 @@ void AniListFlowTests::invalidFixtureReturnsError() {
 void AniListFlowTests::mapperUsesNeutralValuesForUnknownExternalEnums() {
     AniListMediaDto externalMedia;
     externalMedia.id = 42;
-    externalMedia.type = QStringLiteral("UNSUPPORTED_TYPE");
+    externalMedia.mediaType = QStringLiteral("UNSUPPORTED_TYPE");
     externalMedia.status = QStringLiteral("CANCELLED");
 
     const auto media = AniListMediaMapper::ToDomainMedia(externalMedia);

@@ -10,13 +10,14 @@
         {
           "id": 154587,
           "type": "ANIME",
+          "format": "TV",
           "status": "FINISHED",
           "title": {
             "romaji": "Sousou no Frieren",
             "english": "Frieren: Beyond Journey's End",
-            "native": "葬送のフリーレン",
-            "synonyms": ["Frieren at the Funeral"]
+            "native": "葬送のフリーレン"
           },
+          "synonyms": ["Frieren at the Funeral"],
           "episodes": 28,
           "averageScore": 91,
           "coverImage": { "large": "https://example.invalid/frieren.png" },

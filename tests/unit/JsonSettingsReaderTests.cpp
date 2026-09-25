@@ -20,6 +20,17 @@ void JsonSettingsReaderTests::readsValidConfiguration() {
     file.write(R"({
         "anilist": {"endpoint": "https://graphql.anilist.co", "mediaQueryFile": "query.graphql"},
         "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100},
+        "covers": {
+            "quality": "large",
+            "maxConcurrentDownloads": 2,
+            "timeoutMs": 4000,
+            "maxRetries": 1,
+            "retryDelayMs": 50,
+            "maxResponseBytes": 1048576,
+            "minDimension": 24,
+            "maxDimension": 2048,
+            "failureCooldownMs": 60000
+        },
         "sync": {"timeoutMs": 10000, "intervalMs": 60000},
         "logging": {"retentionDays": 3}
     })");
@@ -31,6 +42,9 @@ void JsonSettingsReaderTests::readsValidConfiguration() {
     QVERIFY(reader.read(settings, error));
     QCOMPARE(settings.http.timeoutMs, 5000);
     QCOMPARE(settings.http.maxRetries, 1);
+    QCOMPARE(settings.covers.quality, CoverQuality::Large);
+    QCOMPARE(settings.covers.maxConcurrentDownloads, 2);
+    QCOMPARE(settings.covers.maxResponseBytes, 1048576);
     QVERIFY(error.isEmpty());
 }
 

@@ -8,6 +8,17 @@
     "maxRetries": 2,
     "retryDelayMs": 1000
   },
+  "covers": {
+    "quality": "medium",
+    "maxConcurrentDownloads": 3,
+    "timeoutMs": 30000,
+    "maxRetries": 2,
+    "retryDelayMs": 1000,
+    "maxResponseBytes": 5242880,
+    "minDimension": 32,
+    "maxDimension": 4096,
+    "failureCooldownMs": 300000
+  },
   "sync": {
     "timeoutMs": 60000,
     "intervalMs": 3600000

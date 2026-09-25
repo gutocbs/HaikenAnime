@@ -4,6 +4,7 @@
 #include <QJsonObject>
 
 #include "AniListMediaDto.h"
+#include "../../application/covers/CoverQuality.h"
 #include "../../domain/media/Media.h"
 
 /** Converts source-specific JSON objects into the common AniList media DTO. */
@@ -17,6 +18,9 @@ public:
 
     /** Maps the external DTO into the application's media domain model. */
     [[nodiscard]] static Media ToDomainMedia(const AniListMediaDto &media);
+
+    [[nodiscard]] static QString SelectCoverUrl(const AniListCoverImagesDto &images,
+                                                CoverQuality quality);
 };
 
 #endif // HAIKENANIME_ANILISTMEDIAMAPPER_H
