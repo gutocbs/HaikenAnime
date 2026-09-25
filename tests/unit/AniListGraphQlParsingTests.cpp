@@ -14,6 +14,7 @@ private slots:
     void clearsPartialDataWhenEnvelopeIsMalformed();
     void rejectsMalformedPageInsteadOfReturningAnEmptySuccess();
     void preservesEveryCoverVariant();
+    void fallsBackToAvailableLargeCoverWhenMediumIsMissing();
 };
 
 void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
@@ -130,6 +131,14 @@ void AniListGraphQlParsingTests::preservesEveryCoverVariant() {
     QCOMPARE(media.coverImages.medium, QStringLiteral("https://img/medium.jpg"));
     QCOMPARE(media.coverImages.large, QStringLiteral("https://img/large.jpg"));
     QVERIFY(media.coverImages.extraLarge.isEmpty());
+}
+
+void AniListGraphQlParsingTests::fallsBackToAvailableLargeCoverWhenMediumIsMissing() {
+    AniListCoverImagesDto images;
+    images.large = QStringLiteral("https://img/large.jpg");
+
+    QCOMPARE(AniListMediaMapper::SelectCoverUrl(images, CoverQuality::Medium),
+             QStringLiteral("https://img/large.jpg"));
 }
 
 QTEST_MAIN(AniListGraphQlParsingTests)

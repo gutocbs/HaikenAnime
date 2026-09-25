@@ -49,6 +49,7 @@ class SqliteCoverCacheRepositoryTests final : public QObject {
 
 private slots:
     void roundTripsAndReplacesEntry();
+    void persistsEntryWithoutHttpValidators();
     void rejectsAbsolutePath();
     void cascadesMediaDeletionAndClearsEntries();
 };
@@ -77,6 +78,28 @@ void SqliteCoverCacheRepositoryTests::roundTripsAndReplacesEntry() {
     QCOMPARE(entries.value(42).quality, CoverQuality::Large);
     QCOMPARE(entries.value(42).relativePath, QStringLiteral("covers/42-new.jpg"));
     QCOMPARE(entries.value(42).validatedAt.toUTC(), replacement.validatedAt.toUTC());
+}
+
+void SqliteCoverCacheRepositoryTests::persistsEntryWithoutHttpValidators() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    InsertMedia(database.connection(), 42);
+    SqliteCoverCacheRepository repository(database.connection(), ReadSql, UpsertSql,
+                                          DeleteSql, ClearSql);
+    auto entry = Entry(42, QStringLiteral("https://img/cover.jpg"),
+                       QStringLiteral("42-cover.jpg"));
+    entry.etag = {};
+    entry.lastModified = {};
+    QString error;
+
+    QVERIFY2(repository.Upsert(entry, error), qPrintable(error));
+    QHash<int, CoverCacheEntry> entries;
+    QVERIFY2(repository.ReadAll(entries, error), qPrintable(error));
+    QVERIFY(entries.contains(42));
+    QCOMPARE(entries.value(42).etag, QStringLiteral(""));
+    QCOMPARE(entries.value(42).lastModified, QStringLiteral(""));
 }
 
 void SqliteCoverCacheRepositoryTests::rejectsAbsolutePath() {

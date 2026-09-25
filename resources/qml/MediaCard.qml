@@ -11,7 +11,7 @@ Rectangle {
     property string score: ""
     property bool muted: false
     property int mediaId: 0
-    property url coverSource: "qrc:/resources/images/cover-placeholder.svg"
+    property url coverSource: "qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg"
     signal coverLoadFailed(int mediaId)
 
     color: muted ? "#f8fafc" : "#ffffff"

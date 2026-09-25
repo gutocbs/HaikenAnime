@@ -1,4 +1,5 @@
 #include "CoverDownloadCoordinator.h"
+#include "../../infrastructure/logging/AsyncLogger.h"
 #include <QFile>
 #include <QTimer>
 
@@ -8,6 +9,11 @@ CoverDownloadCoordinator::CoverDownloadCoordinator(ICoverDownloader &downloader,
 {
     QString ignored;
     cache_.ReadAll(entries_, ignored);
+}
+
+void CoverDownloadCoordinator::setLogger(AsyncLogger *logger)
+{
+    logger_ = logger;
 }
 
 QString CoverDownloadCoordinator::Key(const CoverRequest &r) const
@@ -37,6 +43,11 @@ void CoverDownloadCoordinator::Enqueue(const CoverRequest &input)
 
 void CoverDownloadCoordinator::RequestWindow(QList<CoverRequest> visible, QList<CoverRequest> prefetch)
 {
+    if (logger_) {
+        logger_->info(LogCategory::Covers,
+                      QStringLiteral("Cover window requested: %1 visible, %2 prefetch.")
+                          .arg(visible.size()).arg(prefetch.size()));
+    }
     QSet<QString> retained;
     for (auto &r : visible) { r.priority = CoverPriority::Visible; retained.insert(Key(r)); }
     for (auto &r : prefetch) { r.priority = CoverPriority::Prefetch; retained.insert(Key(r)); }
@@ -59,6 +70,11 @@ void CoverDownloadCoordinator::Pump()
         queued_.remove(key);
         emit CoverStateChanged(request.mediaId, CoverState::Downloading);
         const int attempt = attempts_.value(key, 0);
+        if (logger_) {
+            logger_->info(LogCategory::Covers,
+                          QStringLiteral("Starting cover download for media %1 (attempt %2): %3")
+                              .arg(request.mediaId).arg(attempt + 1).arg(request.remoteUrl.toString()));
+        }
         quint64 id = downloader_.Start(request, [this, key, generation = generation_, attempt](CoverDownloadResult result) {
             Complete(key, generation, attempt, std::move(result));
         });
@@ -69,11 +85,21 @@ void CoverDownloadCoordinator::Pump()
 void CoverDownloadCoordinator::Complete(QString key, quint64 generation, int attempt, CoverDownloadResult result)
 {
     active_.remove(key);
-    if (generation != generation_) { QFile::remove(result.temporaryPath); Pump(); return; }
+    if (generation != generation_) {
+        QFile::remove(result.temporaryPath);
+        if (logger_) logger_->info(LogCategory::Covers, QStringLiteral("Discarded stale cover download for media %1.").arg(result.request.mediaId));
+        Pump();
+        return;
+    }
     const bool temporary = result.failure == CoverFailureCategory::Transport || result.failure == CoverFailureCategory::HttpTemporary;
     if (!result.succeeded && temporary && attempt < settings_.maxRetries) {
         const int delay = qMax(settings_.retryDelayMs, result.retryAfterMs);
         attempts_[key] = attempt + 1;
+        if (logger_) {
+            logger_->warning(LogCategory::Covers,
+                             QStringLiteral("Temporary cover download failure for media %1; retrying in %2 ms. HTTP %3: %4")
+                                 .arg(result.request.mediaId).arg(delay).arg(result.httpStatus).arg(result.error));
+        }
         QTimer::singleShot(delay, this, [this, key, request = result.request, generation] {
             if (generation != generation_ || active_.contains(key) || queued_.contains(key)) return;
             queued_.insert(key);
@@ -85,8 +111,14 @@ void CoverDownloadCoordinator::Complete(QString key, quint64 generation, int att
         return;
     }
     if (!result.succeeded) {
+        QFile::remove(result.temporaryPath);
         attempts_.remove(key);
         cooldowns_[key] = QDateTime::currentDateTimeUtc().addMSecs(settings_.failureCooldownMs);
+        if (logger_) {
+            logger_->error(LogCategory::Covers,
+                           QStringLiteral("Cover download failed for media %1. HTTP %2: %3")
+                               .arg(result.request.mediaId).arg(result.httpStatus).arg(result.error));
+        }
         emit CoverStateChanged(result.request.mediaId, CoverState::Failed);
         Pump();
         return;
@@ -95,6 +127,8 @@ void CoverDownloadCoordinator::Complete(QString key, quint64 generation, int att
     QString error;
     if (!files_.Publish(result.request.mediaId, result.request.remoteUrl.toString(), result.temporaryPath,
                         result.mimeType, published, error)) {
+        QFile::remove(result.temporaryPath);
+        if (logger_) logger_->error(LogCategory::Covers, QStringLiteral("Could not publish cover for media %1: %2").arg(result.request.mediaId).arg(error));
         emit CoverStateChanged(result.request.mediaId, CoverState::Failed); Pump(); return;
     }
     CoverCacheEntry old = entries_.value(result.request.mediaId);
@@ -102,13 +136,18 @@ void CoverDownloadCoordinator::Complete(QString key, quint64 generation, int att
                           published.relativePath, published.mimeType, published.byteSize, result.etag,
                           result.lastModified, QDateTime::currentDateTimeUtc()};
     if (!cache_.Upsert(entry, error)) {
-        files_.Remove(published.relativePath, error);
+        const QString persistenceError = error;
+        QString cleanupError;
+        files_.Remove(published.relativePath, cleanupError);
+        QFile::remove(result.temporaryPath);
+        if (logger_) logger_->error(LogCategory::Covers, QStringLiteral("Could not persist cover cache for media %1: %2").arg(result.request.mediaId).arg(persistenceError));
         emit CoverStateChanged(result.request.mediaId, CoverState::Failed); Pump(); return;
     }
     entries_[entry.mediaId] = entry;
     attempts_.remove(key);
     if (old.mediaId && old.relativePath != entry.relativePath) files_.Remove(old.relativePath, error);
     QFile::remove(result.temporaryPath);
+    if (logger_) logger_->info(LogCategory::Covers, QStringLiteral("Cover available for media %1: %2").arg(entry.mediaId).arg(files_.AbsolutePath(entry.relativePath)));
     emit CoverAvailable(entry.mediaId, files_.AbsolutePath(entry.relativePath));
     emit CoverStateChanged(entry.mediaId, CoverState::Available);
     Pump();

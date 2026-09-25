@@ -1,5 +1,8 @@
 #include <QSemaphore>
 #include <QSignalSpy>
+#include <QSqlQuery>
+#include <QTemporaryDir>
+#include <QDir>
 #include <QThread>
 #include <QtTest>
 
@@ -7,6 +10,7 @@
 #include <thread>
 
 #include "../../src/app/InitialSyncCoordinator.h"
+#include "../../src/infrastructure/database/SqliteDatabase.h"
 
 namespace {
 class SemaphoreReleaseGuard final {
@@ -35,6 +39,7 @@ private slots:
     void completionDuringShutdownDoesNotRestartScheduler();
     void shutdownFromStartedSignalPreventsWork();
     void recursiveStartFromStartedSignalDoesNotStartTwice();
+    void synchronizesRealGraphQlFixtureIntoDatabase();
 };
 
 void InitialSyncCoordinatorTests::doesNotRunConcurrentSynchronizations() {
@@ -179,6 +184,40 @@ void InitialSyncCoordinatorTests::recursiveStartFromStartedSignalDoesNotStartTwi
     coordinator.shutdown();
 
     QCOMPARE(calls.load(), 1);
+}
+
+void InitialSyncCoordinatorTests::synchronizesRealGraphQlFixtureIntoDatabase() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const auto sourceRoot = QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR);
+    InitialSyncCoordinator coordinator(
+        directory.filePath(QStringLiteral("library.sqlite")),
+        QDir(sourceRoot).filePath(QStringLiteral("tests/fixtures/graphql/page-response.json")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/upsert-media.sql")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/read-media.sql")),
+        60000, 60000);
+    QSignalSpy completedSpy(&coordinator, &InitialSyncCoordinator::completed);
+    QSignalSpy failedSpy(&coordinator, &InitialSyncCoordinator::failed);
+
+    coordinator.start();
+    QVERIFY2(completedSpy.wait(5000), failedSpy.isEmpty()
+        ? "Real GraphQL fixture synchronization did not complete."
+        : qPrintable(failedSpy.first().first().toString()));
+    coordinator.shutdown();
+
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY2(database.open(), qPrintable(database.lastError()));
+    QSqlQuery countQuery(database.connection());
+    QVERIFY(countQuery.exec(QStringLiteral("SELECT COUNT(*) FROM media")));
+    QVERIFY(countQuery.next());
+    QCOMPARE(countQuery.value(0).toInt(), 50);
+
+    QSqlQuery mediaQuery(database.connection());
+    QVERIFY(mediaQuery.exec(QStringLiteral("SELECT name, cover_url FROM media WHERE id = 1")));
+    QVERIFY(mediaQuery.next());
+    QCOMPARE(mediaQuery.value(0).toString(), QStringLiteral("Cowboy Bebop"));
+    QCOMPARE(mediaQuery.value(1).toString(),
+             QStringLiteral("https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx1-GCsPm7waJ4kS.png"));
 }
 
 QTEST_MAIN(InitialSyncCoordinatorTests)

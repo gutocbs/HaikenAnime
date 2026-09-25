@@ -72,9 +72,15 @@ QString AniListMediaMapper::SelectCoverUrl(const AniListCoverImagesDto &images,
                                            const CoverQuality quality) {
     switch (quality) {
     case CoverQuality::Medium:
-        return images.medium;
+        if (!images.medium.isEmpty()) {
+            return images.medium;
+        }
+        return images.large.isEmpty() ? images.extraLarge : images.large;
     case CoverQuality::Large:
-        return images.large.isEmpty() ? images.medium : images.large;
+        if (!images.large.isEmpty()) {
+            return images.large;
+        }
+        return images.medium.isEmpty() ? images.extraLarge : images.medium;
     case CoverQuality::ExtraLarge:
         if (!images.extraLarge.isEmpty()) {
             return images.extraLarge;

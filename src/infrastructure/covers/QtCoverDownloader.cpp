@@ -69,7 +69,10 @@ void QtCoverDownloader::Finish(quint64 id)
     else if (result.httpStatus == 408 || result.httpStatus == 429 || result.httpStatus >= 500) result.failure = CoverFailureCategory::HttpTemporary;
     else if (result.httpStatus >= 400) result.failure = CoverFailureCategory::HttpPermanent;
     else result.failure = CoverFailureCategory::Transport;
-    if (!result.succeeded) transfer.file->remove();
+    if (!result.succeeded) {
+        if (result.error.isEmpty()) result.error = transfer.reply->errorString();
+        transfer.file->remove();
+    }
     transfer.reply->deleteLater(); transfer.file->deleteLater();
     transfer.completion(std::move(result));
 }

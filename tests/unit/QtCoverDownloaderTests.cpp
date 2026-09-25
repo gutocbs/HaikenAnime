@@ -27,6 +27,7 @@ void QtCoverDownloaderTests::classifiesResponses()
     downloader.Start({1,url},[&](auto value){result=value;done=true;});
     QTRY_VERIFY_WITH_TIMEOUT(done,2000);
     QCOMPARE(result.failure,CoverFailureCategory::HttpTemporary); QCOMPARE(result.retryAfterMs,2000);
+    QVERIFY(!result.error.isEmpty());
 }
 void QtCoverDownloaderTests::abortsOversizedBody()
 {

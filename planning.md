@@ -19,6 +19,7 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 ## Integração com o AniList
 
 - Manter fixtures como provider ativo durante as próximas etapas. A conexão real com o AniList será uma das últimas entregas; parsers e mappers devem ser exercitados com respostas controladas até lá, sem apresentar esses testes como validação do endpoint oficial.
+- Usar a resposta GraphQL real gravada em `tests/fixtures/graphql/page-response.json` na sincronização inicial por fixture, preservando-a como base comum para validar persistência, download de capas e, futuramente, ordenação e discovery de arquivos.
 - Substituir o provider baseado em fixture pelo provider GraphQL real.
 - Consolidar o transporte de update em uma única mutation `SaveMediaListEntry` por mídia. O contrato `IAniListUpdateClient` já recebe os campos agrupados por mídia, mas a implementação inicial ainda utiliza internamente as mutations específicas existentes. O agrupamento atual prepara o contrato, mas não garante atomicidade: mutations separadas podem aplicar apenas parte dos campos. A consolidação deverá ser feita quando o contrato remoto for validado, junto com idempotência e reconciliação da outbox.
 - Normalizar a nomenclatura das funções de leitura do `AniListMediaMapper`. Fixture e GraphQL possuem formatos diferentes e justificam funções separadas, enquanto o mapeamento comum para domínio evita duplicação; a mudança de estilo não deve ser apresentada como validação da integração real.

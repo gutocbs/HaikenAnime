@@ -7,6 +7,8 @@
 #include <utility>
 
 namespace {
+constexpr int MaximumHomeLibraryItems = 9;
+
 QString mediaStatusLabel(const MediaStatus status) {
     switch (status) {
     case MediaStatus::NotReleased:
@@ -53,7 +55,7 @@ QVariant HomeMediaModel::data(const QModelIndex &index, int role) const {
     case RemoteCoverUrlRole:
         return media.CoverUrl;
     case CoverSourceRole:
-        return coverSources_.value(media.Id, QStringLiteral("qrc:/resources/images/cover-placeholder.svg"));
+        return coverSources_.value(media.Id, QStringLiteral("qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg"));
     case CoverStateRole:
         return static_cast<int>(coverStates_.value(media.Id, CoverState::Missing));
     default:
@@ -94,6 +96,9 @@ void HomeMediaModel::ClearCovers() {
 }
 
 void HomeMediaModel::setMedia(QList<Media> media) {
+    if (media.size() > MaximumHomeLibraryItems) {
+        media = media.mid(0, MaximumHomeLibraryItems);
+    }
     beginResetModel();
     media_ = std::move(media);
     endResetModel();

@@ -153,7 +153,9 @@ Item {
                             progress: model.progress
                             score: model.score
                             muted: false
-                            onCoverLoadFailed: controller.ReportCoverLoadFailure(mediaId)
+                            onCoverLoadFailed: function(mediaId) {
+                                home.controller.ReportCoverLoadFailure(mediaId)
+                            }
                         }
                         function reportWindow() {
                             if (count <= 0 || height <= 0) return

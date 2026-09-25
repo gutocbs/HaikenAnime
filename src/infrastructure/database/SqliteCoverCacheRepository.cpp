@@ -64,8 +64,9 @@ bool SqliteCoverCacheRepository::Upsert(const CoverCacheEntry &entry, QString &e
     query.bindValue(QStringLiteral(":relative_path"), entry.relativePath);
     query.bindValue(QStringLiteral(":mime_type"), entry.mimeType);
     query.bindValue(QStringLiteral(":byte_size"), entry.byteSize);
-    query.bindValue(QStringLiteral(":etag"), entry.etag);
-    query.bindValue(QStringLiteral(":last_modified"), entry.lastModified);
+    query.bindValue(QStringLiteral(":etag"), entry.etag.isNull() ? QStringLiteral("") : entry.etag);
+    query.bindValue(QStringLiteral(":last_modified"),
+                    entry.lastModified.isNull() ? QStringLiteral("") : entry.lastModified);
     query.bindValue(QStringLiteral(":validated_at"), entry.validatedAt.toUTC().toString(Qt::ISODate));
     if (!query.exec()) {
         error = query.lastError().text();

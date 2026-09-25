@@ -9,11 +9,14 @@
 #include <QObject>
 #include <QQueue>
 
+class AsyncLogger;
+
 class CoverDownloadCoordinator final : public QObject {
     Q_OBJECT
 public:
     CoverDownloadCoordinator(ICoverDownloader &downloader, ICoverCacheRepository &cache,
                              ICoverFileStore &files, CoverSettings settings, QObject *parent = nullptr);
+    void setLogger(AsyncLogger *logger);
     void RequestWindow(QList<CoverRequest> visible, QList<CoverRequest> prefetch);
     void ReportMissingFile(int mediaId);
     void Clear();
@@ -42,5 +45,6 @@ private:
     QHash<QString, QDateTime> cooldowns_;
     QHash<QString, int> attempts_;
     quint64 generation_ = 1;
+    AsyncLogger *logger_ = nullptr;
 };
 #endif

@@ -127,10 +127,11 @@ ApplicationContext createApplicationContext() {
     context.coverDownloader = std::make_unique<QtCoverDownloader>(temporaryRoot, settings.covers);
     context.coverCoordinator = std::make_unique<CoverDownloadCoordinator>(
         *context.coverDownloader, *context.coverCacheRepository, *context.coverFileStore, settings.covers);
+    context.coverCoordinator->setLogger(context.logger.get());
     context.coverQuality = settings.covers.quality;
     context.initialSync = std::make_unique<InitialSyncCoordinator>(
         context.database->databasePath(),
-        QStringLiteral(":/fixtures/media-library.json"),
+        QStringLiteral(":/fixtures/graphql/page-response.json"),
         queryConfiguration.upsertMediaPath, queryConfiguration.readMediaPath,
         settings.syncTimeoutMs, settings.syncIntervalMs);
     context.initialSync->setLogger(context.logger.get());

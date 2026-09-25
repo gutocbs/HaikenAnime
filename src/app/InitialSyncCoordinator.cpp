@@ -1,7 +1,7 @@
 #include "InitialSyncCoordinator.h"
 
 #include "../application/anilist/AniListSyncService.h"
-#include "../infrastructure/anilist/FileAniListDataSource.h"
+#include "../infrastructure/anilist/RecordedGraphQlAniListDataSource.h"
 #include "../infrastructure/database/SqlQueryStore.h"
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "../infrastructure/database/SqliteMediaRepository.h"
@@ -112,7 +112,7 @@ bool InitialSyncCoordinator::performSynchronization(QString &error) const {
     SqliteMediaRepository repository(database.connection(), std::move(upsertQuery),
                                      std::move(readQuery));
     repository.setLogger(logger_);
-    FileAniListDataSource source(QDir::cleanPath(fixturePath_));
+    RecordedGraphQlAniListDataSource source(QDir::cleanPath(fixturePath_));
     AniListSyncService service(source, repository, nullptr, syncTimeoutMs_);
     MediaSyncFilter filter;
     return service.synchronize(filter, error);

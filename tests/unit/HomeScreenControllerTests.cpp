@@ -26,6 +26,7 @@ private slots:
     void synchronizationCompletionReloadsMedia();
     void exposesPresentationReadyStatus_data();
     void exposesPresentationReadyStatus();
+    void limitsHomeLibraryToNineItems();
     void updatesOnlyOneCoverRowAndPreservesOldCoverOnFailure();
 };
 
@@ -132,6 +133,22 @@ void HomeScreenControllerTests::exposesPresentationReadyStatus() {
              expectedLabel);
 }
 
+void HomeScreenControllerTests::limitsHomeLibraryToNineItems() {
+    HomeMediaModel model;
+    QList<Media> media;
+    for (int id = 1; id <= 10; ++id) {
+        Media item;
+        item.Id = id;
+        item.Name = QStringLiteral("Media %1").arg(id);
+        media.append(item);
+    }
+
+    model.setMedia(media);
+
+    QCOMPARE(model.rowCount(), 9);
+    QCOMPARE(model.data(model.index(8, 0), HomeMediaModel::IdRole).toInt(), 9);
+}
+
 void HomeScreenControllerTests::updatesOnlyOneCoverRowAndPreservesOldCoverOnFailure() {
     HomeMediaModel model;
     Media first; first.Id = 42; first.CoverUrl = QStringLiteral("https://example/42.jpg");
@@ -139,7 +156,7 @@ void HomeScreenControllerTests::updatesOnlyOneCoverRowAndPreservesOldCoverOnFail
     model.setMedia({first, second});
     const auto index = model.index(0, 0);
     QCOMPARE(model.data(index, HomeMediaModel::CoverSourceRole).toString(),
-             QStringLiteral("qrc:/resources/images/cover-placeholder.svg"));
+             QStringLiteral("qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg"));
     QCOMPARE(model.data(index, HomeMediaModel::RemoteCoverUrlRole).toString(), first.CoverUrl);
     QSignalSpy changed(&model, &QAbstractItemModel::dataChanged);
     QSignalSpy reset(&model, &QAbstractItemModel::modelReset);
@@ -149,7 +166,7 @@ void HomeScreenControllerTests::updatesOnlyOneCoverRowAndPreservesOldCoverOnFail
     QCOMPARE(model.data(index, HomeMediaModel::CoverSourceRole).toString(), QStringLiteral("file:///covers/42.jpg"));
     model.UpdateCover(42, {}, CoverState::Missing);
     QCOMPARE(model.data(index, HomeMediaModel::CoverSourceRole).toString(),
-             QStringLiteral("qrc:/resources/images/cover-placeholder.svg"));
+             QStringLiteral("qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg"));
 }
 
 QTEST_MAIN(HomeScreenControllerTests)

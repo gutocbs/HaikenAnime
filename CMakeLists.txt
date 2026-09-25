@@ -140,6 +140,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/anilist/GraphQlQueryStore.cpp
         src/infrastructure/anilist/FileAniListDataSource.h
         src/infrastructure/anilist/FileAniListDataSource.cpp
+        src/infrastructure/anilist/RecordedGraphQlAniListDataSource.h
+        src/infrastructure/anilist/RecordedGraphQlAniListDataSource.cpp
         src/infrastructure/anilist/GraphQlAniListDataSource.h
         src/infrastructure/anilist/GraphQlAniListDataSource.cpp
         src/infrastructure/anilist/AniListMediaMapper.h
@@ -188,6 +190,9 @@ set_source_files_properties(
 set_source_files_properties(
         tests/fixtures/media-library.json
         PROPERTIES QT_RESOURCE_ALIAS "media-library.json")
+set_source_files_properties(
+        tests/fixtures/graphql/page-response.json
+        PROPERTIES QT_RESOURCE_ALIAS "graphql/page-response.json")
 
 qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
@@ -214,6 +219,7 @@ qt_add_resources(HaikenAnime fixture_resource_bundle
         PREFIX "/fixtures"
         FILES
         tests/fixtures/media-library.json
+        tests/fixtures/graphql/page-response.json
 )
 
 qt_add_qml_module(HaikenAnime
@@ -401,7 +407,8 @@ target_link_libraries(CoverFileStoreTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
 add_test(NAME CoverFileStoreTests COMMAND CoverFileStoreTests)
 
 add_executable(CoverDownloadCoordinatorTests tests/unit/CoverDownloadCoordinatorTests.cpp
-        src/application/covers/CoverDownloadCoordinator.cpp)
+        src/application/covers/CoverDownloadCoordinator.cpp
+        src/infrastructure/logging/AsyncLogger.cpp)
 target_include_directories(CoverDownloadCoordinatorTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(CoverDownloadCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME CoverDownloadCoordinatorTests COMMAND CoverDownloadCoordinatorTests)
@@ -586,6 +593,7 @@ add_executable(HomeScreenControllerTests
         src/presentation/home/HomeScreenController.cpp
         src/application/covers/CoverDownloadCoordinator.h
         src/application/covers/CoverDownloadCoordinator.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
 )
 
 target_link_libraries(HomeScreenControllerTests
@@ -612,6 +620,12 @@ add_executable(InitialSyncCoordinatorTests
         src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/anilist/FileAniListDataSource.h
         src/infrastructure/anilist/FileAniListDataSource.cpp
+        src/infrastructure/anilist/RecordedGraphQlAniListDataSource.h
+        src/infrastructure/anilist/RecordedGraphQlAniListDataSource.cpp
+        src/infrastructure/anilist/AniListGraphQlResponseParser.h
+        src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
+        src/infrastructure/anilist/AniListGraphQlPageParser.h
+        src/infrastructure/anilist/AniListGraphQlPageParser.cpp
         src/infrastructure/anilist/AniListMediaMapper.h
         src/infrastructure/anilist/AniListMediaMapper.cpp
         src/application/anilist/AniListSyncService.h
@@ -633,6 +647,10 @@ target_link_libraries(InitialSyncCoordinatorTests
         Qt6::Core
         Qt6::Sql
         Qt6::Test
+)
+
+target_compile_definitions(InitialSyncCoordinatorTests PRIVATE
+        HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 add_test(NAME InitialSyncCoordinatorTests COMMAND InitialSyncCoordinatorTests)
