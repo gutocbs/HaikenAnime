@@ -74,6 +74,10 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/covers/CoverCacheEntry.h
         src/application/covers/ICoverCacheRepository.h
         src/application/covers/ICoverFileStore.h
+        src/application/covers/CoverDownloadTypes.h
+        src/application/covers/ICoverDownloader.h
+        src/application/covers/CoverDownloadCoordinator.h
+        src/application/covers/CoverDownloadCoordinator.cpp
         src/application/configuration/ISettingsReader.h
         src/application/anilist/ISecretStore.h
         src/application/anilist/IAniListAuthProvider.h
@@ -124,6 +128,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqliteQueryConfiguration.cpp
         src/infrastructure/covers/CoverFileStore.h
         src/infrastructure/covers/CoverFileStore.cpp
+        src/infrastructure/covers/QtCoverDownloader.h
+        src/infrastructure/covers/QtCoverDownloader.cpp
         src/infrastructure/secrets/FileSecretStore.h
         src/infrastructure/secrets/FileSecretStore.cpp
         src/infrastructure/anilist/HttpFactory.h
@@ -393,6 +399,18 @@ target_include_directories(CoverFileStoreTests PRIVATE ${CMAKE_CURRENT_SOURCE_DI
 target_link_libraries(CoverFileStoreTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
 add_test(NAME CoverFileStoreTests COMMAND CoverFileStoreTests)
 
+add_executable(CoverDownloadCoordinatorTests tests/unit/CoverDownloadCoordinatorTests.cpp
+        src/application/covers/CoverDownloadCoordinator.cpp)
+target_include_directories(CoverDownloadCoordinatorTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(CoverDownloadCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME CoverDownloadCoordinatorTests COMMAND CoverDownloadCoordinatorTests)
+
+add_executable(QtCoverDownloaderTests tests/unit/QtCoverDownloaderTests.cpp
+        src/infrastructure/covers/QtCoverDownloader.cpp)
+target_include_directories(QtCoverDownloaderTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(QtCoverDownloaderTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+add_test(NAME QtCoverDownloaderTests COMMAND QtCoverDownloaderTests)
+
 add_executable(AniListAuthManagerTests
         tests/unit/AniListAuthManagerTests.cpp
         src/application/anilist/AniListAuthManager.h
@@ -629,6 +647,8 @@ set(HAIKENANIME_TESTS
         JsonSettingsReaderTests
         CoverSettingsTests
         CoverFileStoreTests
+        CoverDownloadCoordinatorTests
+        QtCoverDownloaderTests
         AniListAuthManagerTests
         AniListFlowTests
         AniListGraphQlParsingTests
