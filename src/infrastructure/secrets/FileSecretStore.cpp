@@ -47,8 +47,9 @@ bool FileSecretStore::loadAniListCredentials(AniListCredentials &credentials, QS
         }
     }
 
-    if (!hasUsername || !hasToken) {
-        error = QStringLiteral("AniList secrets file must contain username and token entries.");
+    if (!hasUsername || !hasToken || credentials.username.isEmpty() || credentials.token.isEmpty()) {
+        credentials = {};
+        error = QStringLiteral("AniList secrets file must contain non-empty username and token entries.");
         return false;
     }
 
@@ -57,6 +58,14 @@ bool FileSecretStore::loadAniListCredentials(AniListCredentials &credentials, QS
 
 bool FileSecretStore::saveAniListCredentials(const AniListCredentials &credentials, QString &error) {
     error.clear();
+    if (credentials.username.trimmed().isEmpty() || credentials.token.trimmed().isEmpty()
+        || credentials.username.contains(QLatin1Char('\n'))
+        || credentials.username.contains(QLatin1Char('\r'))
+        || credentials.token.contains(QLatin1Char('\n'))
+        || credentials.token.contains(QLatin1Char('\r'))) {
+        error = QStringLiteral("AniList credentials must be non-empty single-line values.");
+        return false;
+    }
     const QFileInfo fileInfo(filePath_);
     if (!QDir().mkpath(fileInfo.absolutePath())) {
         error = QStringLiteral("Could not create the secrets directory.");

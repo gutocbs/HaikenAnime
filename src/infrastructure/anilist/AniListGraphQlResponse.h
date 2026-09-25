@@ -19,7 +19,7 @@ struct AniListGraphQlResponse {
 
     /** Returns true when the response contained a non-null data object. */
     [[nodiscard]] bool hasData() const {
-        return dataWasPresent && !data.isEmpty();
+        return dataWasPresent;
     }
 };
 

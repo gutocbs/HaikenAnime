@@ -1,4 +1,3 @@
-#include <QCoreApplication>
 #include <QDir>
 #include <QtTest>
 
@@ -35,6 +34,7 @@ class AniListFlowTests : public QObject {
 
 private slots:
     void fixtureAppliesFilterAndPagination();
+    void embeddedProductionFixtureCanBeRead();
     void synchronizationPersistsEveryPage();
     void invalidFixtureReturnsError();
     void mapperUsesNeutralValuesForUnknownExternalEnums();
@@ -44,8 +44,8 @@ private slots:
 };
 
 static QString fixturePath() {
-    return QDir(QCoreApplication::applicationDirPath())
-        .filePath(QStringLiteral("../tests/fixtures/media-library.json"));
+    return QDir(QStringLiteral(HAIKENANIME_TEST_FIXTURE_DIR))
+        .filePath(QStringLiteral("media-library.json"));
 }
 
 void AniListFlowTests::fixtureAppliesFilterAndPagination() {
@@ -61,6 +61,15 @@ void AniListFlowTests::fixtureAppliesFilterAndPagination() {
     QCOMPARE(page.currentPage, 1);
     QVERIFY(page.hasNextPage);
     QCOMPARE(page.media.first().Id, 154587);
+}
+
+void AniListFlowTests::embeddedProductionFixtureCanBeRead() {
+    FileAniListDataSource source(QStringLiteral(":/fixtures/media-library.json"));
+    MediaPage page;
+    QString error;
+
+    QVERIFY2(source.fetchPage({}, page, error), qPrintable(error));
+    QVERIFY(!page.media.isEmpty());
 }
 
 void AniListFlowTests::synchronizationPersistsEveryPage() {
@@ -79,8 +88,8 @@ void AniListFlowTests::synchronizationPersistsEveryPage() {
 }
 
 void AniListFlowTests::invalidFixtureReturnsError() {
-    FileAniListDataSource source(QDir(QCoreApplication::applicationDirPath())
-                                     .filePath(QStringLiteral("../tests/fixtures/invalid-media-library.json")));
+    FileAniListDataSource source(QDir(QStringLiteral(HAIKENANIME_TEST_FIXTURE_DIR))
+                                     .filePath(QStringLiteral("invalid-media-library.json")));
     MediaPage page;
     QString error;
     QVERIFY(!source.fetchPage({}, page, error));

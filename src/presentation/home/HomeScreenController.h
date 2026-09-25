@@ -16,7 +16,7 @@ public:
         TitleRole,
         ProgressRole,
         ScoreRole,
-        StatusRole,
+        StatusLabelRole,
         CoverUrlRole
     };
 
@@ -54,7 +54,7 @@ public:
     bool synchronizationProgressKnown() const;
     int mediaCount() const;
 
-    Q_INVOKABLE void reload();
+    void reload();
     void notifySynchronizationCompleted();
     void notifySynchronizationStarted();
     void notifySynchronizationProgress(int processedItems, int totalItems);
@@ -66,9 +66,6 @@ signals:
     void statusMessageChanged();
     void synchronizationProgressChanged();
     void mediaCountChanged();
-    void mediaUpdated();
-    void synchronizationCompleted();
-    void synchronizationError();
 
 private:
     void setState(QString state);

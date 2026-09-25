@@ -10,11 +10,15 @@ int main(int argc, char *argv[]) {
 
     auto context = createApplicationContext();
     QObject::connect(&app, &QCoreApplication::aboutToQuit, [&context]() {
+        if (context.initialSync) {
+            context.initialSync->shutdown();
+        }
         if (context.logger) {
             context.logger->stop();
         }
     });
     HomeScreenController homeController(context.mediaRepository.get(), context.initializationError);
+    homeController.reload();
 
     if (context.initialSync) {
         QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::started,

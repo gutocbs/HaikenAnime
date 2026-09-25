@@ -19,7 +19,7 @@ A primeira versão deverá ler dados de um fixture local, aplicar filtros opcion
 - O mapeamento de JSON para `AniListMediaDto` é centralizado em `AniListMediaMapper`, com métodos distintos para fixture e GraphQL.
 - O mapeamento de `AniListMediaDto` para `Media`, incluindo tipo e status, também pertence ao `AniListMediaMapper`.
 - Passo 9 iniciado: repositório SQLite com upsert transacional e preservação de campos locais criado.
-- Passo 10 iniciado: worker de sincronização em `QThread` conectado temporariamente ao `main.cpp` para teste local.
+- Passo 10 evoluído: `InitialSyncCoordinator` executa a sincronização em `QThread`, agenda novas execuções e é conectado ao `HomeScreenController` pelo `main.cpp`. Os workers experimentais permanecem fora da composição até a definição do ciclo de vida definitivo.
 - Passo 11 iniciado: fixtures GraphQL e testes do fluxo local de filtro, paginação e sincronização adicionados.
 - Passo 12 concluído inicialmente: CMake, dependências Qt, build e CTest integrados.
 - Passo 13 concluído como preparação: `ISecretStore` foi mantido como contrato estável e `FileSecretStore` foi explicitamente marcado como implementação temporária.
@@ -76,7 +76,7 @@ O estado `RequiresConfirmation` não poderá ser enviado automaticamente pelo pr
 - Queries SQL de persistência também são mantidas em arquivos externos e fornecidas aos repositórios pelo construtor.
 - Passo 8 iniciado: `AniListSyncService` implementa filtros, paginação, mapeamento para `Media` e persistência por página.
 - A V1 é somente referência e não deve ser modificada.
-- Todo o desenvolvimento desta funcionalidade deve ocorrer em `V2/`.
+- Todo o desenvolvimento desta funcionalidade ocorre na raiz deste repositório. A V1 permanece somente como referência externa e não deve ser modificada.
 
 ## Decisões arquiteturais
 
@@ -85,7 +85,7 @@ O estado `RequiresConfirmation` não poderá ser enviado automaticamente pelo pr
 A integração não será concentrada em uma única classe. As responsabilidades serão distribuídas entre `domain`, `application` e `infrastructure`:
 
 ```text
-V2/src/
+src/
 ├── domain/
 │   ├── media/
 │   └── anilist/
@@ -100,7 +100,7 @@ V2/src/
 - `domain`: modelos e regras independentes de Qt Network, SQLite e filesystem.
 - `application`: contratos, filtros e caso de uso de sincronização.
 - `infrastructure`: HTTP, GraphQL, secrets, fixture local e persistência.
-- `presentation`: integração futura com QML, fora do escopo inicial.
+- `presentation`: adapta os resultados da aplicação para contratos observáveis pelo QML, sem acessar diretamente SQLite ou GraphQL.
 
 ### Comunicação com a API
 
@@ -136,7 +136,7 @@ Uma classe separada, como `AniListAuthManager`, recuperará os dados por meio do
 O fluxo de aplicação dependerá de uma abstração de fonte de dados. Haverá duas implementações compatíveis:
 
 ```text
-IAniListDataSource
+IMediaDataSource
     ├── FileAniListDataSource       # primeira etapa
     └── GraphQlAniListDataSource    # preparada para uso real
 ```
@@ -144,8 +144,10 @@ IAniListDataSource
 O fixture atual está em:
 
 ```text
-V2/tests/fixtures/media-library.json
+tests/fixtures/media-library.json
 ```
+
+Na aplicação, essa fixture é empacotada como o recurso Qt `:/fixtures/media-library.json`. O caminho físico acima continua sendo usado para edição e por testes que precisam abrir o arquivo diretamente; o executável não depende da disposição do diretório de build.
 
 Quando necessário, serão adicionados fixtures que representem o envelope GraphQL real, incluindo paginação, erros e campos ausentes.
 
@@ -222,9 +224,14 @@ A thread principal não deverá executar chamadas bloqueantes de rede ou persist
 ```text
 application/anilist/
 ├── AniListSyncFilter
-├── AniListSyncService
-├── IAniListDataSource
-├── IMediaRepository
+└── AniListSyncService
+
+application/media/
+├── IMediaDataSource
+├── IMediaReader
+└── IMediaWriter
+
+application/secrets/
 └── ISecretStore
 
 infrastructure/anilist/
@@ -341,17 +348,17 @@ O merge não deverá depender de nomes de propriedades ou reflexão. Cada campo 
 
 Para `LocalWinsLatest`, a alteração mais recente será identificada por `localUpdatedAt`. Não usaremos uma sequência adicional no teste inicial; ela só será considerada se timestamps empatados exigirem uma ordenação total.
 
-O timeout global será independente do timeout HTTP individual e será configurado em `sync.timeoutMs` no `Settings.json`. Ao expirar, a execução será cancelada, as alterações não concluídas permanecerão na outbox e a falha será considerada temporária.
+O timeout global será independente do timeout HTTP individual e será configurado em `sync.timeoutMs` no `Settings.json`. No estágio atual, ele é verificado entre páginas e etapas e transforma a expiração em falha temporária; não consegue interromper uma chamada já bloqueada. Cancelamento real deverá atravessar o caso de uso, o data source e o transporte HTTP até permitir abortar o `QNetworkReply`. As alterações não concluídas deverão permanecer na outbox.
 
-As alterações serão agrupadas por mídia e enviadas em um único request por mídia. Inicialmente, qualquer falha da mutation marcará a mídia inteira como falha. O tratamento de falhas parciais ficará aberto para revisão após os testes com mocks e a validação da API real.
+As alterações já são agrupadas por mídia no contrato do processador, mas o client atual ainda envia uma mutation separada para cada campo. Portanto, o agrupamento não oferece atomicidade remota: alguns campos podem ser aplicados antes de uma falha posterior. A consolidação em uma única `SaveMediaListEntry` por mídia, bem como idempotência e reconciliação, será definida após os testes com mocks e a validação da API real.
 
 A sincronização inicial será executada imediatamente. O scheduler somente começará após sua conclusão, e nenhuma nova sincronização poderá iniciar enquanto outra estiver em andamento.
 
-## Fora do escopo inicial
+## Fora do escopo da integração real nesta fase
 
 - OAuth completo e fluxo de login interativo.
 - Criptografia real dos secrets.
 - Armazenamento criptografado no SQLite.
-- Mutations para alterar listas, notas ou progresso no AniList.
-- Sincronização automática periódica.
-- Integração final com QML.
+- Ativação das mutations contra o AniList real; as implementações atuais permanecem preparatórias e exercitadas de forma controlada.
+- Scheduler de produção com persistência de estado, recuperação após crash, rate limit e cancelamento ponta a ponta. O agendamento local atual não fornece essas garantias.
+- Contrato final de apresentação; a Home já está integrada ao controller, mas ainda combina estado local e estado de sincronização.

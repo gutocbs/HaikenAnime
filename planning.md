@@ -18,22 +18,27 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 
 ## Integração com o AniList
 
+- Manter fixtures como provider ativo durante as próximas etapas. A conexão real com o AniList será uma das últimas entregas; parsers e mappers devem ser exercitados com respostas controladas até lá, sem apresentar esses testes como validação do endpoint oficial.
 - Substituir o provider baseado em fixture pelo provider GraphQL real.
-- Consolidar o transporte de update em uma única mutation `SaveMediaListEntry` por mídia. O contrato `IAniListUpdateClient` já recebe os campos agrupados por mídia, mas a implementação inicial ainda utiliza internamente as mutations específicas existentes.
+- Consolidar o transporte de update em uma única mutation `SaveMediaListEntry` por mídia. O contrato `IAniListUpdateClient` já recebe os campos agrupados por mídia, mas a implementação inicial ainda utiliza internamente as mutations específicas existentes. O agrupamento atual prepara o contrato, mas não garante atomicidade: mutations separadas podem aplicar apenas parte dos campos. A consolidação deverá ser feita quando o contrato remoto for validado, junto com idempotência e reconciliação da outbox.
+- Normalizar a nomenclatura das funções de leitura do `AniListMediaMapper`. Fixture e GraphQL possuem formatos diferentes e justificam funções separadas, enquanto o mapeamento comum para domínio evita duplicação; a mudança de estilo não deve ser apresentada como validação da integração real.
 - Utilizar o endpoint oficial configurável do AniList.
 - Confirmar e implementar as queries GraphQL definitivas para anime, manga e novels.
 - Usar `POST` com `query` e `variables`, seguindo o contrato oficial da API.
 - Validar o formato real das respostas, incluindo `data`, `errors`, `Page`, `media` e `pageInfo`.
+- Confirmar o schema das queries e mutations contra a API real. Em especial, a posição de campos como `synonyms` ainda reflete o contrato das fixtures e não foi validada externamente.
 - Implementar autenticação OAuth completa quando o fluxo de login for definido.
 - Implementar renovação, invalidação e atualização segura de tokens.
 - Adicionar tratamento de rate limit, backoff e retry controlado.
 - Definir timeouts, limites de payload e política para indisponibilidade do serviço.
 - Introduzir cancelamento ponta a ponta no caso de uso, em `IMediaDataSource`, em `IAniListUpdateClient` e no transporte HTTP, chegando a `QNetworkReply::abort()`. Um `bool cancelled` apenas no serviço daria uma falsa garantia, pois não interromperia `fetchPage` ou `updateMedia` bloqueados.
 - Versionar ou identificar as queries GraphQL usadas pela aplicação.
+- Substituir o transporte síncrono atual em conjunto com a revisão de concorrência, scheduler, rate limit e cancelamento ponta a ponta. `QEventLoop` aninhado permite reentrância, `QThread::msleep` bloqueia a thread chamadora e retry recursivo mistura resiliência com transporte; os testes por fixture não exercitam esses custos.
 
 ## Secrets e segurança
 
 - Substituir o `FileSecretStore` por armazenamento no SQLite. **Contrato `ISecretStore` já preparado; implementação pendente.**
+- Manter explícito que `QSaveFile` oferece atomicidade de gravação, não proteção do conteúdo. O `FileSecretStore` evita arquivos parcialmente escritos, mas username e token continuam em texto puro e não devem ser tratados como armazenamento seguro de produção.
 - Adicionar ao armazenamento de secrets uma operação explícita para apagar ou invalidar credenciais, necessária para logout e revogação segura.
 - Criptografar os secrets em repouso.
 - Definir como a chave de criptografia será protegida no Windows.
@@ -51,7 +56,7 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 - Adicionar identificador da fonte e identificador externo da mídia.
 - Registrar data da última sincronização por mídia e por execução.
 - Criar tabela para execuções de sincronização, status, falhas e páginas processadas.
-- Implementar migrações versionadas em arquivos SQL.
+- Substituir o schema hardcoded em um único método por migrações versionadas em arquivos SQL, com sequência explícita (`1 -> 2 -> 3`), checksum e rejeição de versões futuras. A validação atual garante apenas que a versão declarada foi realmente registrada; ela ainda não constitui um mecanismo completo de evolução do schema.
 - Garantir foreign keys, `WAL`, `busy_timeout` e transações conforme o uso real.
 - Definir regras completas para não sobrescrever progresso, nota e arquivos locais do usuário.
 - Implementar limpeza ou reconciliação de mídias removidas da lista remota.
@@ -59,13 +64,12 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 
 ## Sincronização
 
-- Implementar o `AniListSyncService` completo.
-- Executar uma sincronização inicial durante a inicialização do programa.
+- Completar o `AniListSyncService` para o fluxo real, preservando o caminho determinístico por fixture já implementado.
+- A sincronização inicial durante a inicialização já existe no fluxo por fixture; reavaliá-la ao ativar autenticação, cancelamento e rede real.
 - Verificar alterações pendentes durante a sincronização inicial antes de considerar o estado sincronizado.
 - Reprocessar alterações pendentes na próxima execução caso não seja possível concluí-las durante a inicialização.
 - Definir, junto com o scheduler e a política de retry, uma leitura global ou em lotes da outbox. O contrato atual `getPending(mediaId)` serve ao fluxo por mídia, mas não permite que um worker descubra sozinho todas as pendências prontas para nova tentativa.
-- Adicionar schedulers para sincronizações recorrentes.
-- Tornar o intervalo do scheduler configurável pelo `Settings.json`.
+- O scheduler recorrente e o intervalo por `Settings.json` já existem para o fluxo local; evoluí-los com persistência, retry, rate limit e cancelamento antes do uso real.
 - Aplicar filtros por usuário, tipo, lista e status na query GraphQL.
 - Permitir sincronização geral na primeira execução.
 - Persistir cada página de forma idempotente.
@@ -79,6 +83,9 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 ## Regras de merge do update
 
 As regras de merge serão definidas por campo ou grupo de campos, e não por uma política única para toda a mídia.
+
+- Avaliar a substituição de `AniListField + AniListFieldValue` por comandos de update tipados. A validação antecipada atual impede persistir combinações impossíveis, mas duplica na factory parte do conhecimento mantido pelo update client; tipos próprios podem tornar estados inválidos irrepresentáveis.
+- Adicionar um teste de integração do caso de uso que prove o estado final conjunto de dados remotos, valores locais, outbox e persistência. Testes unitários do resolver comprovam a tabela de políticas, mas não comprovam que o fluxo real a aplica a todos os campos.
 
 ### Dados pertencentes ao AniList
 
@@ -113,6 +120,7 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 - O scheduler não deverá iniciar uma nova sincronização enquanto outra estiver em execução.
 - Falhas não deverão bloquear as próximas execuções programadas.
 - O estado da última execução e da próxima tentativa deverá estar disponível para diagnóstico.
+- Decidir se download/persistência remota e publicação da outbox serão casos de uso separados. O ponteiro opcional do processor faz `synchronize` representar os dois fluxos e mistura seus resultados: o download pode terminar com sucesso e o serviço ainda reportar falha por causa de uma mutation posterior.
 
 ## Política de logs
 
@@ -143,13 +151,15 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 
 ## Threading e ciclo de vida
 
-- Revisar a política completa de encerramento, concorrência e ciclo de vida registrada em `review.md`, incluindo a ordem entre cancelamento dos workers, espera das threads, destruição das dependências e parada do logger.
+- Aplicar as evoluções pendentes da política de encerramento, concorrência e ciclo de vida registrada em `review.md`; a ordem entre espera da sincronização, destruição das dependências e parada do logger já foi corrigida.
+- Definir uma política para operações que não retornam durante shutdown. O coordenador agora impede novos trabalhos e aguarda a execução ativa, mas espera bloqueante não substitui cancelamento ponta a ponta nem oferece prazo máximo seguro para encerramento.
+- Manter `AniListSyncWorker` e `AniListUpdateWorker` fora da composição até que scheduler, cancelamento e update real definam o ciclo completo. Integrá-los agora apenas daria aparência de uma arquitetura de workers persistentes sem resolver ownership. Nessa etapa deverá ser escolhida explicitamente uma thread curta por execução ou workers persistentes com event loop, ownership de worker, serviço, banco e transporte, e destruição na thread correta.
 - Implementar o worker assíncrono definitivo.
 - Garantir que `QNetworkAccessManager` seja criado e usado na thread de execução.
-- Garantir uma conexão SQLite própria para cada thread que acessar o banco.
-- Implementar encerramento seguro durante fechamento da aplicação.
+- Preservar a regra já aplicada de uma conexão SQLite própria por thread ao introduzir novos workers.
+- Evoluir o encerramento seguro já implementado com cancelamento ponta a ponta e prazo máximo.
 - Evitar chamadas bloqueantes na thread principal.
-- Definir política para executar apenas uma sincronização por vez.
+- Ampliar a exclusão mútua já existente por instância para múltiplos processos e recuperação após crash.
 - Cobrir cancelamento, falha e destruição de objetos com testes.
 
 ## Qualidade e testes
@@ -169,8 +179,12 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 
 ## Interface e operação
 
-- Integrar o serviço com controllers da camada de apresentação.
-- Exibir estado, progresso, sucesso e erro da sincronização no QML.
+- A integração inicial com `HomeScreenController` já existe; manter novos fluxos fora do QML e expô-los por controllers específicos.
+- A Home já exibe estado, sucesso e erro. O progresso exposto ainda não recebe atualizações incrementais do coordenador; ligar esse fluxo sem misturar estado local e estado de sincronização.
+- Substituir o estado textual da tela por um enum Qt registrado no meta-object quando o contrato estiver estabilizado. `QString` mantém o consumo QML simples e legível, mas não impede estados inválidos ou erros de digitação como `"loading"`.
+- Separar o estado do conteúdo local do estado da sincronização. Hoje a mesma propriedade `state` faz uma falha de sincronização transformar a tela inteira em erro mesmo quando a biblioteca local continua disponível, e `loading` pode significar duas operações diferentes.
+- Não usar textos traduzidos, como `statusLabel`, como identificadores para filtro ou agrupamento. Se uma tela futura precisar dessa semântica, o controller deverá preparar os grupos ou expor uma chave estável separada do texto apresentado.
+- Evoluir `errorMessage` junto com o contrato estruturado de erros para separar mensagem pública e detalhe técnico reservado ao log. Enquanto readers e coordenadores retornarem apenas `QString`, o controller não consegue sanitizar erros com segurança sem voltar a classificar texto.
 - Permitir configuração do tamanho da página e dos filtros.
 - Informar quando o modo offline/fixture estiver sendo usado.
 - Criar tela ou fluxo para configurar autorização do AniList.
@@ -191,12 +205,13 @@ A integração somente deverá ser considerada pronta quando o provider GraphQL 
 
 ## Dívidas identificadas durante a revisão do core
 
-As dívidas, seus motivos, trade-offs e a parte responsável por revisá-las são mantidos nas seções "Dívidas identificadas, mas não corrigidas nesta parte" de `review.md`, incluindo arquitetura, domínio, contratos e casos de uso. Este planejamento mantém apenas essa referência para evitar duplicação e divergência entre duas listas.
+As dívidas, seus motivos, trade-offs e a parte responsável por revisá-las são mantidos nas seções "Dívidas identificadas, mas não corrigidas nesta parte" de `review.md`, incluindo arquitetura, domínio, contratos, casos de uso, infraestrutura local, integração AniList, composição, concorrência, ciclo de vida, fronteira consumida pelo frontend, testes e estabilidade. Esta seção central mantém apenas a referência para evitar uma segunda lista exaustiva; as seções temáticas acima continuam registrando prioridades resumidas do produto. Para o item 7, a referência inclui shutdown potencialmente bloqueante, exclusão limitada à instância, scheduler sem persistência, workers ainda não compostos, transporte GraphQL síncrono, falhas silenciosas do logger, composição da operação dentro do coordenador e ausência de teste de fechamento real durante I/O externo.
 
 ## Pontos abertos do fluxo de sincronização
 
 - Definir como tratar falhas parciais em mutations agrupadas por mídia. Inicialmente, a mídia inteira será considerada como falha.
 - Avaliar se será necessário registrar o resultado individual de cada campo após os testes com mocks e a API real.
+- Tornar atômicas as transições de status de cada grupo da outbox, definir recuperação de leases abandonados em `Processing` e estabelecer idempotência para o caso em que a mutation remota funciona, mas o acknowledgement local falha. Atualizações individuais de status não conseguem oferecer essas garantias.
 
 ## Contrato do update
 

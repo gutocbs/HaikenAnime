@@ -23,6 +23,9 @@ private slots:
     void exposesEmptyState();
     void exposesErrorState();
     void exposesInitializationErrorWithoutRepository();
+    void synchronizationCompletionReloadsMedia();
+    void exposesPresentationReadyStatus_data();
+    void exposesPresentationReadyStatus();
 };
 
 void HomeScreenControllerTests::exposesReadyMedia() {
@@ -77,8 +80,55 @@ void HomeScreenControllerTests::exposesInitializationErrorWithoutRepository() {
 
     QCOMPARE(controller.state(), QStringLiteral("error"));
     QCOMPARE(controller.errorMessage(), QStringLiteral("Database initialization failed"));
-    QCOMPARE(controller.statusMessage(), QStringLiteral("A sincronização falhou."));
+    QCOMPARE(controller.statusMessage(), QStringLiteral("Não foi possível carregar os dados locais."));
     QCOMPARE(controller.mediaCount(), 0);
+}
+
+void HomeScreenControllerTests::synchronizationCompletionReloadsMedia() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    reader.result.append(media);
+    HomeScreenController controller(reader);
+
+    controller.notifySynchronizationCompleted();
+
+    QCOMPARE(controller.state(), QStringLiteral("ready"));
+    QCOMPARE(controller.mediaCount(), 1);
+    QCOMPARE(controller.statusMessage(), QStringLiteral("Dados locais carregados."));
+}
+
+void HomeScreenControllerTests::exposesPresentationReadyStatus_data() {
+    QTest::addColumn<int>("status");
+    QTest::addColumn<QString>("expectedLabel");
+
+    QTest::newRow("unknown") << static_cast<int>(MediaStatus::Unknown)
+                              << QStringLiteral("Desconhecido");
+    QTest::newRow("not released") << static_cast<int>(MediaStatus::NotReleased)
+                                   << QStringLiteral("Ainda não lançado");
+    QTest::newRow("releasing") << static_cast<int>(MediaStatus::Releasing)
+                                << QStringLiteral("Em lançamento");
+    QTest::newRow("released") << static_cast<int>(MediaStatus::Released)
+                               << QStringLiteral("Concluído");
+}
+
+void HomeScreenControllerTests::exposesPresentationReadyStatus() {
+    QFETCH(int, status);
+    QFETCH(QString, expectedLabel);
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Status = static_cast<MediaStatus>(status);
+    reader.result.append(media);
+    HomeScreenController controller(reader);
+
+    controller.reload();
+
+    const auto index = controller.mediaModel()->index(0, 0);
+    QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::StatusLabelRole).toString(),
+             expectedLabel);
 }
 
 QTEST_MAIN(HomeScreenControllerTests)

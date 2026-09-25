@@ -26,18 +26,32 @@ SqliteDatabase::~SqliteDatabase() {
 }
 
 bool SqliteDatabase::open() {
+    lastError_.clear();
     if (database_.isOpen()) {
         return true;
     }
 
     const QFileInfo fileInfo(databasePath_);
     if (!QDir().mkpath(fileInfo.absolutePath())) {
+        lastError_ = QStringLiteral("Could not create the SQLite database directory '%1'.")
+                         .arg(fileInfo.absolutePath());
         return false;
     }
 
     database_ = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), connectionName_);
     database_.setDatabaseName(databasePath_);
-    const bool opened = database_.open();
+    bool opened = database_.open();
+    if (!opened) {
+        lastError_ = database_.lastError().text();
+    }
+    if (opened) {
+        QSqlQuery pragma(database_);
+        opened = pragma.exec(QStringLiteral("PRAGMA foreign_keys = ON"));
+        if (!opened) {
+            lastError_ = pragma.lastError().text();
+            database_.close();
+        }
+    }
     if (logger_) {
         (opened ? logger_->info(LogCategory::Database, QStringLiteral("SQLite database opened: %1").arg(databasePath_))
                 : logger_->error(LogCategory::Database, database_.lastError().text()));
@@ -46,11 +60,14 @@ bool SqliteDatabase::open() {
 }
 
 bool SqliteDatabase::migrate() {
+    lastError_.clear();
     if (!database_.isOpen()) {
+        lastError_ = QStringLiteral("SQLite database is not open.");
         return false;
     }
 
     if (!database_.transaction()) {
+        lastError_ = database_.lastError().text();
         return false;
     }
 
@@ -92,11 +109,17 @@ bool SqliteDatabase::migrate() {
         "last_error TEXT NOT NULL DEFAULT '',"
         "FOREIGN KEY(media_id) REFERENCES media(id)"
         ")"));
-    const bool versionRecorded = pendingChangesCreated && query.exec(QStringLiteral(
+    const bool versionInserted = pendingChangesCreated && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (1)"));
+    const bool versionQueried = versionInserted && query.exec(QStringLiteral(
+        "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 1)"));
+    const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();
+        if (!committed) {
+            lastError_ = database_.lastError().text();
+        }
         if (logger_) {
             committed ? logger_->info(LogCategory::Migration, QStringLiteral("SQLite migration completed."))
                       : logger_->error(LogCategory::Migration, database_.lastError().text());
@@ -104,6 +127,10 @@ bool SqliteDatabase::migrate() {
         return committed;
     }
 
+    lastError_ = query.lastError().text();
+    if (lastError_.isEmpty()) {
+        lastError_ = QStringLiteral("SQLite migration version 1 was not recorded.");
+    }
     database_.rollback();
     if (logger_) logger_->error(LogCategory::Migration, query.lastError().text());
     return false;
@@ -123,7 +150,7 @@ bool SqliteDatabase::isOpen() const {
 }
 
 QString SqliteDatabase::lastError() const {
-    return database_.lastError().text();
+    return lastError_;
 }
 
 QString SqliteDatabase::databasePath() const {

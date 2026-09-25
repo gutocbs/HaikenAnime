@@ -23,6 +23,7 @@ public:
 private:
     QString connectionName_;
     QString databasePath_;
+    QString lastError_;
     QSqlDatabase database_;
     AsyncLogger *logger_ = nullptr;
 };

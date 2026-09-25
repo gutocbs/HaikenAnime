@@ -1,10 +1,9 @@
 #include "GraphQlAniListDataSource.h"
 
 #include "AniListGraphQlClient.h"
-#include "AniListMediaMapper.h"
+#include "AniListGraphQlPageParser.h"
 #include "GraphQlQueryStore.h"
 
-#include <QJsonArray>
 #include <QJsonObject>
 
 GraphQlAniListDataSource::GraphQlAniListDataSource(AniListGraphQlClient &client,
@@ -34,17 +33,5 @@ bool GraphQlAniListDataSource::fetchPage(const MediaSyncFilter &filter, MediaPag
         return false;
     }
 
-    const auto pageObject = response.data.value(QStringLiteral("Page")).toObject();
-    const auto pageInfo = pageObject.value(QStringLiteral("pageInfo")).toObject();
-    result.currentPage = pageInfo.value(QStringLiteral("currentPage")).toInt();
-    result.totalPages = pageInfo.value(QStringLiteral("lastPage")).toInt();
-    result.hasNextPage = pageInfo.value(QStringLiteral("hasNextPage")).toBool();
-
-    for (const auto &value : pageObject.value(QStringLiteral("media")).toArray()) {
-        const auto object = value.toObject();
-        result.media.append(AniListMediaMapper::ToDomainMedia(
-            AniListMediaMapper::FromGraphQlJson(object)));
-    }
-
-    return true;
+    return AniListGraphQlPageParser::parse(response.data, result, error);
 }

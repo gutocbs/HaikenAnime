@@ -1,8 +1,25 @@
 #include "HomeScreenController.h"
 
+#include <QCoreApplication>
 #include <QVariant>
 
 #include <utility>
+
+namespace {
+QString mediaStatusLabel(const MediaStatus status) {
+    switch (status) {
+    case MediaStatus::NotReleased:
+        return QCoreApplication::translate("HomeMediaModel", "Ainda não lançado");
+    case MediaStatus::Releasing:
+        return QCoreApplication::translate("HomeMediaModel", "Em lançamento");
+    case MediaStatus::Released:
+        return QCoreApplication::translate("HomeMediaModel", "Concluído");
+    case MediaStatus::Unknown:
+    default:
+        return QCoreApplication::translate("HomeMediaModel", "Desconhecido");
+    }
+}
+}
 
 HomeMediaModel::HomeMediaModel(QObject *parent)
     : QAbstractListModel(parent) {
@@ -30,8 +47,8 @@ QVariant HomeMediaModel::data(const QModelIndex &index, int role) const {
         return QStringLiteral("%1/%2").arg(media.ConsumedChapters).arg(media.TotalChapters);
     case ScoreRole:
         return media.PersonalScore > 0 ? QString::number(media.PersonalScore) : QStringLiteral("—");
-    case StatusRole:
-        return static_cast<int>(media.Status);
+    case StatusLabelRole:
+        return mediaStatusLabel(media.Status);
     case CoverUrlRole:
         return media.CoverUrl;
     default:
@@ -45,7 +62,7 @@ QHash<int, QByteArray> HomeMediaModel::roleNames() const {
         {TitleRole, "title"},
         {ProgressRole, "progress"},
         {ScoreRole, "score"},
-        {StatusRole, "status"},
+        {StatusLabelRole, "statusLabel"},
         {CoverUrlRole, "coverUrl"}
     };
 }
@@ -104,7 +121,7 @@ void HomeScreenController::reload() {
         model_.setMedia({});
         emit mediaCountChanged();
         setState(QStringLiteral("error"));
-        setStatusMessage(QStringLiteral("A sincronização falhou."));
+        setStatusMessage(QStringLiteral("Não foi possível carregar os dados locais."));
         return;
     }
 
@@ -142,8 +159,7 @@ void HomeScreenController::notifySynchronizationCompleted() {
     synchronizationProgressKnown_ = true;
     emit synchronizationProgressChanged();
     setStatusMessage(QStringLiteral("Sincronização concluída. Atualizando dados."));
-    emit synchronizationCompleted();
-    emit mediaUpdated();
+    reload();
 }
 
 void HomeScreenController::notifySynchronizationStarted() {
@@ -179,7 +195,6 @@ void HomeScreenController::notifySynchronizationFailed(const QString &error) {
     emit errorMessageChanged();
     setState(QStringLiteral("error"));
     setStatusMessage(QStringLiteral("A sincronização falhou."));
-    emit synchronizationError();
 }
 
 void HomeScreenController::setStatusMessage(QString message) {

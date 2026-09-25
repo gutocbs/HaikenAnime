@@ -5,6 +5,8 @@
 #include <QSqlError>
 #include <QSqlQuery>
 
+#include <cmath>
+#include <limits>
 #include <utility>
 
 namespace {
@@ -20,12 +22,30 @@ QString EncodeValue(const AniListFieldValue &value) {
     return QString::fromUtf8(QJsonDocument(object).toJson(QJsonDocument::Compact));
 }
 
-AniListFieldValue DecodeValue(const QString &encoded) {
-    const auto object = QJsonDocument::fromJson(encoded.toUtf8()).object();
-    if (object.value(QStringLiteral("type")).toString() == QStringLiteral("int")) {
-        return object.value(QStringLiteral("value")).toInt();
+bool DecodeValue(const QString &encoded, AniListFieldValue &value) {
+    QJsonParseError parseError;
+    const auto document = QJsonDocument::fromJson(encoded.toUtf8(), &parseError);
+    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
+        return false;
     }
-    return object.value(QStringLiteral("value")).toString();
+    const auto object = document.object();
+    const auto type = object.value(QStringLiteral("type")).toString();
+    const auto encodedValue = object.value(QStringLiteral("value"));
+    if (type == QStringLiteral("int") && encodedValue.isDouble()) {
+        const double number = encodedValue.toDouble();
+        if (!std::isfinite(number) || std::trunc(number) != number
+            || number < std::numeric_limits<int>::min()
+            || number > std::numeric_limits<int>::max()) {
+            return false;
+        }
+        value = static_cast<int>(number);
+        return true;
+    }
+    if (type == QStringLiteral("string") && encodedValue.isString()) {
+        value = encodedValue.toString();
+        return true;
+    }
+    return false;
 }
 }
 
@@ -48,10 +68,12 @@ bool SqlitePendingChangeRepository::enqueue(const AniListPendingChange &change, 
     query.bindValue(QStringLiteral(":remote_observed_at"), change.remoteObservedAt.isValid()
                                                              ? change.remoteObservedAt.toString(Qt::ISODate)
                                                              : QVariant());
-    query.bindValue(QStringLiteral(":remote_version"), change.remoteVersion);
+    query.bindValue(QStringLiteral(":remote_version"),
+                    change.remoteVersion.isNull() ? QStringLiteral("") : change.remoteVersion);
     query.bindValue(QStringLiteral(":attempts"), change.attempts);
     query.bindValue(QStringLiteral(":status"), static_cast<int>(change.status));
-    query.bindValue(QStringLiteral(":last_error"), change.lastError);
+    query.bindValue(QStringLiteral(":last_error"),
+                    change.lastError.isNull() ? QStringLiteral("") : change.lastError);
     if (!query.exec()) {
         error = query.lastError().text();
         return false;
@@ -75,10 +97,19 @@ bool SqlitePendingChangeRepository::getPending(int mediaId, QList<AniListPending
         change.id = query.value(QStringLiteral("id")).toLongLong();
         change.mediaId = query.value(QStringLiteral("media_id")).toInt();
         change.field = static_cast<AniListField>(query.value(QStringLiteral("field")).toInt());
-        change.previousValue = DecodeValue(query.value(QStringLiteral("previous_value")).toString());
-        change.newValue = DecodeValue(query.value(QStringLiteral("new_value")).toString());
+        if (!DecodeValue(query.value(QStringLiteral("previous_value")).toString(),
+                         change.previousValue)
+            || !DecodeValue(query.value(QStringLiteral("new_value")).toString(),
+                            change.newValue)) {
+            changes.clear();
+            error = QStringLiteral("Pending AniList change %1 contains an invalid encoded value.")
+                        .arg(change.id);
+            return false;
+        }
         change.createdAt = QDateTime::fromString(query.value(QStringLiteral("created_at")).toString(), Qt::ISODate);
         change.localUpdatedAt = QDateTime::fromString(query.value(QStringLiteral("local_updated_at")).toString(), Qt::ISODate);
+        change.remoteObservedAt = QDateTime::fromString(
+            query.value(QStringLiteral("remote_observed_at")).toString(), Qt::ISODate);
         change.remoteVersion = query.value(QStringLiteral("remote_version")).toString();
         change.attempts = query.value(QStringLiteral("attempts")).toInt();
         change.status = static_cast<AniListPendingChangeStatus>(query.value(QStringLiteral("status")).toInt());
@@ -98,6 +129,10 @@ bool SqlitePendingChangeRepository::updateStatus(const AniListPendingChange &cha
     query.bindValue(QStringLiteral(":last_error"), change.lastError);
     if (!query.exec()) {
         error = query.lastError().text();
+        return false;
+    }
+    if (query.numRowsAffected() != 1) {
+        error = QStringLiteral("Pending AniList change %1 was not updated.").arg(change.id);
         return false;
     }
     return true;

@@ -15,6 +15,9 @@ private slots:
     void migrationIsIdempotent();
     void migrationCreatesPendingChangesTable();
     void pendingChangesTableStoresVersionColumns();
+    void enablesForeignKeyEnforcement();
+    void migrationFailureExposesDiagnostic();
+    void migrationRequiresVersionToBeRecorded();
 };
 
 void SqliteDatabaseTests::opensAndCreatesDatabaseFile() {
@@ -116,6 +119,53 @@ void SqliteDatabaseTests::pendingChangesTableStoresVersionColumns() {
     QVERIFY(columns.contains(QStringLiteral("local_updated_at")));
     QVERIFY(columns.contains(QStringLiteral("remote_observed_at")));
     QVERIFY(columns.contains(QStringLiteral("remote_version")));
+}
+
+void SqliteDatabaseTests::enablesForeignKeyEnforcement() {
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+
+    QSqlQuery pragma(database.connection());
+    QVERIFY(pragma.exec(QStringLiteral("PRAGMA foreign_keys")));
+    QVERIFY(pragma.next());
+    QCOMPARE(pragma.value(0).toInt(), 1);
+
+    QSqlQuery insert(database.connection());
+    QVERIFY(!insert.exec(QStringLiteral(
+        "INSERT INTO anilist_pending_changes "
+        "(media_id, field, previous_value, new_value, created_at, local_updated_at, status) "
+        "VALUES (999, 5, '{}', '{}', '2026-09-24T00:00:00Z', "
+        "'2026-09-24T00:00:00Z', 0)")));
+}
+
+void SqliteDatabaseTests::migrationFailureExposesDiagnostic() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+
+    QSqlQuery incompatibleSchema(database.connection());
+    QVERIFY(incompatibleSchema.exec(QStringLiteral(
+        "CREATE VIEW schema_version AS SELECT 1 AS version")));
+
+    QVERIFY(!database.migrate());
+    QVERIFY(!database.lastError().isEmpty());
+}
+
+void SqliteDatabaseTests::migrationRequiresVersionToBeRecorded() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+
+    QSqlQuery incompatibleSchema(database.connection());
+    QVERIFY(incompatibleSchema.exec(QStringLiteral(
+        "CREATE TABLE schema_version (version INTEGER PRIMARY KEY, required_value TEXT NOT NULL)")));
+
+    QVERIFY(!database.migrate());
+    QVERIFY(!database.lastError().isEmpty());
 }
 
 QTEST_MAIN(SqliteDatabaseTests)

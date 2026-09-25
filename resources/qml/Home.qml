@@ -146,7 +146,7 @@ Item {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: 142
                                 title: model.title
-                                status: model.status === 1 ? qsTr("Em lançamento") : qsTr("Concluído")
+                                status: model.statusLabel
                                 progress: model.progress
                                 score: model.score
                                 muted: false
@@ -184,7 +184,7 @@ Item {
                         Layout.fillHeight: true
                         title: qsTr("Nenhum título selecionado")
                         description: controller.state === "error"
-                                     ? qsTr("A sincronização não foi concluída. Consulte o aviso abaixo para ver o motivo.")
+                                     ? controller.statusMessage
                                      : qsTr("Os detalhes da mídia selecionada aparecerão aqui quando sua biblioteca tiver dados.")
                         stateLabel: controller.state === "loading"
                                     ? qsTr("CARREGANDO")
@@ -225,7 +225,7 @@ Item {
 
                     Label {
                         text: controller.state === "error"
-                              ? qsTr("ERRO DE SINCRONIZAÇÃO")
+                              ? qsTr("ERRO")
                               : qsTr("SINCRONIZAÇÃO")
                         color: controller.state === "error" ? "#b13b43" : accent
                         font.pixelSize: 11
@@ -239,9 +239,7 @@ Item {
                               ? (controller.synchronizationProgressKnown
                                  ? qsTr("%1% concluído").arg(controller.synchronizationProgress)
                                  : qsTr("Em andamento"))
-                              : controller.state === "error"
-                                ? qsTr("Atenção necessária")
-                                : controller.statusMessage
+                              : controller.statusMessage
                         color: controller.state === "error" ? "#b13b43" : ink
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
@@ -280,12 +278,4 @@ Item {
         }
     }
 
-    Component.onCompleted: controller.reload()
-
-    Connections {
-        target: controller
-        function onMediaUpdated() {
-            controller.reload()
-        }
-    }
 }

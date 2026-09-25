@@ -1,11 +1,20 @@
 #include "SqliteMediaMapper.h"
 
+#include <QJsonArray>
+#include <QJsonDocument>
+
 Media SqliteMediaMapper::Map(const QSqlQuery &query) {
     Media media;
     media.Id = query.value(0).toInt();
     media.Name = query.value(1).toString();
     media.EnglishName = query.value(2).toString();
     media.OriginalName = query.value(3).toString();
+    const auto alternativeNames = QJsonDocument::fromJson(query.value(4).toByteArray());
+    for (const auto &name : alternativeNames.array()) {
+        if (name.isString()) {
+            media.AlternativeNames.append(name.toString());
+        }
+    }
     media.TotalChapters = query.value(5).toInt();
     media.ConsumedChapters = query.value(6).toInt();
     media.NextChapter = query.value(7).toInt();

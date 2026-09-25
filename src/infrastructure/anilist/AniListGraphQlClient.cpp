@@ -1,7 +1,7 @@
 #include "AniListGraphQlClient.h"
+#include "AniListGraphQlResponseParser.h"
 
 #include <QEventLoop>
-#include <QJsonArray>
 #include <QJsonDocument>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
@@ -74,45 +74,9 @@ bool AniListGraphQlClient::ExecuteWithAttempt(const QString &query, const QJsonO
         return false;
     }
 
-    const auto document = QJsonDocument::fromJson(reply->readAll());
+    const auto responsePayload = reply->readAll();
     reply->deleteLater();
-    if (!document.isObject()) {
-        error = QStringLiteral("AniList returned an invalid JSON response.");
-        return false;
-    }
-
-    const auto root = document.object();
-    if (root.value(QStringLiteral("data")).isObject()) {
-        response.data = root.value(QStringLiteral("data")).toObject();
-        response.dataWasPresent = true;
-    }
-
-    const auto errors = root.value(QStringLiteral("errors"));
-    if (errors.isArray()) {
-        for (const auto &errorValue : errors.toArray()) {
-            if (!errorValue.isObject()) {
-                continue;
-            }
-
-            const auto errorObject = errorValue.toObject();
-            AniListGraphQlError graphQlError;
-            graphQlError.message = errorObject.value(QStringLiteral("message")).toString();
-            const auto path = errorObject.value(QStringLiteral("path"));
-            if (path.isArray()) {
-                for (const auto &pathValue : path.toArray()) {
-                    graphQlError.path.append(pathValue.toVariant().toString());
-                }
-            }
-            response.errors.append(graphQlError);
-        }
-    }
-
-    if (!response.hasData() && !response.hasErrors()) {
-        error = QStringLiteral("AniList response did not contain data or errors.");
-        return false;
-    }
-
-    return true;
+    return AniListGraphQlResponseParser::parse(responsePayload, response, error);
 }
 
 QUrl AniListGraphQlClient::endpoint() const {

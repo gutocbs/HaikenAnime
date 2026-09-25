@@ -9,6 +9,8 @@ GraphQlQueryStore::GraphQlQueryStore(QString filePath)
 }
 
 bool GraphQlQueryStore::load(QString &query, QString &error) const {
+    query.clear();
+    error.clear();
     QFile file(filePath_);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         error = QStringLiteral("Could not open GraphQL query file: %1").arg(file.errorString());

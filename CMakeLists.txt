@@ -54,6 +54,10 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/anilist/AniListCredentials.h
         src/infrastructure/anilist/AniListGraphQlError.h
         src/infrastructure/anilist/AniListGraphQlResponse.h
+        src/infrastructure/anilist/AniListGraphQlResponseParser.h
+        src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
+        src/infrastructure/anilist/AniListGraphQlPageParser.h
+        src/infrastructure/anilist/AniListGraphQlPageParser.cpp
         src/infrastructure/anilist/AniListMediaDto.h
         src/domain/anilist/AniListField.h
         src/domain/anilist/AniListFieldValue.h
@@ -154,6 +158,9 @@ set_source_files_properties(
 set_source_files_properties(
         Settings.json
         PROPERTIES QT_RESOURCE_ALIAS "Settings.json")
+set_source_files_properties(
+        tests/fixtures/media-library.json
+        PROPERTIES QT_RESOURCE_ALIAS "media-library.json")
 
 qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
@@ -170,6 +177,12 @@ qt_add_resources(HaikenAnime application_config_resource
         PREFIX "/config"
         FILES
         Settings.json
+)
+
+qt_add_resources(HaikenAnime fixture_resource_bundle
+        PREFIX "/fixtures"
+        FILES
+        tests/fixtures/media-library.json
 )
 
 qt_add_qml_module(HaikenAnime
@@ -226,6 +239,66 @@ target_link_libraries(SqliteDatabaseTests
 
 add_test(NAME SqliteDatabaseTests COMMAND SqliteDatabaseTests)
 
+add_executable(SqliteRepositoryTests
+        tests/unit/SqliteRepositoryTests.cpp
+        src/infrastructure/database/SqliteDatabase.h
+        src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/database/SqliteMediaMapper.h
+        src/infrastructure/database/SqliteMediaMapper.cpp
+        src/infrastructure/database/SqliteMediaRepository.h
+        src/infrastructure/database/SqliteMediaRepository.cpp
+        src/infrastructure/database/SqlitePendingChangeRepository.h
+        src/infrastructure/database/SqlitePendingChangeRepository.cpp
+        src/infrastructure/logging/AsyncLogger.h
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+
+target_link_libraries(SqliteRepositoryTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Sql
+        Qt6::Test
+)
+
+add_test(NAME SqliteRepositoryTests COMMAND SqliteRepositoryTests)
+
+add_executable(SqlQueryStoreTests
+        tests/unit/SqlQueryStoreTests.cpp
+        src/infrastructure/database/SqlQueryStore.h
+        src/infrastructure/database/SqlQueryStore.cpp
+        src/infrastructure/logging/AsyncLogger.h
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+
+target_link_libraries(SqlQueryStoreTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME SqlQueryStoreTests COMMAND SqlQueryStoreTests)
+
+add_executable(SqliteQueryConfigurationTests
+        tests/unit/SqliteQueryConfigurationTests.cpp
+        src/infrastructure/database/SqliteQueryConfiguration.h
+        src/infrastructure/database/SqliteQueryConfiguration.cpp
+        src/infrastructure/logging/AsyncLogger.h
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+
+qt_add_resources(SqliteQueryConfigurationTests sqlite_query_configuration_test_resources
+        PREFIX "/sqlite/queries"
+        FILES resources/sqlite/sqlite-queries.json
+)
+
+target_link_libraries(SqliteQueryConfigurationTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME SqliteQueryConfigurationTests COMMAND SqliteQueryConfigurationTests)
+
 add_executable(FileSecretStoreTests
         tests/unit/FileSecretStoreTests.cpp
         src/infrastructure/secrets/FileSecretStore.h
@@ -239,6 +312,20 @@ target_link_libraries(FileSecretStoreTests
 )
 
 add_test(NAME FileSecretStoreTests COMMAND FileSecretStoreTests)
+
+add_executable(JsonSettingsReaderTests
+        tests/unit/JsonSettingsReaderTests.cpp
+        src/infrastructure/configuration/JsonSettingsReader.h
+        src/infrastructure/configuration/JsonSettingsReader.cpp
+)
+
+target_link_libraries(JsonSettingsReaderTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME JsonSettingsReaderTests COMMAND JsonSettingsReaderTests)
 
 add_executable(AniListAuthManagerTests
         tests/unit/AniListAuthManagerTests.cpp
@@ -284,7 +371,50 @@ target_link_libraries(AniListFlowTests
         Qt6::Test
 )
 
+target_compile_definitions(AniListFlowTests
+        PRIVATE
+        HAIKENANIME_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
+)
+
+qt_add_resources(AniListFlowTests fixture_test_resource_bundle
+        PREFIX "/fixtures"
+        FILES
+        tests/fixtures/media-library.json
+)
+
 add_test(NAME AniListFlowTests COMMAND AniListFlowTests)
+
+add_executable(AniListGraphQlParsingTests
+        tests/unit/AniListGraphQlParsingTests.cpp
+        src/infrastructure/anilist/AniListGraphQlResponseParser.h
+        src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
+        src/infrastructure/anilist/AniListGraphQlPageParser.h
+        src/infrastructure/anilist/AniListGraphQlPageParser.cpp
+        src/infrastructure/anilist/AniListMediaMapper.h
+        src/infrastructure/anilist/AniListMediaMapper.cpp
+)
+
+target_link_libraries(AniListGraphQlParsingTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME AniListGraphQlParsingTests COMMAND AniListGraphQlParsingTests)
+
+add_executable(GraphQlQueryStoreTests
+        tests/unit/GraphQlQueryStoreTests.cpp
+        src/infrastructure/anilist/GraphQlQueryStore.h
+        src/infrastructure/anilist/GraphQlQueryStore.cpp
+)
+
+target_link_libraries(GraphQlQueryStoreTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME GraphQlQueryStoreTests COMMAND GraphQlQueryStoreTests)
 
 add_executable(AniListSyncErrorClassifierTests
         tests/unit/AniListSyncErrorClassifierTests.cpp
@@ -379,23 +509,72 @@ target_link_libraries(HomeScreenControllerTests
 
 add_test(NAME HomeScreenControllerTests COMMAND HomeScreenControllerTests)
 
+add_executable(InitialSyncCoordinatorTests
+        tests/unit/InitialSyncCoordinatorTests.cpp
+        src/app/InitialSyncCoordinator.h
+        src/app/InitialSyncCoordinator.cpp
+        src/infrastructure/logging/AsyncLogger.h
+        src/infrastructure/logging/AsyncLogger.cpp
+        src/infrastructure/database/SqliteDatabase.h
+        src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/database/SqliteMediaMapper.h
+        src/infrastructure/database/SqliteMediaMapper.cpp
+        src/infrastructure/database/SqliteMediaRepository.h
+        src/infrastructure/database/SqliteMediaRepository.cpp
+        src/infrastructure/database/SqlQueryStore.h
+        src/infrastructure/database/SqlQueryStore.cpp
+        src/infrastructure/anilist/FileAniListDataSource.h
+        src/infrastructure/anilist/FileAniListDataSource.cpp
+        src/infrastructure/anilist/AniListMediaMapper.h
+        src/infrastructure/anilist/AniListMediaMapper.cpp
+        src/application/anilist/AniListSyncService.h
+        src/application/anilist/AniListSyncService.cpp
+        src/application/anilist/AniListSyncErrorClassifier.h
+        src/application/anilist/AniListSyncErrorClassifier.cpp
+        src/application/anilist/AniListPendingChangeProcessor.h
+        src/application/anilist/AniListPendingChangeProcessor.cpp
+        src/application/anilist/AniListPendingChangeCompactor.h
+        src/application/anilist/AniListPendingChangeCompactor.cpp
+        src/application/anilist/AniListPendingChangeGrouper.h
+        src/application/anilist/AniListPendingChangeGrouper.cpp
+        src/application/anilist/AniListMergePolicyResolver.h
+        src/application/anilist/AniListMergePolicyResolver.cpp
+)
+
+target_link_libraries(InitialSyncCoordinatorTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Sql
+        Qt6::Test
+)
+
+add_test(NAME InitialSyncCoordinatorTests COMMAND InitialSyncCoordinatorTests)
+
 # Unit tests are separate executables and do not receive the deployment step
 # used by the application target. Make Qt runtime DLLs available to CTest.
 set(HAIKENANIME_TESTS
         MediaDomainTests
         SqliteDatabaseTests
+        SqliteRepositoryTests
+        SqlQueryStoreTests
+        SqliteQueryConfigurationTests
         FileSecretStoreTests
+        JsonSettingsReaderTests
         AniListAuthManagerTests
         AniListFlowTests
+        AniListGraphQlParsingTests
+        GraphQlQueryStoreTests
         AniListSyncErrorClassifierTests
         AniListMergePolicyResolverTests
         AniListPendingChangeFactoryTests
         AniListMergeServiceTests
         AniListPendingChangeProcessorTests
         HomeScreenControllerTests
+        InitialSyncCoordinatorTests
 )
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;$ENV{PATH}"
+        TIMEOUT 30
 )
 endif ()
 

@@ -8,6 +8,12 @@
 void SqliteQueryConfiguration::setLogger(AsyncLogger *value) { logger = value; }
 
 bool SqliteQueryConfiguration::load(QString &error) {
+    upsertMediaPath.clear();
+    readMediaPath.clear();
+    enqueuePendingChangePath.clear();
+    readPendingChangesPath.clear();
+    updatePendingChangePath.clear();
+    error.clear();
     const auto configurationPath = QStringLiteral(":/sqlite/queries/sqlite-queries.json");
     QFile file(configurationPath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {

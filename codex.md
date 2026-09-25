@@ -27,14 +27,14 @@
 - A sincronização deve depender de uma interface agnóstica de data source. AniList, arquivos mock e futuras fontes devem ser implementações substituíveis, não dependências fixas do serviço de sincronização.
 - Filtros e páginas de sincronização devem ser conceitos genéricos da aplicação; nomes específicos de AniList devem permanecer nas implementações e adapters da integração.
 - A sincronização inicial deve executar em uma thread separada e usar uma conexão SQLite própria da thread. A conexão criada para a leitura inicial da apresentação não deve ser reutilizada em outra thread.
-- O controller de apresentação deve expor estado, progresso/mensagem e erro da sincronização por propriedades e sinais Qt. O QML apenas apresenta esses estados e solicita uma nova leitura quando receber o sinal de dados atualizados.
+- O controller de apresentação deve expor estado, progresso/mensagem e erro da sincronização por propriedades e sinais Qt. O QML apenas apresenta esses estados; o próprio controller coordena a nova leitura quando a sincronização informa dados atualizados.
 - Os dados persistidos devem ser lidos na inicialização antes do início da sincronização, garantindo que a última versão local apareça enquanto a atualização ocorre em background.
 
 ## Testes
 
 - Toda mudança concluída na V2 deve ter testes unitários correspondentes. Testes são uma prioridade do projeto e devem cobrir o comportamento esperado, regras de negócio e casos de erro relevantes.
 - Não é necessário criar os testes imediatamente quando uma implementação ainda estiver incompleta ou em desenvolvimento. Porém, antes de considerar a mudança concluída, os testes devem ser adicionados ou atualizados.
-- Os testes devem ficar em `V2/tests/unit/` e ser executáveis pelo CMake/CTest.
+- Os testes devem ficar em `tests/unit/` e ser executáveis pelo CMake/CTest.
 - Testes de persistência devem usar bancos temporários, fixtures ou doubles; nunca devem usar diretamente o banco real do usuário.
 - Ao finalizar uma mudança, executar os testes afetados e informar claramente quando a execução não for possível.
 

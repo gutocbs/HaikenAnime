@@ -10,6 +10,9 @@ private slots:
     void savesAndLoadsCredentials();
     void rejectsIncompleteFile();
     void successfulOperationsClearPreviousError();
+    void rejectsEmptyCredentials();
+    void rejectsCredentialsContainingLineBreaks();
+    void rejectsWhitespaceOnlyCredentials();
 };
 
 void FileSecretStoreTests::savesAndLoadsCredentials() {
@@ -61,6 +64,44 @@ void FileSecretStoreTests::successfulOperationsClearPreviousError() {
     AniListCredentials credentials;
     QVERIFY(store.loadAniListCredentials(credentials, error));
     QVERIFY(error.isEmpty());
+}
+
+void FileSecretStoreTests::rejectsEmptyCredentials() {
+    QTemporaryDir temporaryDirectory;
+    const auto path = temporaryDirectory.filePath(QStringLiteral("secrets.txt"));
+    FileSecretStore store(path);
+    QString error;
+
+    QVERIFY(!store.saveAniListCredentials({}, error));
+    QVERIFY(!error.isEmpty());
+
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    file.write("username=\ntoken=\n");
+    file.close();
+    AniListCredentials credentials;
+    QVERIFY(!store.loadAniListCredentials(credentials, error));
+    QVERIFY(!error.isEmpty());
+}
+
+void FileSecretStoreTests::rejectsCredentialsContainingLineBreaks() {
+    QTemporaryDir temporaryDirectory;
+    FileSecretStore store(temporaryDirectory.filePath(QStringLiteral("secrets.txt")));
+    QString error;
+
+    QVERIFY(!store.saveAniListCredentials(
+        {QStringLiteral("user\nadmin"), QStringLiteral("token")}, error));
+    QVERIFY(!error.isEmpty());
+}
+
+void FileSecretStoreTests::rejectsWhitespaceOnlyCredentials() {
+    QTemporaryDir temporaryDirectory;
+    FileSecretStore store(temporaryDirectory.filePath(QStringLiteral("secrets.txt")));
+    QString error;
+
+    QVERIFY(!store.saveAniListCredentials(
+        {QStringLiteral("   "), QStringLiteral("token")}, error));
+    QVERIFY(!error.isEmpty());
 }
 
 QTEST_MAIN(FileSecretStoreTests)

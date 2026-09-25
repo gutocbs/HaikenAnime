@@ -9,9 +9,6 @@
 #include "../infrastructure/database/SqliteQueryConfiguration.h"
 #include "../infrastructure/configuration/JsonSettingsReader.h"
 
-#include <QCoreApplication>
-#include <QDir>
-
 namespace {
 QString initializationFailure(const QString &stage, const QString &detail) {
     if (detail.isEmpty()) {
@@ -105,7 +102,7 @@ ApplicationContext createApplicationContext() {
         std::move(readPendingQuery), std::move(updatePendingQuery));
     context.initialSync = std::make_unique<InitialSyncCoordinator>(
         context.database->databasePath(),
-        QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("../tests/fixtures/media-library.json")),
+        QStringLiteral(":/fixtures/media-library.json"),
         queryConfiguration.upsertMediaPath, queryConfiguration.readMediaPath,
         settings.syncTimeoutMs, settings.syncIntervalMs);
     context.initialSync->setLogger(context.logger.get());
