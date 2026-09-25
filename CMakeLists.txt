@@ -224,6 +224,7 @@ qt_add_qml_module(HaikenAnime
         resources/qml/Home.qml
         resources/qml/MediaCard.qml
         resources/qml/StatePanel.qml
+        RESOURCES resources/images/cover-placeholder.svg
 )
 
 target_link_libraries(HaikenAnime
@@ -583,6 +584,8 @@ add_executable(HomeScreenControllerTests
         tests/unit/HomeScreenControllerTests.cpp
         src/presentation/home/HomeScreenController.h
         src/presentation/home/HomeScreenController.cpp
+        src/application/covers/CoverDownloadCoordinator.h
+        src/application/covers/CoverDownloadCoordinator.cpp
 )
 
 target_link_libraries(HomeScreenControllerTests

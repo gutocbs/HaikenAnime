@@ -8,6 +8,7 @@
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "InitialSyncCoordinator.h"
 #include "../infrastructure/logging/AsyncLogger.h"
+#include "../application/covers/CoverDownloadCoordinator.h"
 
 
 struct ApplicationContext final {
@@ -16,6 +17,11 @@ struct ApplicationContext final {
     std::unique_ptr<IMediaRepository> mediaRepository;
     std::unique_ptr<IPendingChangeRepository> pendingChangeRepository;
     std::unique_ptr<InitialSyncCoordinator> initialSync;
+    std::unique_ptr<ICoverCacheRepository> coverCacheRepository;
+    std::unique_ptr<ICoverFileStore> coverFileStore;
+    std::unique_ptr<ICoverDownloader> coverDownloader;
+    std::unique_ptr<CoverDownloadCoordinator> coverCoordinator;
+    CoverQuality coverQuality = CoverQuality::Medium;
     QString initializationError;
 
     [[nodiscard]] bool isReady() const {

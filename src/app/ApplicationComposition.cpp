@@ -8,6 +8,11 @@
 #include "../infrastructure/database/SqlitePendingChangeRepository.h"
 #include "../infrastructure/database/SqliteQueryConfiguration.h"
 #include "../infrastructure/configuration/JsonSettingsReader.h"
+#include "../infrastructure/database/SqliteCoverCacheRepository.h"
+#include "../infrastructure/covers/CoverFileStore.h"
+#include "../infrastructure/covers/QtCoverDownloader.h"
+#include <QStandardPaths>
+#include <QDir>
 
 namespace {
 QString initializationFailure(const QString &stage, const QString &detail) {
@@ -100,6 +105,29 @@ ApplicationContext createApplicationContext() {
     context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(
         context.database->connection(), std::move(enqueuePendingQuery),
         std::move(readPendingQuery), std::move(updatePendingQuery));
+
+    QString readCoverQuery, upsertCoverQuery, deleteCoverQuery, clearCoverQuery;
+    SqlQueryStore readCoverStore(queryConfiguration.readCoverCachePath);
+    SqlQueryStore upsertCoverStore(queryConfiguration.upsertCoverCachePath);
+    SqlQueryStore deleteCoverStore(queryConfiguration.deleteCoverCachePath);
+    SqlQueryStore clearCoverStore(queryConfiguration.clearCoverCachePath);
+    if (!readCoverStore.load(readCoverQuery, queryError)
+        || !upsertCoverStore.load(upsertCoverQuery, queryError)
+        || !deleteCoverStore.load(deleteCoverQuery, queryError)
+        || !clearCoverStore.load(clearCoverQuery, queryError)) {
+        context.initializationError = initializationFailure(QStringLiteral("loading the cover-cache queries"), queryError);
+        return context;
+    }
+    context.coverCacheRepository = std::make_unique<SqliteCoverCacheRepository>(
+        context.database->connection(), std::move(readCoverQuery), std::move(upsertCoverQuery),
+        std::move(deleteCoverQuery), std::move(clearCoverQuery));
+    const QString cacheRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)).filePath("covers");
+    const QString temporaryRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation)).filePath("HaikenAnime/covers");
+    context.coverFileStore = std::make_unique<CoverFileStore>(cacheRoot, settings.covers);
+    context.coverDownloader = std::make_unique<QtCoverDownloader>(temporaryRoot, settings.covers);
+    context.coverCoordinator = std::make_unique<CoverDownloadCoordinator>(
+        *context.coverDownloader, *context.coverCacheRepository, *context.coverFileStore, settings.covers);
+    context.coverQuality = settings.covers.quality;
     context.initialSync = std::make_unique<InitialSyncCoordinator>(
         context.database->databasePath(),
         QStringLiteral(":/fixtures/media-library.json"),

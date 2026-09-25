@@ -801,7 +801,10 @@ Ainda assim, `errorMessage` recebe diretamente a descrição devolvida por `IMed
 - `errorMessage` ainda pode expor diretamente detalhes técnicos porque as portas retornam apenas `QString`.
 - `HomeMediaModel::setMedia()` reinicia o modelo inteiro. É simples e correto para o volume atual, mas perde seleção e gera mais trabalho visual que atualizações incrementais.
 - `progress` e `score` são strings prontas. Isso mantém o QML passivo, mas uma futura edição ou localização numérica poderá exigir valor semântico e texto formatado como contratos distintos.
-- `coverUrl` faz parte do modelo, mas o card atual ainda usa um placeholder e não consome a imagem.
+- O contrato de capas foi separado em `remoteCoverUrl`, `coverSource` e `coverState`. O card usa `Image` assíncrona, preserva a última capa válida durante falhas de download e volta ao placeholder quando o arquivo local desaparece.
+- O cache usa metadados SQLite e arquivos em `AppLocalDataLocation/covers`. A publicação é validada e atômica; a capa anterior só é removida depois que o novo arquivo e seu metadado foram persistidos.
+- A fila prioriza itens visíveis, deduplica solicitações, limita concorrência, aplica retry apenas a falhas temporárias e descarta conclusões de gerações anteriores após limpeza.
+- A validação atual cobre build, testes de unidade/rede local e permanência do processo no startup. A inspeção visual interativa larga/estreita permanece necessária.
 - O registro por `setContextProperty` depende de um nome global conhecido pelo QML. Registro de tipos ou injeção explícita por componente poderá tornar dependências de telas futuras mais locais.
 - Não há teste automatizado de binding QML nem validação visual multi-tamanho nesta parte; os testes cobrem o contrato C++ e a compilação valida os recursos QML.
 

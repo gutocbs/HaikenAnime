@@ -180,6 +180,10 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 
 ## Interface e operação
 
+- Capas agora são baixadas sob demanda pela janela visível do `GridView`, com prefetch limitado, concorrência configurável, cache persistente e fallback empacotado.
+- Manter as capas enquanto a mídia existir na biblioteca; a limpeza explícita remove arquivos e metadados, e uma URL alterada substitui a capa antiga somente após publicar e persistir a nova.
+- Expor futuramente na tela de configurações a qualidade (`medium`, `large`, `extraLarge`) e a ação de limpar imagens, reutilizando o contrato já presente em `Settings.json`.
+- Validar visualmente os layouts largo e estreito em sessão interativa; compilação QML e startup não substituem essa inspeção.
 - A integração inicial com `HomeScreenController` já existe; manter novos fluxos fora do QML e expô-los por controllers específicos.
 - A Home já exibe estado, sucesso e erro. O progresso exposto ainda não recebe atualizações incrementais do coordenador; ligar esse fluxo sem misturar estado local e estado de sincronização.
 - Substituir o estado textual da tela por um enum Qt registrado no meta-object quando o contrato estiver estabilizado. `QString` mantém o consumo QML simples e legível, mas não impede estados inválidos ou erros de digitação como `"loading"`.

@@ -40,6 +40,7 @@ private:
     QSet<QString> queued_;
     QHash<int, CoverCacheEntry> entries_;
     QHash<QString, QDateTime> cooldowns_;
+    QHash<QString, int> attempts_;
     quint64 generation_ = 1;
 };
 #endif

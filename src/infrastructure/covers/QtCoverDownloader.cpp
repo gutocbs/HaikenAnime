@@ -49,7 +49,11 @@ void QtCoverDownloader::Finish(quint64 id)
     auto it = transfers_.find(id); if (it == transfers_.end()) return;
     Transfer transfer = std::move(it.value()); transfers_.erase(it);
     transfer.timer->stop();
-    if (transfer.reply->isOpen()) transfer.file->write(transfer.reply->readAll());
+    if (transfer.reply->isOpen()) {
+        const QByteArray tail = transfer.reply->readAll();
+        if (transfer.file->size() + tail.size() > settings_.maxResponseBytes) transfer.oversized = true;
+        else transfer.file->write(tail);
+    }
     transfer.file->close();
     CoverDownloadResult result; result.request = transfer.request; result.temporaryPath = transfer.path;
     result.httpStatus = transfer.reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();

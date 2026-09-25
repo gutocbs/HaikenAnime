@@ -26,6 +26,7 @@ private slots:
     void synchronizationCompletionReloadsMedia();
     void exposesPresentationReadyStatus_data();
     void exposesPresentationReadyStatus();
+    void updatesOnlyOneCoverRowAndPreservesOldCoverOnFailure();
 };
 
 void HomeScreenControllerTests::exposesReadyMedia() {
@@ -129,6 +130,26 @@ void HomeScreenControllerTests::exposesPresentationReadyStatus() {
     const auto index = controller.mediaModel()->index(0, 0);
     QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::StatusLabelRole).toString(),
              expectedLabel);
+}
+
+void HomeScreenControllerTests::updatesOnlyOneCoverRowAndPreservesOldCoverOnFailure() {
+    HomeMediaModel model;
+    Media first; first.Id = 42; first.CoverUrl = QStringLiteral("https://example/42.jpg");
+    Media second; second.Id = 43;
+    model.setMedia({first, second});
+    const auto index = model.index(0, 0);
+    QCOMPARE(model.data(index, HomeMediaModel::CoverSourceRole).toString(),
+             QStringLiteral("qrc:/resources/images/cover-placeholder.svg"));
+    QCOMPARE(model.data(index, HomeMediaModel::RemoteCoverUrlRole).toString(), first.CoverUrl);
+    QSignalSpy changed(&model, &QAbstractItemModel::dataChanged);
+    QSignalSpy reset(&model, &QAbstractItemModel::modelReset);
+    QVERIFY(model.UpdateCover(42, QStringLiteral("file:///covers/42.jpg"), CoverState::Available));
+    QCOMPARE(changed.count(), 1); QCOMPARE(reset.count(), 0);
+    model.UpdateCover(42, {}, CoverState::Failed);
+    QCOMPARE(model.data(index, HomeMediaModel::CoverSourceRole).toString(), QStringLiteral("file:///covers/42.jpg"));
+    model.UpdateCover(42, {}, CoverState::Missing);
+    QCOMPARE(model.data(index, HomeMediaModel::CoverSourceRole).toString(),
+             QStringLiteral("qrc:/resources/images/cover-placeholder.svg"));
 }
 
 QTEST_MAIN(HomeScreenControllerTests)

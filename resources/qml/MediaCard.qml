@@ -10,6 +10,9 @@ Rectangle {
     property string progress: ""
     property string score: ""
     property bool muted: false
+    property int mediaId: 0
+    property url coverSource: "qrc:/resources/images/cover-placeholder.svg"
+    signal coverLoadFailed(int mediaId)
 
     color: muted ? "#f8fafc" : "#ffffff"
     radius: 6
@@ -27,11 +30,13 @@ Rectangle {
             radius: 4
             color: muted ? "#e9eef5" : "#dbe7f4"
 
-            Label {
-                anchors.centerIn: parent
-                text: muted ? "—" : "◆"
-                color: muted ? "#aab5c4" : "#315d91"
-                font.pixelSize: muted ? 22 : 18
+            Image {
+                anchors.fill: parent
+                source: card.coverSource
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: false
+                onStatusChanged: if (status === Image.Error) card.coverLoadFailed(card.mediaId)
             }
         }
 

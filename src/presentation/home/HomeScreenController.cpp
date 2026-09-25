@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QVariant>
+#include <QUrl>
 
 #include <utility>
 
@@ -49,8 +50,12 @@ QVariant HomeMediaModel::data(const QModelIndex &index, int role) const {
         return media.PersonalScore > 0 ? QString::number(media.PersonalScore) : QStringLiteral("—");
     case StatusLabelRole:
         return mediaStatusLabel(media.Status);
-    case CoverUrlRole:
+    case RemoteCoverUrlRole:
         return media.CoverUrl;
+    case CoverSourceRole:
+        return coverSources_.value(media.Id, QStringLiteral("qrc:/resources/images/cover-placeholder.svg"));
+    case CoverStateRole:
+        return static_cast<int>(coverStates_.value(media.Id, CoverState::Missing));
     default:
         return {};
     }
@@ -63,8 +68,29 @@ QHash<int, QByteArray> HomeMediaModel::roleNames() const {
         {ProgressRole, "progress"},
         {ScoreRole, "score"},
         {StatusLabelRole, "statusLabel"},
-        {CoverUrlRole, "coverUrl"}
+        {RemoteCoverUrlRole, "remoteCoverUrl"},
+        {CoverSourceRole, "coverSource"},
+        {CoverStateRole, "coverState"}
     };
+}
+
+bool HomeMediaModel::UpdateCover(int mediaId, QString source, CoverState state) {
+    for (int row = 0; row < media_.size(); ++row) {
+        if (media_[row].Id != mediaId) continue;
+        if (!source.isEmpty()) coverSources_[mediaId] = std::move(source);
+        else if (state == CoverState::Missing) coverSources_.remove(mediaId);
+        coverStates_[mediaId] = state;
+        emit dataChanged(index(row), index(row), {CoverSourceRole, CoverStateRole});
+        return true;
+    }
+    return false;
+}
+
+QList<Media> HomeMediaModel::media() const { return media_; }
+
+void HomeMediaModel::ClearCovers() {
+    coverSources_.clear(); coverStates_.clear();
+    if (!media_.isEmpty()) emit dataChanged(index(0), index(media_.size()-1), {CoverSourceRole, CoverStateRole});
 }
 
 void HomeMediaModel::setMedia(QList<Media> media) {
@@ -78,9 +104,24 @@ HomeScreenController::HomeScreenController(IMediaReader &reader, QObject *parent
 }
 
 HomeScreenController::HomeScreenController(IMediaReader *reader, QString initializationError, QObject *parent)
-    : QObject(parent), reader_(reader), model_(this), errorMessage_(std::move(initializationError)) {
+    : HomeScreenController(reader, nullptr, CoverQuality::Medium, std::move(initializationError), parent) {
+}
+
+HomeScreenController::HomeScreenController(IMediaReader *reader, CoverDownloadCoordinator *covers, CoverQuality quality,
+                                           QString initializationError, QObject *parent)
+    : QObject(parent), reader_(reader), model_(this), covers_(covers), coverQuality_(quality),
+      errorMessage_(std::move(initializationError)) {
     if (reader_ == nullptr && !errorMessage_.isEmpty()) {
         state_ = QStringLiteral("error");
+    }
+    if (covers_) {
+        connect(covers_, &CoverDownloadCoordinator::CoverAvailable, this, [this](int id, const QString &path) {
+            model_.UpdateCover(id, QUrl::fromLocalFile(path).toString(), CoverState::Available);
+        });
+        connect(covers_, &CoverDownloadCoordinator::CoverStateChanged, this, [this](int id, CoverState state) {
+            model_.UpdateCover(id, {}, state);
+        });
+        connect(covers_, &CoverDownloadCoordinator::ClearCompleted, &model_, &HomeMediaModel::ClearCovers);
     }
 }
 
@@ -196,6 +237,26 @@ void HomeScreenController::notifySynchronizationFailed(const QString &error) {
     setState(QStringLiteral("error"));
     setStatusMessage(QStringLiteral("A sincronização falhou."));
 }
+
+void HomeScreenController::RequestCoverWindow(int firstVisibleIndex, int lastVisibleIndex, int prefetchCount) {
+    if (!covers_) return;
+    const auto rows = model_.media();
+    if (rows.isEmpty()) return;
+    const int first = qBound(0, firstVisibleIndex, rows.size()-1);
+    const int last = qBound(first, lastVisibleIndex, rows.size()-1);
+    QList<CoverRequest> visible, prefetch;
+    auto request = [&](int index, CoverPriority priority) {
+        const auto &media = rows[index];
+        if (!media.CoverUrl.isEmpty()) (priority == CoverPriority::Visible ? visible : prefetch)
+            .append({media.Id, QUrl(media.CoverUrl), coverQuality_, priority, 0});
+    };
+    for (int i=first;i<=last;++i) request(i,CoverPriority::Visible);
+    for (int i=last+1;i<qMin(rows.size(),last+1+qMax(0,prefetchCount));++i) request(i,CoverPriority::Prefetch);
+    covers_->RequestWindow(std::move(visible), std::move(prefetch));
+}
+
+void HomeScreenController::ReportCoverLoadFailure(int mediaId) { if (covers_) covers_->ReportMissingFile(mediaId); }
+void HomeScreenController::ClearCoverCache() { if (covers_) covers_->Clear(); }
 
 void HomeScreenController::setStatusMessage(QString message) {
     if (statusMessage_ == message) {

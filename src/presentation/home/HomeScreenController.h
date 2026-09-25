@@ -6,6 +6,7 @@
 #include <QString>
 
 #include "../../application/media/IMediaReader.h"
+#include "../../application/covers/CoverDownloadCoordinator.h"
 
 class HomeMediaModel final : public QAbstractListModel {
     Q_OBJECT
@@ -17,7 +18,9 @@ public:
         ProgressRole,
         ScoreRole,
         StatusLabelRole,
-        CoverUrlRole
+        RemoteCoverUrlRole,
+        CoverSourceRole,
+        CoverStateRole
     };
 
     explicit HomeMediaModel(QObject *parent = nullptr);
@@ -27,9 +30,14 @@ public:
     QHash<int, QByteArray> roleNames() const override;
 
     void setMedia(QList<Media> media);
+    bool UpdateCover(int mediaId, QString source, CoverState state);
+    QList<Media> media() const;
+    void ClearCovers();
 
 private:
     QList<Media> media_;
+    QHash<int, QString> coverSources_;
+    QHash<int, CoverState> coverStates_;
 };
 
 class HomeScreenController final : public QObject {
@@ -45,6 +53,8 @@ class HomeScreenController final : public QObject {
 public:
     explicit HomeScreenController(IMediaReader &reader, QObject *parent = nullptr);
     explicit HomeScreenController(IMediaReader *reader, QString initializationError = {}, QObject *parent = nullptr);
+    HomeScreenController(IMediaReader *reader, CoverDownloadCoordinator *covers, CoverQuality quality,
+                         QString initializationError = {}, QObject *parent = nullptr);
 
     HomeMediaModel *mediaModel();
     QString state() const;
@@ -59,6 +69,9 @@ public:
     void notifySynchronizationStarted();
     void notifySynchronizationProgress(int processedItems, int totalItems);
     void notifySynchronizationFailed(const QString &error);
+    Q_INVOKABLE void RequestCoverWindow(int firstVisibleIndex, int lastVisibleIndex, int prefetchCount);
+    Q_INVOKABLE void ReportCoverLoadFailure(int mediaId);
+    Q_INVOKABLE void ClearCoverCache();
 
 signals:
     void stateChanged();
@@ -73,6 +86,8 @@ private:
 
     IMediaReader *reader_ = nullptr;
     HomeMediaModel model_;
+    CoverDownloadCoordinator *covers_ = nullptr;
+    CoverQuality coverQuality_ = CoverQuality::Medium;
     QString state_ = QStringLiteral("idle");
     QString statusMessage_ = QStringLiteral("Aguardando sincronização.");
     QString errorMessage_;

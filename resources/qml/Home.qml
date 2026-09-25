@@ -133,25 +133,38 @@ Item {
                         color: line
                     }
 
-                    GridLayout {
+                    GridView {
+                        id: mediaGrid
                         Layout.fillWidth: true
                         Layout.fillHeight: true
-                        columns: width >= 760 ? 3 : 2
-                        columnSpacing: 12
-                        rowSpacing: 12
-
-                        Repeater {
-                            model: controller.mediaModel
-                            delegate: MediaCard {
-                                Layout.fillWidth: true
-                                Layout.preferredHeight: 142
-                                title: model.title
-                                status: model.statusLabel
-                                progress: model.progress
-                                score: model.score
-                                muted: false
-                            }
+                        clip: true
+                        readonly property int columns: width >= 760 ? 3 : 2
+                        cellWidth: width / columns
+                        cellHeight: 154
+                        model: controller.mediaModel
+                        delegate: MediaCard {
+                            width: mediaGrid.cellWidth - 12
+                            height: 142
+                            mediaId: model.mediaId
+                            coverSource: model.coverSource
+                            title: model.title
+                            status: model.statusLabel
+                            progress: model.progress
+                            score: model.score
+                            muted: false
+                            onCoverLoadFailed: controller.ReportCoverLoadFailure(mediaId)
                         }
+                        function reportWindow() {
+                            if (count <= 0 || height <= 0) return
+                            const first = Math.max(0, indexAt(1, contentY + 1))
+                            let last = indexAt(width - 2, contentY + height - 2)
+                            if (last < first) last = Math.min(count - 1, first + columns * Math.ceil(height / cellHeight))
+                            controller.RequestCoverWindow(first, last, columns * 2)
+                        }
+                        onContentYChanged: windowTimer.restart()
+                        onHeightChanged: windowTimer.restart()
+                        onCountChanged: windowTimer.restart()
+                        Timer { id: windowTimer; interval: 80; repeat: false; onTriggered: mediaGrid.reportWindow() }
                     }
                 }
             }

@@ -58,7 +58,8 @@ void CoverDownloadCoordinator::Pump()
         const QString key = Key(request);
         queued_.remove(key);
         emit CoverStateChanged(request.mediaId, CoverState::Downloading);
-        quint64 id = downloader_.Start(request, [this, key, generation = generation_, attempt = 0](CoverDownloadResult result) {
+        const int attempt = attempts_.value(key, 0);
+        quint64 id = downloader_.Start(request, [this, key, generation = generation_, attempt](CoverDownloadResult result) {
             Complete(key, generation, attempt, std::move(result));
         });
         active_.insert(key, {id, request, 0});
@@ -72,18 +73,19 @@ void CoverDownloadCoordinator::Complete(QString key, quint64 generation, int att
     const bool temporary = result.failure == CoverFailureCategory::Transport || result.failure == CoverFailureCategory::HttpTemporary;
     if (!result.succeeded && temporary && attempt < settings_.maxRetries) {
         const int delay = qMax(settings_.retryDelayMs, result.retryAfterMs);
-        QTimer::singleShot(delay, this, [this, key, request = result.request, generation, attempt] {
-            if (generation != generation_ || active_.contains(key)) return;
-            emit CoverStateChanged(request.mediaId, CoverState::Downloading);
-            quint64 id = downloader_.Start(request, [this, key, generation, attempt](CoverDownloadResult retry) {
-                Complete(key, generation, attempt + 1, std::move(retry));
-            });
-            active_.insert(key, {id, request, attempt + 1});
+        attempts_[key] = attempt + 1;
+        QTimer::singleShot(delay, this, [this, key, request = result.request, generation] {
+            if (generation != generation_ || active_.contains(key) || queued_.contains(key)) return;
+            queued_.insert(key);
+            (request.priority == CoverPriority::Visible ? visible_ : prefetch_).prepend(request);
+            emit CoverStateChanged(request.mediaId, CoverState::Queued);
+            Pump();
         });
         Pump();
         return;
     }
     if (!result.succeeded) {
+        attempts_.remove(key);
         cooldowns_[key] = QDateTime::currentDateTimeUtc().addMSecs(settings_.failureCooldownMs);
         emit CoverStateChanged(result.request.mediaId, CoverState::Failed);
         Pump();
@@ -104,6 +106,7 @@ void CoverDownloadCoordinator::Complete(QString key, quint64 generation, int att
         emit CoverStateChanged(result.request.mediaId, CoverState::Failed); Pump(); return;
     }
     entries_[entry.mediaId] = entry;
+    attempts_.remove(key);
     if (old.mediaId && old.relativePath != entry.relativePath) files_.Remove(old.relativePath, error);
     QFile::remove(result.temporaryPath);
     emit CoverAvailable(entry.mediaId, files_.AbsolutePath(entry.relativePath));
@@ -123,7 +126,7 @@ void CoverDownloadCoordinator::Clear()
 {
     ++generation_;
     for (const auto &active : std::as_const(active_)) downloader_.Cancel(active.id);
-    active_.clear(); visible_.clear(); prefetch_.clear(); queued_.clear(); entries_.clear(); cooldowns_.clear();
+    active_.clear(); visible_.clear(); prefetch_.clear(); queued_.clear(); entries_.clear(); cooldowns_.clear(); attempts_.clear();
     QString error;
     cache_.Clear(error);
     files_.Clear(error);

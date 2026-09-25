@@ -13,11 +13,15 @@ int main(int argc, char *argv[]) {
         if (context.initialSync) {
             context.initialSync->shutdown();
         }
+        if (context.coverCoordinator) {
+            context.coverCoordinator->disconnect();
+        }
         if (context.logger) {
             context.logger->stop();
         }
     });
-    HomeScreenController homeController(context.mediaRepository.get(), context.initializationError);
+    HomeScreenController homeController(context.mediaRepository.get(), context.coverCoordinator.get(),
+                                        context.coverQuality, context.initializationError);
     homeController.reload();
 
     if (context.initialSync) {
