@@ -141,6 +141,7 @@ Item {
                         readonly property int columns: width >= 760 ? 3 : 2
                         cellWidth: width / columns
                         cellHeight: 154
+                        cacheBuffer: height
                         model: controller.mediaModel
                         delegate: MediaCard {
                             width: mediaGrid.cellWidth - 12
@@ -163,6 +164,7 @@ Item {
                         }
                         onContentYChanged: windowTimer.restart()
                         onHeightChanged: windowTimer.restart()
+                        onWidthChanged: windowTimer.restart()
                         onCountChanged: windowTimer.restart()
                         Timer { id: windowTimer; interval: 80; repeat: false; onTriggered: mediaGrid.reportWindow() }
                     }

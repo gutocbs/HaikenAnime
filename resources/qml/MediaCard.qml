@@ -36,6 +36,8 @@ Rectangle {
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: false
+                sourceSize.width: 140
+                sourceSize.height: 200
                 onStatusChanged: if (status === Image.Error) card.coverLoadFailed(card.mediaId)
             }
         }
