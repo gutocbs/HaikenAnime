@@ -19,6 +19,8 @@ private slots:
     void migrationFailureExposesDiagnostic();
     void migrationRequiresVersionToBeRecorded();
     void migrationCreatesCoverCacheVersionTwo();
+    void migrationCreatesSourceRemovalVersionThree();
+    void migrationUpgradesVersionTwoWithoutDataLoss();
 };
 
 void SqliteDatabaseTests::opensAndCreatesDatabaseFile() {
@@ -66,7 +68,8 @@ void SqliteDatabaseTests::migrationCreatesMediaSchema() {
         QStringLiteral("total_chapters"), QStringLiteral("consumed_chapters"),
         QStringLiteral("next_chapter"), QStringLiteral("average_score"),
         QStringLiteral("personal_score"), QStringLiteral("cover_url"),
-        QStringLiteral("synopsis"), QStringLiteral("type"), QStringLiteral("status")
+        QStringLiteral("synopsis"), QStringLiteral("type"), QStringLiteral("status"),
+        QStringLiteral("source_removed_at")
     };
 
     QCOMPARE(columns, expectedColumns);
@@ -84,7 +87,7 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 2);
+    QCOMPARE(query.value(0).toInt(), 3);
 }
 
 void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
@@ -184,7 +187,59 @@ void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
     QVERIFY(versions.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
     QList<int> values;
     while (versions.next()) values.append(versions.value(0).toInt());
-    QCOMPARE(values, QList<int>({1, 2}));
+    QCOMPARE(values, QList<int>({1, 2, 3}));
+}
+
+void SqliteDatabaseTests::migrationCreatesSourceRemovalVersionThree() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+
+    QSqlQuery columns(database.connection());
+    QVERIFY(columns.exec(QStringLiteral("PRAGMA table_info(media)")));
+    bool found = false;
+    while (columns.next()) {
+        if (columns.value(1).toString() == QStringLiteral("source_removed_at")) {
+            found = true;
+            QCOMPARE(columns.value(3).toInt(), 0);
+        }
+    }
+    QVERIFY(found);
+}
+
+void SqliteDatabaseTests::migrationUpgradesVersionTwoWithoutDataLoss() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QSqlQuery setup(database.connection());
+    QVERIFY(setup.exec(QStringLiteral("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)")));
+    QVERIFY(setup.exec(QStringLiteral(
+        "CREATE TABLE media (id INTEGER PRIMARY KEY, name TEXT NOT NULL, type INTEGER NOT NULL, "
+        "status INTEGER NOT NULL)")));
+    QVERIFY(setup.exec(QStringLiteral(
+        "CREATE TABLE cover_cache (media_id INTEGER PRIMARY KEY, remote_url TEXT NOT NULL, "
+        "quality TEXT NOT NULL, relative_path TEXT NOT NULL, mime_type TEXT NOT NULL, "
+        "byte_size INTEGER NOT NULL, etag TEXT NOT NULL DEFAULT '', "
+        "last_modified TEXT NOT NULL DEFAULT '', validated_at TEXT NOT NULL, "
+        "FOREIGN KEY(media_id) REFERENCES media(id) ON DELETE CASCADE)")));
+    QVERIFY(setup.exec(QStringLiteral("INSERT INTO schema_version VALUES (1), (2)")));
+    QVERIFY(setup.exec(QStringLiteral("INSERT INTO media VALUES (7, 'Preserved', 1, 1)")));
+    QVERIFY(setup.exec(QStringLiteral(
+        "INSERT INTO cover_cache VALUES (7, 'https://example.test/7.jpg', 'medium', "
+        "'covers/7.jpg', 'image/jpeg', 12, '', '', '2026-09-25T00:00:00Z')")));
+
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+
+    QSqlQuery media(database.connection());
+    QVERIFY(media.exec(QStringLiteral("SELECT name, source_removed_at FROM media WHERE id = 7")));
+    QVERIFY(media.next());
+    QCOMPARE(media.value(0).toString(), QStringLiteral("Preserved"));
+    QVERIFY(media.value(1).isNull());
+    QSqlQuery cover(database.connection());
+    QVERIFY(cover.exec(QStringLiteral("SELECT COUNT(*) FROM cover_cache WHERE media_id = 7")));
+    QVERIFY(cover.next());
+    QCOMPARE(cover.value(0).toInt(), 1);
 }
 
 QTEST_MAIN(SqliteDatabaseTests)
