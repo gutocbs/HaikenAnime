@@ -2,6 +2,8 @@
   "queries": {
     "upsertMedia": ":/sqlite/queries/upsert-media.sql",
     "readMedia": ":/sqlite/queries/read-media.sql",
+    "readActiveMediaIds": ":/sqlite/queries/read-active-media-ids.sql",
+    "markMediaSourceRemoved": ":/sqlite/queries/mark-media-source-removed.sql",
     "enqueuePendingChange": ":/sqlite/queries/enqueue-pending-change.sql",
     "readPendingChanges": ":/sqlite/queries/read-pending-changes.sql",
     "updatePendingChange": ":/sqlite/queries/update-pending-change.sql",

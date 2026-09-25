@@ -10,6 +10,8 @@ void SqliteQueryConfiguration::setLogger(AsyncLogger *value) { logger = value; }
 bool SqliteQueryConfiguration::load(QString &error) {
     upsertMediaPath.clear();
     readMediaPath.clear();
+    readActiveMediaIdsPath.clear();
+    markMediaSourceRemovedPath.clear();
     enqueuePendingChangePath.clear();
     readPendingChangesPath.clear();
     updatePendingChangePath.clear();
@@ -39,6 +41,8 @@ bool SqliteQueryConfiguration::load(QString &error) {
 
     upsertMediaPath = queries.value(QStringLiteral("upsertMedia")).toString();
     readMediaPath = queries.value(QStringLiteral("readMedia")).toString();
+    readActiveMediaIdsPath = queries.value(QStringLiteral("readActiveMediaIds")).toString();
+    markMediaSourceRemovedPath = queries.value(QStringLiteral("markMediaSourceRemoved")).toString();
     enqueuePendingChangePath = queries.value(QStringLiteral("enqueuePendingChange")).toString();
     readPendingChangesPath = queries.value(QStringLiteral("readPendingChanges")).toString();
     updatePendingChangePath = queries.value(QStringLiteral("updatePendingChange")).toString();
@@ -46,7 +50,8 @@ bool SqliteQueryConfiguration::load(QString &error) {
     upsertCoverCachePath = queries.value(QStringLiteral("upsertCoverCache")).toString();
     deleteCoverCachePath = queries.value(QStringLiteral("deleteCoverCache")).toString();
     clearCoverCachePath = queries.value(QStringLiteral("clearCoverCache")).toString();
-    if (upsertMediaPath.isEmpty() || readMediaPath.isEmpty() || enqueuePendingChangePath.isEmpty()
+    if (upsertMediaPath.isEmpty() || readMediaPath.isEmpty() || readActiveMediaIdsPath.isEmpty()
+        || markMediaSourceRemovedPath.isEmpty() || enqueuePendingChangePath.isEmpty()
         || readPendingChangesPath.isEmpty() || updatePendingChangePath.isEmpty()
         || readCoverCachePath.isEmpty() || upsertCoverCachePath.isEmpty()
         || deleteCoverCachePath.isEmpty() || clearCoverCachePath.isEmpty()) {

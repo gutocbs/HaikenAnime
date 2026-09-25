@@ -12,4 +12,5 @@ ON CONFLICT(id) DO UPDATE SET
     cover_url = excluded.cover_url,
     synopsis = excluded.synopsis,
     type = excluded.type,
-    status = excluded.status
+    status = excluded.status,
+    source_removed_at = NULL

@@ -5,14 +5,20 @@
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QDateTime>
 
 #include "SqliteMediaMapper.h"
 #include "../logging/AsyncLogger.h"
 
 #include <utility>
 
-SqliteMediaRepository::SqliteMediaRepository(QSqlDatabase database, QString upsertQuery, QString readQuery)
-    : database_(std::move(database)), upsertQuery_(std::move(upsertQuery)), readQuery_(std::move(readQuery)) {
+SqliteMediaRepository::SqliteMediaRepository(QSqlDatabase database, QString upsertQuery, QString readQuery,
+                                             QString readActiveMediaIdsQuery,
+                                             QString markSourceRemovedQuery)
+    : database_(std::move(database)), upsertQuery_(std::move(upsertQuery)),
+      readQuery_(std::move(readQuery)),
+      readActiveMediaIdsQuery_(std::move(readActiveMediaIdsQuery)),
+      markSourceRemovedQuery_(std::move(markSourceRemovedQuery)) {
 }
 
 void SqliteMediaRepository::setLogger(AsyncLogger *logger) { logger_ = logger; }
@@ -90,5 +96,57 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
         return false;
     }
     if (logger_) logger_->info(LogCategory::Database, QStringLiteral("Upserted %1 media records into SQLite.").arg(media.size()));
+    return true;
+}
+
+bool SqliteMediaRepository::reconcileAuthoritativeSnapshot(
+    const QSet<int> &observedMediaIds, int &removedCount, QString &error) {
+    removedCount = 0;
+    error.clear();
+    if (!database_.isOpen()) {
+        error = QStringLiteral("SQLite database is not open.");
+        return false;
+    }
+    if (readActiveMediaIdsQuery_.isEmpty() || markSourceRemovedQuery_.isEmpty()) {
+        error = QStringLiteral("SQLite snapshot reconciliation query is empty.");
+        return false;
+    }
+    if (!database_.transaction()) {
+        error = database_.lastError().text();
+        return false;
+    }
+
+    QSqlQuery active(database_);
+    if (!active.exec(readActiveMediaIdsQuery_)) {
+        error = active.lastError().text();
+        database_.rollback();
+        return false;
+    }
+    QList<int> missingIds;
+    while (active.next()) {
+        const int mediaId = active.value(0).toInt();
+        if (!observedMediaIds.contains(mediaId)) missingIds.append(mediaId);
+    }
+
+    QSqlQuery mark(database_);
+    mark.prepare(markSourceRemovedQuery_);
+    const QString removedAt = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
+    for (const int mediaId : missingIds) {
+        mark.bindValue(QStringLiteral(":source_removed_at"), removedAt);
+        mark.bindValue(QStringLiteral(":id"), mediaId);
+        if (!mark.exec()) {
+            error = mark.lastError().text();
+            database_.rollback();
+            removedCount = 0;
+            return false;
+        }
+        removedCount += mark.numRowsAffected();
+    }
+    if (!database_.commit()) {
+        error = database_.lastError().text();
+        database_.rollback();
+        removedCount = 0;
+        return false;
+    }
     return true;
 }

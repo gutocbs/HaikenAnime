@@ -12,12 +12,20 @@ const auto UpsertMedia = QStringLiteral(
     "total_chapters, average_score, cover_url, synopsis, type, status) "
     "VALUES (:id, :name, :english_name, :original_name, :alternative_names, "
     ":total_chapters, :average_score, :cover_url, :synopsis, :type, :status) "
-    "ON CONFLICT(id) DO UPDATE SET name = excluded.name");
+    "ON CONFLICT(id) DO UPDATE SET name = excluded.name, cover_url = excluded.cover_url, "
+    "source_removed_at = NULL");
 
 const auto ReadMedia = QStringLiteral(
     "SELECT id, name, english_name, original_name, alternative_names, total_chapters, "
     "consumed_chapters, next_chapter, average_score, personal_score, cover_url, synopsis, "
-    "type, status FROM media ORDER BY id");
+    "type, status FROM media WHERE source_removed_at IS NULL ORDER BY id");
+
+const auto ReadActiveMediaIds = QStringLiteral(
+    "SELECT id FROM media WHERE source_removed_at IS NULL ORDER BY id");
+
+const auto MarkSourceRemoved = QStringLiteral(
+    "UPDATE media SET source_removed_at = :source_removed_at "
+    "WHERE id = :id AND source_removed_at IS NULL");
 
 const auto EnqueueChange = QStringLiteral(
     "INSERT INTO anilist_pending_changes "
@@ -55,6 +63,8 @@ private slots:
     void malformedPendingValueFailsInsteadOfBecomingEmptyText();
     void fractionalPendingIntegerIsRejected();
     void updatingMissingPendingChangeFails();
+    void authoritativeSnapshotMarksOnlyUnseenActiveMedia();
+    void removedMediaIsHiddenAndUpsertReactivatesItPreservingLocalData();
 };
 
 void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
@@ -62,7 +72,8 @@ void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
     SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY(database.migrate());
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia);
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved);
 
     Media expected;
     expected.Id = 7;
@@ -75,6 +86,68 @@ void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
     QVERIFY(repository.readAll(actual, error));
     QCOMPARE(actual.size(), 1);
     QCOMPARE(actual.first().AlternativeNames, expected.AlternativeNames);
+}
+
+void SqliteRepositoryTests::authoritativeSnapshotMarksOnlyUnseenActiveMedia() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    QVERIFY(insertMedia(database.connection(), 7));
+    QVERIFY(insertMedia(database.connection(), 8));
+    QVERIFY(insertMedia(database.connection(), 9));
+    QSqlQuery alreadyRemoved(database.connection());
+    QVERIFY(alreadyRemoved.exec(QStringLiteral(
+        "UPDATE media SET source_removed_at = '2026-09-24T00:00:00Z' WHERE id = 9")));
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved);
+
+    int removedCount = -1;
+    QString error;
+    QVERIFY2(repository.reconcileAuthoritativeSnapshot(QSet<int>{7}, removedCount, error),
+             qPrintable(error));
+    QCOMPARE(removedCount, 1);
+
+    QSqlQuery rows(database.connection());
+    QVERIFY(rows.exec(QStringLiteral("SELECT id, source_removed_at FROM media ORDER BY id")));
+    QVERIFY(rows.next());
+    QCOMPARE(rows.value(0).toInt(), 7);
+    QVERIFY(rows.value(1).isNull());
+    QVERIFY(rows.next());
+    QCOMPARE(rows.value(0).toInt(), 8);
+    QVERIFY(!rows.value(1).isNull());
+    QVERIFY(rows.next());
+    QCOMPARE(rows.value(0).toInt(), 9);
+    QCOMPARE(rows.value(1).toString(), QStringLiteral("2026-09-24T00:00:00Z"));
+}
+
+void SqliteRepositoryTests::removedMediaIsHiddenAndUpsertReactivatesItPreservingLocalData() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    QVERIFY(insertMedia(database.connection(), 7));
+    QSqlQuery local(database.connection());
+    QVERIFY(local.exec(QStringLiteral(
+        "UPDATE media SET consumed_chapters = 12, personal_score = 90, "
+        "source_removed_at = '2026-09-24T00:00:00Z' WHERE id = 7")));
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved);
+    QString error;
+    QList<Media> active;
+    QVERIFY(repository.readAll(active, error));
+    QVERIFY(active.isEmpty());
+
+    Media returning;
+    returning.Id = 7;
+    returning.Name = QStringLiteral("Returned");
+    returning.CoverUrl = QStringLiteral("https://example.test/new.jpg");
+    QVERIFY(repository.upsert({returning}, error));
+    QVERIFY(repository.readAll(active, error));
+    QCOMPARE(active.size(), 1);
+    QCOMPARE(active.first().ConsumedChapters, 12);
+    QCOMPARE(active.first().PersonalScore, 90);
+    QCOMPARE(active.first().CoverUrl, returning.CoverUrl);
 }
 
 void SqliteRepositoryTests::pendingChangeRoundTripPreservesRemoteObservedAt() {
