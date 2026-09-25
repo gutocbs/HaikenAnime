@@ -18,6 +18,7 @@ private slots:
     void enablesForeignKeyEnforcement();
     void migrationFailureExposesDiagnostic();
     void migrationRequiresVersionToBeRecorded();
+    void migrationCreatesCoverCacheVersionTwo();
 };
 
 void SqliteDatabaseTests::opensAndCreatesDatabaseFile() {
@@ -83,7 +84,7 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 1);
+    QCOMPARE(query.value(0).toInt(), 2);
 }
 
 void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
@@ -166,6 +167,24 @@ void SqliteDatabaseTests::migrationRequiresVersionToBeRecorded() {
 
     QVERIFY(!database.migrate());
     QVERIFY(!database.lastError().isEmpty());
+}
+
+void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+
+    QSqlQuery table(database.connection());
+    QVERIFY(table.exec(QStringLiteral(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'cover_cache'")));
+    QVERIFY(table.next());
+
+    QSqlQuery versions(database.connection());
+    QVERIFY(versions.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
+    QList<int> values;
+    while (versions.next()) values.append(versions.value(0).toInt());
+    QCOMPARE(values, QList<int>({1, 2}));
 }
 
 QTEST_MAIN(SqliteDatabaseTests)

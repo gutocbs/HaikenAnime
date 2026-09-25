@@ -4,6 +4,10 @@
     "readMedia": ":/sqlite/queries/read-media.sql",
     "enqueuePendingChange": ":/sqlite/queries/enqueue-pending-change.sql",
     "readPendingChanges": ":/sqlite/queries/read-pending-changes.sql",
-    "updatePendingChange": ":/sqlite/queries/update-pending-change.sql"
+    "updatePendingChange": ":/sqlite/queries/update-pending-change.sql",
+    "readCoverCache": ":/sqlite/queries/read-cover-cache.sql",
+    "upsertCoverCache": ":/sqlite/queries/upsert-cover-cache.sql",
+    "deleteCoverCache": ":/sqlite/queries/delete-cover-cache.sql",
+    "clearCoverCache": ":/sqlite/queries/clear-cover-cache.sql"
   }
 }

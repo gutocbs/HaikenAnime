@@ -13,6 +13,10 @@ bool SqliteQueryConfiguration::load(QString &error) {
     enqueuePendingChangePath.clear();
     readPendingChangesPath.clear();
     updatePendingChangePath.clear();
+    readCoverCachePath.clear();
+    upsertCoverCachePath.clear();
+    deleteCoverCachePath.clear();
+    clearCoverCachePath.clear();
     error.clear();
     const auto configurationPath = QStringLiteral(":/sqlite/queries/sqlite-queries.json");
     QFile file(configurationPath);
@@ -38,8 +42,14 @@ bool SqliteQueryConfiguration::load(QString &error) {
     enqueuePendingChangePath = queries.value(QStringLiteral("enqueuePendingChange")).toString();
     readPendingChangesPath = queries.value(QStringLiteral("readPendingChanges")).toString();
     updatePendingChangePath = queries.value(QStringLiteral("updatePendingChange")).toString();
+    readCoverCachePath = queries.value(QStringLiteral("readCoverCache")).toString();
+    upsertCoverCachePath = queries.value(QStringLiteral("upsertCoverCache")).toString();
+    deleteCoverCachePath = queries.value(QStringLiteral("deleteCoverCache")).toString();
+    clearCoverCachePath = queries.value(QStringLiteral("clearCoverCache")).toString();
     if (upsertMediaPath.isEmpty() || readMediaPath.isEmpty() || enqueuePendingChangePath.isEmpty()
-        || readPendingChangesPath.isEmpty() || updatePendingChangePath.isEmpty()) {
+        || readPendingChangesPath.isEmpty() || updatePendingChangePath.isEmpty()
+        || readCoverCachePath.isEmpty() || upsertCoverCachePath.isEmpty()
+        || deleteCoverCachePath.isEmpty() || clearCoverCachePath.isEmpty()) {
         error = QStringLiteral("SQLite query configuration is incomplete.");
         if (logger) logger->error(LogCategory::QueryConfiguration, error);
         return false;

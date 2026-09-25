@@ -109,11 +109,28 @@ bool SqliteDatabase::migrate() {
         "last_error TEXT NOT NULL DEFAULT '',"
         "FOREIGN KEY(media_id) REFERENCES media(id)"
         ")"));
-    const bool versionInserted = pendingChangesCreated && query.exec(QStringLiteral(
+    const bool coverCacheCreated = pendingChangesCreated && query.exec(QStringLiteral(
+        "CREATE TABLE IF NOT EXISTS cover_cache ("
+        "media_id INTEGER PRIMARY KEY,"
+        "remote_url TEXT NOT NULL,"
+        "quality TEXT NOT NULL,"
+        "relative_path TEXT NOT NULL,"
+        "mime_type TEXT NOT NULL,"
+        "byte_size INTEGER NOT NULL,"
+        "etag TEXT NOT NULL DEFAULT '',"
+        "last_modified TEXT NOT NULL DEFAULT '',"
+        "validated_at TEXT NOT NULL,"
+        "FOREIGN KEY(media_id) REFERENCES media(id) ON DELETE CASCADE"
+        ")"));
+    const bool versionInserted = coverCacheCreated && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (1)"));
-    const bool versionQueried = versionInserted && query.exec(QStringLiteral(
-        "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 1)"));
-    const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool();
+    const bool coverVersionInserted = versionInserted && query.exec(QStringLiteral(
+        "INSERT OR IGNORE INTO schema_version (version) VALUES (2)"));
+    const bool versionQueried = coverVersionInserted && query.exec(QStringLiteral(
+        "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 1), "
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 2)"));
+    const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool()
+        && query.value(1).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();
@@ -129,7 +146,7 @@ bool SqliteDatabase::migrate() {
 
     lastError_ = query.lastError().text();
     if (lastError_.isEmpty()) {
-        lastError_ = QStringLiteral("SQLite migration version 1 was not recorded.");
+        lastError_ = QStringLiteral("SQLite migration versions 1 and 2 were not recorded.");
     }
     database_.rollback();
     if (logger_) logger_->error(LogCategory::Migration, query.lastError().text());

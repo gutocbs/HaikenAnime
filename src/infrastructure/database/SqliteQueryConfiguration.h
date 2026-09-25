@@ -10,6 +10,10 @@ struct SqliteQueryConfiguration final {
     QString enqueuePendingChangePath;
     QString readPendingChangesPath;
     QString updatePendingChangePath;
+    QString readCoverCachePath;
+    QString upsertCoverCachePath;
+    QString deleteCoverCachePath;
+    QString clearCoverCachePath;
 
     [[nodiscard]] bool load(QString &error) ;
     void setLogger(AsyncLogger *logger);

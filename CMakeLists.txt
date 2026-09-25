@@ -113,6 +113,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqlitePendingChangeRepository.cpp
         src/infrastructure/database/SqliteMediaMapper.h
         src/infrastructure/database/SqliteMediaMapper.cpp
+        src/infrastructure/database/SqliteCoverCacheRepository.h
+        src/infrastructure/database/SqliteCoverCacheRepository.cpp
         src/infrastructure/database/SqlQueryStore.h
         src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/database/SqliteQueryConfiguration.h
@@ -158,6 +160,18 @@ set_source_files_properties(
         resources/sqlite/queries/update-pending-change.sql
         PROPERTIES QT_RESOURCE_ALIAS "update-pending-change.sql")
 set_source_files_properties(
+        resources/sqlite/queries/read-cover-cache.sql
+        PROPERTIES QT_RESOURCE_ALIAS "read-cover-cache.sql")
+set_source_files_properties(
+        resources/sqlite/queries/upsert-cover-cache.sql
+        PROPERTIES QT_RESOURCE_ALIAS "upsert-cover-cache.sql")
+set_source_files_properties(
+        resources/sqlite/queries/delete-cover-cache.sql
+        PROPERTIES QT_RESOURCE_ALIAS "delete-cover-cache.sql")
+set_source_files_properties(
+        resources/sqlite/queries/clear-cover-cache.sql
+        PROPERTIES QT_RESOURCE_ALIAS "clear-cover-cache.sql")
+set_source_files_properties(
         Settings.json
         PROPERTIES QT_RESOURCE_ALIAS "Settings.json")
 set_source_files_properties(
@@ -173,6 +187,10 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         resources/sqlite/queries/enqueue-pending-change.sql
         resources/sqlite/queries/read-pending-changes.sql
         resources/sqlite/queries/update-pending-change.sql
+        resources/sqlite/queries/read-cover-cache.sql
+        resources/sqlite/queries/upsert-cover-cache.sql
+        resources/sqlite/queries/delete-cover-cache.sql
+        resources/sqlite/queries/clear-cover-cache.sql
 )
 
 qt_add_resources(HaikenAnime application_config_resource
@@ -263,6 +281,25 @@ target_link_libraries(SqliteRepositoryTests
 )
 
 add_test(NAME SqliteRepositoryTests COMMAND SqliteRepositoryTests)
+
+add_executable(SqliteCoverCacheRepositoryTests
+        tests/unit/SqliteCoverCacheRepositoryTests.cpp
+        src/infrastructure/database/SqliteDatabase.h
+        src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/database/SqliteCoverCacheRepository.h
+        src/infrastructure/database/SqliteCoverCacheRepository.cpp
+        src/infrastructure/logging/AsyncLogger.h
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+
+target_link_libraries(SqliteCoverCacheRepositoryTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Sql
+        Qt6::Test
+)
+
+add_test(NAME SqliteCoverCacheRepositoryTests COMMAND SqliteCoverCacheRepositoryTests)
 
 add_executable(SqlQueryStoreTests
         tests/unit/SqlQueryStoreTests.cpp
@@ -570,6 +607,7 @@ set(HAIKENANIME_TESTS
         MediaDomainTests
         SqliteDatabaseTests
         SqliteRepositoryTests
+        SqliteCoverCacheRepositoryTests
         SqlQueryStoreTests
         SqliteQueryConfigurationTests
         FileSecretStoreTests
