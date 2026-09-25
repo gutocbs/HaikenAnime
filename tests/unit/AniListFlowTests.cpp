@@ -4,6 +4,7 @@
 #include "../../src/application/anilist/AniListSyncService.h"
 #include "../../src/application/media/MediaSyncFilter.h"
 #include "../../src/application/media/MediaPage.h"
+#include "../../src/application/media/IMediaSnapshotReconciler.h"
 #include "../../src/infrastructure/anilist/FileAniListDataSource.h"
 #include "../../src/infrastructure/anilist/AniListMediaMapper.h"
 
@@ -29,6 +30,22 @@ public:
     }
 };
 
+class RecordingSnapshotReconciler final : public IMediaSnapshotReconciler {
+public:
+    bool reconcileAuthoritativeSnapshot(const QSet<int> &ids, int &removedCount,
+                                        QString &error) override {
+        ++calls;
+        observedIds = ids;
+        removedCount = 0;
+        error.clear();
+        return succeeds;
+    }
+
+    int calls = 0;
+    QSet<int> observedIds;
+    bool succeeds = true;
+};
+
 class AniListFlowTests : public QObject {
     Q_OBJECT
 
@@ -41,6 +58,8 @@ private slots:
     void successfulSynchronizationClearsPreviousError();
     void rejectsInvalidPaginationBeforeReading();
     void rejectsDataSourceThatDoesNotReturnRequestedPage();
+    void completePageOneSynchronizationReconcilesUniqueObservedIds();
+    void synchronizationStartingAfterPageOneDoesNotReconcile();
 };
 
 static QString fixturePath() {
@@ -145,6 +164,36 @@ void AniListFlowTests::rejectsDataSourceThatDoesNotReturnRequestedPage() {
     QVERIFY(!service.synchronize(filter, error));
     QCOMPARE(service.lastErrorCategory(), AniListSyncErrorCategory::InvalidData);
     QVERIFY(error.contains(QStringLiteral("page 1")));
+}
+
+void AniListFlowTests::completePageOneSynchronizationReconcilesUniqueObservedIds() {
+    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
+    CollectingWriter writer;
+    RecordingSnapshotReconciler reconciler;
+    AniListSyncService service(source, writer, &reconciler);
+    MediaSyncFilter filter;
+    filter.type = QStringLiteral("TV");
+    filter.perPage = 1;
+    QString error;
+
+    QVERIFY2(service.synchronize(filter, error), qPrintable(error));
+    QCOMPARE(reconciler.calls, 1);
+    QCOMPARE(reconciler.observedIds, QSet<int>({154587, 116807}));
+}
+
+void AniListFlowTests::synchronizationStartingAfterPageOneDoesNotReconcile() {
+    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
+    CollectingWriter writer;
+    RecordingSnapshotReconciler reconciler;
+    AniListSyncService service(source, writer, &reconciler);
+    MediaSyncFilter filter;
+    filter.type = QStringLiteral("TV");
+    filter.perPage = 1;
+    filter.startingPage = 2;
+    QString error;
+
+    QVERIFY2(service.synchronize(filter, error), qPrintable(error));
+    QCOMPARE(reconciler.calls, 0);
 }
 
 QTEST_MAIN(AniListFlowTests)

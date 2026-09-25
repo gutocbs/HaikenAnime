@@ -84,5 +84,13 @@ bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &err
             }
         }
     }
+    if (filter.startingPage == 1 && snapshotReconciler_ != nullptr) {
+        int removedCount = 0;
+        if (!snapshotReconciler_->reconcileAuthoritativeSnapshot(
+                seenMediaIds, removedCount, error)) {
+            lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
+            return false;
+        }
+    }
     return true;
 }

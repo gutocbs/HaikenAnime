@@ -3,6 +3,7 @@
 
 #include "../media/IMediaDataSource.h"
 #include "../media/IMediaWriter.h"
+#include "../media/IMediaSnapshotReconciler.h"
 #include "../media/MediaPage.h"
 #include "../media/MediaSyncFilter.h"
 #include "AniListSyncErrorCategory.h"
@@ -13,10 +14,12 @@ class AniListSyncService {
 public:
     /** Creates a synchronization service from a data source and media repository. */
     AniListSyncService(IMediaDataSource &dataSource, IMediaWriter &mediaWriter,
+                       IMediaSnapshotReconciler *snapshotReconciler = nullptr,
                        AniListPendingChangeProcessor *pendingProcessor = nullptr,
                        int timeoutMs = 0)
         : dataSource_(dataSource), mediaWriter_(mediaWriter),
-          pendingProcessor_(pendingProcessor), timeoutMs_(timeoutMs) {
+          snapshotReconciler_(snapshotReconciler), pendingProcessor_(pendingProcessor),
+          timeoutMs_(timeoutMs) {
     }
 
     /** Fetches and persists all pages selected by filter, or all available data when empty. */
@@ -26,6 +29,7 @@ public:
 private:
     IMediaDataSource &dataSource_;
     IMediaWriter &mediaWriter_;
+    IMediaSnapshotReconciler *snapshotReconciler_;
     AniListPendingChangeProcessor *pendingProcessor_;
     int timeoutMs_;
     AniListSyncErrorCategory lastErrorCategory_ = AniListSyncErrorCategory::None;
