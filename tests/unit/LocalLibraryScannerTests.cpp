@@ -9,12 +9,52 @@
 
 #ifdef Q_OS_WIN
 #include <qt_windows.h>
+#include <winioctl.h>
 #endif
 
 #include "../../src/infrastructure/library/LocalLibraryScanner.h"
 #include "../../src/infrastructure/library/QtDirectoryEnumerator.h"
 
 namespace {
+#ifdef Q_OS_WIN
+class NonLinkReparseFixture final {
+public:
+    ~NonLinkReparseFixture() {
+        if (handle_ != INVALID_HANDLE_VALUE) {
+            if (attached_) {
+                DWORD returned = 0;
+                DeviceIoControl(handle_, FSCTL_DELETE_REPARSE_POINT, &buffer_,
+                                REPARSE_GUID_DATA_BUFFER_HEADER_SIZE, nullptr, 0, &returned, nullptr);
+            }
+            CloseHandle(handle_);
+        }
+    }
+    bool attach(const QString &path, QString &error) {
+        const auto native = QDir::toNativeSeparators(path);
+        handle_ = CreateFileW(reinterpret_cast<LPCWSTR>(native.utf16()), GENERIC_READ | GENERIC_WRITE,
+                              FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
+                              OPEN_EXISTING, FILE_FLAG_OPEN_REPARSE_POINT, nullptr);
+        if (handle_ == INVALID_HANDLE_VALUE) {
+            error = QStringLiteral("CreateFileW error %1").arg(GetLastError());
+            return false;
+        }
+        // An opaque, non-Microsoft, non-name-surrogate tag models provider metadata
+        // without depending on a user's cloud account or installing a filter driver.
+        buffer_.ReparseTag = 0x00000042;
+        buffer_.ReparseGuid = {0x59a4b745, 0x7a59, 0x4899, {0xa6, 0x52, 0x91, 0x48, 0xd9, 0xa0, 0x11, 0xc0}};
+        DWORD returned = 0;
+        attached_ = DeviceIoControl(handle_, FSCTL_SET_REPARSE_POINT, &buffer_,
+                                   REPARSE_GUID_DATA_BUFFER_HEADER_SIZE, nullptr, 0, &returned, nullptr);
+        if (!attached_) error = QStringLiteral("FSCTL_SET_REPARSE_POINT error %1").arg(GetLastError());
+        return attached_;
+    }
+private:
+    HANDLE handle_ = INVALID_HANDLE_VALUE;
+    REPARSE_GUID_DATA_BUFFER buffer_{};
+    bool attached_ = false;
+};
+#endif
+
 void WriteFile(const QString &path, const QByteArray &contents = "same content") {
     if (!QDir().mkpath(QFileInfo(path).absolutePath())) qFatal("Cannot create fixture directory");
     QFile file(path);
@@ -67,8 +107,10 @@ private slots:
     void caseFoldsUnicodeIdentityAndPreservesRequestedRoot();
     void retainsDistinctPathsWithEqualContent();
     void excludesHiddenDirectoriesAndTemporaryFiles();
+    void includesHiddenRegularAllowedVideos();
     void excludesDirectoryLinksAndJunctions();
     void excludesWindowsSymbolicLinks();
+    void includesWindowsNonLinkReparseVideo();
     void exactBatchBoundaries_data();
     void exactBatchBoundaries();
     void boundsVisitedEntriesEvenWhenFilesAreFiltered();
@@ -177,6 +219,27 @@ void LocalLibraryScannerTests::excludesHiddenDirectoriesAndTemporaryFiles() {
     QCOMPARE(captured.observations.first().relativePath, QStringLiteral("Visible/Episode.mkv"));
 }
 
+void LocalLibraryScannerTests::includesHiddenRegularAllowedVideos() {
+    QTemporaryDir root;
+    WriteFile(root.filePath(".hidden-video.mkv"));
+    WriteFile(root.filePath(".hidden-directory/excluded.mkv"));
+    QSet<QString> expected{QStringLiteral(".hidden-video.mkv")};
+#ifdef Q_OS_WIN
+    WriteFile(root.filePath("HiddenVideo.MKV"));
+    const auto hidden = QDir::toNativeSeparators(root.filePath("HiddenVideo.MKV"));
+    QVERIFY(SetFileAttributesW(reinterpret_cast<LPCWSTR>(hidden.utf16()), FILE_ATTRIBUTE_HIDDEN));
+    expected.insert(QStringLiteral("HiddenVideo.MKV"));
+#endif
+    QtDirectoryEnumerator enumerator;
+    LocalLibraryScanner scanner(enumerator);
+    const auto captured = Scan(scanner, {root.path(), {".mkv"}, 200, 0});
+    QVERIFY2(captured.result.complete, qPrintable(captured.result.diagnostic));
+    QSet<QString> actual;
+    for (const auto &observation : captured.observations) actual.insert(observation.relativePath);
+    QCOMPARE(actual, expected);
+    QCOMPARE(captured.result.candidateFiles, qsizetype(expected.size()));
+}
+
 void LocalLibraryScannerTests::excludesDirectoryLinksAndJunctions() {
     QTemporaryDir root, external;
     WriteFile(root.filePath("ordinary.mkv"));
@@ -245,6 +308,31 @@ void LocalLibraryScannerTests::excludesWindowsSymbolicLinks() {
     QCOMPARE(captured.observations.first().relativePath, QStringLiteral("ordinary.mkv"));
 #else
     QSKIP("Native symbolic links are covered by excludesDirectoryLinksAndJunctions on this platform");
+#endif
+}
+
+void LocalLibraryScannerTests::includesWindowsNonLinkReparseVideo() {
+#ifdef Q_OS_WIN
+    QTemporaryDir root;
+    const auto path = root.filePath("provider-video.mkv");
+    WriteFile(path, "metadata-only");
+    NonLinkReparseFixture fixture;
+    QString error;
+    QVERIFY2(fixture.attach(path, error), qPrintable(error));
+    const auto native = QDir::toNativeSeparators(path);
+    QVERIFY(GetFileAttributesW(reinterpret_cast<LPCWSTR>(native.utf16())) & FILE_ATTRIBUTE_REPARSE_POINT);
+    QVERIFY(!QFileInfo(path).isSymbolicLink());
+    QVERIFY(!QFileInfo(path).isJunction());
+    QtDirectoryEnumerator enumerator;
+    LocalLibraryScanner scanner(enumerator);
+    const auto captured = Scan(scanner, {root.path(), {".mkv"}, 200, 0});
+    QVERIFY2(captured.result.complete, qPrintable(captured.result.diagnostic));
+    QCOMPARE(captured.result.candidateFiles, 1);
+    QCOMPARE(captured.observations.size(), 1);
+    QCOMPARE(captured.observations.first().relativePath, QStringLiteral("provider-video.mkv"));
+    QCOMPARE(captured.observations.first().sizeBytes, 13);
+#else
+    QSKIP("Non-link Windows reparse tags are platform-specific");
 #endif
 }
 

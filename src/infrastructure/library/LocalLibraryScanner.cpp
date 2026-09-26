@@ -9,14 +9,8 @@
 
 namespace {
 bool IsLink(const QFileInfo &entry) {
-    if (entry.isSymbolicLink() || entry.isJunction()) return true;
-#ifdef Q_OS_WIN
-    const auto path = QDir::toNativeSeparators(entry.absoluteFilePath());
-    const auto attributes = GetFileAttributesW(reinterpret_cast<LPCWSTR>(path.utf16()));
-    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_REPARSE_POINT);
-#else
-    return false;
-#endif
+    // Qt distinguishes link/junction tags from non-link provider reparse metadata.
+    return entry.isSymbolicLink() || entry.isJunction();
 }
 
 bool IsTemporary(const QFileInfo &entry) {
@@ -92,7 +86,9 @@ LocalLibraryScanResult LocalLibraryScanner::scan(const LocalLibraryScanRequest &
             ++current.visitedEntries;
             ++entriesInBatch;
             const auto name = entry.fileName();
-            const bool excluded = IsLink(entry) || entry.isHidden() || name.startsWith(QLatin1Char('.'));
+            const bool hiddenDirectory = entry.isDir()
+                && (entry.isHidden() || name.startsWith(QLatin1Char('.')));
+            const bool excluded = IsLink(entry) || hiddenDirectory;
             if (!excluded && entry.isFile() && !IsTemporary(entry)) {
                 const auto extension = QLatin1Char('.') + entry.suffix().toLower();
                 if (extensions.contains(extension)) {
