@@ -24,5 +24,6 @@ Media SqliteMediaMapper::Map(const QSqlQuery &query) {
     media.Synopsis = query.value(11).toString();
     media.Type = static_cast<MediaType>(query.value(12).toInt());
     media.Status = static_cast<MediaStatus>(query.value(13).toInt());
+    media.ListStatus = static_cast<UserListStatus>(query.value(14).toInt());
     return media;
 }

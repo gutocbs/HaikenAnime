@@ -29,6 +29,7 @@ AniListMediaDto AniListMediaMapper::fromFixtureJson(const QJsonObject &object) {
         ? QStringLiteral("ANIME")
         : QStringLiteral("MANGA");
     media.status = object.value(QStringLiteral("status")).toString();
+    media.listStatus = object.value(QStringLiteral("list")).toString();
     media.titleRomaji = object.value(QStringLiteral("title")).toString();
     media.titleEnglish = object.value(QStringLiteral("englishTitle")).toString();
     media.titleNative = object.value(QStringLiteral("nativeTitle")).toString();
@@ -49,6 +50,7 @@ AniListMediaDto AniListMediaMapper::FromGraphQlJson(const QJsonObject &object) {
     media.mediaType = object.value(QStringLiteral("type")).toString();
     media.mediaFormat = object.value(QStringLiteral("format")).toString();
     media.status = object.value(QStringLiteral("status")).toString();
+    media.listStatus = object.value(QStringLiteral("userListStatus")).toString();
     const auto title = object.value(QStringLiteral("title")).toObject();
     media.titleRomaji = title.value(QStringLiteral("romaji")).toString();
     media.titleEnglish = title.value(QStringLiteral("english")).toString();
@@ -58,6 +60,8 @@ AniListMediaDto AniListMediaMapper::FromGraphQlJson(const QJsonObject &object) {
     }
     media.episodes = OptionalInteger(object.value(QStringLiteral("episodes")));
     media.chapters = OptionalInteger(object.value(QStringLiteral("chapters")));
+    media.progress = OptionalInteger(object.value(QStringLiteral("progress")));
+    media.personalScore = OptionalInteger(object.value(QStringLiteral("score")));
     media.averageScore = OptionalInteger(object.value(QStringLiteral("averageScore")));
     const auto coverImage = object.value(QStringLiteral("coverImage")).toObject();
     media.coverImages.medium = coverImage.value(QStringLiteral("medium")).toString();
@@ -99,6 +103,8 @@ Media AniListMediaMapper::ToDomainMedia(const AniListMediaDto &externalMedia) {
     media.AlternativeNames = externalMedia.titleSynonyms;
     const int episodes = externalMedia.episodes.value_or(0);
     media.TotalChapters = episodes > 0 ? episodes : externalMedia.chapters.value_or(0);
+    media.ConsumedChapters = externalMedia.progress.value_or(0);
+    media.PersonalScore = externalMedia.personalScore.value_or(0);
     media.AverageScore = externalMedia.averageScore.value_or(0);
     media.CoverUrl = externalMedia.coverImageUrl;
     media.Synopsis = externalMedia.description;
@@ -124,6 +130,23 @@ Media AniListMediaMapper::ToDomainMedia(const AniListMediaDto &externalMedia) {
         media.Status = MediaStatus::NotReleased;
     } else {
         media.Status = MediaStatus::Unknown;
+    }
+
+    const auto listStatus = externalMedia.listStatus.trimmed().toUpper();
+    if (listStatus == QStringLiteral("CURRENT")) {
+        media.ListStatus = UserListStatus::Current;
+    } else if (listStatus == QStringLiteral("PLANNING")
+               || listStatus == QStringLiteral("PLAN TO WATCH")
+               || listStatus == QStringLiteral("PLAN TO READ")) {
+        media.ListStatus = UserListStatus::Planning;
+    } else if (listStatus == QStringLiteral("PAUSED") || listStatus == QStringLiteral("ON_HOLD")) {
+        media.ListStatus = UserListStatus::OnHold;
+    } else if (listStatus == QStringLiteral("DROPPED")) {
+        media.ListStatus = UserListStatus::Dropped;
+    } else if (listStatus == QStringLiteral("COMPLETED")) {
+        media.ListStatus = UserListStatus::Completed;
+    } else {
+        media.ListStatus = UserListStatus::Unknown;
     }
     return media;
 }

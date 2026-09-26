@@ -4,6 +4,7 @@
 #include <QAbstractListModel>
 #include <QObject>
 #include <QString>
+#include <QVariantList>
 
 #include "../../application/media/IMediaReader.h"
 #include "../../application/covers/CoverDownloadCoordinator.h"
@@ -43,12 +44,32 @@ private:
 class HomeScreenController final : public QObject {
     Q_OBJECT
     Q_PROPERTY(HomeMediaModel *mediaModel READ mediaModel CONSTANT)
+    Q_PROPERTY(HomeMediaModel *fullMediaModel READ fullMediaModel CONSTANT)
     Q_PROPERTY(QString state READ state NOTIFY stateChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
     Q_PROPERTY(int synchronizationProgress READ synchronizationProgress NOTIFY synchronizationProgressChanged)
     Q_PROPERTY(bool synchronizationProgressKnown READ synchronizationProgressKnown NOTIFY synchronizationProgressChanged)
     Q_PROPERTY(int mediaCount READ mediaCount NOTIFY mediaCountChanged)
+    Q_PROPERTY(int filteredMediaCount READ filteredMediaCount NOTIFY mediaCountChanged)
+    Q_PROPERTY(QString activeMediaType READ activeMediaType NOTIFY activeMediaTypeChanged)
+    Q_PROPERTY(QVariantList availableMediaTypeOptions READ availableMediaTypeOptions NOTIFY browseOptionsChanged)
+    Q_PROPERTY(QVariantList availableListOptions READ availableListOptions NOTIFY browseOptionsChanged)
+    Q_PROPERTY(QVariantList availableSortOptions READ availableSortOptions NOTIFY browseOptionsChanged)
+    Q_PROPERTY(QString activeListFilter READ activeListFilter NOTIFY browseCriteriaChanged)
+    Q_PROPERTY(QString activeSort READ activeSort NOTIFY browseCriteriaChanged)
+    Q_PROPERTY(QString searchQuery READ searchQuery NOTIFY browseCriteriaChanged)
+    Q_PROPERTY(bool browseCriteriaActive READ browseCriteriaActive NOTIFY browseCriteriaChanged)
+    Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY selectionChanged)
+    Q_PROPERTY(int selectedMediaId READ selectedMediaId NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedTitle READ selectedTitle NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedSynopsis READ selectedSynopsis NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedTypeLabel READ selectedTypeLabel NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedStatusLabel READ selectedStatusLabel NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedProgress READ selectedProgress NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedScore READ selectedScore NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedAverageScore READ selectedAverageScore NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedCoverSource READ selectedCoverSource NOTIFY selectionChanged)
 
 public:
     explicit HomeScreenController(IMediaReader &reader, QObject *parent = nullptr);
@@ -57,19 +78,49 @@ public:
                          QString initializationError = {}, QObject *parent = nullptr);
 
     HomeMediaModel *mediaModel();
+    HomeMediaModel *fullMediaModel();
     QString state() const;
     QString statusMessage() const;
     QString errorMessage() const;
     int synchronizationProgress() const;
     bool synchronizationProgressKnown() const;
     int mediaCount() const;
+    int filteredMediaCount() const;
+    QString activeMediaType() const;
+    QVariantList availableMediaTypeOptions() const;
+    QVariantList availableListOptions() const;
+    QVariantList availableSortOptions() const;
+    QString activeListFilter() const;
+    QString activeSort() const;
+    QString searchQuery() const;
+    bool browseCriteriaActive() const;
+    bool hasSelection() const;
+    int selectedMediaId() const;
+    QString selectedTitle() const;
+    QString selectedSynopsis() const;
+    QString selectedTypeLabel() const;
+    QString selectedStatusLabel() const;
+    QString selectedProgress() const;
+    QString selectedScore() const;
+    QString selectedAverageScore() const;
+    QString selectedCoverSource() const;
+
+    void ConfigureBrowseOptions(QVariantList mediaTypeOptions, QVariantList listOptions,
+                                QVariantList sortOptions);
 
     void reload();
     void notifySynchronizationCompleted();
     void notifySynchronizationStarted();
     void notifySynchronizationProgress(int processedItems, int totalItems);
     void notifySynchronizationFailed(const QString &error);
-    Q_INVOKABLE void RequestCoverWindow(int firstVisibleIndex, int lastVisibleIndex, int prefetchCount);
+    Q_INVOKABLE void SetMediaType(const QString &typeKey);
+    Q_INVOKABLE void SetListFilter(const QString &filterKey);
+    Q_INVOKABLE void SetSort(const QString &sortKey);
+    Q_INVOKABLE void SetSearchQuery(const QString &query);
+    Q_INVOKABLE void ClearBrowseCriteria();
+    Q_INVOKABLE void SelectMedia(int mediaId);
+    Q_INVOKABLE void RequestCoverWindow(const QString &scope, int firstVisibleIndex,
+                                        int lastVisibleIndex, int prefetchCount);
     Q_INVOKABLE void ReportCoverLoadFailure(int mediaId);
     Q_INVOKABLE void ClearCoverCache();
 
@@ -79,13 +130,21 @@ signals:
     void statusMessageChanged();
     void synchronizationProgressChanged();
     void mediaCountChanged();
+    void activeMediaTypeChanged();
+    void browseOptionsChanged();
+    void browseCriteriaChanged();
+    void selectionChanged();
 
 private:
     void setState(QString state);
     void setStatusMessage(QString message);
+    void rebuildMediaModels();
+    void clearSelection();
 
     IMediaReader *reader_ = nullptr;
     HomeMediaModel model_;
+    HomeMediaModel fullModel_;
+    QList<Media> allMedia_;
     CoverDownloadCoordinator *covers_ = nullptr;
     CoverQuality coverQuality_ = CoverQuality::Medium;
     QString state_ = QStringLiteral("idle");
@@ -93,6 +152,17 @@ private:
     QString errorMessage_;
     int synchronizationProgress_ = 0;
     bool synchronizationProgressKnown_ = false;
+    QString activeMediaType_ = QStringLiteral("anime");
+    QString activeListFilter_ = QStringLiteral("all");
+    QString activeSort_ = QStringLiteral("title_asc");
+    QString searchQuery_;
+    QVariantList listOptions_;
+    QVariantList sortOptions_;
+    QVariantList mediaTypeOptions_;
+    bool usesDefaultBrowseOptions_ = true;
+    Media selectedMedia_;
+    bool hasSelection_ = false;
+    QString selectedCoverSource_ = QStringLiteral("qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg");
 };
 
 #endif // HAIKENANIME_HOMESCREENCONTROLLER_H

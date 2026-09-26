@@ -181,6 +181,7 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 ## Interface e operação
 
 - Capas agora são baixadas sob demanda pela janela visível do `GridView`, com prefetch limitado, concorrência configurável, cache persistente e fallback empacotado.
+- Cancelar downloads ativos de prefetch que deixarem a janela relevante ao trocar o tipo de mídia, abrir ou fechar a lista completa.
 - Manter as capas enquanto a mídia existir na biblioteca; a limpeza explícita remove arquivos e metadados, e uma URL alterada substitui a capa antiga somente após publicar e persistir a nova.
 - Expor futuramente na tela de configurações a qualidade (`medium`, `large`, `extraLarge`) e a ação de limpar imagens, reutilizando o contrato já presente em `Settings.json`.
 - Validar visualmente os layouts largo e estreito em sessão interativa; compilação QML e startup não substituem essa inspeção.

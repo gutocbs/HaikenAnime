@@ -29,6 +29,7 @@ void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
                     "type": "MANGA",
                     "format": "NOVEL",
                     "status": "FINISHED",
+                    "userListStatus": "CURRENT",
                     "title": {
                         "romaji": "Sousou no Frieren",
                         "english": "Frieren: Beyond Journey's End",
@@ -37,6 +38,8 @@ void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
                     "synonyms": ["Frieren at the Funeral"],
                     "episodes": null,
                     "chapters": 64,
+                    "progress": 18,
+                    "score": 9,
                     "averageScore": 91,
                     "coverImage": {"large": "https://example.invalid/frieren.png"},
                     "description": "A mage elf continues after the hero's journey.",
@@ -64,6 +67,9 @@ void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
              QStringList{QStringLiteral("Frieren at the Funeral")});
     QCOMPARE(page.media.first().Type, MediaType::Novel);
     QCOMPARE(page.media.first().TotalChapters, 64);
+    QCOMPARE(page.media.first().ConsumedChapters, 18);
+    QCOMPARE(page.media.first().PersonalScore, 9);
+    QCOMPARE(page.media.first().ListStatus, UserListStatus::Current);
 }
 
 void AniListGraphQlParsingTests::preservesGraphQlErrorsWhenDataIsNull() {
@@ -153,6 +159,32 @@ void AniListGraphQlParsingTests::recordedLibraryFixtureIsComplete() {
     QVERIFY2(AniListGraphQlPageParser::parse(response.data, page, error), qPrintable(error));
     QCOMPARE(page.currentPage, 1);
     QVERIFY(!page.hasNextPage);
+    QCOMPARE(page.media.size(), 50);
+
+    int animeCount = 0;
+    int mangaCount = 0;
+    int novelCount = 0;
+    int mangaOrNovelWithoutListStatus = 0;
+    int entriesWithProgress = 0;
+    int entriesWithPersonalScore = 0;
+    for (const auto &media : page.media) {
+        if (media.Type == MediaType::Anime) ++animeCount;
+        if (media.Type == MediaType::Manga) ++mangaCount;
+        if (media.Type == MediaType::Novel) ++novelCount;
+        if ((media.Type == MediaType::Manga || media.Type == MediaType::Novel)
+            && media.ListStatus == UserListStatus::Unknown) {
+            ++mangaOrNovelWithoutListStatus;
+        }
+        if (media.ConsumedChapters > 0) ++entriesWithProgress;
+        if (media.PersonalScore > 0) ++entriesWithPersonalScore;
+    }
+
+    QVERIFY(animeCount > 0);
+    QVERIFY(mangaCount >= 3);
+    QVERIFY(novelCount >= 3);
+    QCOMPARE(mangaOrNovelWithoutListStatus, 0);
+    QVERIFY(entriesWithProgress >= 8);
+    QVERIFY(entriesWithPersonalScore >= 8);
 }
 
 QTEST_MAIN(AniListGraphQlParsingTests)

@@ -69,6 +69,7 @@ void SqliteDatabaseTests::migrationCreatesMediaSchema() {
         QStringLiteral("next_chapter"), QStringLiteral("average_score"),
         QStringLiteral("personal_score"), QStringLiteral("cover_url"),
         QStringLiteral("synopsis"), QStringLiteral("type"), QStringLiteral("status"),
+        QStringLiteral("user_list_status"),
         QStringLiteral("source_removed_at")
     };
 
@@ -87,7 +88,7 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 3);
+    QCOMPARE(query.value(0).toInt(), 4);
 }
 
 void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
@@ -187,7 +188,7 @@ void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
     QVERIFY(versions.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
     QList<int> values;
     while (versions.next()) values.append(versions.value(0).toInt());
-    QCOMPARE(values, QList<int>({1, 2, 3}));
+    QCOMPARE(values, QList<int>({1, 2, 3, 4}));
 }
 
 void SqliteDatabaseTests::migrationCreatesSourceRemovalVersionThree() {
@@ -232,10 +233,22 @@ void SqliteDatabaseTests::migrationUpgradesVersionTwoWithoutDataLoss() {
     QVERIFY2(database.migrate(), qPrintable(database.lastError()));
 
     QSqlQuery media(database.connection());
-    QVERIFY(media.exec(QStringLiteral("SELECT name, source_removed_at FROM media WHERE id = 7")));
+    QVERIFY(media.exec(QStringLiteral(
+        "SELECT name, source_removed_at, user_list_status FROM media WHERE id = 7")));
     QVERIFY(media.next());
     QCOMPARE(media.value(0).toString(), QStringLiteral("Preserved"));
     QVERIFY(media.value(1).isNull());
+    QCOMPARE(media.value(2).toInt(), -1);
+    QSqlQuery columns(database.connection());
+    QVERIFY(columns.exec(QStringLiteral("PRAGMA table_info(media)")));
+    bool foundUserListStatus = false;
+    while (columns.next()) {
+        if (columns.value(1).toString() != QStringLiteral("user_list_status")) continue;
+        foundUserListStatus = true;
+        QCOMPARE(columns.value(3).toInt(), 1);
+        QCOMPARE(columns.value(4).toString(), QStringLiteral("-1"));
+    }
+    QVERIFY(foundUserListStatus);
     QSqlQuery cover(database.connection());
     QVERIFY(cover.exec(QStringLiteral("SELECT COUNT(*) FROM cover_cache WHERE media_id = 7")));
     QVERIFY(cover.next());

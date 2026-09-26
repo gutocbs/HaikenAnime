@@ -51,6 +51,7 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/media/MediaSyncFilter.h
         src/domain/media/MediaType.h
         src/domain/media/MediaStatus.h
+        src/domain/media/UserListStatus.h
         src/application/anilist/AniListCredentials.h
         src/infrastructure/anilist/AniListGraphQlError.h
         src/infrastructure/anilist/AniListGraphQlResponse.h
@@ -237,6 +238,7 @@ qt_add_qml_module(HaikenAnime
         QML_FILES
         resources/qml/Main.qml
         resources/qml/Home.qml
+        resources/qml/BrowseControls.qml
         resources/qml/MediaCard.qml
         resources/qml/StatePanel.qml
         RESOURCES resources/images/cover-placeholder.svg
@@ -258,6 +260,7 @@ add_executable(MediaDomainTests
         tests/unit/MediaDomainTests.cpp
         src/domain/media/Media.h
         src/domain/media/MediaStatus.h
+        src/domain/media/UserListStatus.h
         src/domain/media/MediaType.h
 )
 

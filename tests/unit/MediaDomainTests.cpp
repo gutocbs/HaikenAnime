@@ -20,6 +20,7 @@ void MediaDomainTests::defaultMediaHasSafeNeutralValues() {
     QCOMPARE(media.PersonalScore, 0);
     QCOMPARE(media.Type, MediaType::Unknown);
     QCOMPARE(media.Status, MediaStatus::Unknown);
+    QCOMPARE(media.ListStatus, UserListStatus::Unknown);
 }
 
 QTEST_MAIN(MediaDomainTests)

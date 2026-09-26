@@ -10,14 +10,27 @@ Rectangle {
     property string progress: ""
     property string score: ""
     property bool muted: false
+    property bool selected: false
     property int mediaId: 0
     property url coverSource: "qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg"
     signal coverLoadFailed(int mediaId)
+    signal activated(int mediaId)
 
-    color: muted ? "#f8fafc" : "#ffffff"
+    color: selected ? "#edf4fc" : (muted ? "#f8fafc" : "#ffffff")
     radius: 6
-    border.color: "#e0e6ee"
-    border.width: 1
+    border.color: selected || activeFocus ? "#315d91" : "#e0e6ee"
+    border.width: selected || activeFocus ? 2 : 1
+    activeFocusOnTab: true
+    Accessible.role: Accessible.Button
+    Accessible.name: title
+    Accessible.onPressAction: card.activated(card.mediaId)
+
+    TapHandler {
+        gesturePolicy: TapHandler.ReleaseWithinBounds
+        onTapped: card.activated(card.mediaId)
+    }
+    Keys.onReturnPressed: card.activated(card.mediaId)
+    Keys.onSpacePressed: card.activated(card.mediaId)
 
     RowLayout {
         anchors.fill: parent

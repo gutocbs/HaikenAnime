@@ -92,6 +92,7 @@ bool SqliteDatabase::migrate() {
         "synopsis TEXT,"
         "type INTEGER NOT NULL,"
         "status INTEGER NOT NULL,"
+        "user_list_status INTEGER NOT NULL DEFAULT -1,"
         "source_removed_at TEXT"
         ")"));
     const bool pendingChangesCreated = mediaCreated && query.exec(QStringLiteral(
@@ -124,29 +125,36 @@ bool SqliteDatabase::migrate() {
         "FOREIGN KEY(media_id) REFERENCES media(id) ON DELETE CASCADE"
         ")"));
     bool sourceRemovalColumnExists = false;
+    bool userListStatusColumnExists = false;
     bool sourceRemovalReady = false;
+    bool userListStatusReady = false;
     if (coverCacheCreated && query.exec(QStringLiteral("PRAGMA table_info(media)"))) {
         while (query.next()) {
-            if (query.value(1).toString() == QStringLiteral("source_removed_at")) {
-                sourceRemovalColumnExists = true;
-                break;
-            }
+            const auto column = query.value(1).toString();
+            if (column == QStringLiteral("source_removed_at")) sourceRemovalColumnExists = true;
+            if (column == QStringLiteral("user_list_status")) userListStatusColumnExists = true;
         }
         sourceRemovalReady = sourceRemovalColumnExists
             || query.exec(QStringLiteral("ALTER TABLE media ADD COLUMN source_removed_at TEXT"));
+        userListStatusReady = userListStatusColumnExists
+            || query.exec(QStringLiteral(
+                "ALTER TABLE media ADD COLUMN user_list_status INTEGER NOT NULL DEFAULT -1"));
     }
-    const bool versionInserted = sourceRemovalReady && query.exec(QStringLiteral(
+    const bool versionInserted = sourceRemovalReady && userListStatusReady && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (1)"));
     const bool coverVersionInserted = versionInserted && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (2)"));
     const bool sourceRemovalVersionInserted = coverVersionInserted && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (3)"));
-    const bool versionQueried = sourceRemovalVersionInserted && query.exec(QStringLiteral(
+    const bool userListStatusVersionInserted = sourceRemovalVersionInserted && query.exec(QStringLiteral(
+        "INSERT OR IGNORE INTO schema_version (version) VALUES (4)"));
+    const bool versionQueried = userListStatusVersionInserted && query.exec(QStringLiteral(
         "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 1), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 2), "
-        "EXISTS(SELECT 1 FROM schema_version WHERE version = 3)"));
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 3), "
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 4)"));
     const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool()
-        && query.value(1).toBool() && query.value(2).toBool();
+        && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();
@@ -162,7 +170,7 @@ bool SqliteDatabase::migrate() {
 
     lastError_ = query.lastError().text();
     if (lastError_.isEmpty()) {
-        lastError_ = QStringLiteral("SQLite migration versions 1, 2 and 3 were not recorded.");
+        lastError_ = QStringLiteral("SQLite migration versions 1 through 4 were not recorded.");
     }
     database_.rollback();
     if (logger_) logger_->error(LogCategory::Migration, query.lastError().text());

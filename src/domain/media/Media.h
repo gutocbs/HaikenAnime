@@ -9,6 +9,7 @@
 
 #include "MediaStatus.h"
 #include "MediaType.h"
+#include "UserListStatus.h"
 
 
 class Media {
@@ -26,6 +27,7 @@ public:
     QString CoverUrl;
     QString Synopsis;
     MediaStatus Status = MediaStatus::Unknown;
+    UserListStatus ListStatus = UserListStatus::Unknown;
     MediaType Type = MediaType::Unknown;
 };
 

@@ -81,6 +81,7 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
         query.bindValue(QStringLiteral(":synopsis"), item.Synopsis);
         query.bindValue(QStringLiteral(":type"), static_cast<int>(item.Type));
         query.bindValue(QStringLiteral(":status"), static_cast<int>(item.Status));
+        query.bindValue(QStringLiteral(":user_list_status"), static_cast<int>(item.ListStatus));
 
         if (!query.exec()) {
             error = query.lastError().text();

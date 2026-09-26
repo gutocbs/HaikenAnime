@@ -9,16 +9,16 @@
 namespace {
 const auto UpsertMedia = QStringLiteral(
     "INSERT INTO media (id, name, english_name, original_name, alternative_names, "
-    "total_chapters, average_score, cover_url, synopsis, type, status) "
+    "total_chapters, average_score, cover_url, synopsis, type, status, user_list_status) "
     "VALUES (:id, :name, :english_name, :original_name, :alternative_names, "
-    ":total_chapters, :average_score, :cover_url, :synopsis, :type, :status) "
+    ":total_chapters, :average_score, :cover_url, :synopsis, :type, :status, :user_list_status) "
     "ON CONFLICT(id) DO UPDATE SET name = excluded.name, cover_url = excluded.cover_url, "
     "source_removed_at = NULL");
 
 const auto ReadMedia = QStringLiteral(
     "SELECT id, name, english_name, original_name, alternative_names, total_chapters, "
     "consumed_chapters, next_chapter, average_score, personal_score, cover_url, synopsis, "
-    "type, status FROM media WHERE source_removed_at IS NULL ORDER BY id");
+    "type, status, user_list_status FROM media WHERE source_removed_at IS NULL ORDER BY id");
 
 const auto ReadActiveMediaIds = QStringLiteral(
     "SELECT id FROM media WHERE source_removed_at IS NULL ORDER BY id");
@@ -79,6 +79,7 @@ void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
     expected.Id = 7;
     expected.Name = QStringLiteral("Primary");
     expected.AlternativeNames = {QStringLiteral("Alias A"), QStringLiteral("Alias B")};
+    expected.ListStatus = UserListStatus::Completed;
     QString error;
     QVERIFY(repository.upsert({expected}, error));
 
@@ -86,6 +87,7 @@ void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
     QVERIFY(repository.readAll(actual, error));
     QCOMPARE(actual.size(), 1);
     QCOMPARE(actual.first().AlternativeNames, expected.AlternativeNames);
+    QCOMPARE(actual.first().ListStatus, expected.ListStatus);
 }
 
 void SqliteRepositoryTests::authoritativeSnapshotMarksOnlyUnseenActiveMedia() {

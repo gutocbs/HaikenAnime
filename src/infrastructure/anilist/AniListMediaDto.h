@@ -17,12 +17,15 @@ struct AniListMediaDto {
     QString mediaType;
     QString mediaFormat;
     QString status;
+    QString listStatus;
     QString titleRomaji;
     QString titleEnglish;
     QString titleNative;
     QStringList titleSynonyms;
     std::optional<int> episodes;
     std::optional<int> chapters;
+    std::optional<int> progress;
+    std::optional<int> personalScore;
     std::optional<int> averageScore;
     AniListCoverImagesDto coverImages;
     QString coverImageUrl;

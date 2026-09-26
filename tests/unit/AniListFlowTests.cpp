@@ -81,6 +81,7 @@ void AniListFlowTests::fixtureAppliesFilterAndPagination() {
     QCOMPARE(page.currentPage, 1);
     QVERIFY(page.hasNextPage);
     QCOMPARE(page.media.first().Id, 154587);
+    QCOMPARE(page.media.first().ListStatus, UserListStatus::Current);
 }
 
 void AniListFlowTests::embeddedProductionFixtureCanBeRead() {

@@ -11,6 +11,9 @@
             "media": [
                 {
                     "id": 1,
+                    "progress": 12,
+                    "score": 8,
+                    "userListStatus": "CURRENT",
                     "type": "ANIME",
                     "format": "TV",
                     "status": "FINISHED",
@@ -153,6 +156,7 @@
                 },
                 {
                     "id": 5,
+                    "userListStatus": "PLANNING",
                     "type": "ANIME",
                     "format": "MOVIE",
                     "status": "FINISHED",
@@ -189,6 +193,9 @@
                 },
                 {
                     "id": 6,
+                    "progress": 7,
+                    "score": 9,
+                    "userListStatus": "ON_HOLD",
                     "type": "ANIME",
                     "format": "TV",
                     "status": "FINISHED",
@@ -328,6 +335,7 @@
                 },
                 {
                     "id": 7,
+                    "userListStatus": "DROPPED",
                     "type": "ANIME",
                     "format": "TV",
                     "status": "FINISHED",
@@ -466,6 +474,7 @@
                 },
                 {
                     "id": 8,
+                    "userListStatus": "COMPLETED",
                     "type": "ANIME",
                     "format": "TV",
                     "status": "FINISHED",
@@ -498,6 +507,9 @@
                 },
                 {
                     "id": 15,
+                    "progress": 48,
+                    "score": 7,
+                    "userListStatus": "CURRENT",
                     "type": "ANIME",
                     "format": "TV",
                     "status": "FINISHED",
@@ -1076,6 +1088,8 @@
                 },
                 {
                     "id": 20,
+                    "progress": 135,
+                    "score": 8,
                     "type": "ANIME",
                     "format": "TV",
                     "status": "FINISHED",
@@ -1217,6 +1231,8 @@
                 },
                 {
                     "id": 21,
+                    "progress": 1120,
+                    "score": 9,
                     "type": "ANIME",
                     "format": "TV",
                     "status": "RELEASING",
@@ -2314,6 +2330,8 @@
                 },
                 {
                     "id": 24,
+                    "progress": 26,
+                    "score": 8,
                     "type": "ANIME",
                     "format": "TV",
                     "status": "FINISHED",
@@ -3182,8 +3200,11 @@
                 },
                 {
                     "id": 33,
-                    "type": "ANIME",
-                    "format": "TV",
+                    "progress": 120,
+                    "score": 10,
+                    "userListStatus": "CURRENT",
+                    "type": "MANGA",
+                    "format": "MANGA",
                     "status": "FINISHED",
                     "title": {
                         "romaji": "Kenpuu Denki Berserk",
@@ -3208,8 +3229,8 @@
                         "month": 10,
                         "day": 7
                     },
-                    "episodes": 25,
-                    "chapters": null,
+                    "episodes": null,
+                    "chapters": 364,
                     "volumes": null,
                     "nextAiringEpisode": null,
                     "siteUrl": "https://anilist.co/anime/33",
@@ -3291,8 +3312,11 @@
                 },
                 {
                     "id": 45,
-                    "type": "ANIME",
-                    "format": "TV",
+                    "progress": 86,
+                    "score": 9,
+                    "userListStatus": "COMPLETED",
+                    "type": "MANGA",
+                    "format": "MANGA",
                     "status": "FINISHED",
                     "title": {
                         "romaji": "Rurouni Kenshin: Meiji Kenkaku Romantan",
@@ -3319,8 +3343,8 @@
                         "month": 1,
                         "day": 10
                     },
-                    "episodes": 94,
-                    "chapters": null,
+                    "episodes": null,
+                    "chapters": 255,
                     "volumes": null,
                     "nextAiringEpisode": null,
                     "siteUrl": "https://anilist.co/anime/45",
@@ -3502,8 +3526,11 @@
                 },
                 {
                     "id": 48,
-                    "type": "ANIME",
-                    "format": "TV",
+                    "progress": 2,
+                    "score": 8,
+                    "userListStatus": "CURRENT",
+                    "type": "MANGA",
+                    "format": "NOVEL",
                     "status": "FINISHED",
                     "title": {
                         "romaji": ".hack//SIGN",
@@ -3523,8 +3550,8 @@
                         "month": 4,
                         "day": 4
                     },
-                    "episodes": 26,
-                    "chapters": null,
+                    "episodes": null,
+                    "chapters": 6,
                     "volumes": null,
                     "nextAiringEpisode": null,
                     "siteUrl": "https://anilist.co/anime/48",
@@ -3599,8 +3626,11 @@
                 },
                 {
                     "id": 51,
-                    "type": "ANIME",
-                    "format": "OVA",
+                    "progress": 5,
+                    "score": 6,
+                    "userListStatus": "ON_HOLD",
+                    "type": "MANGA",
+                    "format": "NOVEL",
                     "status": "FINISHED",
                     "title": {
                         "romaji": "Tenshi Kinryouku",
@@ -3620,8 +3650,8 @@
                         "month": 5,
                         "day": 25
                     },
-                    "episodes": 3,
-                    "chapters": null,
+                    "episodes": null,
+                    "chapters": 20,
                     "volumes": null,
                     "nextAiringEpisode": null,
                     "siteUrl": "https://anilist.co/anime/51",
@@ -3956,8 +3986,11 @@
                 },
                 {
                     "id": 59,
-                    "type": "ANIME",
-                    "format": "TV",
+                    "progress": 32,
+                    "score": 7,
+                    "userListStatus": "PLANNING",
+                    "type": "MANGA",
+                    "format": "MANGA",
                     "status": "FINISHED",
                     "title": {
                         "romaji": "Chobits",
@@ -3977,8 +4010,8 @@
                         "month": 4,
                         "day": 3
                     },
-                    "episodes": 26,
-                    "chapters": null,
+                    "episodes": null,
+                    "chapters": 88,
                     "volumes": null,
                     "nextAiringEpisode": null,
                     "siteUrl": "https://anilist.co/anime/59",
@@ -4083,8 +4116,11 @@
                 },
                 {
                     "id": 60,
-                    "type": "ANIME",
-                    "format": "TV",
+                    "progress": 3,
+                    "score": 7,
+                    "userListStatus": "DROPPED",
+                    "type": "MANGA",
+                    "format": "NOVEL",
                     "status": "FINISHED",
                     "title": {
                         "romaji": "Chrno Crusade",
@@ -4107,8 +4143,8 @@
                         "month": 11,
                         "day": 24
                     },
-                    "episodes": 24,
-                    "chapters": null,
+                    "episodes": null,
+                    "chapters": 8,
                     "volumes": null,
                     "nextAiringEpisode": null,
                     "siteUrl": "https://anilist.co/anime/60",
