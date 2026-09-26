@@ -6,7 +6,7 @@
 
 **Architecture:** `AniListSyncService` will explicitly invoke an `IMediaSnapshotReconciler` only after a successful page-1-through-final-page synchronization and pending-change processing. `SqliteMediaRepository` will implement that capability transactionally using external SQL, while schema version 3 adds nullable `media.source_removed_at` and active reads filter removed rows.
 
-**Tech Stack:** C++17, Qt 6 Core/Sql/Test, SQLite, CMake/CTest, GraphQL JSON fixtures
+**Tech Stack:** C++20, Qt 6 Core/Sql/Test, SQLite, CMake/CTest, GraphQL JSON fixtures
 
 **Spec:** `docs/superpowers/specs/2026-09-25-anilist-authoritative-snapshot-reconciliation-design.md`
 
