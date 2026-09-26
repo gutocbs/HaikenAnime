@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <QFile>
 
 #include "../../src/infrastructure/anilist/AniListGraphQlPageParser.h"
 #include "../../src/infrastructure/anilist/AniListGraphQlResponseParser.h"
@@ -15,6 +16,7 @@ private slots:
     void rejectsMalformedPageInsteadOfReturningAnEmptySuccess();
     void preservesEveryCoverVariant();
     void fallsBackToAvailableLargeCoverWhenMediumIsMissing();
+    void recordedLibraryFixtureIsComplete();
 };
 
 void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
@@ -139,6 +141,18 @@ void AniListGraphQlParsingTests::fallsBackToAvailableLargeCoverWhenMediumIsMissi
 
     QCOMPARE(AniListMediaMapper::SelectCoverUrl(images, CoverQuality::Medium),
              QStringLiteral("https://img/large.jpg"));
+}
+
+void AniListGraphQlParsingTests::recordedLibraryFixtureIsComplete() {
+    QFile file(QStringLiteral(HAIKENANIME_GRAPHQL_FIXTURE));
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    AniListGraphQlResponse response;
+    QString error;
+    QVERIFY2(AniListGraphQlResponseParser::parse(file.readAll(), response, error), qPrintable(error));
+    MediaPage page;
+    QVERIFY2(AniListGraphQlPageParser::parse(response.data, page, error), qPrintable(error));
+    QCOMPARE(page.currentPage, 1);
+    QVERIFY(!page.hasNextPage);
 }
 
 QTEST_MAIN(AniListGraphQlParsingTests)

@@ -16,10 +16,14 @@
 
 InitialSyncCoordinator::InitialSyncCoordinator(QString databasePath, QString fixturePath,
                                                QString upsertQueryPath, QString readQueryPath,
+                                               QString readActiveMediaIdsQueryPath,
+                                               QString markSourceRemovedQueryPath,
                                                const int syncTimeoutMs, const int syncIntervalMs,
                                                QObject *parent)
     : QObject(parent), databasePath_(std::move(databasePath)), fixturePath_(std::move(fixturePath)),
       upsertQueryPath_(std::move(upsertQueryPath)), readQueryPath_(std::move(readQueryPath)),
+      readActiveMediaIdsQueryPath_(std::move(readActiveMediaIdsQueryPath)),
+      markSourceRemovedQueryPath_(std::move(markSourceRemovedQueryPath)),
       syncTimeoutMs_(syncTimeoutMs), syncIntervalMs_(syncIntervalMs),
       scheduler_(new QTimer(this)) {
     scheduler_->setSingleShot(false);
@@ -100,20 +104,27 @@ bool InitialSyncCoordinator::performSynchronization(QString &error) const {
 
     QString upsertQuery;
     QString readQuery;
+    QString readActiveMediaIdsQuery;
+    QString markSourceRemovedQuery;
     SqlQueryStore upsertStore(upsertQueryPath_);
     SqlQueryStore readStore(readQueryPath_);
+    SqlQueryStore readActiveMediaIdsStore(readActiveMediaIdsQueryPath_);
+    SqlQueryStore markSourceRemovedStore(markSourceRemovedQueryPath_);
     upsertStore.setLogger(logger_);
     readStore.setLogger(logger_);
     if (!upsertStore.load(upsertQuery, error)
-        || !readStore.load(readQuery, error)) {
+        || !readStore.load(readQuery, error)
+        || !readActiveMediaIdsStore.load(readActiveMediaIdsQuery, error)
+        || !markSourceRemovedStore.load(markSourceRemovedQuery, error)) {
         return false;
     }
 
     SqliteMediaRepository repository(database.connection(), std::move(upsertQuery),
-                                     std::move(readQuery));
+                                     std::move(readQuery), std::move(readActiveMediaIdsQuery),
+                                     std::move(markSourceRemovedQuery));
     repository.setLogger(logger_);
     RecordedGraphQlAniListDataSource source(QDir::cleanPath(fixturePath_));
-    AniListSyncService service(source, repository, nullptr, syncTimeoutMs_);
+    AniListSyncService service(source, repository, &repository, nullptr, syncTimeoutMs_);
     MediaSyncFilter filter;
     return service.synchronize(filter, error);
 }

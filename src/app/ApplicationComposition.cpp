@@ -60,6 +60,8 @@ ApplicationContext createApplicationContext() {
 
     QString upsertQuery;
     QString readQuery;
+    QString readActiveMediaIdsQuery;
+    QString markSourceRemovedQuery;
     QString enqueuePendingQuery;
     QString readPendingQuery;
     QString updatePendingQuery;
@@ -75,10 +77,14 @@ ApplicationContext createApplicationContext() {
     }
     SqlQueryStore upsertStore(queryConfiguration.upsertMediaPath);
     SqlQueryStore readStore(queryConfiguration.readMediaPath);
+    SqlQueryStore readActiveMediaIdsStore(queryConfiguration.readActiveMediaIdsPath);
+    SqlQueryStore markSourceRemovedStore(queryConfiguration.markMediaSourceRemovedPath);
     upsertStore.setLogger(context.logger.get());
     readStore.setLogger(context.logger.get());
     if (!upsertStore.load(upsertQuery, queryError)
-        || !readStore.load(readQuery, queryError)) {
+        || !readStore.load(readQuery, queryError)
+        || !readActiveMediaIdsStore.load(readActiveMediaIdsQuery, queryError)
+        || !markSourceRemovedStore.load(markSourceRemovedQuery, queryError)) {
         context.logger->error(LogCategory::QueryStore, queryError);
         context.initializationError = initializationFailure(
             QStringLiteral("loading the configured media queries"), queryError);
@@ -99,7 +105,8 @@ ApplicationContext createApplicationContext() {
     }
 
     auto mediaRepository = std::make_unique<SqliteMediaRepository>(
-        context.database->connection(), std::move(upsertQuery), std::move(readQuery));
+        context.database->connection(), std::move(upsertQuery), std::move(readQuery),
+        std::move(readActiveMediaIdsQuery), std::move(markSourceRemovedQuery));
     mediaRepository->setLogger(context.logger.get());
     context.mediaRepository = std::move(mediaRepository);
     context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(
@@ -133,6 +140,8 @@ ApplicationContext createApplicationContext() {
         context.database->databasePath(),
         QStringLiteral(":/fixtures/graphql/page-response.json"),
         queryConfiguration.upsertMediaPath, queryConfiguration.readMediaPath,
+        queryConfiguration.readActiveMediaIdsPath,
+        queryConfiguration.markMediaSourceRemovedPath,
         settings.syncTimeoutMs, settings.syncIntervalMs);
     context.initialSync->setLogger(context.logger.get());
     context.logger->info(LogCategory::Application, QStringLiteral("Application composition completed."));

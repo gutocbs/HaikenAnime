@@ -190,11 +190,28 @@ void InitialSyncCoordinatorTests::synchronizesRealGraphQlFixtureIntoDatabase() {
     QTemporaryDir directory;
     QVERIFY(directory.isValid());
     const auto sourceRoot = QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR);
+    const auto databasePath = directory.filePath(QStringLiteral("library.sqlite"));
+    {
+        SqliteDatabase seed(databasePath);
+        QVERIFY(seed.open());
+        QVERIFY(seed.migrate());
+        QSqlQuery insert(seed.connection());
+        QVERIFY(insert.exec(QStringLiteral(
+            "INSERT INTO media (id, name, alternative_names, consumed_chapters, personal_score, "
+            "cover_url, type, status) VALUES (30002, 'Stale fixture media', '[]', 12, 90, "
+            "'https://example.invalid/images/30002.png', 1, 1)")));
+        QVERIFY(insert.exec(QStringLiteral(
+            "INSERT INTO cover_cache (media_id, remote_url, quality, relative_path, mime_type, "
+            "byte_size, validated_at) VALUES (30002, 'https://example.invalid/images/30002.png', "
+            "'medium', 'covers/30002.png', 'image/png', 10, '2026-09-25T00:00:00Z')")));
+    }
     InitialSyncCoordinator coordinator(
-        directory.filePath(QStringLiteral("library.sqlite")),
+        databasePath,
         QDir(sourceRoot).filePath(QStringLiteral("tests/fixtures/graphql/page-response.json")),
         QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/upsert-media.sql")),
         QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/read-media.sql")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/read-active-media-ids.sql")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/mark-media-source-removed.sql")),
         60000, 60000);
     QSignalSpy completedSpy(&coordinator, &InitialSyncCoordinator::completed);
     QSignalSpy failedSpy(&coordinator, &InitialSyncCoordinator::failed);
@@ -205,10 +222,11 @@ void InitialSyncCoordinatorTests::synchronizesRealGraphQlFixtureIntoDatabase() {
         : qPrintable(failedSpy.first().first().toString()));
     coordinator.shutdown();
 
-    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    SqliteDatabase database(databasePath);
     QVERIFY2(database.open(), qPrintable(database.lastError()));
     QSqlQuery countQuery(database.connection());
-    QVERIFY(countQuery.exec(QStringLiteral("SELECT COUNT(*) FROM media")));
+    QVERIFY(countQuery.exec(QStringLiteral(
+        "SELECT COUNT(*) FROM media WHERE source_removed_at IS NULL")));
     QVERIFY(countQuery.next());
     QCOMPARE(countQuery.value(0).toInt(), 50);
 
@@ -218,6 +236,18 @@ void InitialSyncCoordinatorTests::synchronizesRealGraphQlFixtureIntoDatabase() {
     QCOMPARE(mediaQuery.value(0).toString(), QStringLiteral("Cowboy Bebop"));
     QCOMPARE(mediaQuery.value(1).toString(),
              QStringLiteral("https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx1-GCsPm7waJ4kS.png"));
+
+    QSqlQuery removed(database.connection());
+    QVERIFY(removed.exec(QStringLiteral(
+        "SELECT consumed_chapters, personal_score, source_removed_at FROM media WHERE id = 30002")));
+    QVERIFY(removed.next());
+    QCOMPARE(removed.value(0).toInt(), 12);
+    QCOMPARE(removed.value(1).toInt(), 90);
+    QVERIFY(!removed.value(2).isNull());
+    QSqlQuery cover(database.connection());
+    QVERIFY(cover.exec(QStringLiteral("SELECT COUNT(*) FROM cover_cache WHERE media_id = 30002")));
+    QVERIFY(cover.next());
+    QCOMPARE(cover.value(0).toInt(), 1);
 }
 
 QTEST_MAIN(InitialSyncCoordinatorTests)

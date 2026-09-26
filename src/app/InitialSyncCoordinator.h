@@ -17,6 +17,8 @@ public:
 
     explicit InitialSyncCoordinator(QString databasePath, QString fixturePath,
                                     QString upsertQueryPath, QString readQueryPath,
+                                    QString readActiveMediaIdsQueryPath,
+                                    QString markSourceRemovedQueryPath,
                                     int syncTimeoutMs = 60000,
                                     int syncIntervalMs = 3600000,
                                     QObject *parent = nullptr);
@@ -40,6 +42,8 @@ private:
     QString fixturePath_;
     QString upsertQueryPath_;
     QString readQueryPath_;
+    QString readActiveMediaIdsQueryPath_;
+    QString markSourceRemovedQueryPath_;
     int syncTimeoutMs_;
     int syncIntervalMs_;
     QTimer *scheduler_ = nullptr;

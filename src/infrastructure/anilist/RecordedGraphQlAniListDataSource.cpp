@@ -41,9 +41,5 @@ bool RecordedGraphQlAniListDataSource::fetchPage(const MediaSyncFilter &filter,
         return false;
     }
 
-    // A recorded response represents only the captured page. Following the
-    // remote hasNextPage flag would replay the same payload for later pages.
-    result.hasNextPage = false;
-    result.totalPages = result.currentPage;
     return true;
 }

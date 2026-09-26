@@ -4,7 +4,7 @@
             "pageInfo": {
                 "currentPage": 1,
                 "lastPage": 100,
-                "hasNextPage": true,
+                "hasNextPage": false,
                 "total": 5000,
                 "perPage": 50
             },

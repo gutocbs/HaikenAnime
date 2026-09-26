@@ -84,6 +84,7 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/media/IMediaRepository.h
         src/application/media/IMediaReader.h
         src/application/media/IMediaWriter.h
+        src/application/media/IMediaSnapshotReconciler.h
         src/application/anilist/AniListSyncService.h
         src/application/anilist/AniListSyncService.cpp
         src/application/anilist/AniListSyncErrorClassifier.h
@@ -164,6 +165,12 @@ set_source_files_properties(
         resources/sqlite/queries/read-media.sql
         PROPERTIES QT_RESOURCE_ALIAS "read-media.sql")
 set_source_files_properties(
+        resources/sqlite/queries/read-active-media-ids.sql
+        PROPERTIES QT_RESOURCE_ALIAS "read-active-media-ids.sql")
+set_source_files_properties(
+        resources/sqlite/queries/mark-media-source-removed.sql
+        PROPERTIES QT_RESOURCE_ALIAS "mark-media-source-removed.sql")
+set_source_files_properties(
         resources/sqlite/queries/enqueue-pending-change.sql
         PROPERTIES QT_RESOURCE_ALIAS "enqueue-pending-change.sql")
 set_source_files_properties(
@@ -200,6 +207,8 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         resources/sqlite/sqlite-queries.json
         resources/sqlite/queries/upsert-media.sql
         resources/sqlite/queries/read-media.sql
+        resources/sqlite/queries/read-active-media-ids.sql
+        resources/sqlite/queries/mark-media-source-removed.sql
         resources/sqlite/queries/enqueue-pending-change.sql
         resources/sqlite/queries/read-pending-changes.sql
         resources/sqlite/queries/update-pending-change.sql
@@ -490,6 +499,11 @@ target_link_libraries(AniListGraphQlParsingTests
         PRIVATE
         Qt6::Core
         Qt6::Test
+)
+
+target_compile_definitions(AniListGraphQlParsingTests
+        PRIVATE
+        HAIKENANIME_GRAPHQL_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/page-response.json"
 )
 
 add_test(NAME AniListGraphQlParsingTests COMMAND AniListGraphQlParsingTests)

@@ -60,7 +60,7 @@ Este arquivo registra melhorias, endurecimentos e integrações que não fazem p
 - Substituir o schema hardcoded em um único método por migrações versionadas em arquivos SQL, com sequência explícita (`1 -> 2 -> 3`), checksum e rejeição de versões futuras. A validação atual garante apenas que a versão declarada foi realmente registrada; ela ainda não constitui um mecanismo completo de evolução do schema.
 - Garantir foreign keys, `WAL`, `busy_timeout` e transações conforme o uso real.
 - Definir regras completas para não sobrescrever progresso, nota e arquivos locais do usuário.
-- Implementar limpeza ou reconciliação de mídias removidas da lista remota.
+- Exibir futuramente mídias removidas na fonte e permitir exclusão permanente sob ação explícita do usuário; a exclusão lógica e a reativação por snapshot completo já estão implementadas.
 - Criar índices para os filtros e buscas mais frequentes.
 
 ## Sincronização
@@ -109,10 +109,9 @@ As regras de merge serão definidas por campo ou grupo de campos, e não por uma
 
 ### Exclusões
 
-- Exclusões remotas não serão aplicadas automaticamente.
-- O sistema deverá registrar a exclusão como pendência que exige confirmação do usuário.
-- A confirmação deverá ser persistida antes de remover a mídia ou seus dados locais.
-- Uma configuração futura poderá permitir aceitar exclusões automaticamente; essa opção permanece fora do escopo inicial.
+- Ausências em uma sincronização completa e autoritativa serão tratadas como exclusão lógica na fonte.
+- Mídias removidas logicamente preservarão dados locais e capas e serão reativadas caso reapareçam.
+- Criar futuramente uma visualização de mídias removidas e uma ação explícita de exclusão permanente.
 
 ## Scheduler
 
