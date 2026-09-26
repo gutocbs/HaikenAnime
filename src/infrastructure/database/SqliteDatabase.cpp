@@ -176,21 +176,49 @@ bool SqliteDatabase::migrate() {
         "INSERT OR IGNORE INTO schema_version (version) VALUES (5)"));
     const bool coverVariantsVersionInserted = userPreferencesVersionInserted && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (6)"));
-    const bool versionQueried = coverVariantsVersionInserted && query.exec(QStringLiteral(
+    const bool libraryScansCreated = coverVariantsVersionInserted && query.exec(QStringLiteral(
+        "CREATE TABLE IF NOT EXISTS library_scans ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "root_path TEXT NOT NULL,"
+        "started_at TEXT NOT NULL,"
+        "finished_at TEXT,"
+        "status TEXT NOT NULL CHECK (status IN ('running', 'succeeded', 'failed', 'interrupted')),"
+        "observed_count INTEGER NOT NULL DEFAULT 0 CHECK (observed_count >= 0),"
+        "diagnostic TEXT NOT NULL DEFAULT '')"));
+    const bool localFilesCreated = libraryScansCreated && query.exec(QStringLiteral(
+        "CREATE TABLE IF NOT EXISTS local_files ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+        "root_path TEXT NOT NULL,"
+        "relative_path TEXT NOT NULL,"
+        "normalized_relative_path TEXT NOT NULL,"
+        "file_name TEXT NOT NULL,"
+        "extension TEXT NOT NULL,"
+        "size_bytes INTEGER NOT NULL CHECK (size_bytes >= 0),"
+        "modified_at TEXT NOT NULL,"
+        "available INTEGER NOT NULL DEFAULT 1 CHECK (available IN (0, 1)),"
+        "last_seen_scan_id INTEGER NOT NULL REFERENCES library_scans(id),"
+        "recognition_state TEXT NOT NULL DEFAULT 'unprocessed' "
+        "CHECK (recognition_state IN ('unprocessed', 'recognized', 'unrecognized', 'associated')),"
+        "UNIQUE(root_path, normalized_relative_path))"));
+    const bool inventoryVersionInserted = localFilesCreated && query.exec(QStringLiteral(
+        "INSERT OR IGNORE INTO schema_version (version) VALUES (7)"));
+    const bool versionQueried = inventoryVersionInserted && query.exec(QStringLiteral(
         "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 1), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 2), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 3), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 4), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 5), "
-        "EXISTS(SELECT 1 FROM schema_version WHERE version = 6)"));
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 6), "
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 7)"));
     const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool()
         && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
-        && query.value(4).toBool() && query.value(5).toBool();
+        && query.value(4).toBool() && query.value(5).toBool() && query.value(6).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();
         if (!committed) {
             lastError_ = database_.lastError().text();
+            database_.rollback();
         }
         if (logger_) {
             committed ? logger_->info(LogCategory::Migration, QStringLiteral("SQLite migration completed."))
@@ -201,7 +229,7 @@ bool SqliteDatabase::migrate() {
 
     lastError_ = query.lastError().text();
     if (lastError_.isEmpty()) {
-        lastError_ = QStringLiteral("SQLite migration versions 1 through 6 were not recorded.");
+        lastError_ = QStringLiteral("SQLite migration versions 1 through 7 were not recorded.");
     }
     database_.rollback();
     if (logger_) logger_->error(LogCategory::Migration, query.lastError().text());

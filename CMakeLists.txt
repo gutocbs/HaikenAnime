@@ -129,6 +129,10 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqliteCoverCacheRepository.h
         src/infrastructure/database/SqliteCoverCacheRepository.cpp
+        src/domain/library/LocalFileRecord.h
+        src/application/library/ILocalFileRepository.h
+        src/infrastructure/database/SqliteLocalFileRepository.h
+        src/infrastructure/database/SqliteLocalFileRepository.cpp
         src/infrastructure/database/SqliteUserPreferencesRepository.h
         src/infrastructure/database/SqliteUserPreferencesRepository.cpp
         src/infrastructure/database/SqlQueryStore.h
@@ -207,6 +211,18 @@ set_source_files_properties(
 set_source_files_properties(
         resources/sqlite/queries/upsert-user-preferences.sql
         PROPERTIES QT_RESOURCE_ALIAS "upsert-user-preferences.sql")
+set(LIBRARY_SCAN_SQL_RESOURCES
+        resources/sqlite/queries/begin-library-scan.sql
+        resources/sqlite/queries/upsert-local-file.sql
+        resources/sqlite/queries/complete-library-scan.sql
+        resources/sqlite/queries/fail-library-scan.sql
+        resources/sqlite/queries/mark-local-files-unavailable.sql
+)
+foreach (QUERY_FILE IN LISTS LIBRARY_SCAN_SQL_RESOURCES)
+    get_filename_component(QUERY_ALIAS "${QUERY_FILE}" NAME)
+    set_source_files_properties("${QUERY_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${QUERY_ALIAS}")
+endforeach ()
+
 set_source_files_properties(
         Settings.json
         PROPERTIES QT_RESOURCE_ALIAS "Settings.json")
@@ -220,6 +236,7 @@ set_source_files_properties(
 qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
         FILES
+        ${LIBRARY_SCAN_SQL_RESOURCES}
         resources/sqlite/sqlite-queries.json
         resources/sqlite/queries/upsert-media.sql
         resources/sqlite/queries/read-media.sql
@@ -360,6 +377,19 @@ target_link_libraries(SqliteCoverCacheRepositoryTests
 
 add_test(NAME SqliteCoverCacheRepositoryTests COMMAND SqliteCoverCacheRepositoryTests)
 
+add_executable(SqliteLocalFileRepositoryTests
+        tests/unit/SqliteLocalFileRepositoryTests.cpp
+        src/infrastructure/database/SqliteLocalFileRepository.cpp
+        src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+qt_add_resources(SqliteLocalFileRepositoryTests library_scan_test_resources
+        PREFIX "/sqlite/queries"
+        FILES ${LIBRARY_SCAN_SQL_RESOURCES}
+)
+target_link_libraries(SqliteLocalFileRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
+add_test(NAME SqliteLocalFileRepositoryTests COMMAND SqliteLocalFileRepositoryTests)
+
 add_executable(SqlQueryStoreTests
         tests/unit/SqlQueryStoreTests.cpp
         src/infrastructure/database/SqlQueryStore.h
@@ -386,7 +416,7 @@ add_executable(SqliteQueryConfigurationTests
 
 qt_add_resources(SqliteQueryConfigurationTests sqlite_query_configuration_test_resources
         PREFIX "/sqlite/queries"
-        FILES resources/sqlite/sqlite-queries.json
+        FILES resources/sqlite/sqlite-queries.json ${LIBRARY_SCAN_SQL_RESOURCES}
 )
 
 target_link_libraries(SqliteQueryConfigurationTests
@@ -736,6 +766,7 @@ set(HAIKENANIME_TESTS
         SqliteUserPreferencesRepositoryTests
         SqliteRepositoryTests
         SqliteCoverCacheRepositoryTests
+        SqliteLocalFileRepositoryTests
         SqlQueryStoreTests
         SqliteQueryConfigurationTests
         FileSecretStoreTests
