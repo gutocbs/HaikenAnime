@@ -425,6 +425,9 @@ target_link_libraries(JsonSettingsReaderTests
 )
 
 add_test(NAME JsonSettingsReaderTests COMMAND JsonSettingsReaderTests)
+target_compile_definitions(JsonSettingsReaderTests PRIVATE
+        HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
 add_executable(UserPreferencesValidatorTests
         tests/unit/UserPreferencesValidatorTests.cpp

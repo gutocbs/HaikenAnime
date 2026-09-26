@@ -2,6 +2,7 @@
 #include "../../application/configuration/UserPreferencesValidator.h"
 
 #include <QFile>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 
@@ -86,15 +87,46 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
     const auto scorePreferencesValue = userPreferences.value(QStringLiteral("score"));
     const auto coverPreferencesValue = userPreferences.value(QStringLiteral("covers"));
     const auto syncPreferencesValue = userPreferences.value(QStringLiteral("sync"));
+    const auto libraryPreferencesValue = userPreferences.value(QStringLiteral("library"));
     if ((!scorePreferencesValue.isUndefined() && !scorePreferencesValue.isObject())
         || (!coverPreferencesValue.isUndefined() && !coverPreferencesValue.isObject())
-        || (!syncPreferencesValue.isUndefined() && !syncPreferencesValue.isObject())) {
+        || (!syncPreferencesValue.isUndefined() && !syncPreferencesValue.isObject())
+        || (!libraryPreferencesValue.isUndefined() && !libraryPreferencesValue.isObject())) {
         error = QStringLiteral("Settings.json user preference sections must be objects.");
         return false;
     }
     const auto scorePreferences = scorePreferencesValue.toObject();
     const auto coverPreferences = coverPreferencesValue.toObject();
     const auto syncPreferences = syncPreferencesValue.toObject();
+    const auto libraryPreferences = libraryPreferencesValue.toObject();
+    const auto libraryRoot = libraryPreferences.value(QStringLiteral("root"));
+    if (!libraryRoot.isUndefined()) {
+        if (!libraryRoot.isString()) {
+            error = QStringLiteral("Settings.json library root must be a string.");
+            return false;
+        }
+        settings.userPreferences.libraryRoot = libraryRoot.toString();
+    }
+    const auto scanExtensions = libraryPreferences.value(QStringLiteral("extensions"));
+    if (!scanExtensions.isUndefined()) {
+        if (!scanExtensions.isArray()) {
+            error = QStringLiteral("Settings.json scan extensions must be an array of strings.");
+            return false;
+        }
+        QStringList extensions;
+        for (const auto &extension : scanExtensions.toArray()) {
+            if (!extension.isString()) {
+                error = QStringLiteral("Settings.json scan extensions must be strings.");
+                return false;
+            }
+            extensions.append(extension.toString());
+        }
+        settings.userPreferences.scanExtensions = NormalizeScanExtensions(extensions, error);
+        if (!error.isEmpty()) {
+            error = QStringLiteral("Settings.json contains invalid scan extensions: %1").arg(error);
+            return false;
+        }
+    }
     const auto coverQuality = covers.value(QStringLiteral("quality"));
     if (!coverQuality.isUndefined()) {
         if (!coverQuality.isString()) {

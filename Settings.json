@@ -27,6 +27,10 @@
     "retentionDays": 7
   },
   "userPreferences": {
+    "library": {
+      "root": "Q:\\",
+      "extensions": [".mkv", ".mp4", ".avi", ".webm", ".m4v", ".mov", ".wmv", ".ts"]
+    },
     "score": {
       "minimum": 0,
       "maximum": 10,

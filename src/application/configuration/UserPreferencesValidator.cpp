@@ -1,6 +1,40 @@
 #include "UserPreferencesValidator.h"
 
+#include <QSet>
+
 #include <cmath>
+
+QStringList NormalizeScanExtensions(const QStringList &extensions, QString &error) {
+    error.clear();
+    if (extensions.isEmpty()) {
+        error = QStringLiteral("At least one scan extension must be selected.");
+        return {};
+    }
+    QStringList normalized;
+    QSet<QString> seen;
+    for (const auto &extension : extensions) {
+        auto value = extension.trimmed().toLower();
+        if (value.contains(QLatin1Char('/')) || value.contains(QLatin1Char('\\'))) {
+            error = QStringLiteral("Scan extensions must not contain path separators.");
+            return {};
+        }
+        while (value.startsWith(QLatin1Char('.'))) {
+            value.remove(0, 1);
+        }
+        if (value.trimmed().isEmpty()) {
+            error = QStringLiteral("Scan extensions must not be empty.");
+            return {};
+        }
+        value.prepend(QLatin1Char('.'));
+        if (seen.contains(value)) {
+            error = QStringLiteral("Scan extensions must not contain duplicates.");
+            return {};
+        }
+        seen.insert(value);
+        normalized.append(value);
+    }
+    return normalized;
+}
 
 UserPreferencesValidationResult ValidateUserPreferences(const UserPreferences &preferences) {
     const auto finite = [](const double value) { return std::isfinite(value); };
@@ -27,6 +61,13 @@ UserPreferencesValidationResult ValidateUserPreferences(const UserPreferences &p
     if (preferences.synchronizationIntervalMs < MinimumSynchronizationIntervalMs
         || preferences.synchronizationIntervalMs > MaximumSynchronizationIntervalMs) {
         return {false, QStringLiteral("Synchronization interval is outside the supported range.")};
+    }
+    if (preferences.libraryRoot.trimmed().isEmpty()) {
+        return {false, QStringLiteral("Library root must not be empty.")};
+    }
+    QString extensionError;
+    if (NormalizeScanExtensions(preferences.scanExtensions, extensionError).isEmpty()) {
+        return {false, extensionError};
     }
     return {true, {}};
 }

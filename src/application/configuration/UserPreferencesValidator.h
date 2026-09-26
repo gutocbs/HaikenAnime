@@ -16,4 +16,9 @@ struct UserPreferencesValidationResult final {
 [[nodiscard]] UserPreferencesValidationResult ValidateUserPreferences(
     const UserPreferences &preferences);
 
+// Trims and lowercases extensions, replacing leading periods with one period.
+// Returns an empty list and sets error for empty selections/values, separators,
+// or duplicates after normalization; clears error on success.
+[[nodiscard]] QStringList NormalizeScanExtensions(const QStringList &extensions, QString &error);
+
 #endif
