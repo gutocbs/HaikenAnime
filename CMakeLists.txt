@@ -131,6 +131,13 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqliteCoverCacheRepository.cpp
         src/domain/library/LocalFileRecord.h
         src/application/library/ILocalFileRepository.h
+        src/application/library/LocalLibraryScanTypes.h
+        src/application/library/ILocalLibraryScanner.h
+        src/infrastructure/library/IDirectoryEnumerator.h
+        src/infrastructure/library/QtDirectoryEnumerator.h
+        src/infrastructure/library/QtDirectoryEnumerator.cpp
+        src/infrastructure/library/LocalLibraryScanner.h
+        src/infrastructure/library/LocalLibraryScanner.cpp
         src/infrastructure/database/SqliteLocalFileRepository.h
         src/infrastructure/database/SqliteLocalFileRepository.cpp
         src/infrastructure/database/SqliteUserPreferencesRepository.h
@@ -389,6 +396,12 @@ qt_add_resources(SqliteLocalFileRepositoryTests library_scan_test_resources
 )
 target_link_libraries(SqliteLocalFileRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
 add_test(NAME SqliteLocalFileRepositoryTests COMMAND SqliteLocalFileRepositoryTests)
+
+add_executable(LocalLibraryScannerTests tests/unit/LocalLibraryScannerTests.cpp
+        src/infrastructure/library/LocalLibraryScanner.cpp
+        src/infrastructure/library/QtDirectoryEnumerator.cpp)
+target_link_libraries(LocalLibraryScannerTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME LocalLibraryScannerTests COMMAND LocalLibraryScannerTests)
 
 add_executable(SqlQueryStoreTests
         tests/unit/SqlQueryStoreTests.cpp
@@ -767,6 +780,7 @@ set(HAIKENANIME_TESTS
         SqliteRepositoryTests
         SqliteCoverCacheRepositoryTests
         SqliteLocalFileRepositoryTests
+        LocalLibraryScannerTests
         SqlQueryStoreTests
         SqliteQueryConfigurationTests
         FileSecretStoreTests
