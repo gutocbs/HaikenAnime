@@ -59,6 +59,7 @@ private slots:
     void rejectsInvalidPaginationBeforeReading();
     void rejectsDataSourceThatDoesNotReturnRequestedPage();
     void completePageOneSynchronizationReconcilesUniqueObservedIds();
+    void filteredSynchronizationDoesNotReconcile();
     void synchronizationStartingAfterPageOneDoesNotReconcile();
 };
 
@@ -172,13 +173,26 @@ void AniListFlowTests::completePageOneSynchronizationReconcilesUniqueObservedIds
     RecordingSnapshotReconciler reconciler;
     AniListSyncService service(source, writer, &reconciler);
     MediaSyncFilter filter;
+    filter.perPage = 2;
+    QString error;
+
+    QVERIFY2(service.synchronize(filter, error), qPrintable(error));
+    QCOMPARE(reconciler.calls, 1);
+    QVERIFY(reconciler.observedIds.contains(154587));
+}
+
+void AniListFlowTests::filteredSynchronizationDoesNotReconcile() {
+    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
+    CollectingWriter writer;
+    RecordingSnapshotReconciler reconciler;
+    AniListSyncService service(source, writer, &reconciler);
+    MediaSyncFilter filter;
     filter.type = QStringLiteral("TV");
     filter.perPage = 1;
     QString error;
 
     QVERIFY2(service.synchronize(filter, error), qPrintable(error));
-    QCOMPARE(reconciler.calls, 1);
-    QCOMPARE(reconciler.observedIds, QSet<int>({154587, 116807}));
+    QCOMPARE(reconciler.calls, 0);
 }
 
 void AniListFlowTests::synchronizationStartingAfterPageOneDoesNotReconcile() {
