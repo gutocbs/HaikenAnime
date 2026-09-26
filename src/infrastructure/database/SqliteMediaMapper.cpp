@@ -21,9 +21,12 @@ Media SqliteMediaMapper::Map(const QSqlQuery &query) {
     media.AverageScore = query.value(8).toInt();
     media.PersonalScore = query.value(9).toInt();
     media.CoverUrl = query.value(10).toString();
-    media.Synopsis = query.value(11).toString();
-    media.Type = static_cast<MediaType>(query.value(12).toInt());
-    media.Status = static_cast<MediaStatus>(query.value(13).toInt());
-    media.ListStatus = static_cast<UserListStatus>(query.value(14).toInt());
+    media.CoverMediumUrl = query.value(11).toString();
+    media.CoverLargeUrl = query.value(12).toString();
+    media.CoverExtraLargeUrl = query.value(13).toString();
+    media.Synopsis = query.value(14).toString();
+    media.Type = static_cast<MediaType>(query.value(15).toInt());
+    media.Status = static_cast<MediaStatus>(query.value(16).toInt());
+    media.ListStatus = static_cast<UserListStatus>(query.value(17).toInt());
     return media;
 }

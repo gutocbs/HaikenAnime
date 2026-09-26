@@ -17,8 +17,9 @@ public:
 
 class InertCoverDownloader final : public ICoverDownloader {
 public:
-    quint64 Start(const CoverRequest &, Completion) override { return 1; }
+    quint64 Start(const CoverRequest &request, Completion) override { requests.append(request); return 1; }
     void Cancel(quint64) override {}
+    QList<CoverRequest> requests;
 };
 
 class MemoryCoverCache final : public ICoverCacheRepository {
@@ -59,9 +60,36 @@ private slots:
     void searchesAllKnownTitlesCaseInsensitively();
     void clearsBrowseCriteriaWithoutChangingMediaType();
     void selectsMediaAndExposesItsDetails();
+    void exposesConfigurableEditingOptions();
     void selectedCoverFallsBackWhenCachedFileIsMissing();
     void updatesOnlyOneCoverRowAndPreservesOldCoverOnFailure();
+    void coverQualityChangesFutureRequestsWithoutClearingDisplayedCover();
 };
+
+void HomeScreenControllerTests::coverQualityChangesFutureRequestsWithoutClearingDisplayedCover() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.CoverUrl = QStringLiteral("https://img/original.jpg");
+    media.CoverMediumUrl = QStringLiteral("https://img/medium.jpg");
+    media.CoverLargeUrl = QStringLiteral("https://img/large.jpg");
+    reader.result.append(media);
+    InertCoverDownloader downloader;
+    MemoryCoverCache cache;
+    ExistingCoverFiles files;
+    CoverSettings settings;
+    CoverDownloadCoordinator covers(downloader, cache, files, settings);
+    HomeScreenController controller(&reader, &covers, CoverQuality::Medium);
+    controller.reload();
+    controller.RequestCoverWindow(QStringLiteral("preview"), 0, 0, 0);
+    QCOMPARE(downloader.requests.constLast().remoteUrl, QUrl(media.CoverMediumUrl));
+
+    controller.ConfigureCoverQuality(CoverQuality::Large);
+    controller.RequestCoverWindow(QStringLiteral("preview"), 0, 0, 0);
+    QCOMPARE(downloader.requests.constLast().remoteUrl, QUrl(media.CoverLargeUrl));
+}
 
 void HomeScreenControllerTests::exposesReadyMedia() {
     FakeMediaReader reader;
@@ -71,6 +99,8 @@ void HomeScreenControllerTests::exposesReadyMedia() {
     media.TotalChapters = 28;
     media.ConsumedChapters = 12;
     media.PersonalScore = 9;
+    media.ListStatus = UserListStatus::Current;
+    media.AlternativeNames = {QStringLiteral("Frieren at the Funeral"), QStringLiteral("Frieren")};
     media.Type = MediaType::Anime;
     reader.result.append(media);
 
@@ -376,6 +406,8 @@ void HomeScreenControllerTests::selectsMediaAndExposesItsDetails() {
     media.ConsumedChapters = 12;
     media.AverageScore = 88;
     media.PersonalScore = 9;
+    media.ListStatus = UserListStatus::Current;
+    media.AlternativeNames = {QStringLiteral("Frieren at the Funeral"), QStringLiteral("Frieren")};
     reader.result.append(media);
     HomeScreenController controller(reader);
     controller.reload();
@@ -390,11 +422,31 @@ void HomeScreenControllerTests::selectsMediaAndExposesItsDetails() {
     QCOMPARE(controller.selectedStatusLabel(), QStringLiteral("Concluído"));
     QCOMPARE(controller.selectedProgress(), QStringLiteral("12/28"));
     QCOMPARE(controller.selectedScore(), QStringLiteral("9"));
+    QCOMPARE(controller.selectedProgressValue(), 12);
+    QCOMPARE(controller.selectedProgressMaximum(), 28);
+    QCOMPARE(controller.selectedScoreValue(), 9.0);
+    QCOMPARE(controller.selectedListStatusKey(), QStringLiteral("current"));
+    QCOMPARE(controller.selectedAlternativeNames(), media.AlternativeNames);
 
     controller.SetMediaType(QStringLiteral("manga"));
     QVERIFY(!controller.hasSelection());
     QCOMPARE(controller.filteredMediaCount(), 0);
     QCOMPARE(controller.state(), QStringLiteral("ready"));
+}
+
+void HomeScreenControllerTests::exposesConfigurableEditingOptions() {
+    FakeMediaReader reader;
+    HomeScreenController controller(reader);
+
+    QCOMPARE(controller.scoreMinimum(), 0.0);
+    QCOMPARE(controller.scoreMaximum(), 10.0);
+    QCOMPARE(controller.scoreStep(), 1.0);
+
+    controller.ConfigureScoreScale(0.0, 100.0, 5.0);
+
+    QCOMPARE(controller.scoreMinimum(), 0.0);
+    QCOMPARE(controller.scoreMaximum(), 100.0);
+    QCOMPARE(controller.scoreStep(), 5.0);
 }
 
 void HomeScreenControllerTests::selectedCoverFallsBackWhenCachedFileIsMissing() {

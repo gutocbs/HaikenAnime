@@ -25,5 +25,19 @@
   },
   "logging": {
     "retentionDays": 7
+  },
+  "userPreferences": {
+    "score": {
+      "minimum": 0,
+      "maximum": 10,
+      "step": 1
+    },
+    "covers": {
+      "quality": "medium"
+    },
+    "sync": {
+      "enabled": true,
+      "intervalMs": 3600000
+    }
   }
 }

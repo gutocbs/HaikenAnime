@@ -49,6 +49,23 @@ void InitialSyncCoordinator::setLogger(AsyncLogger *logger) {
     logger_ = logger;
 }
 
+void InitialSyncCoordinator::configureAutomaticSynchronization(const bool enabled,
+                                                               const int intervalMs) {
+    automaticSynchronizationEnabled_ = enabled;
+    if (intervalMs > 0) syncIntervalMs_ = intervalMs;
+    scheduler_->setInterval(syncIntervalMs_);
+    scheduler_->stop();
+    if (enabled && !stopping_ && !executionActive_) scheduler_->start();
+}
+
+bool InitialSyncCoordinator::automaticSynchronizationEnabled() const {
+    return automaticSynchronizationEnabled_;
+}
+
+int InitialSyncCoordinator::synchronizationIntervalMs() const {
+    return syncIntervalMs_;
+}
+
 void InitialSyncCoordinator::start() {
     if (stopping_ || executionActive_) {
         return;
@@ -75,7 +92,8 @@ void InitialSyncCoordinator::start() {
         QMetaObject::invokeMethod(this, [this, error = std::move(error)]() {
             executionActive_ = false;
             error.isEmpty() ? emit completed() : emit failed(error);
-            if (!stopping_ && scheduler_ && !scheduler_->isActive()) {
+            if (!stopping_ && automaticSynchronizationEnabled_
+                && scheduler_ && !scheduler_->isActive()) {
                 scheduler_->start();
             }
         }, Qt::QueuedConnection);

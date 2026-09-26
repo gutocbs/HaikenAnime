@@ -89,6 +89,9 @@ bool SqliteDatabase::migrate() {
         "average_score INTEGER NOT NULL DEFAULT 0,"
         "personal_score INTEGER NOT NULL DEFAULT 0,"
         "cover_url TEXT,"
+        "cover_medium_url TEXT,"
+        "cover_large_url TEXT,"
+        "cover_extra_large_url TEXT,"
         "synopsis TEXT,"
         "type INTEGER NOT NULL,"
         "status INTEGER NOT NULL,"
@@ -124,15 +127,30 @@ bool SqliteDatabase::migrate() {
         "validated_at TEXT NOT NULL,"
         "FOREIGN KEY(media_id) REFERENCES media(id) ON DELETE CASCADE"
         ")"));
+    const bool userPreferencesCreated = coverCacheCreated && query.exec(QStringLiteral(
+        "CREATE TABLE IF NOT EXISTS user_preferences ("
+        "id INTEGER PRIMARY KEY CHECK (id = 1),"
+        "score_minimum REAL NOT NULL,"
+        "score_maximum REAL NOT NULL,"
+        "score_step REAL NOT NULL,"
+        "cover_quality TEXT NOT NULL,"
+        "synchronization_enabled INTEGER NOT NULL CHECK (synchronization_enabled IN (0, 1)),"
+        "synchronization_interval_ms INTEGER NOT NULL)"));
     bool sourceRemovalColumnExists = false;
     bool userListStatusColumnExists = false;
+    bool coverMediumColumnExists = false;
+    bool coverLargeColumnExists = false;
+    bool coverExtraLargeColumnExists = false;
     bool sourceRemovalReady = false;
     bool userListStatusReady = false;
-    if (coverCacheCreated && query.exec(QStringLiteral("PRAGMA table_info(media)"))) {
+    if (userPreferencesCreated && query.exec(QStringLiteral("PRAGMA table_info(media)"))) {
         while (query.next()) {
             const auto column = query.value(1).toString();
             if (column == QStringLiteral("source_removed_at")) sourceRemovalColumnExists = true;
             if (column == QStringLiteral("user_list_status")) userListStatusColumnExists = true;
+            if (column == QStringLiteral("cover_medium_url")) coverMediumColumnExists = true;
+            if (column == QStringLiteral("cover_large_url")) coverLargeColumnExists = true;
+            if (column == QStringLiteral("cover_extra_large_url")) coverExtraLargeColumnExists = true;
         }
         sourceRemovalReady = sourceRemovalColumnExists
             || query.exec(QStringLiteral("ALTER TABLE media ADD COLUMN source_removed_at TEXT"));
@@ -140,7 +158,13 @@ bool SqliteDatabase::migrate() {
             || query.exec(QStringLiteral(
                 "ALTER TABLE media ADD COLUMN user_list_status INTEGER NOT NULL DEFAULT -1"));
     }
-    const bool versionInserted = sourceRemovalReady && userListStatusReady && query.exec(QStringLiteral(
+    const bool coverMediumReady = coverMediumColumnExists
+        || query.exec(QStringLiteral("ALTER TABLE media ADD COLUMN cover_medium_url TEXT"));
+    const bool coverLargeReady = coverMediumReady && (coverLargeColumnExists
+        || query.exec(QStringLiteral("ALTER TABLE media ADD COLUMN cover_large_url TEXT")));
+    const bool coverExtraLargeReady = coverLargeReady && (coverExtraLargeColumnExists
+        || query.exec(QStringLiteral("ALTER TABLE media ADD COLUMN cover_extra_large_url TEXT")));
+    const bool versionInserted = sourceRemovalReady && userListStatusReady && coverExtraLargeReady && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (1)"));
     const bool coverVersionInserted = versionInserted && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (2)"));
@@ -148,13 +172,20 @@ bool SqliteDatabase::migrate() {
         "INSERT OR IGNORE INTO schema_version (version) VALUES (3)"));
     const bool userListStatusVersionInserted = sourceRemovalVersionInserted && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (4)"));
-    const bool versionQueried = userListStatusVersionInserted && query.exec(QStringLiteral(
+    const bool userPreferencesVersionInserted = userListStatusVersionInserted && query.exec(QStringLiteral(
+        "INSERT OR IGNORE INTO schema_version (version) VALUES (5)"));
+    const bool coverVariantsVersionInserted = userPreferencesVersionInserted && query.exec(QStringLiteral(
+        "INSERT OR IGNORE INTO schema_version (version) VALUES (6)"));
+    const bool versionQueried = coverVariantsVersionInserted && query.exec(QStringLiteral(
         "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 1), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 2), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 3), "
-        "EXISTS(SELECT 1 FROM schema_version WHERE version = 4)"));
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 4), "
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 5), "
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 6)"));
     const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool()
-        && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool();
+        && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
+        && query.value(4).toBool() && query.value(5).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();
@@ -170,7 +201,7 @@ bool SqliteDatabase::migrate() {
 
     lastError_ = query.lastError().text();
     if (lastError_.isEmpty()) {
-        lastError_ = QStringLiteral("SQLite migration versions 1 through 4 were not recorded.");
+        lastError_ = QStringLiteral("SQLite migration versions 1 through 6 were not recorded.");
     }
     database_.rollback();
     if (logger_) logger_->error(LogCategory::Migration, query.lastError().text());

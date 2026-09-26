@@ -1,4 +1,5 @@
 #include "HomeScreenController.h"
+#include "../../application/covers/CoverSourceResolver.h"
 
 #include <QCoreApplication>
 #include <QVariant>
@@ -311,6 +312,33 @@ QString HomeScreenController::selectedAverageScore() const {
     return hasSelection_ && selectedMedia_.AverageScore > 0 ? QString::number(selectedMedia_.AverageScore) : QStringLiteral("—");
 }
 QString HomeScreenController::selectedCoverSource() const { return selectedCoverSource_; }
+int HomeScreenController::selectedProgressValue() const { return hasSelection_ ? selectedMedia_.ConsumedChapters : 0; }
+int HomeScreenController::selectedProgressMaximum() const { return hasSelection_ ? selectedMedia_.TotalChapters : 0; }
+double HomeScreenController::selectedScoreValue() const { return hasSelection_ ? selectedMedia_.PersonalScore : 0.0; }
+QString HomeScreenController::selectedListStatusKey() const {
+    return hasSelection_ ? userListStatusKey(selectedMedia_.ListStatus) : QString();
+}
+QStringList HomeScreenController::selectedAlternativeNames() const {
+    return hasSelection_ ? selectedMedia_.AlternativeNames : QStringList{};
+}
+double HomeScreenController::scoreMinimum() const { return scoreMinimum_; }
+double HomeScreenController::scoreMaximum() const { return scoreMaximum_; }
+double HomeScreenController::scoreStep() const { return scoreStep_; }
+
+void HomeScreenController::ConfigureScoreScale(const double minimum, const double maximum,
+                                               const double step) {
+    if (maximum <= minimum || step <= 0.0) return;
+    if (qFuzzyCompare(scoreMinimum_, minimum) && qFuzzyCompare(scoreMaximum_, maximum)
+        && qFuzzyCompare(scoreStep_, step)) return;
+    scoreMinimum_ = minimum;
+    scoreMaximum_ = maximum;
+    scoreStep_ = step;
+    emit editingOptionsChanged();
+}
+
+void HomeScreenController::ConfigureCoverQuality(const CoverQuality quality) {
+    coverQuality_ = quality;
+}
 
 void HomeScreenController::ConfigureBrowseOptions(QVariantList mediaTypeOptions,
                                                   QVariantList listOptions,
@@ -511,8 +539,9 @@ void HomeScreenController::RequestCoverWindow(const QString &scope, int firstVis
     QList<CoverRequest> visible, prefetch;
     auto request = [&](int index, CoverPriority priority) {
         const auto &media = rows[index];
-        if (!media.CoverUrl.isEmpty()) (priority == CoverPriority::Visible ? visible : prefetch)
-            .append({media.Id, QUrl(media.CoverUrl), coverQuality_, priority, 0});
+        const auto source = ResolveCoverSource(media, coverQuality_);
+        if (!source.isEmpty()) (priority == CoverPriority::Visible ? visible : prefetch)
+            .append({media.Id, QUrl(source), coverQuality_, priority, 0});
     };
     for (int i=first;i<=last;++i) request(i,CoverPriority::Visible);
     for (int i=last+1;i<qMin(rows.size(),last+1+qMax(0,prefetchCount));++i) request(i,CoverPriority::Prefetch);

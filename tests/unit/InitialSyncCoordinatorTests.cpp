@@ -39,8 +39,42 @@ private slots:
     void completionDuringShutdownDoesNotRestartScheduler();
     void shutdownFromStartedSignalPreventsWork();
     void recursiveStartFromStartedSignalDoesNotStartTwice();
+    void configuresAutomaticSynchronizationAtRuntime();
+    void disablingDuringActiveSynchronizationPreventsRestart();
     void synchronizesRealGraphQlFixtureIntoDatabase();
 };
+
+void InitialSyncCoordinatorTests::configuresAutomaticSynchronizationAtRuntime() {
+    InitialSyncCoordinator coordinator([](QString &) { return true; }, 60000);
+    coordinator.configureAutomaticSynchronization(false, 1800000);
+    QVERIFY(!coordinator.automaticSynchronizationEnabled());
+    QCOMPARE(coordinator.synchronizationIntervalMs(), 1800000);
+    coordinator.configureAutomaticSynchronization(true, 3600000);
+    QVERIFY(coordinator.automaticSynchronizationEnabled());
+    QCOMPARE(coordinator.synchronizationIntervalMs(), 3600000);
+    coordinator.shutdown();
+}
+
+void InitialSyncCoordinatorTests::disablingDuringActiveSynchronizationPreventsRestart() {
+    std::atomic_int calls = 0;
+    QSemaphore entered;
+    QSemaphore release;
+    InitialSyncCoordinator coordinator([&](QString &) {
+        ++calls;
+        entered.release();
+        release.acquire();
+        return true;
+    }, 10);
+    SemaphoreReleaseGuard guard(release);
+    coordinator.configureAutomaticSynchronization(true, 10);
+    coordinator.start();
+    QVERIFY(entered.tryAcquire(1, 1000));
+    coordinator.configureAutomaticSynchronization(false, 10);
+    release.release();
+    QTest::qWait(50);
+    QCOMPARE(calls.load(), 1);
+    coordinator.shutdown();
+}
 
 void InitialSyncCoordinatorTests::doesNotRunConcurrentSynchronizations() {
     std::atomic_int calls = 0;

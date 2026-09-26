@@ -27,6 +27,9 @@ public:
                                     QObject *parent = nullptr);
     ~InitialSyncCoordinator() override;
     void setLogger(AsyncLogger *logger);
+    void configureAutomaticSynchronization(bool enabled, int intervalMs);
+    [[nodiscard]] bool automaticSynchronizationEnabled() const;
+    [[nodiscard]] int synchronizationIntervalMs() const;
 public slots:
     void start();
     void shutdown();
@@ -52,6 +55,7 @@ private:
     SyncOperation operation_;
     bool executionActive_ = false;
     bool stopping_ = false;
+    bool automaticSynchronizationEnabled_ = true;
 };
 
 #endif

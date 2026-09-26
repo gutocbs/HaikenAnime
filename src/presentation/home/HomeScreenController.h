@@ -70,6 +70,14 @@ class HomeScreenController final : public QObject {
     Q_PROPERTY(QString selectedScore READ selectedScore NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedAverageScore READ selectedAverageScore NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedCoverSource READ selectedCoverSource NOTIFY selectionChanged)
+    Q_PROPERTY(int selectedProgressValue READ selectedProgressValue NOTIFY selectionChanged)
+    Q_PROPERTY(int selectedProgressMaximum READ selectedProgressMaximum NOTIFY selectionChanged)
+    Q_PROPERTY(double selectedScoreValue READ selectedScoreValue NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedListStatusKey READ selectedListStatusKey NOTIFY selectionChanged)
+    Q_PROPERTY(QStringList selectedAlternativeNames READ selectedAlternativeNames NOTIFY selectionChanged)
+    Q_PROPERTY(double scoreMinimum READ scoreMinimum NOTIFY editingOptionsChanged)
+    Q_PROPERTY(double scoreMaximum READ scoreMaximum NOTIFY editingOptionsChanged)
+    Q_PROPERTY(double scoreStep READ scoreStep NOTIFY editingOptionsChanged)
 
 public:
     explicit HomeScreenController(IMediaReader &reader, QObject *parent = nullptr);
@@ -104,9 +112,19 @@ public:
     QString selectedScore() const;
     QString selectedAverageScore() const;
     QString selectedCoverSource() const;
+    int selectedProgressValue() const;
+    int selectedProgressMaximum() const;
+    double selectedScoreValue() const;
+    QString selectedListStatusKey() const;
+    QStringList selectedAlternativeNames() const;
+    double scoreMinimum() const;
+    double scoreMaximum() const;
+    double scoreStep() const;
 
     void ConfigureBrowseOptions(QVariantList mediaTypeOptions, QVariantList listOptions,
                                 QVariantList sortOptions);
+    void ConfigureScoreScale(double minimum, double maximum, double step);
+    void ConfigureCoverQuality(CoverQuality quality);
 
     void reload();
     void notifySynchronizationCompleted();
@@ -133,6 +151,7 @@ signals:
     void activeMediaTypeChanged();
     void browseOptionsChanged();
     void browseCriteriaChanged();
+    void editingOptionsChanged();
     void selectionChanged();
 
 private:
@@ -163,6 +182,9 @@ private:
     Media selectedMedia_;
     bool hasSelection_ = false;
     QString selectedCoverSource_ = QStringLiteral("qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg");
+    double scoreMinimum_ = 0.0;
+    double scoreMaximum_ = 10.0;
+    double scoreStep_ = 1.0;
 };
 
 #endif // HAIKENANIME_HOMESCREENCONTROLLER_H

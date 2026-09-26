@@ -1,4 +1,5 @@
 #include "JsonSettingsReader.h"
+#include "../../application/configuration/UserPreferencesValidator.h"
 
 #include <QFile>
 #include <QJsonDocument>
@@ -25,6 +26,20 @@ bool readInteger(const QJsonObject &object, const QString &key, const int defaul
         return false;
     }
     result = static_cast<int>(number);
+    return true;
+}
+
+bool readDouble(const QJsonObject &object, const QString &key, const double defaultValue,
+                double &result) {
+    const auto value = object.value(key);
+    if (value.isUndefined()) {
+        result = defaultValue;
+        return true;
+    }
+    if (!value.isDouble() || !std::isfinite(value.toDouble())) {
+        return false;
+    }
+    result = value.toDouble();
     return true;
 }
 }
@@ -62,6 +77,24 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
     const auto sync = root.value(QStringLiteral("sync")).toObject();
     const auto logging = root.value(QStringLiteral("logging")).toObject();
     const auto covers = root.value(QStringLiteral("covers")).toObject();
+    const auto userPreferencesValue = root.value(QStringLiteral("userPreferences"));
+    if (!userPreferencesValue.isUndefined() && !userPreferencesValue.isObject()) {
+        error = QStringLiteral("Settings.json userPreferences must be an object.");
+        return false;
+    }
+    const auto userPreferences = userPreferencesValue.toObject();
+    const auto scorePreferencesValue = userPreferences.value(QStringLiteral("score"));
+    const auto coverPreferencesValue = userPreferences.value(QStringLiteral("covers"));
+    const auto syncPreferencesValue = userPreferences.value(QStringLiteral("sync"));
+    if ((!scorePreferencesValue.isUndefined() && !scorePreferencesValue.isObject())
+        || (!coverPreferencesValue.isUndefined() && !coverPreferencesValue.isObject())
+        || (!syncPreferencesValue.isUndefined() && !syncPreferencesValue.isObject())) {
+        error = QStringLiteral("Settings.json user preference sections must be objects.");
+        return false;
+    }
+    const auto scorePreferences = scorePreferencesValue.toObject();
+    const auto coverPreferences = coverPreferencesValue.toObject();
+    const auto syncPreferences = syncPreferencesValue.toObject();
     const auto coverQuality = covers.value(QStringLiteral("quality"));
     if (!coverQuality.isUndefined()) {
         if (!coverQuality.isString()) {
@@ -74,6 +107,27 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
             return false;
         }
         settings.covers.quality = parsedQuality.value();
+    }
+    const auto userCoverQualityValue = coverPreferences.value(QStringLiteral("quality"));
+    if (!userCoverQualityValue.isUndefined()) {
+        if (!userCoverQualityValue.isString()) {
+            error = QStringLiteral("Settings.json user cover quality must be a string.");
+            return false;
+        }
+        const auto parsedQuality = ParseCoverQuality(userCoverQualityValue.toString());
+        if (!parsedQuality.has_value()) {
+            error = QStringLiteral("Settings.json contains an unsupported user cover quality.");
+            return false;
+        }
+        settings.userPreferences.coverQuality = parsedQuality.value();
+    }
+    const auto syncEnabled = syncPreferences.value(QStringLiteral("enabled"));
+    if (!syncEnabled.isUndefined()) {
+        if (!syncEnabled.isBool()) {
+            error = QStringLiteral("Settings.json user synchronization enabled must be boolean.");
+            return false;
+        }
+        settings.userPreferences.synchronizationEnabled = syncEnabled.toBool();
     }
     if (!readInteger(http, QStringLiteral("timeoutMs"), 30000, settings.http.timeoutMs)
         || !readInteger(http, QStringLiteral("maxRetries"), 2, settings.http.maxRetries)
@@ -99,7 +153,15 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
         || !readInteger(covers, QStringLiteral("maxDimension"), 4096,
                         settings.covers.maxDimension)
         || !readInteger(covers, QStringLiteral("failureCooldownMs"), 5 * 60 * 1000,
-                        settings.covers.failureCooldownMs)) {
+                        settings.covers.failureCooldownMs)
+        || !readDouble(scorePreferences, QStringLiteral("minimum"), 0.0,
+                       settings.userPreferences.scoreMinimum)
+        || !readDouble(scorePreferences, QStringLiteral("maximum"), 10.0,
+                       settings.userPreferences.scoreMaximum)
+        || !readDouble(scorePreferences, QStringLiteral("step"), 1.0,
+                       settings.userPreferences.scoreStep)
+        || !readInteger(syncPreferences, QStringLiteral("intervalMs"), 3600000,
+                        settings.userPreferences.synchronizationIntervalMs)) {
         error = QStringLiteral("Settings.json numeric settings must contain whole numbers.");
         return false;
     }
@@ -121,6 +183,12 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
         || settings.covers.maxDimension < settings.covers.minDimension
         || settings.covers.failureCooldownMs < 0) {
         error = QStringLiteral("Settings.json contains invalid cover settings.");
+        return false;
+    }
+    const auto preferenceValidation = ValidateUserPreferences(settings.userPreferences);
+    if (!preferenceValidation.valid) {
+        error = QStringLiteral("Settings.json contains invalid user preferences: %1")
+                    .arg(preferenceValidation.error);
         return false;
     }
 

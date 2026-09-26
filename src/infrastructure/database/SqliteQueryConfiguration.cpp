@@ -19,6 +19,8 @@ bool SqliteQueryConfiguration::load(QString &error) {
     upsertCoverCachePath.clear();
     deleteCoverCachePath.clear();
     clearCoverCachePath.clear();
+    readUserPreferencesPath.clear();
+    upsertUserPreferencesPath.clear();
     error.clear();
     const auto configurationPath = QStringLiteral(":/sqlite/queries/sqlite-queries.json");
     QFile file(configurationPath);
@@ -50,11 +52,14 @@ bool SqliteQueryConfiguration::load(QString &error) {
     upsertCoverCachePath = queries.value(QStringLiteral("upsertCoverCache")).toString();
     deleteCoverCachePath = queries.value(QStringLiteral("deleteCoverCache")).toString();
     clearCoverCachePath = queries.value(QStringLiteral("clearCoverCache")).toString();
+    readUserPreferencesPath = queries.value(QStringLiteral("readUserPreferences")).toString();
+    upsertUserPreferencesPath = queries.value(QStringLiteral("upsertUserPreferences")).toString();
     if (upsertMediaPath.isEmpty() || readMediaPath.isEmpty() || readActiveMediaIdsPath.isEmpty()
         || markMediaSourceRemovedPath.isEmpty() || enqueuePendingChangePath.isEmpty()
         || readPendingChangesPath.isEmpty() || updatePendingChangePath.isEmpty()
         || readCoverCachePath.isEmpty() || upsertCoverCachePath.isEmpty()
-        || deleteCoverCachePath.isEmpty() || clearCoverCachePath.isEmpty()) {
+        || deleteCoverCachePath.isEmpty() || clearCoverCachePath.isEmpty()
+        || readUserPreferencesPath.isEmpty() || upsertUserPreferencesPath.isEmpty()) {
         error = QStringLiteral("SQLite query configuration is incomplete.");
         if (logger) logger->error(LogCategory::QueryConfiguration, error);
         return false;

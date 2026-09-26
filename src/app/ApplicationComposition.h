@@ -9,6 +9,8 @@
 #include "InitialSyncCoordinator.h"
 #include "../infrastructure/logging/AsyncLogger.h"
 #include "../application/covers/CoverDownloadCoordinator.h"
+#include "../application/configuration/IUserPreferencesRepository.h"
+#include "../application/configuration/UserPreferences.h"
 
 
 struct ApplicationContext final {
@@ -21,6 +23,8 @@ struct ApplicationContext final {
     std::unique_ptr<ICoverFileStore> coverFileStore;
     std::unique_ptr<ICoverDownloader> coverDownloader;
     std::unique_ptr<CoverDownloadCoordinator> coverCoordinator;
+    std::unique_ptr<IUserPreferencesRepository> userPreferencesRepository;
+    UserPreferences userPreferences;
     CoverQuality coverQuality = CoverQuality::Medium;
     QString initializationError;
 

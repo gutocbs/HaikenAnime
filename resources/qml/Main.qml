@@ -18,7 +18,17 @@ ApplicationWindow {
     palette.buttonText: "#172033"
     palette.highlight: "#315d91"
 
+    property bool showingSettings: false
+
     Home {
         anchors.fill: parent
+        visible: !root.showingSettings
+        onOpenSettingsRequested: root.showingSettings = true
+    }
+
+    SettingsScreen {
+        anchors.fill: parent
+        visible: root.showingSettings
+        onBackRequested: root.showingSettings = false
     }
 }

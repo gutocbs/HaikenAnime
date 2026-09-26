@@ -70,8 +70,13 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/configuration/AniListSettings.h
         src/application/configuration/HttpSettings.h
         src/application/configuration/Settings.h
+        src/application/configuration/UserPreferences.h
+        src/application/configuration/UserPreferencesValidator.h
+        src/application/configuration/UserPreferencesValidator.cpp
         src/application/covers/CoverQuality.h
         src/application/covers/CoverSettings.h
+        src/application/covers/CoverSourceResolver.h
+        src/application/covers/CoverSourceResolver.cpp
         src/application/covers/CoverCacheEntry.h
         src/application/covers/ICoverCacheRepository.h
         src/application/covers/ICoverFileStore.h
@@ -124,6 +129,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqliteCoverCacheRepository.h
         src/infrastructure/database/SqliteCoverCacheRepository.cpp
+        src/infrastructure/database/SqliteUserPreferencesRepository.h
+        src/infrastructure/database/SqliteUserPreferencesRepository.cpp
         src/infrastructure/database/SqlQueryStore.h
         src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/database/SqliteQueryConfiguration.h
@@ -154,6 +161,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/logging/AsyncLogger.cpp
         src/presentation/home/HomeScreenController.h
         src/presentation/home/HomeScreenController.cpp
+        src/presentation/settings/SettingsController.h
+        src/presentation/settings/SettingsController.cpp
 )
 
 set_source_files_properties(
@@ -193,6 +202,12 @@ set_source_files_properties(
         resources/sqlite/queries/clear-cover-cache.sql
         PROPERTIES QT_RESOURCE_ALIAS "clear-cover-cache.sql")
 set_source_files_properties(
+        resources/sqlite/queries/read-user-preferences.sql
+        PROPERTIES QT_RESOURCE_ALIAS "read-user-preferences.sql")
+set_source_files_properties(
+        resources/sqlite/queries/upsert-user-preferences.sql
+        PROPERTIES QT_RESOURCE_ALIAS "upsert-user-preferences.sql")
+set_source_files_properties(
         Settings.json
         PROPERTIES QT_RESOURCE_ALIAS "Settings.json")
 set_source_files_properties(
@@ -217,6 +232,8 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         resources/sqlite/queries/upsert-cover-cache.sql
         resources/sqlite/queries/delete-cover-cache.sql
         resources/sqlite/queries/clear-cover-cache.sql
+        resources/sqlite/queries/read-user-preferences.sql
+        resources/sqlite/queries/upsert-user-preferences.sql
 )
 
 qt_add_resources(HaikenAnime application_config_resource
@@ -238,7 +255,9 @@ qt_add_qml_module(HaikenAnime
         QML_FILES
         resources/qml/Main.qml
         resources/qml/Home.qml
+        resources/qml/SettingsScreen.qml
         resources/qml/BrowseControls.qml
+        resources/qml/EditMediaPanel.qml
         resources/qml/MediaCard.qml
         resources/qml/StatePanel.qml
         RESOURCES resources/images/cover-placeholder.svg
@@ -288,6 +307,16 @@ target_link_libraries(SqliteDatabaseTests
 )
 
 add_test(NAME SqliteDatabaseTests COMMAND SqliteDatabaseTests)
+
+add_executable(SqliteUserPreferencesRepositoryTests
+        tests/unit/SqliteUserPreferencesRepositoryTests.cpp
+        src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/database/SqliteUserPreferencesRepository.cpp
+        src/application/configuration/UserPreferencesValidator.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+target_link_libraries(SqliteUserPreferencesRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
+add_test(NAME SqliteUserPreferencesRepositoryTests COMMAND SqliteUserPreferencesRepositoryTests)
 
 add_executable(SqliteRepositoryTests
         tests/unit/SqliteRepositoryTests.cpp
@@ -386,6 +415,7 @@ add_executable(JsonSettingsReaderTests
         tests/unit/JsonSettingsReaderTests.cpp
         src/infrastructure/configuration/JsonSettingsReader.h
         src/infrastructure/configuration/JsonSettingsReader.cpp
+        src/application/configuration/UserPreferencesValidator.cpp
 )
 
 target_link_libraries(JsonSettingsReaderTests
@@ -395,6 +425,13 @@ target_link_libraries(JsonSettingsReaderTests
 )
 
 add_test(NAME JsonSettingsReaderTests COMMAND JsonSettingsReaderTests)
+
+add_executable(UserPreferencesValidatorTests
+        tests/unit/UserPreferencesValidatorTests.cpp
+        src/application/configuration/UserPreferencesValidator.cpp
+)
+target_link_libraries(UserPreferencesValidatorTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME UserPreferencesValidatorTests COMMAND UserPreferencesValidatorTests)
 
 add_executable(CoverSettingsTests
         tests/unit/CoverSettingsTests.cpp
@@ -407,6 +444,13 @@ target_link_libraries(CoverSettingsTests
 )
 
 add_test(NAME CoverSettingsTests COMMAND CoverSettingsTests)
+
+add_executable(CoverSourceResolverTests
+        tests/unit/CoverSourceResolverTests.cpp
+        src/application/covers/CoverSourceResolver.cpp
+)
+target_link_libraries(CoverSourceResolverTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME CoverSourceResolverTests COMMAND CoverSourceResolverTests)
 
 add_executable(CoverFileStoreTests
         tests/unit/CoverFileStoreTests.cpp
@@ -610,6 +654,7 @@ add_executable(HomeScreenControllerTests
         src/presentation/home/HomeScreenController.cpp
         src/application/covers/CoverDownloadCoordinator.h
         src/application/covers/CoverDownloadCoordinator.cpp
+        src/application/covers/CoverSourceResolver.cpp
         src/infrastructure/logging/AsyncLogger.cpp
 )
 
@@ -620,6 +665,14 @@ target_link_libraries(HomeScreenControllerTests
 )
 
 add_test(NAME HomeScreenControllerTests COMMAND HomeScreenControllerTests)
+
+add_executable(SettingsControllerTests
+        tests/unit/SettingsControllerTests.cpp
+        src/presentation/settings/SettingsController.cpp
+        src/application/configuration/UserPreferencesValidator.cpp
+)
+target_link_libraries(SettingsControllerTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME SettingsControllerTests COMMAND SettingsControllerTests)
 
 add_executable(InitialSyncCoordinatorTests
         tests/unit/InitialSyncCoordinatorTests.cpp
@@ -677,13 +730,16 @@ add_test(NAME InitialSyncCoordinatorTests COMMAND InitialSyncCoordinatorTests)
 set(HAIKENANIME_TESTS
         MediaDomainTests
         SqliteDatabaseTests
+        SqliteUserPreferencesRepositoryTests
         SqliteRepositoryTests
         SqliteCoverCacheRepositoryTests
         SqlQueryStoreTests
         SqliteQueryConfigurationTests
         FileSecretStoreTests
         JsonSettingsReaderTests
+        UserPreferencesValidatorTests
         CoverSettingsTests
+        CoverSourceResolverTests
         CoverFileStoreTests
         CoverDownloadCoordinatorTests
         QtCoverDownloaderTests
@@ -697,6 +753,7 @@ set(HAIKENANIME_TESTS
         AniListMergeServiceTests
         AniListPendingChangeProcessorTests
         HomeScreenControllerTests
+        SettingsControllerTests
         InitialSyncCoordinatorTests
 )
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES

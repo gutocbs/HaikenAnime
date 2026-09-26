@@ -21,6 +21,7 @@ private slots:
     void migrationCreatesCoverCacheVersionTwo();
     void migrationCreatesSourceRemovalVersionThree();
     void migrationUpgradesVersionTwoWithoutDataLoss();
+    void migrationCreatesUserPreferencesVersionFive();
 };
 
 void SqliteDatabaseTests::opensAndCreatesDatabaseFile() {
@@ -68,6 +69,8 @@ void SqliteDatabaseTests::migrationCreatesMediaSchema() {
         QStringLiteral("total_chapters"), QStringLiteral("consumed_chapters"),
         QStringLiteral("next_chapter"), QStringLiteral("average_score"),
         QStringLiteral("personal_score"), QStringLiteral("cover_url"),
+        QStringLiteral("cover_medium_url"), QStringLiteral("cover_large_url"),
+        QStringLiteral("cover_extra_large_url"),
         QStringLiteral("synopsis"), QStringLiteral("type"), QStringLiteral("status"),
         QStringLiteral("user_list_status"),
         QStringLiteral("source_removed_at")
@@ -88,7 +91,7 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 4);
+    QCOMPARE(query.value(0).toInt(), 6);
 }
 
 void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
@@ -188,7 +191,24 @@ void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
     QVERIFY(versions.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
     QList<int> values;
     while (versions.next()) values.append(versions.value(0).toInt());
-    QCOMPARE(values, QList<int>({1, 2, 3, 4}));
+    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6}));
+}
+
+void SqliteDatabaseTests::migrationCreatesUserPreferencesVersionFive() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO user_preferences VALUES (1, 0, 10, 1, 'medium', 1, 3600000)")));
+    QVERIFY(!query.exec(QStringLiteral(
+        "INSERT INTO user_preferences VALUES (2, 0, 10, 1, 'medium', 1, 3600000)")));
+    QVERIFY(database.migrate());
+    QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version WHERE version = 5")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 1);
 }
 
 void SqliteDatabaseTests::migrationCreatesSourceRemovalVersionThree() {

@@ -5,6 +5,10 @@ import QtQuick.Layouts 1.15
 Item {
     id: home
 
+    signal openSettingsRequested()
+
+    onVisibleChanged: if (visible) mediaGrid.reportWindow()
+
     property var controller: homeController
 
     readonly property color ink: "#172033"
@@ -14,6 +18,47 @@ Item {
     readonly property color surfaceSoft: "#f6f8fb"
     readonly property color accent: "#315d91"
     readonly property color accentSoft: "#e2ebf6"
+    property var previewEdits: ({})
+
+    function previewValue(mediaId, key, fallback) {
+        const edit = previewEdits[mediaId]
+        return edit && edit[key] !== undefined ? edit[key] : fallback
+    }
+
+    function statusLabel(key, fallback) {
+        for (let option of controller.availableListOptions) {
+            if (option.key === key) return option.label
+        }
+        return fallback
+    }
+
+    function applyPreviewEdit(mediaId, progress, statusKey, score, path, alternativeNames) {
+        const next = Object.assign({}, previewEdits)
+        next[mediaId] = {
+            progress: progress,
+            progressText: controller.selectedProgressMaximum > 0
+                          ? progress + "/" + controller.selectedProgressMaximum : String(progress),
+            statusKey: statusKey,
+            statusText: statusLabel(statusKey, controller.selectedStatusLabel),
+            score: score,
+            scoreText: score === 0 ? "—" : String(score),
+            path: path,
+            alternativeNames: alternativeNames
+        }
+        previewEdits = next
+    }
+
+    function openEditor() {
+        const mediaId = controller.selectedMediaId
+        const edit = previewEdits[mediaId]
+        editMediaPanel.openForMedia(
+                    mediaId,
+                    edit ? edit.progress : controller.selectedProgressValue,
+                    edit ? edit.statusKey : controller.selectedListStatusKey,
+                    edit ? edit.score : controller.selectedScoreValue,
+                    edit ? edit.path : "",
+                    edit ? edit.alternativeNames : controller.selectedAlternativeNames.join("; "))
+    }
 
     Rectangle {
         anchors.fill: parent
@@ -64,11 +109,12 @@ Item {
                 color: line
             }
 
-            Label {
+            Button {
                 text: qsTr("Configurações")
-                color: muted
+                flat: true
                 font.pixelSize: 13
                 Layout.alignment: Qt.AlignVCenter
+                onClicked: home.openSettingsRequested()
             }
         }
 
@@ -191,9 +237,9 @@ Item {
                             mediaId: model.mediaId
                             coverSource: model.coverSource
                             title: model.title
-                            status: model.statusLabel
-                            progress: model.progress
-                            score: model.score
+                            status: home.previewValue(model.mediaId, "statusText", model.statusLabel)
+                            progress: home.previewValue(model.mediaId, "progressText", model.progress)
+                            score: home.previewValue(model.mediaId, "scoreText", model.score)
                             selected: controller.selectedMediaId === model.mediaId
                             muted: false
                             onActivated: function(mediaId) {
@@ -255,12 +301,22 @@ Item {
                     anchors.margins: 26
                     spacing: 18
 
-                    Label {
-                        text: qsTr("DETALHES")
-                        color: accent
-                        font.pixelSize: 11
-                        font.weight: Font.DemiBold
-                        font.letterSpacing: 1.5
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("DETALHES")
+                            color: accent
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            font.letterSpacing: 1.5
+                        }
+                        Button {
+                            text: qsTr("Editar")
+                            flat: true
+                            visible: controller.hasSelection
+                            onClicked: home.openEditor()
+                        }
                     }
 
                     StatePanel {
@@ -321,7 +377,11 @@ Item {
 
                             Label { text: controller.selectedTypeLabel; color: accent; font.weight: Font.DemiBold }
                             Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: line }
-                            Label { text: controller.selectedStatusLabel; color: muted }
+                            Label {
+                                text: home.previewValue(controller.selectedMediaId, "statusText",
+                                                        controller.selectedStatusLabel)
+                                color: muted
+                            }
                         }
 
                         GridLayout {
@@ -332,8 +392,16 @@ Item {
 
                             Label { text: qsTr("Progresso"); color: muted; font.pixelSize: 11 }
                             Label { text: qsTr("Sua nota"); color: muted; font.pixelSize: 11 }
-                            Label { text: controller.selectedProgress; color: ink; font.weight: Font.DemiBold }
-                            Label { text: controller.selectedScore; color: ink; font.weight: Font.DemiBold }
+                            Label {
+                                text: home.previewValue(controller.selectedMediaId, "progressText",
+                                                        controller.selectedProgress)
+                                color: ink; font.weight: Font.DemiBold
+                            }
+                            Label {
+                                text: home.previewValue(controller.selectedMediaId, "scoreText",
+                                                        controller.selectedScore)
+                                color: ink; font.weight: Font.DemiBold
+                            }
                         }
 
                         Label {
@@ -445,6 +513,20 @@ Item {
         }
     }
 
+    EditMediaPanel {
+        id: editMediaPanel
+        controller: home.controller
+        ink: home.ink
+        muted: home.muted
+        line: home.line
+        surface: home.surface
+        surfaceSoft: home.surfaceSoft
+        accent: home.accent
+        onApplyRequested: function(mediaId, progress, statusKey, score, path, alternativeNames) {
+            home.applyPreviewEdit(mediaId, progress, statusKey, score, path, alternativeNames)
+        }
+    }
+
     Popup {
         id: completeLibrary
         parent: Overlay.overlay
@@ -532,9 +614,9 @@ Item {
                     mediaId: model.mediaId
                     coverSource: model.coverSource
                     title: model.title
-                    status: model.statusLabel
-                    progress: model.progress
-                    score: model.score
+                    status: home.previewValue(model.mediaId, "statusText", model.statusLabel)
+                    progress: home.previewValue(model.mediaId, "progressText", model.progress)
+                    score: home.previewValue(model.mediaId, "scoreText", model.score)
                     selected: controller.selectedMediaId === model.mediaId
                     onActivated: function(mediaId) {
                         controller.SelectMedia(mediaId)

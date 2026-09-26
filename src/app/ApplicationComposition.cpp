@@ -9,6 +9,7 @@
 #include "../infrastructure/database/SqliteQueryConfiguration.h"
 #include "../infrastructure/configuration/JsonSettingsReader.h"
 #include "../infrastructure/database/SqliteCoverCacheRepository.h"
+#include "../infrastructure/database/SqliteUserPreferencesRepository.h"
 #include "../infrastructure/covers/CoverFileStore.h"
 #include "../infrastructure/covers/QtCoverDownloader.h"
 #include <QStandardPaths>
@@ -112,6 +113,31 @@ ApplicationContext createApplicationContext() {
     context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(
         context.database->connection(), std::move(enqueuePendingQuery),
         std::move(readPendingQuery), std::move(updatePendingQuery));
+
+    QString readPreferencesQuery;
+    QString upsertPreferencesQuery;
+    SqlQueryStore readPreferencesStore(queryConfiguration.readUserPreferencesPath);
+    SqlQueryStore upsertPreferencesStore(queryConfiguration.upsertUserPreferencesPath);
+    if (readPreferencesStore.load(readPreferencesQuery, queryError)
+        && upsertPreferencesStore.load(upsertPreferencesQuery, queryError)) {
+        context.userPreferencesRepository = std::make_unique<SqliteUserPreferencesRepository>(
+            context.database->connection(), std::move(readPreferencesQuery),
+            std::move(upsertPreferencesQuery));
+        bool found = false;
+        QString preferencesError;
+        if (!context.userPreferencesRepository->read(context.userPreferences, found, preferencesError)) {
+            context.userPreferences = settings.userPreferences;
+            context.logger->warning(LogCategory::Configuration, preferencesError);
+        } else if (!found) {
+            context.userPreferences = settings.userPreferences;
+            if (!context.userPreferencesRepository->replace(context.userPreferences, preferencesError)) {
+                context.logger->warning(LogCategory::Configuration, preferencesError);
+            }
+        }
+    } else {
+        context.userPreferences = settings.userPreferences;
+        context.logger->warning(LogCategory::Configuration, queryError);
+    }
 
     QString readCoverQuery, upsertCoverQuery, deleteCoverQuery, clearCoverQuery;
     SqlQueryStore readCoverStore(queryConfiguration.readCoverCachePath);

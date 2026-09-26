@@ -1,7 +1,9 @@
 INSERT INTO media (id, name, english_name, original_name, alternative_names,
-                   total_chapters, average_score, cover_url, synopsis, type, status, user_list_status)
+                   total_chapters, average_score, cover_url, cover_medium_url, cover_large_url,
+                   cover_extra_large_url, synopsis, type, status, user_list_status)
 VALUES (:id, :name, :english_name, :original_name, :alternative_names,
-        :total_chapters, :average_score, :cover_url, :synopsis, :type, :status, :user_list_status)
+        :total_chapters, :average_score, :cover_url, :cover_medium_url, :cover_large_url,
+        :cover_extra_large_url, :synopsis, :type, :status, :user_list_status)
 ON CONFLICT(id) DO UPDATE SET
     name = excluded.name,
     english_name = excluded.english_name,
@@ -10,6 +12,9 @@ ON CONFLICT(id) DO UPDATE SET
     total_chapters = excluded.total_chapters,
     average_score = excluded.average_score,
     cover_url = excluded.cover_url,
+    cover_medium_url = excluded.cover_medium_url,
+    cover_large_url = excluded.cover_large_url,
+    cover_extra_large_url = excluded.cover_extra_large_url,
     synopsis = excluded.synopsis,
     type = excluded.type,
     status = excluded.status,

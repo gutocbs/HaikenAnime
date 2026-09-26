@@ -25,6 +25,9 @@ public:
     int AverageScore = 0;
     int PersonalScore = 0;
     QString CoverUrl;
+    QString CoverMediumUrl;
+    QString CoverLargeUrl;
+    QString CoverExtraLargeUrl;
     QString Synopsis;
     MediaStatus Status = MediaStatus::Unknown;
     UserListStatus ListStatus = UserListStatus::Unknown;

@@ -21,6 +21,10 @@ void SqliteQueryConfigurationTests::successfulLoadReplacesStateAndClearsError() 
              QStringLiteral(":/sqlite/queries/read-active-media-ids.sql"));
     QCOMPARE(configuration.markMediaSourceRemovedPath,
              QStringLiteral(":/sqlite/queries/mark-media-source-removed.sql"));
+    QCOMPARE(configuration.readUserPreferencesPath,
+             QStringLiteral(":/sqlite/queries/read-user-preferences.sql"));
+    QCOMPARE(configuration.upsertUserPreferencesPath,
+             QStringLiteral(":/sqlite/queries/upsert-user-preferences.sql"));
     QVERIFY(error.isEmpty());
 }
 

@@ -107,6 +107,9 @@ Media AniListMediaMapper::ToDomainMedia(const AniListMediaDto &externalMedia) {
     media.PersonalScore = externalMedia.personalScore.value_or(0);
     media.AverageScore = externalMedia.averageScore.value_or(0);
     media.CoverUrl = externalMedia.coverImageUrl;
+    media.CoverMediumUrl = externalMedia.coverImages.medium;
+    media.CoverLargeUrl = externalMedia.coverImages.large;
+    media.CoverExtraLargeUrl = externalMedia.coverImages.extraLarge;
     media.Synopsis = externalMedia.description;
 
     if (externalMedia.mediaFormat.compare(QStringLiteral("NOVEL"), Qt::CaseInsensitive) == 0) {

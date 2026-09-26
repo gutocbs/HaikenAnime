@@ -16,6 +16,8 @@ struct SqliteQueryConfiguration final {
     QString upsertCoverCachePath;
     QString deleteCoverCachePath;
     QString clearCoverCachePath;
+    QString readUserPreferencesPath;
+    QString upsertUserPreferencesPath;
 
     [[nodiscard]] bool load(QString &error) ;
     void setLogger(AsyncLogger *logger);

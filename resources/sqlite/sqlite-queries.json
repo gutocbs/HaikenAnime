@@ -10,6 +10,8 @@
     "readCoverCache": ":/sqlite/queries/read-cover-cache.sql",
     "upsertCoverCache": ":/sqlite/queries/upsert-cover-cache.sql",
     "deleteCoverCache": ":/sqlite/queries/delete-cover-cache.sql",
-    "clearCoverCache": ":/sqlite/queries/clear-cover-cache.sql"
+    "clearCoverCache": ":/sqlite/queries/clear-cover-cache.sql",
+    "readUserPreferences": ":/sqlite/queries/read-user-preferences.sql",
+    "upsertUserPreferences": ":/sqlite/queries/upsert-user-preferences.sql"
   }
 }
