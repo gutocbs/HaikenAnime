@@ -718,6 +718,8 @@ add_executable(SettingsControllerTests
         tests/unit/SettingsControllerTests.cpp
         src/presentation/settings/SettingsController.cpp
         src/application/configuration/UserPreferencesValidator.cpp
+        src/app/LocalLibraryScanCoordinator.h
+        src/app/LocalLibraryScanCoordinator.cpp
 )
 target_link_libraries(SettingsControllerTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME SettingsControllerTests COMMAND SettingsControllerTests)
