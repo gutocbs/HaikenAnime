@@ -202,17 +202,36 @@ bool SqliteDatabase::migrate() {
         "UNIQUE(root_path, normalized_relative_path))"));
     const bool inventoryVersionInserted = localFilesCreated && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (7)"));
-    const bool versionQueried = inventoryVersionInserted && query.exec(QStringLiteral(
+    bool libraryRootExists = false;
+    bool scanExtensionsExists = false;
+    bool scannerPreferencesReady = false;
+    if (inventoryVersionInserted && query.exec(QStringLiteral("PRAGMA table_info(user_preferences)"))) {
+        while (query.next()) {
+            const auto column = query.value(1).toString();
+            if (column == QStringLiteral("library_root")) libraryRootExists = true;
+            if (column == QStringLiteral("scan_extensions")) scanExtensionsExists = true;
+        }
+        scannerPreferencesReady = (libraryRootExists || query.exec(QStringLiteral(
+            "ALTER TABLE user_preferences ADD COLUMN library_root TEXT NOT NULL DEFAULT 'Q:\\'")))
+            && (scanExtensionsExists || query.exec(QStringLiteral(
+            "ALTER TABLE user_preferences ADD COLUMN scan_extensions TEXT NOT NULL DEFAULT "
+            "'[\".mkv\",\".mp4\",\".avi\",\".webm\",\".m4v\",\".mov\",\".wmv\",\".ts\"]'")));
+    }
+    const bool scannerPreferencesVersionInserted = scannerPreferencesReady && query.exec(QStringLiteral(
+        "INSERT OR IGNORE INTO schema_version (version) VALUES (8)"));
+    const bool versionQueried = scannerPreferencesVersionInserted && query.exec(QStringLiteral(
         "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 1), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 2), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 3), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 4), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 5), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 6), "
-        "EXISTS(SELECT 1 FROM schema_version WHERE version = 7)"));
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 7), "
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 8)"));
     const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool()
         && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
-        && query.value(4).toBool() && query.value(5).toBool() && query.value(6).toBool();
+        && query.value(4).toBool() && query.value(5).toBool() && query.value(6).toBool()
+        && query.value(7).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();
@@ -229,7 +248,7 @@ bool SqliteDatabase::migrate() {
 
     lastError_ = query.lastError().text();
     if (lastError_.isEmpty()) {
-        lastError_ = QStringLiteral("SQLite migration versions 1 through 7 were not recorded.");
+        lastError_ = QStringLiteral("SQLite migration versions 1 through 8 were not recorded.");
     }
     database_.rollback();
     if (logger_) logger_->error(LogCategory::Migration, query.lastError().text());

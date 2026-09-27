@@ -2,6 +2,8 @@
 
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QJsonArray>
+#include <QJsonDocument>
 #include "../../application/configuration/UserPreferencesValidator.h"
 
 SqliteUserPreferencesRepository::SqliteUserPreferencesRepository(
@@ -31,11 +33,27 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
     loaded.coverQuality = quality.value();
     loaded.synchronizationEnabled = query.value(4).toBool();
     loaded.synchronizationIntervalMs = query.value(5).toInt();
+    loaded.libraryRoot = query.value(6).toString();
+    QJsonParseError parseError;
+    const auto extensions = QJsonDocument::fromJson(query.value(7).toString().toUtf8(), &parseError);
+    if (parseError.error != QJsonParseError::NoError || !extensions.isArray()) {
+        error = QStringLiteral("Stored scan extensions must be a JSON array of strings.");
+        return false;
+    }
+    loaded.scanExtensions.clear();
+    for (const auto &extension : extensions.array()) {
+        if (!extension.isString()) {
+            error = QStringLiteral("Stored scan extensions must be strings.");
+            return false;
+        }
+        loaded.scanExtensions.append(extension.toString());
+    }
     const auto validation = ValidateUserPreferences(loaded);
     if (!validation.valid) {
         error = validation.error;
         return false;
     }
+    loaded.scanExtensions = NormalizeScanExtensions(loaded.scanExtensions, error);
     preferences = loaded;
     found = true;
     return true;
@@ -64,6 +82,10 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
     query.bindValue(QStringLiteral(":cover_quality"), CoverQualityName(preferences.coverQuality));
     query.bindValue(QStringLiteral(":synchronization_enabled"), preferences.synchronizationEnabled);
     query.bindValue(QStringLiteral(":synchronization_interval_ms"), preferences.synchronizationIntervalMs);
+    query.bindValue(QStringLiteral(":library_root"), preferences.libraryRoot);
+    query.bindValue(QStringLiteral(":scan_extensions"), QString::fromUtf8(
+        QJsonDocument(QJsonArray::fromStringList(NormalizeScanExtensions(preferences.scanExtensions, error)))
+            .toJson(QJsonDocument::Compact)));
     if (!query.exec() || !database_.commit()) {
         error = query.lastError().text();
         if (error.isEmpty()) error = database_.lastError().text();

@@ -3,6 +3,8 @@ SELECT score_minimum,
        score_step,
        cover_quality,
        synchronization_enabled,
-       synchronization_interval_ms
+       synchronization_interval_ms,
+       library_root,
+       scan_extensions
 FROM user_preferences
 WHERE id = 1

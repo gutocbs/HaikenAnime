@@ -342,6 +342,7 @@ add_executable(SqliteUserPreferencesRepositoryTests
         src/infrastructure/logging/AsyncLogger.cpp
 )
 target_link_libraries(SqliteUserPreferencesRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
+target_compile_definitions(SqliteUserPreferencesRepositoryTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 add_test(NAME SqliteUserPreferencesRepositoryTests COMMAND SqliteUserPreferencesRepositoryTests)
 
 add_executable(SqliteRepositoryTests
@@ -784,6 +785,16 @@ add_executable(LocalLibraryScanCoordinatorTests
 target_link_libraries(LocalLibraryScanCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME LocalLibraryScanCoordinatorTests COMMAND LocalLibraryScanCoordinatorTests)
 
+get_target_property(COMPOSITION_SOURCES HaikenAnime SOURCES)
+list(FILTER COMPOSITION_SOURCES INCLUDE REGEX "^src/")
+add_executable(LocalLibraryScanCompositionTests tests/unit/LocalLibraryScanCompositionTests.cpp ${COMPOSITION_SOURCES})
+file(GLOB COMPOSITION_SQL_RESOURCES CONFIGURE_DEPENDS resources/sqlite/queries/*.sql)
+qt_add_resources(LocalLibraryScanCompositionTests composition_sql_resources PREFIX "/sqlite/queries"
+        FILES resources/sqlite/sqlite-queries.json ${COMPOSITION_SQL_RESOURCES})
+qt_add_resources(LocalLibraryScanCompositionTests composition_config_resources PREFIX "/config" FILES Settings.json)
+target_link_libraries(LocalLibraryScanCompositionTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Sql Qt6::Test)
+add_test(NAME LocalLibraryScanCompositionTests COMMAND LocalLibraryScanCompositionTests)
+
 # Unit tests are separate executables and do not receive the deployment step
 # used by the application target. Make Qt runtime DLLs available to CTest.
 set(HAIKENANIME_TESTS
@@ -817,6 +828,7 @@ set(HAIKENANIME_TESTS
         SettingsControllerTests
         InitialSyncCoordinatorTests
         LocalLibraryScanCoordinatorTests
+        LocalLibraryScanCompositionTests
 )
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;$ENV{PATH}"
