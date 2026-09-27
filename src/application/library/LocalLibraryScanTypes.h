@@ -16,6 +16,8 @@ struct LocalLibraryScanRequest final {
 struct LocalLibraryScanProgress final {
     qsizetype visitedEntries = 0;
     qsizetype candidateFiles = 0;
+    // Eligible names skipped because their basic metadata disappeared or became invalid.
+    qsizetype skippedFiles = 0;
 };
 
 struct LocalLibraryScanResult final {
@@ -23,6 +25,7 @@ struct LocalLibraryScanResult final {
     bool interrupted = false;
     qsizetype candidateFiles = 0;
     QString diagnostic;
+    qsizetype skippedFiles = 0;
 };
 
 #endif

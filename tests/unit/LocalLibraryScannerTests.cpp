@@ -53,6 +53,21 @@ private:
     REPARSE_GUID_DATA_BUFFER buffer_{};
     bool attached_ = false;
 };
+
+class FailingWindowsListing final : public IDirectoryListing {
+public:
+    explicit FailingWindowsListing(quint32 terminalError) : terminalError_(terminalError) {}
+    DirectoryListingEntry next() override {
+        if (!delivered_) {
+            delivered_ = true;
+            return {QStringLiteral("observed.mkv"), 0};
+        }
+        return {{}, terminalError_};
+    }
+private:
+    quint32 terminalError_;
+    bool delivered_ = false;
+};
 #endif
 
 void WriteFile(const QString &path, const QByteArray &contents = "same content") {
@@ -97,6 +112,28 @@ public:
 private:
     QString unreadable_;
 };
+
+class MetadataRaceEnumerator final : public IDirectoryEnumerator {
+public:
+    explicit MetadataRaceEnumerator(bool replaceWithDirectory) : replaceWithDirectory_(replaceWithDirectory) {}
+    bool enumerate(const QString &path, const std::function<bool(const QFileInfo &)> &visitor,
+                   QString &) override {
+        if (delivered_) return true;
+        delivered_ = true;
+        QFileInfo raced(QDir(path).filePath(QStringLiteral("raced.mkv")));
+        // Prime Qt's metadata cache before changing the actual filesystem entry.
+        if (!raced.isFile() || !raced.lastModified().isValid()) qFatal("Invalid race fixture");
+        if (raced.isDir() || !raced.exists() || raced.isSymbolicLink() || raced.isJunction()) qFatal("Invalid race entry type");
+        if (!QFile::remove(raced.absoluteFilePath())) qFatal("Cannot remove race fixture");
+        if (replaceWithDirectory_ && !QDir().mkpath(raced.absoluteFilePath())) qFatal("Cannot replace race fixture");
+        if (!visitor(raced)) return true;
+        visitor(QFileInfo(QDir(path).filePath(QStringLiteral("valid.mkv"))));
+        return true;
+    }
+private:
+    bool replaceWithDirectory_;
+    bool delivered_ = false;
+};
 }
 
 class LocalLibraryScannerTests final : public QObject {
@@ -124,7 +161,68 @@ private slots:
     void invalidRequests();
     void rejectsFileAndJunctionRoots();
     void excludesWindowsTemporaryAttribute();
+    void windowsListingTerminalStatus_data();
+    void windowsListingTerminalStatus();
+    void skipsAndCountsInvalidatedFileMetadata_data();
+    void skipsAndCountsInvalidatedFileMetadata();
 };
+
+void LocalLibraryScannerTests::skipsAndCountsInvalidatedFileMetadata_data() {
+    QTest::addColumn<bool>("replaceWithDirectory");
+    QTest::newRow("disappeared") << false;
+    QTest::newRow("became-directory") << true;
+}
+
+void LocalLibraryScannerTests::skipsAndCountsInvalidatedFileMetadata() {
+    QFETCH(bool, replaceWithDirectory);
+    QTemporaryDir root;
+    WriteFile(root.filePath("raced.mkv"));
+    WriteFile(root.filePath("valid.mkv"), "valid");
+    MetadataRaceEnumerator enumerator(replaceWithDirectory);
+    LocalLibraryScanner scanner(enumerator);
+    const auto captured = Scan(scanner, {root.path(), {".mkv"}, 200, 0});
+    QVERIFY2(captured.result.complete, qPrintable(captured.result.diagnostic));
+    QCOMPARE(captured.observations.size(), 1);
+    QCOMPARE(captured.observations.first().relativePath, QStringLiteral("valid.mkv"));
+    QCOMPARE(captured.result.candidateFiles, 1);
+    QCOMPARE(captured.result.skippedFiles, 1);
+    QCOMPARE(captured.progress.last().visitedEntries, 2);
+    QCOMPARE(captured.progress.last().skippedFiles, 1);
+}
+
+void LocalLibraryScannerTests::windowsListingTerminalStatus_data() {
+    QTest::addColumn<quint32>("errorCode");
+    QTest::addColumn<bool>("complete");
+#ifdef Q_OS_WIN
+    QTest::newRow("normal-eof") << quint32(ERROR_NO_MORE_FILES) << true;
+    QTest::newRow("access-lost") << quint32(ERROR_ACCESS_DENIED) << false;
+    QTest::newRow("network-lost") << quint32(ERROR_BAD_NETPATH) << false;
+#endif
+}
+
+void LocalLibraryScannerTests::windowsListingTerminalStatus() {
+#ifdef Q_OS_WIN
+    QFETCH(quint32, errorCode);
+    QFETCH(bool, complete);
+    QTemporaryDir root;
+    WriteFile(root.filePath("observed.mkv"));
+    QtDirectoryEnumerator enumerator([errorCode](const QString &) {
+        return std::make_unique<FailingWindowsListing>(errorCode);
+    });
+    LocalLibraryScanner scanner(enumerator);
+    const auto captured = Scan(scanner, {root.path(), {".mkv"}, 1, 0});
+    QCOMPARE(captured.observations.size(), 1);
+    QCOMPARE(captured.result.candidateFiles, 1);
+    QCOMPARE(captured.result.complete, complete);
+    QVERIFY(!captured.result.interrupted);
+    if (!complete) {
+        QVERIFY(captured.result.diagnostic.contains(root.path()));
+        QVERIFY(captured.result.diagnostic.contains(QString::number(errorCode)));
+    }
+#else
+    QSKIP("Windows listing error codes are platform-specific");
+#endif
+}
 
 void LocalLibraryScannerTests::recursesAndFiltersExtensions() {
     QTemporaryDir root;

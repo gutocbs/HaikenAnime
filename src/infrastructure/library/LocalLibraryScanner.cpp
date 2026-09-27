@@ -86,20 +86,31 @@ LocalLibraryScanResult LocalLibraryScanner::scan(const LocalLibraryScanRequest &
             ++current.visitedEntries;
             ++entriesInBatch;
             const auto name = entry.fileName();
-            const bool hiddenDirectory = entry.isDir()
+            const bool directoryEntry = entry.isDir();
+            const bool hiddenDirectory = directoryEntry
                 && (entry.isHidden() || name.startsWith(QLatin1Char('.')));
             const bool excluded = IsLink(entry) || hiddenDirectory;
-            if (!excluded && entry.isFile() && !IsTemporary(entry)) {
+            if (!excluded && !directoryEntry && !IsTemporary(entry)) {
                 const auto extension = QLatin1Char('.') + entry.suffix().toLower();
                 if (extensions.contains(extension)) {
-                    const auto relative = QDir::fromNativeSeparators(root.relativeFilePath(entry.absoluteFilePath()));
-                    batch.append({request.rootPath, relative, relative.toCaseFolded(), name, extension,
-                                  entry.size(), entry.lastModified().toUTC()});
-                    ++current.candidateFiles;
+                    // Enumeration metadata can be cached while the file changes.
+                    // Capture fresh basic metadata before accepting an observation.
+                    QFileInfo metadata(entry);
+                    metadata.refresh();
+                    const auto size = metadata.size();
+                    const auto modified = metadata.lastModified().toUTC();
+                    if (!metadata.exists() || !metadata.isFile() || IsLink(metadata)
+                        || size < 0 || !modified.isValid()) {
+                        ++current.skippedFiles;
+                    } else {
+                        const auto relative = QDir::fromNativeSeparators(root.relativeFilePath(metadata.absoluteFilePath()));
+                        batch.append({request.rootPath, relative, relative.toCaseFolded(), name, extension, size, modified});
+                        ++current.candidateFiles;
+                    }
                 }
             }
             if (progress) progress(current);
-            if (!excluded && entry.isDir() && !visitDirectory(entry.absoluteFilePath())) {
+            if (!excluded && directoryEntry && !visitDirectory(entry.absoluteFilePath())) {
                 return traversalSucceeded = false;
             }
             return true;
@@ -115,6 +126,7 @@ LocalLibraryScanResult LocalLibraryScanner::scan(const LocalLibraryScanRequest &
     if (traversed && !consumerFailed) stopped();
     if (!consumerFailed) flush();
     result.candidateFiles = current.candidateFiles;
+    result.skippedFiles = current.skippedFiles;
     result.complete = traversed && !consumerFailed && !result.interrupted;
     if (result.interrupted && result.diagnostic.isEmpty()) result.diagnostic = QStringLiteral("Local library scan interrupted.");
     if (progress) progress(current);

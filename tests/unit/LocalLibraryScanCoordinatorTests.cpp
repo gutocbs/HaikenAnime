@@ -1,4 +1,5 @@
 #include <QDir>
+#include <QFile>
 #include <QSemaphore>
 #include <QSignalSpy>
 #include <QTemporaryDir>
@@ -6,6 +7,9 @@
 #include <QtTest>
 #include <atomic>
 #include <memory>
+#ifdef Q_OS_WIN
+#include <qt_windows.h>
+#endif
 
 #include "../../src/app/LocalLibraryScanCoordinator.h"
 #include "../../src/infrastructure/library/LocalLibraryScanner.h"
@@ -116,6 +120,7 @@ private slots:
     void scannerFailureNeverCompletes();
     void batchFailureNeverCompletesEvenIfScannerClaimsSuccess();
     void rootDisappearingAfterStartNeverCompletes();
+    void listingFailureAfterObservationNeverReconciles();
     void shutdownInterruptsAndWaitsForResourceDestruction();
     void beginFailureDoesNotFinalizeAnUnknownScan();
     void completionFailureRecordsFailedScan();
@@ -256,6 +261,53 @@ void LocalLibraryScanCoordinatorTests::rootDisappearingAfterStartNeverCompletes(
     QCOMPARE(state.failCalls, 1);
     QCOMPARE(state.status, LibraryScanStatus::Failed);
     QVERIFY(failed.first().first().toString().contains(root));
+}
+
+void LocalLibraryScanCoordinatorTests::listingFailureAfterObservationNeverReconciles() {
+#ifdef Q_OS_WIN
+    QTemporaryDir root;
+    QFile file(root.filePath("observed.mkv"));
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.close();
+    class Listing final : public IDirectoryListing {
+    public:
+        DirectoryListingEntry next() override {
+            if (delivered_) return {{}, ERROR_ACCESS_DENIED};
+            delivered_ = true;
+            return {QStringLiteral("observed.mkv"), 0};
+        }
+    private:
+        bool delivered_ = false;
+    };
+    class OwnedScanner final : public ILocalLibraryScanner {
+    public:
+        LocalLibraryScanResult scan(const LocalLibraryScanRequest &request,
+            const std::function<bool(const QList<LocalFileObservation> &, QString &)> &consumer,
+            const std::function<void(const LocalLibraryScanProgress &)> &progress,
+            const std::function<bool()> &stop) override {
+            QtDirectoryEnumerator enumerator([](const QString &) { return std::make_unique<Listing>(); });
+            LocalLibraryScanner scanner(enumerator);
+            return scanner.scan(request, consumer, progress, stop);
+        }
+    };
+    State state;
+    LocalLibraryScanCoordinator coordinator([](QString &) { return std::make_unique<OwnedScanner>(); },
+                                             repositoryFactory(state));
+    QSignalSpy failed(&coordinator, &LocalLibraryScanCoordinator::failed);
+    QSignalSpy completed(&coordinator, &LocalLibraryScanCoordinator::completed);
+    QVERIFY(coordinator.start({root.path(), {QStringLiteral(".mkv")}, 1, 0}));
+    QTRY_COMPARE_WITH_TIMEOUT(failed.count(), 1, 3000);
+    coordinator.shutdown();
+    QCOMPARE(state.batchCalls, 1);
+    QCOMPARE(state.completeCalls, 0);
+    QCOMPARE(state.failCalls, 1);
+    QCOMPARE(state.count, 1);
+    QCOMPARE(state.status, LibraryScanStatus::Failed);
+    QCOMPARE(completed.count(), 0);
+    QVERIFY(state.diagnostic.contains(root.path()));
+#else
+    QSKIP("Windows listing errors are platform-specific");
+#endif
 }
 
 void LocalLibraryScanCoordinatorTests::shutdownInterruptsAndWaitsForResourceDestruction() {
