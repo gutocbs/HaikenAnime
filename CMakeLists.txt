@@ -725,6 +725,13 @@ add_executable(SettingsControllerTests
 target_link_libraries(SettingsControllerTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME SettingsControllerTests COMMAND SettingsControllerTests)
 
+add_executable(QmlStructureTests tests/unit/QmlStructureTests.cpp)
+target_link_libraries(QmlStructureTests PRIVATE Qt6::Core Qt6::Test)
+target_compile_definitions(QmlStructureTests PRIVATE
+        HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+add_test(NAME QmlStructureTests COMMAND QmlStructureTests)
+
 add_executable(InitialSyncCoordinatorTests
         tests/unit/InitialSyncCoordinatorTests.cpp
         src/app/InitialSyncCoordinator.h
@@ -826,6 +833,7 @@ set(HAIKENANIME_TESTS
         AniListPendingChangeProcessorTests
         HomeScreenControllerTests
         SettingsControllerTests
+        QmlStructureTests
         InitialSyncCoordinatorTests
         LocalLibraryScanCoordinatorTests
         LocalLibraryScanCompositionTests

@@ -539,13 +539,19 @@ Item {
                 }
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
                 FieldLabel { text: qsTr("EXTENSÕES INCLUÍDAS") }
-                GridLayout {
+                Grid {
+                    id: scanExtensionGrid
                     Layout.fillWidth: true
                     columns: width >= 580 ? 4 : width >= 300 ? 2 : 1
+                    readonly property real cellWidth: Math.max(0, (width - (columns - 1) * columnSpacing) / columns)
+                    flow: Grid.LeftToRight
+                    columnSpacing: 12
+                    rowSpacing: 6
                     Repeater {
                         model: controller.availableScanExtensions
                         delegate: CheckBox {
                             required property string modelData
+                            width: scanExtensionGrid.cellWidth
                             text: modelData
                             checked: controller.selectedScanExtensions.indexOf(modelData) >= 0
                             Accessible.name: qsTr("Incluir arquivos %1").arg(modelData)
