@@ -726,7 +726,7 @@ target_link_libraries(SettingsControllerTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME SettingsControllerTests COMMAND SettingsControllerTests)
 
 add_executable(QmlStructureTests tests/unit/QmlStructureTests.cpp)
-target_link_libraries(QmlStructureTests PRIVATE Qt6::Core Qt6::Test)
+target_link_libraries(QmlStructureTests PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Test)
 target_compile_definitions(QmlStructureTests PRIVATE
         HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
@@ -841,6 +841,9 @@ set(HAIKENANIME_TESTS
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;$ENV{PATH}"
         TIMEOUT 30
+)
+set_tests_properties(QmlStructureTests PROPERTIES
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;$ENV{PATH};QT_QUICK_BACKEND=software"
 )
 endif ()
 

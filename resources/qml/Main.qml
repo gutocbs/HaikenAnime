@@ -7,7 +7,7 @@ ApplicationWindow {
     visible: true
     width: 1440
     height: 900
-    minimumWidth: 1100
+    minimumWidth: root.showingSettings ? 680 : 1100
     minimumHeight: 700
     title: qsTr("Haiken Anime")
     color: palette.window
