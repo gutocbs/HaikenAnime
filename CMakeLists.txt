@@ -46,6 +46,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/app/ApplicationComposition.cpp
         src/app/InitialSyncCoordinator.h
         src/app/InitialSyncCoordinator.cpp
+        src/app/LocalLibraryScanCoordinator.h
+        src/app/LocalLibraryScanCoordinator.cpp
         src/domain/media/Media.h
         src/application/media/MediaPage.h
         src/application/media/MediaSyncFilter.h
@@ -771,6 +773,15 @@ target_compile_definitions(InitialSyncCoordinatorTests PRIVATE
 
 add_test(NAME InitialSyncCoordinatorTests COMMAND InitialSyncCoordinatorTests)
 
+add_executable(LocalLibraryScanCoordinatorTests
+        tests/unit/LocalLibraryScanCoordinatorTests.cpp
+        src/app/LocalLibraryScanCoordinator.h
+        src/app/LocalLibraryScanCoordinator.cpp
+        src/infrastructure/library/LocalLibraryScanner.cpp
+        src/infrastructure/library/QtDirectoryEnumerator.cpp)
+target_link_libraries(LocalLibraryScanCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME LocalLibraryScanCoordinatorTests COMMAND LocalLibraryScanCoordinatorTests)
+
 # Unit tests are separate executables and do not receive the deployment step
 # used by the application target. Make Qt runtime DLLs available to CTest.
 set(HAIKENANIME_TESTS
@@ -803,6 +814,7 @@ set(HAIKENANIME_TESTS
         HomeScreenControllerTests
         SettingsControllerTests
         InitialSyncCoordinatorTests
+        LocalLibraryScanCoordinatorTests
 )
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;$ENV{PATH}"
