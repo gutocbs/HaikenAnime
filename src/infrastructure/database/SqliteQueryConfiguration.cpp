@@ -7,7 +7,7 @@
 
 void SqliteQueryConfiguration::setLogger(AsyncLogger *value) { logger = value; }
 
-bool SqliteQueryConfiguration::load(QString &error) {
+bool SqliteQueryConfiguration::load(QString &error, const QString &configurationPath) {
     upsertMediaPath.clear();
     readMediaPath.clear();
     readActiveMediaIdsPath.clear();
@@ -21,8 +21,12 @@ bool SqliteQueryConfiguration::load(QString &error) {
     clearCoverCachePath.clear();
     readUserPreferencesPath.clear();
     upsertUserPreferencesPath.clear();
+    beginLibraryScanPath.clear();
+    upsertLocalFilePath.clear();
+    completeLibraryScanPath.clear();
+    failLibraryScanPath.clear();
+    markLocalFilesUnavailablePath.clear();
     error.clear();
-    const auto configurationPath = QStringLiteral(":/sqlite/queries/sqlite-queries.json");
     QFile file(configurationPath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         error = QStringLiteral("Could not open SQLite query configuration '%1': %2")
@@ -54,12 +58,20 @@ bool SqliteQueryConfiguration::load(QString &error) {
     clearCoverCachePath = queries.value(QStringLiteral("clearCoverCache")).toString();
     readUserPreferencesPath = queries.value(QStringLiteral("readUserPreferences")).toString();
     upsertUserPreferencesPath = queries.value(QStringLiteral("upsertUserPreferences")).toString();
+    beginLibraryScanPath = queries.value(QStringLiteral("beginLibraryScan")).toString();
+    upsertLocalFilePath = queries.value(QStringLiteral("upsertLocalFile")).toString();
+    completeLibraryScanPath = queries.value(QStringLiteral("completeLibraryScan")).toString();
+    failLibraryScanPath = queries.value(QStringLiteral("failLibraryScan")).toString();
+    markLocalFilesUnavailablePath = queries.value(QStringLiteral("markLocalFilesUnavailable")).toString();
     if (upsertMediaPath.isEmpty() || readMediaPath.isEmpty() || readActiveMediaIdsPath.isEmpty()
         || markMediaSourceRemovedPath.isEmpty() || enqueuePendingChangePath.isEmpty()
         || readPendingChangesPath.isEmpty() || updatePendingChangePath.isEmpty()
         || readCoverCachePath.isEmpty() || upsertCoverCachePath.isEmpty()
         || deleteCoverCachePath.isEmpty() || clearCoverCachePath.isEmpty()
-        || readUserPreferencesPath.isEmpty() || upsertUserPreferencesPath.isEmpty()) {
+        || readUserPreferencesPath.isEmpty() || upsertUserPreferencesPath.isEmpty()
+        || beginLibraryScanPath.isEmpty() || upsertLocalFilePath.isEmpty()
+        || completeLibraryScanPath.isEmpty() || failLibraryScanPath.isEmpty()
+        || markLocalFilesUnavailablePath.isEmpty()) {
         error = QStringLiteral("SQLite query configuration is incomplete.");
         if (logger) logger->error(LogCategory::QueryConfiguration, error);
         return false;

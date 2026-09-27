@@ -11,6 +11,9 @@ int main(int argc, char *argv[]) {
 
     auto context = createApplicationContext();
     QObject::connect(&app, &QCoreApplication::aboutToQuit, [&context]() {
+        if (context.localLibraryScan) {
+            context.localLibraryScan->shutdown();
+        }
         if (context.initialSync) {
             context.initialSync->shutdown();
         }
@@ -28,6 +31,7 @@ int main(int argc, char *argv[]) {
                                        context.userPreferences.scoreStep);
     SettingsController settingsController(context.userPreferencesRepository.get(),
                                           context.userPreferences);
+    settingsController.SetScanCoordinator(context.localLibraryScan.get());
     homeController.reload();
 
     if (context.initialSync) {
@@ -45,6 +49,7 @@ int main(int argc, char *argv[]) {
 
     QObject::connect(&settingsController, &SettingsController::preferencesApplied,
                      [&homeController, &context](const UserPreferences &preferences) {
+        context.userPreferences = preferences;
         homeController.ConfigureScoreScale(preferences.scoreMinimum,
                                            preferences.scoreMaximum,
                                            preferences.scoreStep);
@@ -62,6 +67,7 @@ int main(int argc, char *argv[]) {
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
                      &app, []() { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
     engine.loadFromModule("HaikenAnime", "Main");
+    if (!engine.rootObjects().isEmpty()) scheduleStartupLibraryScan(context, &settingsController);
 
     return app.exec();
 }

@@ -22,6 +22,11 @@ private slots:
     void migrationCreatesSourceRemovalVersionThree();
     void migrationUpgradesVersionTwoWithoutDataLoss();
     void migrationCreatesUserPreferencesVersionFive();
+    void migrationCreatesLibraryInventory();
+    void migrationUpgradesVersionSixWithoutDataLoss();
+    void migrationRequiresVersionSevenAndRollsBack();
+    void migrationUpgradesLegacyScannerPreferences();
+    void migrationRequiresVersionEightAndRollsBack();
 };
 
 void SqliteDatabaseTests::opensAndCreatesDatabaseFile() {
@@ -91,7 +96,7 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 6);
+    QCOMPARE(query.value(0).toInt(), 8);
 }
 
 void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
@@ -191,7 +196,7 @@ void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
     QVERIFY(versions.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
     QList<int> values;
     while (versions.next()) values.append(versions.value(0).toInt());
-    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6}));
+    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8}));
 }
 
 void SqliteDatabaseTests::migrationCreatesUserPreferencesVersionFive() {
@@ -202,9 +207,9 @@ void SqliteDatabaseTests::migrationCreatesUserPreferencesVersionFive() {
 
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral(
-        "INSERT INTO user_preferences VALUES (1, 0, 10, 1, 'medium', 1, 3600000)")));
+        "INSERT INTO user_preferences (id, score_minimum, score_maximum, score_step, cover_quality, synchronization_enabled, synchronization_interval_ms) VALUES (1, 0, 10, 1, 'medium', 1, 3600000)")));
     QVERIFY(!query.exec(QStringLiteral(
-        "INSERT INTO user_preferences VALUES (2, 0, 10, 1, 'medium', 1, 3600000)")));
+        "INSERT INTO user_preferences (id, score_minimum, score_maximum, score_step, cover_quality, synchronization_enabled, synchronization_interval_ms) VALUES (2, 0, 10, 1, 'medium', 1, 3600000)")));
     QVERIFY(database.migrate());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version WHERE version = 5")));
     QVERIFY(query.next());
@@ -273,6 +278,133 @@ void SqliteDatabaseTests::migrationUpgradesVersionTwoWithoutDataLoss() {
     QVERIFY(cover.exec(QStringLiteral("SELECT COUNT(*) FROM cover_cache WHERE media_id = 7")));
     QVERIFY(cover.next());
     QCOMPARE(cover.value(0).toInt(), 1);
+}
+
+void SqliteDatabaseTests::migrationCreatesLibraryInventory() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO library_scans (root_path, started_at, status) VALUES ('Q:/', '2026-09-26T00:00:00Z', 'running')")));
+    for (const auto &status : {"succeeded", "failed", "interrupted"}) {
+        query.prepare(QStringLiteral("UPDATE library_scans SET status = :status"));
+        query.bindValue(QStringLiteral(":status"), QString::fromLatin1(status));
+        QVERIFY(query.exec());
+    }
+    QVERIFY(!query.exec(QStringLiteral("UPDATE library_scans SET status = 'invalid'")));
+    const auto insert = QStringLiteral(
+        "INSERT INTO local_files (root_path, relative_path, normalized_relative_path, file_name, extension, "
+        "size_bytes, modified_at, last_seen_scan_id) "
+        "VALUES ('Q:/', 'Show/Episode.MKV', 'show/episode.mkv', 'Episode.MKV', '.mkv', 100, "
+        "'2026-09-26T00:00:00Z', 1)");
+    QVERIFY(query.exec(insert));
+    QVERIFY(!query.exec(insert));
+    QVERIFY(query.exec(QStringLiteral("SELECT available, recognition_state FROM local_files")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 1);
+    QCOMPARE(query.value(1).toString(), QStringLiteral("unprocessed"));
+    query.finish();
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO local_files (root_path, relative_path, normalized_relative_path, file_name, extension, "
+        "size_bytes, modified_at, last_seen_scan_id) "
+        "SELECT 'R:/', relative_path, normalized_relative_path, file_name, extension, size_bytes, "
+        "modified_at, last_seen_scan_id FROM local_files")));
+    QVERIFY(!query.exec(QStringLiteral("UPDATE local_files SET recognition_state = 'invalid'")));
+}
+
+void SqliteDatabaseTests::migrationUpgradesVersionSixWithoutDataLoss() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)")));
+    QVERIFY(query.exec(QStringLiteral("INSERT INTO schema_version VALUES (1),(2),(3),(4),(5),(6)")));
+    QVERIFY(query.exec(QStringLiteral("CREATE TABLE media (id INTEGER PRIMARY KEY, name TEXT, type INTEGER, status INTEGER)")));
+    QVERIFY(query.exec(QStringLiteral("INSERT INTO media VALUES (42, 'Preserved media', 1, 1)")));
+    QVERIFY(query.exec(QStringLiteral(
+        "CREATE TABLE user_preferences (id INTEGER PRIMARY KEY, score_minimum REAL, score_maximum REAL, "
+        "score_step REAL, cover_quality TEXT, synchronization_enabled INTEGER, synchronization_interval_ms INTEGER)")));
+    QVERIFY(query.exec(QStringLiteral("INSERT INTO user_preferences VALUES (1, 1, 100, 5, 'large', 0, 12345)")));
+    QVERIFY(query.exec(QStringLiteral(
+        "CREATE TABLE cover_cache (media_id INTEGER PRIMARY KEY REFERENCES media(id), remote_url TEXT, "
+        "quality TEXT, relative_path TEXT, mime_type TEXT, byte_size INTEGER, etag TEXT, last_modified TEXT, validated_at TEXT)")));
+    QVERIFY(query.exec(QStringLiteral("INSERT INTO cover_cache VALUES (42, 'https://example.test/42.jpg', 'large', '42.jpg', 'image/jpeg', 12, 'etag', '', '2026-09-26T00:00:00Z')")));
+    QVERIFY(query.exec(QStringLiteral(
+        "CREATE TABLE anilist_pending_changes (id INTEGER PRIMARY KEY, media_id INTEGER REFERENCES media(id), "
+        "field INTEGER, previous_value TEXT, new_value TEXT, created_at TEXT, local_updated_at TEXT, "
+        "remote_observed_at TEXT, remote_version TEXT, attempts INTEGER, status INTEGER, last_error TEXT)")));
+    QVERIFY(query.exec(QStringLiteral("INSERT INTO anilist_pending_changes VALUES (7, 42, 1, 'old', 'new', '2026-09-26T00:00:00Z', '2026-09-26T00:00:00Z', NULL, 'v1', 2, 0, 'retry')")));
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+    QVERIFY(query.exec(QStringLiteral("SELECT name FROM media WHERE id = 42")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("Preserved media"));
+    QVERIFY(query.exec(QStringLiteral("SELECT score_step, cover_quality, synchronization_interval_ms FROM user_preferences")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 5);
+    QCOMPARE(query.value(1).toString(), QStringLiteral("large"));
+    QCOMPARE(query.value(2).toInt(), 12345);
+    QVERIFY(query.exec(QStringLiteral("SELECT remote_url, etag FROM cover_cache WHERE media_id = 42")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("https://example.test/42.jpg"));
+    QCOMPARE(query.value(1).toString(), QStringLiteral("etag"));
+    QVERIFY(query.exec(QStringLiteral("SELECT new_value, attempts, last_error FROM anilist_pending_changes WHERE id = 7")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("new"));
+    QCOMPARE(query.value(1).toInt(), 2);
+    QCOMPARE(query.value(2).toString(), QStringLiteral("retry"));
+    QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version WHERE version = 7")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 1);
+}
+
+void SqliteDatabaseTests::migrationRequiresVersionSevenAndRollsBack() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)")));
+    QVERIFY(query.exec(QStringLiteral("CREATE TRIGGER reject_seven BEFORE INSERT ON schema_version "
+                                      "WHEN NEW.version = 7 BEGIN SELECT RAISE(IGNORE); END")));
+    QVERIFY(!database.migrate());
+    QVERIFY(!database.lastError().isEmpty());
+    QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM sqlite_master WHERE name IN ('local_files', 'library_scans', 'media')")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 0);
+}
+
+void SqliteDatabaseTests::migrationUpgradesLegacyScannerPreferences() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath("legacy.sqlite"));
+    QVERIFY(database.open());
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec("CREATE TABLE user_preferences (id INTEGER PRIMARY KEY, score_minimum REAL, score_maximum REAL, score_step REAL, cover_quality TEXT, synchronization_enabled INTEGER, synchronization_interval_ms INTEGER)"));
+    QVERIFY(query.exec("INSERT INTO user_preferences VALUES (1, 0, 100, 5, 'large', 0, 1800000)"));
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+    QVERIFY(database.migrate());
+    QVERIFY(query.exec("SELECT library_root, scan_extensions, score_step FROM user_preferences"));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("Q:\\"));
+    QCOMPARE(query.value(1).toString(), QStringLiteral("[\".mkv\",\".mp4\",\".avi\",\".webm\",\".m4v\",\".mov\",\".wmv\",\".ts\"]"));
+    QCOMPARE(query.value(2).toInt(), 5);
+    QVERIFY(query.exec("SELECT COUNT(*) FROM schema_version WHERE version = 8"));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 1);
+}
+
+void SqliteDatabaseTests::migrationRequiresVersionEightAndRollsBack() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath("legacy.sqlite"));
+    QVERIFY(database.open());
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)"));
+    QVERIFY(query.exec("CREATE TRIGGER reject_eight BEFORE INSERT ON schema_version WHEN NEW.version = 8 BEGIN SELECT RAISE(IGNORE); END"));
+    QVERIFY(!database.migrate());
+    QVERIFY(!database.lastError().isEmpty());
+    QVERIFY(query.exec("SELECT COUNT(*) FROM sqlite_master WHERE name = 'user_preferences'"));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 0);
 }
 
 QTEST_MAIN(SqliteDatabaseTests)

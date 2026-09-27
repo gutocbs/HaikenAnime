@@ -10,6 +10,12 @@ private slots:
     void acceptsSupportedPreferences();
     void rejectsInvalidPreferences_data();
     void rejectsInvalidPreferences();
+    void usesExactScannerDefaults();
+    void normalizesScanExtensions();
+    void rejectsInvalidScanExtensions_data();
+    void rejectsInvalidScanExtensions();
+    void rejectsEmptyLibraryRoot();
+    void comparesScannerPreferences();
 };
 
 void UserPreferencesValidatorTests::acceptsSupportedPreferences() {
@@ -60,6 +66,69 @@ void UserPreferencesValidatorTests::rejectsInvalidPreferences() {
     const auto result = ValidateUserPreferences(preferences);
     QVERIFY(!result.valid);
     QVERIFY(!result.error.isEmpty());
+}
+
+void UserPreferencesValidatorTests::usesExactScannerDefaults() {
+    const UserPreferences preferences;
+    QCOMPARE(preferences.libraryRoot, QStringLiteral("Q:\\"));
+    QCOMPARE(preferences.scanExtensions, QStringList({".mkv", ".mp4", ".avi", ".webm",
+                                                    ".m4v", ".mov", ".wmv", ".ts"}));
+    QVERIFY(ValidateUserPreferences(preferences).valid);
+}
+
+void UserPreferencesValidatorTests::normalizesScanExtensions() {
+    QString error = QStringLiteral("stale error");
+    QCOMPARE(NormalizeScanExtensions({"MKV", ".Mp4", "..AVI", " .WebM "}, error),
+             QStringList({".mkv", ".mp4", ".avi", ".webm"}));
+    QVERIFY(error.isEmpty());
+    UserPreferences preferences;
+    preferences.scanExtensions = {"MKV"};
+    QVERIFY(ValidateUserPreferences(preferences).valid);
+}
+
+void UserPreferencesValidatorTests::rejectsInvalidScanExtensions_data() {
+    QTest::addColumn<QStringList>("extensions");
+    QTest::newRow("none selected") << QStringList{};
+    QTest::newRow("empty") << QStringList{""};
+    QTest::newRow("blank") << QStringList{"  "};
+    QTest::newRow("only dots") << QStringList{"..."};
+    QTest::newRow("normalized duplicate") << QStringList{"MKV", ".mkv"};
+    QTest::newRow("multiple dots duplicate") << QStringList{".mkv", "..MKV"};
+    QTest::newRow("forward separator") << QStringList{".mkv", "video/mp4"};
+    QTest::newRow("backward separator") << QStringList{".mkv", "video\\mp4"};
+}
+
+void UserPreferencesValidatorTests::rejectsInvalidScanExtensions() {
+    QFETCH(QStringList, extensions);
+    QString error;
+    QVERIFY(NormalizeScanExtensions(extensions, error).isEmpty());
+    QVERIFY(!error.isEmpty());
+    UserPreferences preferences;
+    preferences.scanExtensions = extensions;
+    const auto result = ValidateUserPreferences(preferences);
+    QVERIFY(!result.valid);
+    QVERIFY(!result.error.isEmpty());
+}
+
+void UserPreferencesValidatorTests::rejectsEmptyLibraryRoot() {
+    for (const auto &root : {QString{}, QStringLiteral("   ")}) {
+        UserPreferences preferences;
+        preferences.libraryRoot = root;
+        const auto result = ValidateUserPreferences(preferences);
+        QVERIFY(!result.valid);
+        QVERIFY(!result.error.isEmpty());
+    }
+}
+
+void UserPreferencesValidatorTests::comparesScannerPreferences() {
+    const UserPreferences defaults;
+    UserPreferences changedRoot;
+    changedRoot.libraryRoot = QStringLiteral("R:\\Anime");
+    QVERIFY(!(defaults == changedRoot));
+    UserPreferences changedExtensions;
+    changedExtensions.scanExtensions = {".mp4"};
+    QVERIFY(!(defaults == changedExtensions));
+    QVERIFY(defaults == UserPreferences{});
 }
 
 QTEST_MAIN(UserPreferencesValidatorTests)

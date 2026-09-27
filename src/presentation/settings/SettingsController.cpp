@@ -1,6 +1,103 @@
 #include "SettingsController.h"
 
 #include "../../application/configuration/UserPreferencesValidator.h"
+#include "../../app/LocalLibraryScanCoordinator.h"
+
+QString SettingsController::libraryRoot() const { return draft_.libraryRoot; }
+QStringList SettingsController::availableScanExtensions() const {
+    QStringList options = UserPreferences{}.scanExtensions;
+    for (const auto &extension : persisted_.scanExtensions + draft_.scanExtensions)
+        if (!options.contains(extension)) options.append(extension);
+    return options;
+}
+QStringList SettingsController::selectedScanExtensions() const { return draft_.scanExtensions; }
+bool SettingsController::scanRunning() const { return scanRunning_; }
+qsizetype SettingsController::scanCandidateCount() const { return scanCandidateCount_; }
+QString SettingsController::scanStatusMessage() const { return scanStatusMessage_; }
+QString SettingsController::scanErrorMessage() const { return scanErrorMessage_; }
+
+void SettingsController::SetScanCoordinator(LocalLibraryScanCoordinator *coordinator) {
+    if (scanCoordinator_ == coordinator) return;
+    if (scanCoordinator_) disconnect(scanCoordinator_, nullptr, this, nullptr);
+    scanCoordinator_ = coordinator;
+    scanRunning_ = false;
+    scanCandidateCount_ = 0;
+    scanStatusMessage_ = tr("Nenhuma varredura iniciada.");
+    scanErrorMessage_.clear();
+    if (coordinator) {
+        connect(coordinator, &LocalLibraryScanCoordinator::started, this, [this](const QString &root) {
+            scanRunning_ = true;
+            scanCandidateCount_ = 0;
+            scanStatusMessage_ = tr("Escaneando %1").arg(root);
+            scanErrorMessage_.clear();
+            emit scanChanged();
+        });
+        connect(coordinator, &LocalLibraryScanCoordinator::progressChanged, this, [this](qsizetype count) {
+            scanCandidateCount_ = count;
+            emit scanChanged();
+        });
+        connect(coordinator, &LocalLibraryScanCoordinator::completed, this, [this](qsizetype count) {
+            scanRunning_ = false;
+            scanCandidateCount_ = count;
+            scanStatusMessage_ = tr("Varredura concluída.");
+            scanErrorMessage_.clear();
+            emit scanChanged();
+        });
+        connect(coordinator, &LocalLibraryScanCoordinator::failed, this, [this](const QString &error) {
+            scanRunning_ = false;
+            scanStatusMessage_ = tr("A varredura não foi concluída.");
+            scanErrorMessage_ = error;
+            emit scanChanged();
+        });
+        connect(coordinator, &QObject::destroyed, this, [this] {
+            scanRunning_ = false;
+            scanStatusMessage_ = tr("Varredura indisponível.");
+            scanErrorMessage_ = tr("O serviço de varredura não está disponível.");
+            emit scanChanged();
+        });
+    }
+    emit scanChanged();
+}
+
+void SettingsController::SetLibraryRoot(const QString &root) {
+    draft_.libraryRoot = root;
+    statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
+}
+
+void SettingsController::SetScanExtensionEnabled(const QString &extension, const bool enabled) {
+    QString error;
+    const auto normalized = NormalizeScanExtensions({extension}, error);
+    extensionInputValid_ = !normalized.isEmpty();
+    if (extensionInputValid_) {
+        const auto &value = normalized.first();
+        if (enabled && !draft_.scanExtensions.contains(value)) draft_.scanExtensions.append(value);
+        if (!enabled) draft_.scanExtensions.removeAll(value);
+    }
+    statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
+}
+
+void SettingsController::ScanNow() {
+    if (dirty() || saving_ || !valid_) {
+        scanErrorMessage_ = tr("Salve ou descarte as alterações antes de escanear.");
+    } else if (scanRunning_) {
+        scanErrorMessage_ = tr("Uma varredura já está em andamento.");
+    } else if (!scanCoordinator_) {
+        scanErrorMessage_ = tr("O serviço de varredura não está disponível.");
+    } else {
+        LocalLibraryScanRequest request;
+        request.rootPath = persisted_.libraryRoot;
+        request.allowedExtensions = persisted_.scanExtensions;
+        if (scanCoordinator_->start(request)) {
+            scanRunning_ = true;
+            scanCandidateCount_ = 0;
+            scanStatusMessage_ = tr("Escaneando %1").arg(request.rootPath);
+            scanErrorMessage_.clear();
+        } else {
+            scanErrorMessage_ = tr("Não foi possível iniciar a varredura. O serviço pode estar ocupado ou encerrando.");
+        }
+    }
+    emit scanChanged();
+}
 
 namespace {
 QVariantMap option(const QString &key, const QString &label) {
@@ -23,6 +120,7 @@ SettingsController::SettingsController(IUserPreferencesRepository *repository,
     : QObject(parent), repository_(repository), persisted_(initial), draft_(initial),
       coverQualityKey_(CoverQualityName(initial.coverQuality)) {
     qRegisterMetaType<UserPreferences>();
+    scanStatusMessage_ = tr("Nenhuma varredura iniciada.");
     refreshValidation();
 }
 
@@ -32,7 +130,7 @@ double SettingsController::scoreStep() const { return draft_.scoreStep; }
 QString SettingsController::coverQualityKey() const { return coverQualityKey_; }
 bool SettingsController::synchronizationEnabled() const { return draft_.synchronizationEnabled; }
 int SettingsController::synchronizationIntervalMs() const { return draft_.synchronizationIntervalMs; }
-bool SettingsController::dirty() const { return !(draft_ == persisted_); }
+bool SettingsController::dirty() const { return !extensionInputValid_ || !(draft_ == persisted_); }
 bool SettingsController::valid() const { return valid_; }
 bool SettingsController::saving() const { return saving_; }
 QString SettingsController::statusMessage() const { return statusMessage_; }
@@ -104,11 +202,14 @@ void SettingsController::Discard() {
     draft_ = persisted_;
     coverQualityKey_ = CoverQualityName(draft_.coverQuality);
     qualityKeyValid_ = true;
+    extensionInputValid_ = true;
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }
 
 void SettingsController::refreshValidation() {
     const auto result = ValidateUserPreferences(draft_);
-    valid_ = qualityKeyValid_ && result.valid;
-    if (!valid_) errorMessage_ = qualityKeyValid_ ? result.error : tr("Qualidade de capa inválida.");
+    valid_ = qualityKeyValid_ && extensionInputValid_ && result.valid;
+    if (!qualityKeyValid_) errorMessage_ = tr("Qualidade de capa inválida.");
+    else if (!extensionInputValid_) errorMessage_ = tr("Extensão de arquivo inválida.");
+    else if (!result.valid) errorMessage_ = result.error;
 }

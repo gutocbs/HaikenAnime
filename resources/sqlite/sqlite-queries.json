@@ -12,6 +12,11 @@
     "deleteCoverCache": ":/sqlite/queries/delete-cover-cache.sql",
     "clearCoverCache": ":/sqlite/queries/clear-cover-cache.sql",
     "readUserPreferences": ":/sqlite/queries/read-user-preferences.sql",
-    "upsertUserPreferences": ":/sqlite/queries/upsert-user-preferences.sql"
+    "upsertUserPreferences": ":/sqlite/queries/upsert-user-preferences.sql",
+    "beginLibraryScan": ":/sqlite/queries/begin-library-scan.sql",
+    "upsertLocalFile": ":/sqlite/queries/upsert-local-file.sql",
+    "completeLibraryScan": ":/sqlite/queries/complete-library-scan.sql",
+    "failLibraryScan": ":/sqlite/queries/fail-library-scan.sql",
+    "markLocalFilesUnavailable": ":/sqlite/queries/mark-local-files-unavailable.sql"
   }
 }

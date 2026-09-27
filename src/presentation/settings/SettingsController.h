@@ -3,8 +3,11 @@
 
 #include <QObject>
 #include <QVariantList>
+#include <QPointer>
 
 #include "../../application/configuration/IUserPreferencesRepository.h"
+
+class LocalLibraryScanCoordinator;
 
 class SettingsController final : public QObject {
     Q_OBJECT
@@ -22,6 +25,13 @@ class SettingsController final : public QObject {
     Q_PROPERTY(bool saving READ saving NOTIFY changed)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY changed)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY changed)
+    Q_PROPERTY(QString libraryRoot READ libraryRoot NOTIFY changed)
+    Q_PROPERTY(QStringList availableScanExtensions READ availableScanExtensions NOTIFY changed)
+    Q_PROPERTY(QStringList selectedScanExtensions READ selectedScanExtensions NOTIFY changed)
+    Q_PROPERTY(bool scanRunning READ scanRunning NOTIFY scanChanged)
+    Q_PROPERTY(qsizetype scanCandidateCount READ scanCandidateCount NOTIFY scanChanged)
+    Q_PROPERTY(QString scanStatusMessage READ scanStatusMessage NOTIFY scanChanged)
+    Q_PROPERTY(QString scanErrorMessage READ scanErrorMessage NOTIFY scanChanged)
 public:
     explicit SettingsController(IUserPreferencesRepository *repository,
                                 UserPreferences initial, QObject *parent = nullptr);
@@ -39,6 +49,14 @@ public:
     bool saving() const;
     QString statusMessage() const;
     QString errorMessage() const;
+    QString libraryRoot() const;
+    QStringList availableScanExtensions() const;
+    QStringList selectedScanExtensions() const;
+    bool scanRunning() const;
+    qsizetype scanCandidateCount() const;
+    QString scanStatusMessage() const;
+    QString scanErrorMessage() const;
+    void SetScanCoordinator(LocalLibraryScanCoordinator *coordinator);
 
     Q_INVOKABLE void SetScoreScale(double minimum, double maximum, double step);
     Q_INVOKABLE void SetCoverQuality(const QString &key);
@@ -46,8 +64,12 @@ public:
     Q_INVOKABLE void SetSynchronizationInterval(int intervalMs);
     Q_INVOKABLE void Save();
     Q_INVOKABLE void Discard();
+    Q_INVOKABLE void SetLibraryRoot(const QString &root);
+    Q_INVOKABLE void SetScanExtensionEnabled(const QString &extension, bool enabled);
+    Q_INVOKABLE void ScanNow();
 signals:
     void changed();
+    void scanChanged();
     void preferencesApplied(UserPreferences preferences);
 private:
     void refreshValidation();
@@ -60,6 +82,12 @@ private:
     bool saving_ = false;
     QString statusMessage_;
     QString errorMessage_;
+    QPointer<LocalLibraryScanCoordinator> scanCoordinator_;
+    bool extensionInputValid_ = true;
+    bool scanRunning_ = false;
+    qsizetype scanCandidateCount_ = 0;
+    QString scanStatusMessage_;
+    QString scanErrorMessage_;
 };
 
 #endif

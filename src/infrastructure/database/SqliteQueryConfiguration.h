@@ -19,7 +19,14 @@ struct SqliteQueryConfiguration final {
     QString readUserPreferencesPath;
     QString upsertUserPreferencesPath;
 
-    [[nodiscard]] bool load(QString &error) ;
+    QString beginLibraryScanPath;
+    QString upsertLocalFilePath;
+    QString completeLibraryScanPath;
+    QString failLibraryScanPath;
+    QString markLocalFilesUnavailablePath;
+
+    [[nodiscard]] bool load(QString &error,
+                            const QString &configurationPath = QStringLiteral(":/sqlite/queries/sqlite-queries.json"));
     void setLogger(AsyncLogger *logger);
     AsyncLogger *logger = nullptr;
 };

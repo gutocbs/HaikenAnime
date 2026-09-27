@@ -4,6 +4,7 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Controls.Basic as Basic
 import QtQuick.Layouts 1.15
+import QtQuick.Dialogs as NativeDialogs
 
 Item {
     id: settingsScreen
@@ -522,11 +523,74 @@ Item {
             spacing: 16
             SectionCard {
                 Label { text: qsTr("Arquivos locais"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
-                StaticField { label: qsTr("Pasta principal da biblioteca"); value: qsTr("Nenhuma pasta selecionada") }
+                FieldLabel { text: qsTr("PASTA PRINCIPAL DA BIBLIOTECA") }
+                TextField {
+                    Layout.fillWidth: true
+                    text: controller.libraryRoot
+                    color: ink
+                    selectByMouse: true
+                    Accessible.name: qsTr("Pasta principal da biblioteca")
+                    onTextEdited: controller.SetLibraryRoot(text)
+                }
                 RowLayout {
                     Layout.fillWidth: true
                     Item { Layout.fillWidth: true }
-                    Button { text: qsTr("Selecionar pasta"); enabled: false }
+                    Button { text: qsTr("Selecionar pasta"); onClicked: libraryFolderDialog.open() }
+                }
+                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
+                FieldLabel { text: qsTr("EXTENSÕES INCLUÍDAS") }
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: width >= 580 ? 4 : width >= 300 ? 2 : 1
+                    Repeater {
+                        model: controller.availableScanExtensions
+                        delegate: CheckBox {
+                            required property string modelData
+                            text: modelData
+                            checked: controller.selectedScanExtensions.indexOf(modelData) >= 0
+                            Accessible.name: qsTr("Incluir arquivos %1").arg(modelData)
+                            onToggled: controller.SetScanExtensionEnabled(modelData, checked)
+                        }
+                    }
+                }
+                Button {
+                    id: scanNowButton
+                    text: qsTr("Escanear agora")
+                    enabled: !controller.dirty && !controller.scanRunning && controller.valid && !controller.saving
+                    Accessible.description: scanDisabledExplanation.text
+                    onClicked: controller.ScanNow()
+                }
+                Label {
+                    id: scanDisabledExplanation
+                    Layout.fillWidth: true
+                    visible: !scanNowButton.enabled
+                    text: controller.scanRunning ? qsTr("Aguarde a varredura em andamento.")
+                         : controller.saving ? qsTr("Aguarde o salvamento das configurações.")
+                         : qsTr("Salve ou descarte as alterações antes de escanear.")
+                    color: muted
+                    font.pixelSize: 10
+                    wrapMode: Text.Wrap
+                }
+                Label {
+                    Layout.fillWidth: true
+                    text: controller.scanStatusMessage
+                    color: ink
+                    font.pixelSize: 12
+                    wrapMode: Text.Wrap
+                }
+                Label {
+                    Layout.fillWidth: true
+                    text: qsTr("Arquivos candidatos: %1").arg(controller.scanCandidateCount)
+                    color: muted
+                    font.pixelSize: 11
+                }
+                Label {
+                    Layout.fillWidth: true
+                    visible: controller.scanErrorMessage.length > 0
+                    text: controller.scanErrorMessage
+                    color: "#b13b43"
+                    font.pixelSize: 11
+                    wrapMode: Text.Wrap
                 }
             }
             SectionCard {
@@ -620,6 +684,19 @@ Item {
                     }
                 }
             }
+        }
+    }
+
+    NativeDialogs.FolderDialog {
+        id: libraryFolderDialog
+        title: qsTr("Selecionar pasta da biblioteca")
+        onAccepted: {
+            // Native dialogs supply a file URL. Decode it into a Windows path,
+            // preserving UNC hosts and percent-encoded folder names.
+            const url = selectedFolder.toString()
+            let path = url.startsWith("file:///") ? url.substring(8)
+                     : url.startsWith("file://") ? "//" + url.substring(7) : url
+            controller.SetLibraryRoot(decodeURIComponent(path).replace(/\//g, "\\"))
         }
     }
 
