@@ -58,6 +58,7 @@ private slots:
     void removesOnlyOwnedTemporaryFiles();
     void doesNotTraverseNestedDirectoriesOrLinks();
     void rejectsJunctionRootWithoutTouchingTarget();
+    void declinesCleanupWhenRootCannotBeAnchored();
     void reportsPartialFailureForLockedOwnedFile();
 };
 
@@ -156,6 +157,32 @@ void CoverTemporaryStoreTests::rejectsJunctionRootWithoutTouchingTarget()
     QVERIFY(!error.isEmpty());
     QVERIFY(QFileInfo::exists(outsideFile));
     QVERIFY(QDir().rmdir(junction));
+#endif
+}
+
+void CoverTemporaryStoreTests::declinesCleanupWhenRootCannotBeAnchored()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows directory-handle anchoring is not available on this platform.");
+#else
+    QTemporaryDir sandbox;
+    const QString root = sandbox.filePath("temporary-covers");
+    QVERIFY(QDir().mkpath(root));
+    const QString ownedFile = QDir(root).filePath("cover-anchored.tmp");
+    writeFile(ownedFile);
+    const HANDLE rootHandle = CreateFileW(reinterpret_cast<LPCWSTR>(root.utf16()), GENERIC_READ,
+        0, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, nullptr);
+    QVERIFY(rootHandle != INVALID_HANDLE_VALUE);
+
+    CoverTemporaryStore store(root);
+    int removed = -1;
+    QString error;
+
+    QVERIFY(!store.ClearAbandoned(removed, error));
+    QCOMPARE(removed, 0);
+    QVERIFY(!error.isEmpty());
+    QVERIFY(QFileInfo::exists(ownedFile));
+    CloseHandle(rootHandle);
 #endif
 }
 
