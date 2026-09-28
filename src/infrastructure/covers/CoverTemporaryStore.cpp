@@ -153,8 +153,8 @@ bool CoverTemporaryStore::ClearAbandoned(int &removedFiles, QString &error) cons
     error.clear();
 
 #ifdef Q_OS_WIN
-    // Do not share write/delete access: while this handle is held, no new handle
-    // can mutate or replace the root path used by the direct-only Qt enumeration.
+    // Hold the validated root object without write/delete sharing; Windows enumeration
+    // and every child open/delete below remain relative to this handle.
     const HANDLE rootHandle = CreateFileW(reinterpret_cast<LPCWSTR>(rootPath_.utf16()), FILE_LIST_DIRECTORY,
         FILE_SHARE_READ, nullptr, OPEN_EXISTING,
         FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT, nullptr);
