@@ -16,7 +16,7 @@ bool CoverTemporaryStore::ClearAbandoned(int &removedFiles, QString &error) cons
 
     const QFileInfo rootInfo(rootPath_);
     if (!rootInfo.exists()) return true;
-    if (!rootInfo.isDir() || rootInfo.isSymLink()) {
+    if (!rootInfo.isDir() || rootInfo.isSymLink() || rootInfo.isJunction()) {
         error = QStringLiteral("The cover temporary root is not a safe directory.");
         return false;
     }

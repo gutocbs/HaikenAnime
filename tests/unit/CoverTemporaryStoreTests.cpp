@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
+#include <QProcess>
 #include <QTemporaryDir>
 #include <QtTest>
 
@@ -56,6 +57,7 @@ private slots:
     void missingRootIsAlreadyClean();
     void removesOnlyOwnedTemporaryFiles();
     void doesNotTraverseNestedDirectoriesOrLinks();
+    void rejectsJunctionRootWithoutTouchingTarget();
     void reportsPartialFailureForLockedOwnedFile();
 };
 
@@ -116,6 +118,45 @@ void CoverTemporaryStoreTests::doesNotTraverseNestedDirectoriesOrLinks()
     QVERIFY(!QFileInfo::exists(root + "/cover-root.tmp"));
     QVERIFY(QFileInfo::exists(nested + "/cover-nested.tmp"));
     QVERIFY(QFileInfo::exists(outside + "/cover-outside.tmp"));
+}
+
+void CoverTemporaryStoreTests::rejectsJunctionRootWithoutTouchingTarget()
+{
+#ifndef Q_OS_WIN
+    QSKIP("Windows junctions are not available on this platform.");
+#else
+    QTemporaryDir sandbox;
+    const QString target = sandbox.filePath("outside");
+    const QString junction = sandbox.filePath("temporary-covers");
+    QVERIFY(QDir().mkpath(target));
+    const QString outsideFile = QDir(target).filePath("cover-outside.tmp");
+    writeFile(outsideFile);
+
+    QProcess createJunction;
+    const QString command = QStringLiteral("mklink /J \"%1\" \"%2\"")
+                                .arg(QDir::toNativeSeparators(junction), QDir::toNativeSeparators(target));
+    const QString commandProcessor = qEnvironmentVariable("COMSPEC");
+    if (commandProcessor.isEmpty()) QSKIP("The Windows command processor is unavailable.");
+    createJunction.setProgram(commandProcessor);
+    createJunction.setNativeArguments(QStringLiteral("/C %1").arg(command));
+    createJunction.start();
+    if (!createJunction.waitForFinished() || createJunction.exitCode() != 0) {
+        QSKIP(qPrintable(QStringLiteral("The test environment cannot create a Windows junction: %1")
+            .arg(QString::fromLocal8Bit(createJunction.readAllStandardOutput()
+                                        + createJunction.readAllStandardError()))));
+    }
+    QVERIFY(QFileInfo(junction).isJunction());
+
+    CoverTemporaryStore store(junction);
+    int removed = -1;
+    QString error;
+
+    QVERIFY(!store.ClearAbandoned(removed, error));
+    QCOMPARE(removed, 0);
+    QVERIFY(!error.isEmpty());
+    QVERIFY(QFileInfo::exists(outsideFile));
+    QVERIFY(QDir().rmdir(junction));
+#endif
 }
 
 void CoverTemporaryStoreTests::reportsPartialFailureForLockedOwnedFile()
