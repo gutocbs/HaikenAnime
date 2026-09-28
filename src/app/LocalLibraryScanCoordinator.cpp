@@ -52,6 +52,7 @@ void LocalLibraryScanCoordinator::execute(const LocalLibraryScanRequest &request
 
     QString error;
     qsizetype candidateFiles = 0;
+    qsizetype skippedFiles = 0;
     bool succeeded = false;
     // Resource scope ends before queuing the terminal signal. Factory products
     // are both constructed and destroyed on this worker, including connections.
@@ -93,6 +94,7 @@ void LocalLibraryScanCoordinator::execute(const LocalLibraryScanRequest &request
                     },
                     [this] { return stopRequested_.load(); });
                 candidateFiles = result.candidateFiles;
+                skippedFiles = result.skippedFiles;
                 present(candidateFiles);
             } else {
                 result.diagnostic = error.isEmpty() ? QStringLiteral("Cannot create local library scanner.") : error;
@@ -122,11 +124,12 @@ void LocalLibraryScanCoordinator::execute(const LocalLibraryScanRequest &request
                                                                : QStringLiteral("succeeded"))
                                        : (stopRequested_.load() ? QStringLiteral("interrupted")
                                                                 : QStringLiteral("failed"));
-        const auto message = QStringLiteral("Local library scan completed: outcome=%1, elapsedMs=%2, candidateFiles=%3%4")
+        const auto message = QStringLiteral("Local library scan completed: outcome=%1, elapsedMs=%2, candidateFiles=%3%4, skippedFiles=%5")
                                  .arg(outcome)
                                  .arg(elapsed.elapsed())
                                  .arg(candidateFiles)
-                                 .arg(succeeded ? QString() : QStringLiteral(", error=%1").arg(error));
+                                 .arg(succeeded ? QString() : QStringLiteral(", error=%1").arg(error))
+                                 .arg(skippedFiles);
         if (succeeded && candidateFiles > 0) logger_->info(LogCategory::LocalLibrary, message);
         else if (succeeded || stopRequested_.load()) logger_->warning(LogCategory::LocalLibrary, message);
         else logger_->error(LogCategory::LocalLibrary, message);

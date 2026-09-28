@@ -412,7 +412,9 @@ void LocalLibraryScanCoordinatorTests::logsSuccessfulLifecycleWithTotals() {
     State state;
     AsyncLogger logger;
     logger.start();
-    LocalLibraryScanCoordinator coordinator(scannerFactory(state, success()), repositoryFactory(state));
+    LocalLibraryScanCoordinator coordinator(scannerFactory(state, [](const auto &, const auto &, const auto &) {
+        return LocalLibraryScanResult{true, false, 3, {}, 2};
+    }), repositoryFactory(state));
     coordinator.setLogger(&logger);
     QSignalSpy completed(&coordinator, &LocalLibraryScanCoordinator::completed);
     QVERIFY(coordinator.start(request()));
@@ -421,6 +423,7 @@ void LocalLibraryScanCoordinatorTests::logsSuccessfulLifecycleWithTotals() {
     QVERIFY(entries.contains(QStringLiteral("[LocalLibrary] Local library scan started: root=Q:/")));
     QVERIFY(entries.contains(QStringLiteral("[LocalLibrary] Local library scan completed: outcome=succeeded, elapsedMs=")));
     QVERIFY(entries.contains(QStringLiteral("candidateFiles=3")));
+    QVERIFY(entries.contains(QStringLiteral("skippedFiles=2")));
     QCOMPARE(entries.count(QStringLiteral("Local library scan started:")), 1);
     QCOMPARE(entries.count(QStringLiteral("Local library scan completed:")), 1);
     QCOMPARE(entries.count(QStringLiteral("[LocalLibrary]")), 2);
@@ -443,6 +446,7 @@ void LocalLibraryScanCoordinatorTests::logsZeroResultAsWarning() {
     const auto entries = loggedScanLifecycle(logger, coordinator);
     QVERIFY(entries.contains(QStringLiteral("[WARN] [LocalLibrary] Local library scan completed: outcome=zero-results, elapsedMs=")));
     QVERIFY(entries.contains(QStringLiteral("candidateFiles=0")));
+    QVERIFY(entries.contains(QStringLiteral("skippedFiles=0")));
 }
 
 void LocalLibraryScanCoordinatorTests::logsEnumerationAndRepositoryErrors() {
@@ -462,6 +466,7 @@ void LocalLibraryScanCoordinatorTests::logsEnumerationAndRepositoryErrors() {
         const auto entries = loggedScanLifecycle(logger, coordinator);
         QVERIFY(entries.contains(QStringLiteral("[ERROR] [LocalLibrary] Local library scan completed: outcome=failed, elapsedMs=")));
         QVERIFY(entries.contains(QStringLiteral("candidateFiles=2, error=enumeration failed")));
+        QVERIFY(entries.contains(QStringLiteral("skippedFiles=0")));
     }
     {
         QFile::remove(scanLogPath());
@@ -477,7 +482,9 @@ void LocalLibraryScanCoordinatorTests::logsEnumerationAndRepositoryErrors() {
         QVERIFY(coordinator.start(request()));
         QTRY_COMPARE_WITH_TIMEOUT(failed.count(), 1, 3000);
         const auto entries = loggedScanLifecycle(logger, coordinator);
+        QVERIFY(entries.contains(QStringLiteral("[ERROR] [LocalLibrary] Local library scan completed: outcome=failed, elapsedMs=")));
         QVERIFY(entries.contains(QStringLiteral("candidateFiles=0, error=repository unavailable")));
+        QVERIFY(entries.contains(QStringLiteral("skippedFiles=0")));
     }
 }
 
@@ -500,6 +507,7 @@ void LocalLibraryScanCoordinatorTests::logsInterruptedShutdown() {
     const auto entries = loggedScanLifecycle(logger, coordinator);
     QVERIFY(entries.contains(QStringLiteral("[WARN] [LocalLibrary] Local library scan completed: outcome=interrupted, elapsedMs=")));
     QVERIFY(entries.contains(QStringLiteral("candidateFiles=0, error=interrupted")));
+    QVERIFY(entries.contains(QStringLiteral("skippedFiles=0")));
 }
 
 QTEST_GUILESS_MAIN(LocalLibraryScanCoordinatorTests)
