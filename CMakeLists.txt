@@ -519,6 +519,7 @@ add_executable(CoverTemporaryStoreTests
         src/infrastructure/covers/CoverTemporaryStore.cpp
 )
 target_include_directories(CoverTemporaryStoreTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(CoverTemporaryStoreTests PRIVATE HAIKENANIME_COVER_TEMPORARY_STORE_TESTING)
 target_link_libraries(CoverTemporaryStoreTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME CoverTemporaryStoreTests COMMAND CoverTemporaryStoreTests)
 
