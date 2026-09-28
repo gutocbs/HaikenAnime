@@ -15,7 +15,8 @@ QtCoverDownloader::QtCoverDownloader(QString temporaryDirectory, CoverSettings s
 quint64 QtCoverDownloader::Start(const CoverRequest &request, Completion completion)
 {
     const quint64 id = nextId_++;
-    auto temporary = new QTemporaryFile(QDir(directory_).filePath("cover-XXXXXX.tmp"), this);
+    auto temporary = new QTemporaryFile(
+        QDir(directory_).filePath(QString::fromLatin1(CoverTemporaryFiles::NameTemplate)), this);
     temporary->setAutoRemove(false);
     if (!temporary->open()) {
         CoverDownloadResult result; result.request = request; result.failure = CoverFailureCategory::FileSystem;

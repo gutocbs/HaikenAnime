@@ -3,6 +3,7 @@
 
 #include "../../application/covers/CoverSettings.h"
 #include "../../application/covers/ICoverDownloader.h"
+#include "CoverTemporaryStore.h"
 #include <QHash>
 #include <QNetworkAccessManager>
 #include <QObject>

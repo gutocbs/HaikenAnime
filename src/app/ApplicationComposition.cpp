@@ -11,6 +11,7 @@
 #include "../infrastructure/database/SqliteCoverCacheRepository.h"
 #include "../infrastructure/database/SqliteUserPreferencesRepository.h"
 #include "../infrastructure/covers/CoverFileStore.h"
+#include "../infrastructure/covers/CoverTemporaryStore.h"
 #include "../infrastructure/covers/QtCoverDownloader.h"
 #include "../infrastructure/library/LocalLibraryScanner.h"
 #include "../infrastructure/library/QtDirectoryEnumerator.h"
@@ -246,6 +247,14 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         std::move(deleteCoverQuery), std::move(clearCoverQuery));
     const QString cacheRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)).filePath("covers");
     const QString temporaryRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation)).filePath("HaikenAnime/covers");
+    int removedTemporaryFiles = 0;
+    QString temporaryCleanupError;
+    if (!CoverTemporaryStore(temporaryRoot).ClearAbandoned(removedTemporaryFiles, temporaryCleanupError)) {
+        context.logger->warning(LogCategory::Covers, temporaryCleanupError);
+    } else if (removedTemporaryFiles > 0) {
+        context.logger->info(LogCategory::Covers,
+            QStringLiteral("Removed %1 abandoned cover download(s).").arg(removedTemporaryFiles));
+    }
     context.coverFileStore = std::make_unique<CoverFileStore>(cacheRoot, settings.covers);
     context.coverDownloader = std::make_unique<QtCoverDownloader>(temporaryRoot, settings.covers);
     context.coverCoordinator = std::make_unique<CoverDownloadCoordinator>(

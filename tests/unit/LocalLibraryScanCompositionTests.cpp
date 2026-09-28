@@ -47,6 +47,7 @@ private slots:
     void manualRootChangeRetainsOldInventory();
     void scannerQueryFailureDoesNotDisableMedia_data();
     void scannerQueryFailureDoesNotDisableMedia();
+    void startupCleanupRemovesAbandonedCoverTemporaryWithoutTouchingCache();
     void workerProductsReleaseConnectionsAndShutdownBeforeDatabase();
     void destroyedLifetimeCancelsScheduledStartup();
 };
@@ -156,6 +157,27 @@ void LocalLibraryScanCompositionTests::scannerQueryFailureDoesNotDisableMedia() 
     QVERIFY(!controller.scanErrorMessage().isEmpty());
     QVERIFY(!controller.scanRunning());
     QVERIFY(context.isReady());
+}
+
+void LocalLibraryScanCompositionTests::startupCleanupRemovesAbandonedCoverTemporaryWithoutTouchingCache() {
+    const QString temporaryRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+                                      .filePath("HaikenAnime/covers");
+    const QString cacheRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+                                  .filePath("covers");
+    QVERIFY(QDir().mkpath(temporaryRoot));
+    QVERIFY(QDir().mkpath(cacheRoot));
+    const QString abandoned = QDir(temporaryRoot).filePath("cover-composition-smoke.tmp");
+    const QString persistent = QDir(cacheRoot).filePath("persistent-composition-smoke.png");
+    writeFile(abandoned);
+    writeFile(persistent);
+
+    QTemporaryDir directory;
+    auto context = createApplicationContext(optionsFor(directory));
+
+    QVERIFY2(context.isReady(), qPrintable(context.initializationError));
+    QVERIFY(!QFileInfo::exists(abandoned));
+    QVERIFY(QFileInfo::exists(persistent));
+    QVERIFY(QFile::remove(persistent));
 }
 
 void LocalLibraryScanCompositionTests::workerProductsReleaseConnectionsAndShutdownBeforeDatabase() {

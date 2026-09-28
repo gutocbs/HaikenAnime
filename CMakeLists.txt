@@ -150,6 +150,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqliteQueryConfiguration.cpp
         src/infrastructure/covers/CoverFileStore.h
         src/infrastructure/covers/CoverFileStore.cpp
+        src/infrastructure/covers/CoverTemporaryStore.h
+        src/infrastructure/covers/CoverTemporaryStore.cpp
         src/infrastructure/covers/QtCoverDownloader.h
         src/infrastructure/covers/QtCoverDownloader.cpp
         src/infrastructure/secrets/FileSecretStore.h
@@ -511,6 +513,15 @@ target_include_directories(CoverFileStoreTests PRIVATE ${CMAKE_CURRENT_SOURCE_DI
 target_link_libraries(CoverFileStoreTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
 add_test(NAME CoverFileStoreTests COMMAND CoverFileStoreTests)
 
+add_executable(CoverTemporaryStoreTests
+        tests/unit/CoverTemporaryStoreTests.cpp
+        src/infrastructure/covers/CoverTemporaryStore.h
+        src/infrastructure/covers/CoverTemporaryStore.cpp
+)
+target_include_directories(CoverTemporaryStoreTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(CoverTemporaryStoreTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME CoverTemporaryStoreTests COMMAND CoverTemporaryStoreTests)
+
 add_executable(CoverDownloadCoordinatorTests tests/unit/CoverDownloadCoordinatorTests.cpp
         src/application/covers/CoverDownloadCoordinator.cpp
         src/infrastructure/logging/AsyncLogger.cpp)
@@ -820,6 +831,7 @@ set(HAIKENANIME_TESTS
         CoverSettingsTests
         CoverSourceResolverTests
         CoverFileStoreTests
+        CoverTemporaryStoreTests
         CoverDownloadCoordinatorTests
         QtCoverDownloaderTests
         AniListAuthManagerTests
