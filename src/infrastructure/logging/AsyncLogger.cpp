@@ -28,6 +28,7 @@ QString toLogString(LogCategory category) {
     case LogCategory::QueryStore: return QStringLiteral("QueryStore");
     case LogCategory::Sync: return QStringLiteral("Sync");
     case LogCategory::Covers: return QStringLiteral("Covers");
+    case LogCategory::LocalLibrary: return QStringLiteral("LocalLibrary");
     }
     return QStringLiteral("Unknown");
 }

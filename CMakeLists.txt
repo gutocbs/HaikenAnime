@@ -733,6 +733,8 @@ add_executable(SettingsControllerTests
         src/application/configuration/UserPreferencesValidator.cpp
         src/app/LocalLibraryScanCoordinator.h
         src/app/LocalLibraryScanCoordinator.cpp
+        src/infrastructure/logging/AsyncLogger.h
+        src/infrastructure/logging/AsyncLogger.cpp
 )
 target_link_libraries(SettingsControllerTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME SettingsControllerTests COMMAND SettingsControllerTests)
@@ -799,6 +801,8 @@ add_executable(LocalLibraryScanCoordinatorTests
         tests/unit/LocalLibraryScanCoordinatorTests.cpp
         src/app/LocalLibraryScanCoordinator.h
         src/app/LocalLibraryScanCoordinator.cpp
+        src/infrastructure/logging/AsyncLogger.h
+        src/infrastructure/logging/AsyncLogger.cpp
         src/infrastructure/library/LocalLibraryScanner.cpp
         src/infrastructure/library/QtDirectoryEnumerator.cpp)
 target_link_libraries(LocalLibraryScanCoordinatorTests PRIVATE Qt6::Core Qt6::Test)

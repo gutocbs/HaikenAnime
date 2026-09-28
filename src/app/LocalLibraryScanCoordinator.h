@@ -10,6 +10,7 @@
 #include "../application/library/ILocalLibraryScanner.h"
 
 class QThread;
+class AsyncLogger;
 
 // Called on its QObject thread. Factories run on the worker and must return
 // owning products: any enumerator or database connection must live with them.
@@ -22,6 +23,9 @@ public:
     LocalLibraryScanCoordinator(ScannerFactory scannerFactory, RepositoryFactory repositoryFactory,
                                 QObject *parent = nullptr);
     ~LocalLibraryScanCoordinator() override;
+    // Non-owning: ApplicationComposition owns the logger and keeps it alive
+    // until this coordinator has joined its worker during destruction.
+    void setLogger(AsyncLogger *logger);
     bool start(const LocalLibraryScanRequest &request);
     void shutdown();
 signals:
@@ -35,6 +39,7 @@ private:
     ScannerFactory scannerFactory_;
     RepositoryFactory repositoryFactory_;
     QThread *thread_ = nullptr;
+    AsyncLogger *logger_ = nullptr;
     std::atomic_bool stopRequested_ = false;
     bool executionActive_ = false;
     bool stopping_ = false;

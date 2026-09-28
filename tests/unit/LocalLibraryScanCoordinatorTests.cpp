@@ -12,6 +12,7 @@
 #endif
 
 #include "../../src/app/LocalLibraryScanCoordinator.h"
+#include "../../src/infrastructure/logging/AsyncLogger.h"
 #include "../../src/infrastructure/library/LocalLibraryScanner.h"
 #include "../../src/infrastructure/library/QtDirectoryEnumerator.h"
 
@@ -109,6 +110,16 @@ LocalLibraryScanCoordinator::RepositoryFactory repositoryFactory(State &state) {
 }
 LocalLibraryScanRequest request() { return {QStringLiteral("Q:/"), {QStringLiteral(".mkv")}}; }
 Scan success() { return [](const auto &, const auto &, const auto &) { return LocalLibraryScanResult{true, false, 3, {}}; }; }
+QString scanLogPath() {
+    return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath(
+        QStringLiteral("logs/haikenanime-%1.log").arg(QDate::currentDate().toString(Qt::ISODate)));
+}
+QString loggedScanLifecycle(AsyncLogger &logger, LocalLibraryScanCoordinator &coordinator) {
+    logger.stop();
+    QFile file(scanLogPath());
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return {};
+    return QString::fromUtf8(file.readAll());
+}
 }
 
 class LocalLibraryScanCoordinatorTests final : public QObject {
@@ -126,6 +137,10 @@ private slots:
     void completionFailureRecordsFailedScan();
     void failureRecordingErrorIsVisible();
     void factoryFailureIsVisible();
+    void logsSuccessfulLifecycleWithTotals();
+    void logsZeroResultAsWarning();
+    void logsEnumerationAndRepositoryErrors();
+    void logsInterruptedShutdown();
 };
 
 void LocalLibraryScanCoordinatorTests::successfulLifecycleOwnsDependenciesOnLowPriorityWorker() {
@@ -389,6 +404,102 @@ void LocalLibraryScanCoordinatorTests::factoryFailureIsVisible() {
     QTRY_COMPARE_WITH_TIMEOUT(failed.count(), 1, 3000);
     QVERIFY(failed.first().first().toString().contains(QStringLiteral("database unavailable")));
     QCOMPARE(state.completeCalls, 0);
+}
+
+void LocalLibraryScanCoordinatorTests::logsSuccessfulLifecycleWithTotals() {
+    QStandardPaths::setTestModeEnabled(true);
+    QFile::remove(scanLogPath());
+    State state;
+    AsyncLogger logger;
+    logger.start();
+    LocalLibraryScanCoordinator coordinator(scannerFactory(state, success()), repositoryFactory(state));
+    coordinator.setLogger(&logger);
+    QSignalSpy completed(&coordinator, &LocalLibraryScanCoordinator::completed);
+    QVERIFY(coordinator.start(request()));
+    QTRY_COMPARE_WITH_TIMEOUT(completed.count(), 1, 3000);
+    const auto entries = loggedScanLifecycle(logger, coordinator);
+    QVERIFY(entries.contains(QStringLiteral("[LocalLibrary] Local library scan started: root=Q:/")));
+    QVERIFY(entries.contains(QStringLiteral("[LocalLibrary] Local library scan completed: outcome=succeeded, elapsedMs=")));
+    QVERIFY(entries.contains(QStringLiteral("candidateFiles=3")));
+    QCOMPARE(entries.count(QStringLiteral("Local library scan started:")), 1);
+    QCOMPARE(entries.count(QStringLiteral("Local library scan completed:")), 1);
+    QCOMPARE(entries.count(QStringLiteral("[LocalLibrary]")), 2);
+    QVERIFY(!entries.contains(QStringLiteral("Local library file scanned")));
+}
+
+void LocalLibraryScanCoordinatorTests::logsZeroResultAsWarning() {
+    QStandardPaths::setTestModeEnabled(true);
+    QFile::remove(scanLogPath());
+    State state;
+    AsyncLogger logger;
+    logger.start();
+    LocalLibraryScanCoordinator coordinator(scannerFactory(state, [](const auto &, const auto &, const auto &) {
+        return LocalLibraryScanResult{true, false, 0, {}};
+    }), repositoryFactory(state));
+    coordinator.setLogger(&logger);
+    QSignalSpy completed(&coordinator, &LocalLibraryScanCoordinator::completed);
+    QVERIFY(coordinator.start(request()));
+    QTRY_COMPARE_WITH_TIMEOUT(completed.count(), 1, 3000);
+    const auto entries = loggedScanLifecycle(logger, coordinator);
+    QVERIFY(entries.contains(QStringLiteral("[WARN] [LocalLibrary] Local library scan completed: outcome=zero-results, elapsedMs=")));
+    QVERIFY(entries.contains(QStringLiteral("candidateFiles=0")));
+}
+
+void LocalLibraryScanCoordinatorTests::logsEnumerationAndRepositoryErrors() {
+    QStandardPaths::setTestModeEnabled(true);
+    {
+        QFile::remove(scanLogPath());
+        State state;
+        AsyncLogger logger;
+        logger.start();
+        LocalLibraryScanCoordinator coordinator(scannerFactory(state, [](const auto &, const auto &, const auto &) {
+            return LocalLibraryScanResult{false, false, 2, QStringLiteral("enumeration failed")};
+        }), repositoryFactory(state));
+        coordinator.setLogger(&logger);
+        QSignalSpy failed(&coordinator, &LocalLibraryScanCoordinator::failed);
+        QVERIFY(coordinator.start(request()));
+        QTRY_COMPARE_WITH_TIMEOUT(failed.count(), 1, 3000);
+        const auto entries = loggedScanLifecycle(logger, coordinator);
+        QVERIFY(entries.contains(QStringLiteral("[ERROR] [LocalLibrary] Local library scan completed: outcome=failed, elapsedMs=")));
+        QVERIFY(entries.contains(QStringLiteral("candidateFiles=2, error=enumeration failed")));
+    }
+    {
+        QFile::remove(scanLogPath());
+        State state;
+        AsyncLogger logger;
+        logger.start();
+        LocalLibraryScanCoordinator coordinator(scannerFactory(state, success()), [](QString &error) {
+            error = QStringLiteral("repository unavailable");
+            return std::unique_ptr<ILocalFileRepository>{};
+        });
+        coordinator.setLogger(&logger);
+        QSignalSpy failed(&coordinator, &LocalLibraryScanCoordinator::failed);
+        QVERIFY(coordinator.start(request()));
+        QTRY_COMPARE_WITH_TIMEOUT(failed.count(), 1, 3000);
+        const auto entries = loggedScanLifecycle(logger, coordinator);
+        QVERIFY(entries.contains(QStringLiteral("candidateFiles=0, error=repository unavailable")));
+    }
+}
+
+void LocalLibraryScanCoordinatorTests::logsInterruptedShutdown() {
+    QStandardPaths::setTestModeEnabled(true);
+    QFile::remove(scanLogPath());
+    State state;
+    QSemaphore entered;
+    AsyncLogger logger;
+    logger.start();
+    LocalLibraryScanCoordinator coordinator(scannerFactory(state, [&](const auto &, const auto &, const auto &stop) {
+        entered.release();
+        while (!stop()) QThread::msleep(1);
+        return LocalLibraryScanResult{false, true, 0, QStringLiteral("interrupted")};
+    }), repositoryFactory(state));
+    coordinator.setLogger(&logger);
+    QVERIFY(coordinator.start(request()));
+    QVERIFY(entered.tryAcquire(1, 3000));
+    coordinator.shutdown();
+    const auto entries = loggedScanLifecycle(logger, coordinator);
+    QVERIFY(entries.contains(QStringLiteral("[WARN] [LocalLibrary] Local library scan completed: outcome=interrupted, elapsedMs=")));
+    QVERIFY(entries.contains(QStringLiteral("candidateFiles=0, error=interrupted")));
 }
 
 QTEST_GUILESS_MAIN(LocalLibraryScanCoordinatorTests)

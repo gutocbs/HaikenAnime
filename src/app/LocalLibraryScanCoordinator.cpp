@@ -1,5 +1,7 @@
 #include "LocalLibraryScanCoordinator.h"
 
+#include "../infrastructure/logging/AsyncLogger.h"
+
 #include <QElapsedTimer>
 #include <QMetaObject>
 #include <QThread>
@@ -11,11 +13,19 @@ LocalLibraryScanCoordinator::LocalLibraryScanCoordinator(ScannerFactory scannerF
     : QObject(parent), scannerFactory_(std::move(scannerFactory)), repositoryFactory_(std::move(repositoryFactory)) {}
 LocalLibraryScanCoordinator::~LocalLibraryScanCoordinator() { shutdown(); }
 
+void LocalLibraryScanCoordinator::setLogger(AsyncLogger *logger) {
+    logger_ = logger;
+}
+
 bool LocalLibraryScanCoordinator::start(const LocalLibraryScanRequest &request) {
     if (stopping_ || executionActive_) return false;
     releaseThread();
     executionActive_ = true;
     stopRequested_ = false;
+    if (logger_) {
+        logger_->info(LogCategory::LocalLibrary,
+                      QStringLiteral("Local library scan started: root=%1").arg(request.rootPath));
+    }
     thread_ = QThread::create([this, request] { execute(request); });
     thread_->start(QThread::LowPriority);
     return true;
@@ -36,6 +46,8 @@ void LocalLibraryScanCoordinator::releaseThread() {
 }
 
 void LocalLibraryScanCoordinator::execute(const LocalLibraryScanRequest &request) {
+    QElapsedTimer elapsed;
+    elapsed.start();
     QMetaObject::invokeMethod(this, [this, root = request.rootPath] { emit started(root); }, Qt::QueuedConnection);
 
     QString error;
@@ -104,6 +116,20 @@ void LocalLibraryScanCoordinator::execute(const LocalLibraryScanRequest &request
                 }
             }
         }
+    }
+    if (logger_) {
+        const auto outcome = succeeded ? (candidateFiles == 0 ? QStringLiteral("zero-results")
+                                                               : QStringLiteral("succeeded"))
+                                       : (stopRequested_.load() ? QStringLiteral("interrupted")
+                                                                : QStringLiteral("failed"));
+        const auto message = QStringLiteral("Local library scan completed: outcome=%1, elapsedMs=%2, candidateFiles=%3%4")
+                                 .arg(outcome)
+                                 .arg(elapsed.elapsed())
+                                 .arg(candidateFiles)
+                                 .arg(succeeded ? QString() : QStringLiteral(", error=%1").arg(error));
+        if (succeeded && candidateFiles > 0) logger_->info(LogCategory::LocalLibrary, message);
+        else if (succeeded || stopRequested_.load()) logger_->warning(LogCategory::LocalLibrary, message);
+        else logger_->error(LogCategory::LocalLibrary, message);
     }
     QMetaObject::invokeMethod(this, [this, succeeded, candidateFiles, error = std::move(error)] {
         // Join before accepting another start, even if the queued callback runs

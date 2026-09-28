@@ -105,6 +105,7 @@ void composeLibraryScanner(ApplicationContext &context, const SqliteQueryConfigu
             if (!database->open()) { error = database->lastError(); return {}; }
             return std::make_unique<OwnedLocalFileRepository>(std::move(database), queries);
         });
+    context.localLibraryScan->setLogger(context.logger.get());
 }
 }
 

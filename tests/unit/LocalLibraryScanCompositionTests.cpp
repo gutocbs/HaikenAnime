@@ -7,6 +7,7 @@
 #include <QThread>
 #include <QStandardPaths>
 #include <QTimer>
+#include <QDate>
 
 #include "../../src/app/ApplicationComposition.h"
 #include "../../src/presentation/settings/SettingsController.h"
@@ -36,6 +37,10 @@ QString alteredConfiguration(const QTemporaryDir &directory, const QString &key,
     output.write(QJsonDocument(root).toJson());
     return path;
 }
+QString scanLogPath() {
+    return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath(
+        QStringLiteral("logs/haikenanime-%1.log").arg(QDate::currentDate().toString(Qt::ISODate)));
+}
 }
 
 class LocalLibraryScanCompositionTests final : public QObject {
@@ -47,6 +52,7 @@ private slots:
     void manualRootChangeRetainsOldInventory();
     void scannerQueryFailureDoesNotDisableMedia_data();
     void scannerQueryFailureDoesNotDisableMedia();
+    void scannerQueryFailureIsLoggedNonfatally();
     void startupCleanupRemovesAbandonedCoverTemporaryWithoutTouchingCache();
     void workerProductsReleaseConnectionsAndShutdownBeforeDatabase();
     void destroyedLifetimeCancelsScheduledStartup();
@@ -156,6 +162,27 @@ void LocalLibraryScanCompositionTests::scannerQueryFailureDoesNotDisableMedia() 
     QTRY_COMPARE(failed.count(), 1);
     QVERIFY(!controller.scanErrorMessage().isEmpty());
     QVERIFY(!controller.scanRunning());
+    QVERIFY(context.isReady());
+}
+
+void LocalLibraryScanCompositionTests::scannerQueryFailureIsLoggedNonfatally() {
+    QFile::remove(scanLogPath());
+    QTemporaryDir directory;
+    auto options = optionsFor(directory);
+    options.queryConfigurationPath = alteredConfiguration(directory, QStringLiteral("beginLibraryScan"), true);
+    auto context = createApplicationContext(options);
+    QVERIFY2(context.isReady(), qPrintable(context.initializationError));
+    SettingsController controller(context.userPreferencesRepository.get(), context.userPreferences);
+    controller.SetScanCoordinator(context.localLibraryScan.get());
+    QSignalSpy failed(context.localLibraryScan.get(), &LocalLibraryScanCoordinator::failed);
+    QVERIFY(scheduleStartupLibraryScan(context, &controller));
+    QTRY_COMPARE(failed.count(), 1);
+    context.logger->stop();
+    QFile file(scanLogPath());
+    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    const auto entries = QString::fromUtf8(file.readAll());
+    QVERIFY(entries.contains(QStringLiteral("[ERROR] [LocalLibrary] Local library scan completed: outcome=failed")));
+    QVERIFY(entries.contains(QStringLiteral("Local library scan query configuration is incomplete.")));
     QVERIFY(context.isReady());
 }
 
