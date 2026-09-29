@@ -10,6 +10,7 @@
 #include <QDate>
 
 #include "../../src/app/ApplicationComposition.h"
+#include "../../src/presentation/home/HomeScreenController.h"
 #include "../../src/presentation/settings/SettingsController.h"
 
 namespace {
@@ -48,6 +49,7 @@ class LocalLibraryScanCompositionTests final : public QObject {
 private slots:
     void initTestCase() { QStandardPaths::setTestModeEnabled(true); }
     void persistedPreferencesOverrideDefaultsAfterRestart();
+    void restartPreservesExternalHomeSortForControllerFallback();
     void startupUsesPersistedSnapshotAndSchedulesOnce();
     void manualRootChangeRetainsOldInventory();
     void scannerQueryFailureDoesNotDisableMedia_data();
@@ -78,6 +80,40 @@ void LocalLibraryScanCompositionTests::persistedPreferencesOverrideDefaultsAfter
     QCOMPARE(restarted.userPreferences.scanExtensions, QStringList({".webm"}));
     QCOMPARE(restarted.userPreferences.homeSortKey, QStringLiteral("title_desc"));
     QVERIFY(restarted.localLibraryScan);
+}
+
+void LocalLibraryScanCompositionTests::restartPreservesExternalHomeSortForControllerFallback() {
+    QTemporaryDir directory;
+    const auto options = optionsFor(directory);
+    {
+        auto context = createApplicationContext(options);
+        QVERIFY2(context.isReady(), qPrintable(context.initializationError));
+        auto preferences = context.userPreferences;
+        preferences.libraryRoot = directory.path();
+        preferences.scanExtensions = {QStringLiteral(".webm")};
+        preferences.homeSortKey = QStringLiteral("remote_rank");
+        QString error;
+        QVERIFY2(context.userPreferencesRepository->replace(preferences, error), qPrintable(error));
+    }
+
+    auto restarted = createApplicationContext(options);
+    QVERIFY2(restarted.isReady(), qPrintable(restarted.initializationError));
+    QCOMPARE(restarted.userPreferences.libraryRoot, directory.path());
+    QCOMPARE(restarted.userPreferences.scanExtensions, QStringList({QStringLiteral(".webm")}));
+    QCOMPARE(restarted.userPreferences.homeSortKey, QStringLiteral("remote_rank"));
+
+    HomeScreenController controller(*restarted.mediaRepository);
+    controller.ConfigureBrowseOptions(
+        {QVariantMap{{QStringLiteral("key"), QStringLiteral("anime")},
+                     {QStringLiteral("label"), QStringLiteral("Anime")}}},
+        {QVariantMap{{QStringLiteral("key"), QStringLiteral("all")},
+                     {QStringLiteral("label"), QStringLiteral("All")}}},
+        {QVariantMap{{QStringLiteral("key"), QStringLiteral("progress")},
+                     {QStringLiteral("label"), QStringLiteral("Progress")}},
+         QVariantMap{{QStringLiteral("key"), QStringLiteral("title_asc")},
+                     {QStringLiteral("label"), QStringLiteral("Title")}}});
+    controller.ConfigureInitialSort(restarted.userPreferences.homeSortKey);
+    QCOMPARE(controller.activeSort(), QStringLiteral("progress"));
 }
 
 void LocalLibraryScanCompositionTests::startupUsesPersistedSnapshotAndSchedulesOnce() {
