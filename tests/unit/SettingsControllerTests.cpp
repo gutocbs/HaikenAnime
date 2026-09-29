@@ -66,6 +66,7 @@ private slots:
     void invalidDraftDoesNotCallRepository();
     void repositoryFailurePreservesDraftAndDoesNotApply();
     void discardRestoresPersistedSnapshot();
+    void appliesExternalHomeSortToBothSnapshots();
     void libraryDraftSavesAndDiscardsAtomically();
     void invalidLibraryDraftCannotSave();
     void extensionsAreNormalizedAndOptionsRetainPersistedSelections();
@@ -160,6 +161,18 @@ void SettingsControllerTests::libraryDraftSavesAndDiscardsAtomically() {
     QCOMPARE(repository.stored.libraryRoot, QStringLiteral("D:\\Anime"));
     QVERIFY(!repository.stored.scanExtensions.contains(QStringLiteral(".avi")));
     QVERIFY(!controller.dirty());
+}
+
+void SettingsControllerTests::appliesExternalHomeSortToBothSnapshots() {
+    FakePreferencesRepository repository;
+    SettingsController controller(&repository, {});
+
+    controller.ApplyExternalHomeSortKey(QStringLiteral("title_desc"));
+
+    QVERIFY(!controller.dirty());
+    controller.SetCoverQuality(QStringLiteral("large"));
+    controller.Save();
+    QCOMPARE(repository.stored.homeSortKey, QStringLiteral("title_desc"));
 }
 
 void SettingsControllerTests::invalidLibraryDraftCannotSave() {

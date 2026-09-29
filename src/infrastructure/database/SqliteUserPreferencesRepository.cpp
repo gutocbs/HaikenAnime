@@ -48,6 +48,7 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
         }
         loaded.scanExtensions.append(extension.toString());
     }
+    loaded.homeSortKey = query.value(8).toString();
     const auto validation = ValidateUserPreferences(loaded);
     if (!validation.valid) {
         error = validation.error;
@@ -82,6 +83,7 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
     query.bindValue(QStringLiteral(":cover_quality"), CoverQualityName(preferences.coverQuality));
     query.bindValue(QStringLiteral(":synchronization_enabled"), preferences.synchronizationEnabled);
     query.bindValue(QStringLiteral(":synchronization_interval_ms"), preferences.synchronizationIntervalMs);
+    query.bindValue(QStringLiteral(":home_sort_key"), preferences.homeSortKey);
     query.bindValue(QStringLiteral(":library_root"), preferences.libraryRoot);
     query.bindValue(QStringLiteral(":scan_extensions"), QString::fromUtf8(
         QJsonDocument(QJsonArray::fromStringList(NormalizeScanExtensions(preferences.scanExtensions, error)))

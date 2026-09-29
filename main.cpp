@@ -2,9 +2,25 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 
+#include <utility>
+
 #include "src/app/ApplicationComposition.h"
 #include "src/presentation/home/HomeScreenController.h"
 #include "src/presentation/settings/SettingsController.h"
+
+bool persistHomeSortPreference(ApplicationContext &context, const QString &key, QString &error) {
+    error.clear();
+    if (!context.userPreferencesRepository) {
+        error = QStringLiteral("Home ordering preferences are unavailable.");
+        return false;
+    }
+
+    UserPreferences updated = context.userPreferences;
+    updated.homeSortKey = key;
+    if (!context.userPreferencesRepository->replace(updated, error)) return false;
+    context.userPreferences = std::move(updated);
+    return true;
+}
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
@@ -29,9 +45,19 @@ int main(int argc, char *argv[]) {
     homeController.ConfigureScoreScale(context.userPreferences.scoreMinimum,
                                        context.userPreferences.scoreMaximum,
                                        context.userPreferences.scoreStep);
+    homeController.ConfigureInitialSort(context.userPreferences.homeSortKey);
     SettingsController settingsController(context.userPreferencesRepository.get(),
                                           context.userPreferences);
     settingsController.SetScanCoordinator(context.localLibraryScan.get());
+    QObject::connect(&homeController, &HomeScreenController::sortPreferenceChanged,
+                     [&context, &settingsController](const QString &key) {
+        QString error;
+        if (persistHomeSortPreference(context, key, error)) {
+            settingsController.ApplyExternalHomeSortKey(key);
+        } else if (context.logger) {
+            context.logger->warning(LogCategory::Configuration, error);
+        }
+    });
     homeController.reload();
 
     if (context.initialSync) {

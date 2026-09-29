@@ -55,6 +55,9 @@ private slots:
     void exposesNineItemPreviewAndCompleteFilteredLibrary();
     void changesMediaTypeUsingStableKeys();
     void exposesBackendDrivenBrowseOptions();
+    void restoresConfiguredSortBeforeFirstModelPublication();
+    void fallsBackToFirstProvidedSortOption();
+    void emitsSortPreferenceOnlyForAcceptedSortChanges();
     void reconcilesActiveCriteriaWhenBackendOptionsChange();
     void appliesListSearchAndSortToBothLibraries();
     void searchesAllKnownTitlesCaseInsensitively();
@@ -284,6 +287,59 @@ void HomeScreenControllerTests::exposesBackendDrivenBrowseOptions() {
     QCOMPARE(sortOptions.first().toMap().value(QStringLiteral("key")).toString(), QStringLiteral("title_asc"));
     QCOMPARE(controller.activeListFilter(), QStringLiteral("all"));
     QCOMPARE(controller.activeSort(), QStringLiteral("title_asc"));
+}
+
+void HomeScreenControllerTests::restoresConfiguredSortBeforeFirstModelPublication() {
+    FakeMediaReader reader;
+    Media first; first.Id = 1; first.Name = QStringLiteral("Alpha"); first.Type = MediaType::Anime;
+    Media second; second.Id = 2; second.Name = QStringLiteral("Zulu"); second.Type = MediaType::Anime;
+    reader.result = {first, second};
+    HomeScreenController controller(reader);
+
+    controller.ConfigureInitialSort(QStringLiteral("title_desc"));
+    controller.reload();
+
+    QCOMPARE(controller.activeSort(), QStringLiteral("title_desc"));
+    QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(0, 0),
+                                                HomeMediaModel::IdRole).toInt(), 2);
+}
+
+void HomeScreenControllerTests::fallsBackToFirstProvidedSortOption() {
+    FakeMediaReader reader;
+    HomeScreenController controller(reader);
+    controller.ConfigureBrowseOptions(
+        QVariantList{QVariantMap{{QStringLiteral("key"), QStringLiteral("anime")},
+                                 {QStringLiteral("label"), QStringLiteral("Anime")}}},
+        QVariantList{QVariantMap{{QStringLiteral("key"), QStringLiteral("all")},
+                                 {QStringLiteral("label"), QStringLiteral("All")}}},
+        QVariantList{QVariantMap{{QStringLiteral("key"), QStringLiteral("progress")},
+                                 {QStringLiteral("label"), QStringLiteral("Progress")}},
+                     QVariantMap{{QStringLiteral("key"), QStringLiteral("title_asc")},
+                                 {QStringLiteral("label"), QStringLiteral("Title")}}});
+
+    controller.ConfigureInitialSort(QStringLiteral("removed_sort"));
+
+    QCOMPARE(controller.activeSort(), QStringLiteral("progress"));
+}
+
+void HomeScreenControllerTests::emitsSortPreferenceOnlyForAcceptedSortChanges() {
+    FakeMediaReader reader;
+    HomeScreenController controller(reader);
+    QSignalSpy changed(&controller, &HomeScreenController::sortPreferenceChanged);
+
+    controller.SetSort(QStringLiteral("unsupported"));
+    controller.SetMediaType(QStringLiteral("manga"));
+    controller.SetListFilter(QStringLiteral("current"));
+    controller.SetSearchQuery(QStringLiteral("frieren"));
+    QCOMPARE(changed.count(), 0);
+
+    controller.SetSort(QStringLiteral("title_desc"));
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(changed.takeFirst().at(0).toString(), QStringLiteral("title_desc"));
+
+    controller.ClearBrowseCriteria();
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(changed.takeFirst().at(0).toString(), QStringLiteral("title_asc"));
 }
 
 void HomeScreenControllerTests::reconcilesActiveCriteriaWhenBackendOptionsChange() {

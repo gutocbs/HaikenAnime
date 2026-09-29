@@ -62,6 +62,12 @@ UserPreferencesValidationResult ValidateUserPreferences(const UserPreferences &p
         || preferences.synchronizationIntervalMs > MaximumSynchronizationIntervalMs) {
         return {false, QStringLiteral("Synchronization interval is outside the supported range.")};
     }
+    static const QSet<QString> supportedHomeSortKeys{
+        QStringLiteral("title_asc"), QStringLiteral("title_desc"),
+        QStringLiteral("personal_score"), QStringLiteral("progress")};
+    if (!supportedHomeSortKeys.contains(preferences.homeSortKey)) {
+        return {false, QStringLiteral("Home sort key is unsupported.")};
+    }
     if (preferences.libraryRoot.trimmed().isEmpty()) {
         return {false, QStringLiteral("Library root must not be empty.")};
     }

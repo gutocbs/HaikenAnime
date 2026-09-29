@@ -59,6 +59,13 @@ void SettingsController::SetScanCoordinator(LocalLibraryScanCoordinator *coordin
     emit scanChanged();
 }
 
+void SettingsController::ApplyExternalHomeSortKey(QString key) {
+    if (key.isEmpty() || (persisted_.homeSortKey == key && draft_.homeSortKey == key)) return;
+    persisted_.homeSortKey = key;
+    draft_.homeSortKey = std::move(key);
+    emit changed();
+}
+
 void SettingsController::SetLibraryRoot(const QString &root) {
     draft_.libraryRoot = root;
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();

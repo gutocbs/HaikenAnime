@@ -5,6 +5,7 @@ SELECT score_minimum,
        synchronization_enabled,
        synchronization_interval_ms,
        library_root,
-       scan_extensions
+       scan_extensions,
+       home_sort_key
 FROM user_preferences
 WHERE id = 1

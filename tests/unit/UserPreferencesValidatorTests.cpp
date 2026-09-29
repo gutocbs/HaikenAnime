@@ -14,6 +14,7 @@ private slots:
     void normalizesScanExtensions();
     void rejectsInvalidScanExtensions_data();
     void rejectsInvalidScanExtensions();
+    void rejectsUnsupportedHomeSortKey();
     void rejectsEmptyLibraryRoot();
     void comparesScannerPreferences();
 };
@@ -108,6 +109,16 @@ void UserPreferencesValidatorTests::rejectsInvalidScanExtensions() {
     const auto result = ValidateUserPreferences(preferences);
     QVERIFY(!result.valid);
     QVERIFY(!result.error.isEmpty());
+}
+
+void UserPreferencesValidatorTests::rejectsUnsupportedHomeSortKey() {
+    UserPreferences preferences;
+    preferences.homeSortKey = QStringLiteral("remote_rank");
+
+    const auto result = ValidateUserPreferences(preferences);
+
+    QVERIFY(!result.valid);
+    QCOMPARE(result.error, QStringLiteral("Home sort key is unsupported."));
 }
 
 void UserPreferencesValidatorTests::rejectsEmptyLibraryRoot() {

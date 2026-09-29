@@ -370,6 +370,16 @@ void HomeScreenController::ConfigureBrowseOptions(QVariantList mediaTypeOptions,
     emit browseOptionsChanged();
 }
 
+void HomeScreenController::ConfigureInitialSort(QString key) {
+    const auto configuredSort = containsOptionKey(sortOptions_, key) ? std::move(key)
+                                                                      : firstOptionKey(sortOptions_);
+    if (activeSort_ == configuredSort) return;
+    activeSort_ = configuredSort;
+    rebuildMediaModels();
+    emit browseCriteriaChanged();
+    emit mediaCountChanged();
+}
+
 void HomeScreenController::SetMediaType(const QString &typeKey) {
     if (!containsOptionKey(mediaTypeOptions_, typeKey)) return;
     if (activeMediaType_ == typeKey) return;
@@ -396,6 +406,7 @@ void HomeScreenController::SetSort(const QString &sortKey) {
     rebuildMediaModels();
     emit browseCriteriaChanged();
     emit mediaCountChanged();
+    emit sortPreferenceChanged(activeSort_);
 }
 
 void HomeScreenController::SetSearchQuery(const QString &query) {
@@ -412,12 +423,14 @@ void HomeScreenController::ClearBrowseCriteria() {
     const auto defaultSort = firstOptionKey(sortOptions_);
     if (activeListFilter_ == defaultListFilter
         && activeSort_ == defaultSort && searchQuery_.isEmpty()) return;
+    const bool sortChanged = activeSort_ != defaultSort;
     activeListFilter_ = defaultListFilter;
     activeSort_ = defaultSort;
     searchQuery_.clear();
     rebuildMediaModels();
     emit browseCriteriaChanged();
     emit mediaCountChanged();
+    if (sortChanged) emit sortPreferenceChanged(activeSort_);
 }
 
 void HomeScreenController::SelectMedia(const int mediaId) {

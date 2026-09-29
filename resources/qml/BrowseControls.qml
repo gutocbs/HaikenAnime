@@ -93,7 +93,7 @@ RowLayout {
         model: controls.controller.availableListOptions
         textRole: "label"
         valueRole: "key"
-        currentIndex: indexOfValue(controls.controller.activeListFilter)
+        currentIndex: count > 0 ? indexOfValue(controls.controller.activeListFilter) : -1
         onActivated: controls.controller.SetListFilter(currentValue)
         Accessible.name: qsTr("Selecionar lista")
     }
@@ -105,7 +105,7 @@ RowLayout {
         model: controls.controller.availableSortOptions
         textRole: "label"
         valueRole: "key"
-        currentIndex: indexOfValue(controls.controller.activeSort)
+        currentIndex: count > 0 ? indexOfValue(controls.controller.activeSort) : -1
         onActivated: controls.controller.SetSort(currentValue)
         Accessible.name: qsTr("Ordenar biblioteca")
     }

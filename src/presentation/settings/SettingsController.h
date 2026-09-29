@@ -57,6 +57,7 @@ public:
     QString scanStatusMessage() const;
     QString scanErrorMessage() const;
     void SetScanCoordinator(LocalLibraryScanCoordinator *coordinator);
+    void ApplyExternalHomeSortKey(QString key);
 
     Q_INVOKABLE void SetScoreScale(double minimum, double maximum, double step);
     Q_INVOKABLE void SetCoverQuality(const QString &key);

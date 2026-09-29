@@ -12,6 +12,7 @@ struct UserPreferences final {
     CoverQuality coverQuality = CoverQuality::Medium;
     bool synchronizationEnabled = true;
     int synchronizationIntervalMs = 3600000;
+    QString homeSortKey = QStringLiteral("title_asc");
     QString libraryRoot = QStringLiteral("Q:\\");
     QStringList scanExtensions = {QStringLiteral(".mkv"), QStringLiteral(".mp4"),
                                   QStringLiteral(".avi"), QStringLiteral(".webm"),
@@ -26,6 +27,7 @@ inline bool operator==(const UserPreferences &left, const UserPreferences &right
         && left.coverQuality == right.coverQuality
         && left.synchronizationEnabled == right.synchronizationEnabled
         && left.synchronizationIntervalMs == right.synchronizationIntervalMs
+        && left.homeSortKey == right.homeSortKey
         && left.libraryRoot == right.libraryRoot
         && left.scanExtensions == right.scanExtensions;
 }

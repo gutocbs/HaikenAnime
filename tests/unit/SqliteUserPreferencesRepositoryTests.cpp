@@ -12,7 +12,9 @@ private slots:
     void readsMissingAndRoundTripsReplacement();
     void rejectsInvalidPreferencesWithoutChangingStoredRow();
     void scannerPreferencesSurviveReopen();
+    void homeSortKeySurvivesReopen();
     void rejectsMalformedStoredExtensions();
+    void rejectsUnsupportedStoredHomeSortKey();
     void normalizesExtensionsAtPersistenceBoundary();
 };
 
@@ -53,6 +55,31 @@ void SqliteUserPreferencesRepositoryTests::scannerPreferencesSurviveReopen() {
     QCOMPARE(query.value(0).toString(), QStringLiteral("[\".webm\",\".mkv\"]"));
 }
 
+void SqliteUserPreferencesRepositoryTests::homeSortKeySurvivesReopen() {
+    QTemporaryDir directory;
+    const auto path = directory.filePath("preferences.sqlite");
+    UserPreferences expected;
+    expected.homeSortKey = QStringLiteral("title_desc");
+    QString error;
+    {
+        SqliteDatabase database(path);
+        QVERIFY(database.open());
+        QVERIFY(database.migrate());
+        auto repository = Repository(database);
+        QVERIFY2(repository.replace(expected, error), qPrintable(error));
+    }
+
+    SqliteDatabase reopened(path);
+    QVERIFY(reopened.open());
+    QVERIFY(reopened.migrate());
+    auto repository = Repository(reopened);
+    UserPreferences loaded;
+    bool found = false;
+    QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
+    QVERIFY(found);
+    QCOMPARE(loaded.homeSortKey, QStringLiteral("title_desc"));
+}
+
 void SqliteUserPreferencesRepositoryTests::rejectsMalformedStoredExtensions() {
     QTemporaryDir directory;
     SqliteDatabase database(directory.filePath("preferences.sqlite"));
@@ -72,6 +99,25 @@ void SqliteUserPreferencesRepositoryTests::rejectsMalformedStoredExtensions() {
         QVERIFY(!found);
         QVERIFY(!error.isEmpty());
     }
+}
+
+void SqliteUserPreferencesRepositoryTests::rejectsUnsupportedStoredHomeSortKey() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath("preferences.sqlite"));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    auto repository = Repository(database);
+    QString error;
+    QVERIFY(repository.replace(UserPreferences{}, error));
+
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec("UPDATE user_preferences SET home_sort_key = 'remote_rank'"));
+
+    UserPreferences loaded;
+    bool found = true;
+    QVERIFY(!repository.read(loaded, found, error));
+    QVERIFY(!found);
+    QCOMPARE(error, QStringLiteral("Home sort key is unsupported."));
 }
 
 void SqliteUserPreferencesRepositoryTests::normalizesExtensionsAtPersistenceBoundary() {

@@ -123,6 +123,7 @@ public:
 
     void ConfigureBrowseOptions(QVariantList mediaTypeOptions, QVariantList listOptions,
                                 QVariantList sortOptions);
+    void ConfigureInitialSort(QString key);
     void ConfigureScoreScale(double minimum, double maximum, double step);
     void ConfigureCoverQuality(CoverQuality quality);
 
@@ -151,6 +152,7 @@ signals:
     void activeMediaTypeChanged();
     void browseOptionsChanged();
     void browseCriteriaChanged();
+    void sortPreferenceChanged(QString key);
     void editingOptionsChanged();
     void selectionChanged();
 

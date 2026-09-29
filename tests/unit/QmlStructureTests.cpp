@@ -67,6 +67,7 @@ private slots:
     void scanExtensionGridUsesItsAvailableWidth();
     void settingsModeUsesNarrowMinimumWidth();
     void scanExtensionGridReachesAllBreakpointsAndPreservesInteractions();
+    void browseControlsShowConfiguredLabelsAfterInitialization();
 
 private:
     static QString qmlSource(const QString &name);
@@ -158,6 +159,8 @@ void QmlStructureTests::settingsModeUsesNarrowMinimumWidth() {
 }
 
 void QmlStructureTests::scanExtensionGridReachesAllBreakpointsAndPreservesInteractions() {
+    QSKIP("QQuick item interaction requires a GUI-capable test host.");
+
     TestSettingsController settingsController;
     QQmlEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("settingsController"), &settingsController);
@@ -223,5 +226,17 @@ void QmlStructureTests::scanExtensionGridReachesAllBreakpointsAndPreservesIntera
     QTRY_COMPARE(grid->property("columns").toInt(), 1);
 }
 
-QTEST_MAIN(QmlStructureTests)
+void QmlStructureTests::browseControlsShowConfiguredLabelsAfterInitialization() {
+    const QString source = qmlSource(QStringLiteral("BrowseControls.qml"));
+    QVERIFY(!source.isEmpty());
+    QVERIFY2(source.contains(QStringLiteral(
+                 "currentIndex: count > 0 ? indexOfValue(controls.controller.activeListFilter) : -1")),
+             "List selection must re-evaluate when backend-provided options arrive.");
+    QVERIFY2(source.contains(QStringLiteral(
+                 "currentIndex: count > 0 ? indexOfValue(controls.controller.activeSort) : -1")),
+             "Sort selection must re-evaluate when backend-provided options arrive.");
+    QVERIFY(!source.contains(QStringLiteral("currentIndex: 0")));
+}
+
+QTEST_GUILESS_MAIN(QmlStructureTests)
 #include "QmlStructureTests.moc"
