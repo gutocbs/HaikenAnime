@@ -558,9 +558,7 @@ QVariantMap HomeScreenController::PreviewCompactDetailMetadata(const int progres
                                                                 const QString &listStatusKey,
                                                                 const double score) const {
     if (!hasSelection_) return {};
-    const auto progressLabel = selectedMedia_.TotalChapters > 0
-        ? QStringLiteral("%1/%2").arg(progress).arg(selectedMedia_.TotalChapters)
-        : QString::number(progress);
+    const auto progressLabel = QStringLiteral("%1/%2").arg(progress).arg(selectedMedia_.TotalChapters);
     const auto scoreLabel = score <= 0.0 ? QStringLiteral("—")
                                           : QString::number(score, 'g', 15);
     return {{QStringLiteral("status"), optionLabel(listOptions_, listStatusKey,

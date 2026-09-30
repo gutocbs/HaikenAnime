@@ -56,6 +56,7 @@ private slots:
     void exposesPlaceholdersAndConfiguredScoreMaximumOnCards();
     void preparesPreviewCardMetadataForBothStatusPresentations();
     void preparesCompactDetailPreviewMetadataSeparatelyFromCards();
+    void preparesCompactDetailPreviewProgressWithZeroTotal();
     void exposesNineItemPreviewAndCompleteFilteredLibrary();
     void changesMediaTypeUsingStableKeys();
     void exposesBackendDrivenBrowseOptions();
@@ -398,6 +399,22 @@ void HomeScreenControllerTests::preparesCompactDetailPreviewMetadataSeparatelyFr
     const auto detailWithReleaseCards = controller.PreviewCompactDetailMetadata(
         12, QStringLiteral("completed"), 85);
     QCOMPARE(detailWithReleaseCards, detail);
+}
+
+void HomeScreenControllerTests::preparesCompactDetailPreviewProgressWithZeroTotal() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 43;
+    media.Name = QStringLiteral("Unknown total");
+    media.Type = MediaType::Anime;
+    media.TotalChapters = 0;
+    reader.result.append(media);
+    HomeScreenController controller(reader);
+    controller.reload();
+    controller.SelectMedia(43);
+
+    const auto detail = controller.PreviewCompactDetailMetadata(12, QStringLiteral("current"), 0.0);
+    QCOMPARE(detail.value(QStringLiteral("progress")).toString(), QStringLiteral("12/0"));
 }
 
 void HomeScreenControllerTests::restoresConfiguredSortBeforeFirstModelPublication() {
