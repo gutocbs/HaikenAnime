@@ -55,6 +55,7 @@ private slots:
     void exposesSelfDescribingCardValues();
     void exposesPlaceholdersAndConfiguredScoreMaximumOnCards();
     void preparesPreviewCardMetadataForBothStatusPresentations();
+    void preparesCompactDetailPreviewMetadataSeparatelyFromCards();
     void exposesNineItemPreviewAndCompleteFilteredLibrary();
     void changesMediaTypeUsingStableKeys();
     void exposesBackendDrivenBrowseOptions();
@@ -372,6 +373,31 @@ void HomeScreenControllerTests::preparesPreviewCardMetadataForBothStatusPresenta
     QCOMPARE(release.value(QStringLiteral("status")).toString(), QStringLiteral("Exibição: Concluído"));
     QCOMPARE(release.value(QStringLiteral("progress")).toString(), QStringLiteral("Progresso 12/24"));
     QCOMPARE(release.value(QStringLiteral("score")).toString(), QStringLiteral("Nota 85/100"));
+}
+
+void HomeScreenControllerTests::preparesCompactDetailPreviewMetadataSeparatelyFromCards() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.Status = MediaStatus::Released;
+    media.TotalChapters = 24;
+    reader.result.append(media);
+    HomeScreenController controller(reader);
+    controller.ConfigureScoreScale(0.0, 100.0, 5.0);
+    controller.reload();
+    controller.SelectMedia(42);
+
+    const auto detail = controller.PreviewCompactDetailMetadata(12, QStringLiteral("completed"), 85);
+    QCOMPARE(detail.value(QStringLiteral("status")).toString(), QStringLiteral("Concluídas"));
+    QCOMPARE(detail.value(QStringLiteral("progress")).toString(), QStringLiteral("12/24"));
+    QCOMPARE(detail.value(QStringLiteral("score")).toString(), QStringLiteral("85"));
+
+    controller.ConfigureCardStatusPresentation(CardStatusPresentation::MediaReleaseStatus);
+    const auto detailWithReleaseCards = controller.PreviewCompactDetailMetadata(
+        12, QStringLiteral("completed"), 85);
+    QCOMPARE(detailWithReleaseCards, detail);
 }
 
 void HomeScreenControllerTests::restoresConfiguredSortBeforeFirstModelPublication() {

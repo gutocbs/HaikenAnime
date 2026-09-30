@@ -28,13 +28,17 @@ Item {
     function applyPreviewEdit(mediaId, progress, statusKey, score, path, alternativeNames) {
         const next = Object.assign({}, previewEdits)
         const cardMetadata = controller.PreviewCardMetadata(progress, statusKey, score)
+        const compactDetailMetadata = controller.PreviewCompactDetailMetadata(progress, statusKey, score)
         next[mediaId] = {
             progress: progress,
-            progressText: cardMetadata.progress,
+            cardProgressText: cardMetadata.progress,
+            detailProgressText: compactDetailMetadata.progress,
             statusKey: statusKey,
-            statusText: cardMetadata.status,
+            cardStatusText: cardMetadata.status,
+            detailStatusText: compactDetailMetadata.status,
             score: score,
-            scoreText: cardMetadata.score,
+            cardScoreText: cardMetadata.score,
+            detailScoreText: compactDetailMetadata.score,
             path: path,
             alternativeNames: alternativeNames
         }
@@ -230,9 +234,9 @@ Item {
                             mediaId: model.mediaId
                             coverSource: model.coverSource
                             title: model.title
-                            status: home.previewValue(model.mediaId, "statusText", model.statusLabel)
-                            progress: home.previewValue(model.mediaId, "progressText", model.progress)
-                            score: home.previewValue(model.mediaId, "scoreText", model.score)
+                            status: home.previewValue(model.mediaId, "cardStatusText", model.statusLabel)
+                            progress: home.previewValue(model.mediaId, "cardProgressText", model.progress)
+                            score: home.previewValue(model.mediaId, "cardScoreText", model.score)
                             selected: controller.selectedMediaId === model.mediaId
                             muted: false
                             onActivated: function(mediaId) {
@@ -371,7 +375,7 @@ Item {
                             Label { text: controller.selectedTypeLabel; color: accent; font.weight: Font.DemiBold }
                             Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: line }
                             Label {
-                                text: home.previewValue(controller.selectedMediaId, "statusText",
+                                text: home.previewValue(controller.selectedMediaId, "detailStatusText",
                                                         controller.selectedStatusLabel)
                                 color: muted
                             }
@@ -386,12 +390,12 @@ Item {
                             Label { text: qsTr("Progresso"); color: muted; font.pixelSize: 11 }
                             Label { text: qsTr("Sua nota"); color: muted; font.pixelSize: 11 }
                             Label {
-                                text: home.previewValue(controller.selectedMediaId, "progressText",
+                                text: home.previewValue(controller.selectedMediaId, "detailProgressText",
                                                         controller.selectedProgress)
                                 color: ink; font.weight: Font.DemiBold
                             }
                             Label {
-                                text: home.previewValue(controller.selectedMediaId, "scoreText",
+                                text: home.previewValue(controller.selectedMediaId, "detailScoreText",
                                                         controller.selectedScore)
                                 color: ink; font.weight: Font.DemiBold
                             }
@@ -607,9 +611,9 @@ Item {
                     mediaId: model.mediaId
                     coverSource: model.coverSource
                     title: model.title
-                    status: home.previewValue(model.mediaId, "statusText", model.statusLabel)
-                    progress: home.previewValue(model.mediaId, "progressText", model.progress)
-                    score: home.previewValue(model.mediaId, "scoreText", model.score)
+                    status: home.previewValue(model.mediaId, "cardStatusText", model.statusLabel)
+                    progress: home.previewValue(model.mediaId, "cardProgressText", model.progress)
+                    score: home.previewValue(model.mediaId, "cardScoreText", model.score)
                     selected: controller.selectedMediaId === model.mediaId
                     onActivated: function(mediaId) {
                         controller.SelectMedia(mediaId)

@@ -355,6 +355,16 @@ QString HomeScreenController::selectedScore() const {
     return hasSelection_ ? personalScore(selectedMedia_) : QString();
 }
 
+QString optionLabel(const QVariantList &options, const QString &key, const QString &fallback) {
+    for (const auto &entry : options) {
+        const auto option = entry.toMap();
+        if (option.value(QStringLiteral("key")).toString() == key) {
+            return option.value(QStringLiteral("label")).toString();
+        }
+    }
+    return fallback;
+}
+
 UserListStatus userListStatusFromKey(const QString &key) {
     if (key == QStringLiteral("current")) return UserListStatus::Current;
     if (key == QStringLiteral("planning")) return UserListStatus::Planning;
@@ -540,6 +550,21 @@ QVariantMap HomeScreenController::PreviewCardMetadata(const int progress,
               .arg(QString::number(scoreMaximum_, 'g', 15));
     return {{QStringLiteral("status"), cardStatusLabel(selectedMedia_, cardStatusPresentation_,
                                                          userListStatusFromKey(listStatusKey))},
+            {QStringLiteral("progress"), progressLabel},
+            {QStringLiteral("score"), scoreLabel}};
+}
+
+QVariantMap HomeScreenController::PreviewCompactDetailMetadata(const int progress,
+                                                                const QString &listStatusKey,
+                                                                const double score) const {
+    if (!hasSelection_) return {};
+    const auto progressLabel = selectedMedia_.TotalChapters > 0
+        ? QStringLiteral("%1/%2").arg(progress).arg(selectedMedia_.TotalChapters)
+        : QString::number(progress);
+    const auto scoreLabel = score <= 0.0 ? QStringLiteral("—")
+                                          : QString::number(score, 'g', 15);
+    return {{QStringLiteral("status"), optionLabel(listOptions_, listStatusKey,
+                                                     selectedStatusLabel())},
             {QStringLiteral("progress"), progressLabel},
             {QStringLiteral("score"), scoreLabel}};
 }
