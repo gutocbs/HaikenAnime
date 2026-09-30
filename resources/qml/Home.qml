@@ -25,23 +25,16 @@ Item {
         return edit && edit[key] !== undefined ? edit[key] : fallback
     }
 
-    function statusLabel(key, fallback) {
-        for (let option of controller.availableListOptions) {
-            if (option.key === key) return option.label
-        }
-        return fallback
-    }
-
     function applyPreviewEdit(mediaId, progress, statusKey, score, path, alternativeNames) {
         const next = Object.assign({}, previewEdits)
+        const cardMetadata = controller.PreviewCardMetadata(progress, statusKey, score)
         next[mediaId] = {
             progress: progress,
-            progressText: controller.selectedProgressMaximum > 0
-                          ? progress + "/" + controller.selectedProgressMaximum : String(progress),
+            progressText: cardMetadata.progress,
             statusKey: statusKey,
-            statusText: statusLabel(statusKey, controller.selectedStatusLabel),
+            statusText: cardMetadata.status,
             score: score,
-            scoreText: score === 0 ? "—" : String(score),
+            scoreText: cardMetadata.score,
             path: path,
             alternativeNames: alternativeNames
         }

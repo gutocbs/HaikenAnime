@@ -143,6 +143,8 @@ public:
     Q_INVOKABLE void SetSearchQuery(const QString &query);
     Q_INVOKABLE void ClearBrowseCriteria();
     Q_INVOKABLE void SelectMedia(int mediaId);
+    Q_INVOKABLE QVariantMap PreviewCardMetadata(int progress, const QString &listStatusKey,
+                                                double score) const;
     Q_INVOKABLE void RequestCoverWindow(const QString &scope, int firstVisibleIndex,
                                         int lastVisibleIndex, int prefetchCount);
     Q_INVOKABLE void ReportCoverLoadFailure(int mediaId);

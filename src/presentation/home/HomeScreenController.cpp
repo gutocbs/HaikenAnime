@@ -85,13 +85,18 @@ QString userListStatusLabel(const UserListStatus status) {
     }
 }
 
-QString cardStatusLabel(const Media &media, const CardStatusPresentation presentation) {
+QString cardStatusLabel(const Media &media, const CardStatusPresentation presentation,
+                        const UserListStatus listStatus) {
     if (presentation == CardStatusPresentation::MediaReleaseStatus) {
         return QCoreApplication::translate("HomeMediaModel", "Exibição: %1")
             .arg(mediaStatusLabel(media.Status));
     }
     return QCoreApplication::translate("HomeMediaModel", "Minha lista: %1")
-        .arg(userListStatusLabel(media.ListStatus));
+        .arg(userListStatusLabel(listStatus));
+}
+
+QString cardStatusLabel(const Media &media, const CardStatusPresentation presentation) {
+    return cardStatusLabel(media, presentation, media.ListStatus);
 }
 
 QString userListStatusKey(const UserListStatus status) {
@@ -349,6 +354,15 @@ QString HomeScreenController::selectedProgress() const { return hasSelection_ ? 
 QString HomeScreenController::selectedScore() const {
     return hasSelection_ ? personalScore(selectedMedia_) : QString();
 }
+
+UserListStatus userListStatusFromKey(const QString &key) {
+    if (key == QStringLiteral("current")) return UserListStatus::Current;
+    if (key == QStringLiteral("planning")) return UserListStatus::Planning;
+    if (key == QStringLiteral("on_hold")) return UserListStatus::OnHold;
+    if (key == QStringLiteral("dropped")) return UserListStatus::Dropped;
+    if (key == QStringLiteral("completed")) return UserListStatus::Completed;
+    return UserListStatus::Unknown;
+}
 QString HomeScreenController::selectedAverageScore() const {
     return hasSelection_ && selectedMedia_.AverageScore > 0 ? QString::number(selectedMedia_.AverageScore) : QStringLiteral("—");
 }
@@ -511,6 +525,23 @@ void HomeScreenController::SelectMedia(const int mediaId) {
         }
     }
     emit selectionChanged();
+}
+
+QVariantMap HomeScreenController::PreviewCardMetadata(const int progress,
+                                                       const QString &listStatusKey,
+                                                       const double score) const {
+    if (!hasSelection_) return {};
+    const auto progressLabel = selectedMedia_.TotalChapters <= 0
+        ? QStringLiteral("Progresso —")
+        : QStringLiteral("Progresso %1/%2").arg(progress).arg(selectedMedia_.TotalChapters);
+    const auto scoreLabel = score <= 0.0
+        ? QStringLiteral("Nota —")
+        : QStringLiteral("Nota %1/%2").arg(QString::number(score, 'g', 15))
+              .arg(QString::number(scoreMaximum_, 'g', 15));
+    return {{QStringLiteral("status"), cardStatusLabel(selectedMedia_, cardStatusPresentation_,
+                                                         userListStatusFromKey(listStatusKey))},
+            {QStringLiteral("progress"), progressLabel},
+            {QStringLiteral("score"), scoreLabel}};
 }
 
 void HomeScreenController::reload() {

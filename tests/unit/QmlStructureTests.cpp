@@ -69,6 +69,7 @@ private slots:
     void scanExtensionGridReachesAllBreakpointsAndPreservesInteractions();
     void browseControlsShowConfiguredLabelsAfterInitialization();
     void mediaCardAndSettingsUseControllerPreparedCardPresentation();
+    void previewCardsUseControllerPreparedMetadataInBothGrids();
 
 private:
     static QString qmlSource(const QString &name);
@@ -256,6 +257,20 @@ void QmlStructureTests::mediaCardAndSettingsUseControllerPreparedCardPresentatio
     QVERIFY(settingsSource.contains(QStringLiteral("controller.cardStatusPresentationKey")));
     QVERIFY(!settingsSource.contains(QStringLiteral("personal-list-status")));
     QVERIFY(!settingsSource.contains(QStringLiteral("media-release-status")));
+}
+
+void QmlStructureTests::previewCardsUseControllerPreparedMetadataInBothGrids() {
+    const QString source = qmlSource(QStringLiteral("Home.qml"));
+    QVERIFY(!source.isEmpty());
+
+    QVERIFY(source.contains(QStringLiteral(
+        "const cardMetadata = controller.PreviewCardMetadata(progress, statusKey, score)")));
+    QVERIFY(!source.contains(QStringLiteral("function statusLabel(")));
+    QVERIFY(!source.contains(QStringLiteral("progress + \"/\"")));
+    QVERIFY(!source.contains(QStringLiteral("score === 0 ? \"—\"")));
+    QCOMPARE(source.count(QStringLiteral("status: home.previewValue(model.mediaId, \"statusText\", model.statusLabel)")), 2);
+    QCOMPARE(source.count(QStringLiteral("progress: home.previewValue(model.mediaId, \"progressText\", model.progress)")), 2);
+    QCOMPARE(source.count(QStringLiteral("score: home.previewValue(model.mediaId, \"scoreText\", model.score)")), 2);
 }
 
 QTEST_GUILESS_MAIN(QmlStructureTests)
