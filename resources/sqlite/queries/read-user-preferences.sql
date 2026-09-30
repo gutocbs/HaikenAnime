@@ -6,6 +6,7 @@ SELECT score_minimum,
        synchronization_interval_ms,
        library_root,
        scan_extensions,
-       home_sort_key
+       home_sort_key,
+       card_status_presentation
 FROM user_preferences
 WHERE id = 1

@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
     homeController.ConfigureScoreScale(context.userPreferences.scoreMinimum,
                                        context.userPreferences.scoreMaximum,
                                        context.userPreferences.scoreStep);
+    homeController.ConfigureCardStatusPresentation(context.userPreferences.cardStatusPresentation);
     homeController.ConfigureInitialSort(context.userPreferences.homeSortKey);
     SettingsController settingsController(context.userPreferencesRepository.get(),
                                           context.userPreferences);
@@ -80,6 +81,7 @@ int main(int argc, char *argv[]) {
                                            preferences.scoreMaximum,
                                            preferences.scoreStep);
         homeController.ConfigureCoverQuality(preferences.coverQuality);
+        homeController.ConfigureCardStatusPresentation(preferences.cardStatusPresentation);
         if (context.initialSync) {
             context.initialSync->configureAutomaticSynchronization(
                 preferences.synchronizationEnabled, preferences.synchronizationIntervalMs);

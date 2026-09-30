@@ -1,9 +1,11 @@
 INSERT INTO user_preferences (
     id, score_minimum, score_maximum, score_step, cover_quality,
-    synchronization_enabled, synchronization_interval_ms, library_root, scan_extensions, home_sort_key
+    synchronization_enabled, synchronization_interval_ms, library_root, scan_extensions, home_sort_key,
+    card_status_presentation
 ) VALUES (
     1, :score_minimum, :score_maximum, :score_step, :cover_quality,
-    :synchronization_enabled, :synchronization_interval_ms, :library_root, :scan_extensions, :home_sort_key
+    :synchronization_enabled, :synchronization_interval_ms, :library_root, :scan_extensions, :home_sort_key,
+    :card_status_presentation
 )
 ON CONFLICT(id) DO UPDATE SET
     score_minimum = excluded.score_minimum,
@@ -14,4 +16,5 @@ ON CONFLICT(id) DO UPDATE SET
     synchronization_interval_ms = excluded.synchronization_interval_ms,
     library_root = excluded.library_root,
     scan_extensions = excluded.scan_extensions,
-    home_sort_key = excluded.home_sort_key
+    home_sort_key = excluded.home_sort_key,
+    card_status_presentation = excluded.card_status_presentation

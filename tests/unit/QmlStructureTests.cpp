@@ -68,6 +68,7 @@ private slots:
     void settingsModeUsesNarrowMinimumWidth();
     void scanExtensionGridReachesAllBreakpointsAndPreservesInteractions();
     void browseControlsShowConfiguredLabelsAfterInitialization();
+    void mediaCardAndSettingsUseControllerPreparedCardPresentation();
 
 private:
     static QString qmlSource(const QString &name);
@@ -236,6 +237,25 @@ void QmlStructureTests::browseControlsShowConfiguredLabelsAfterInitialization() 
                  "currentIndex: count > 0 ? indexOfValue(controls.controller.activeSort) : -1")),
              "Sort selection must re-evaluate when backend-provided options arrive.");
     QVERIFY(!source.contains(QStringLiteral("currentIndex: 0")));
+}
+
+void QmlStructureTests::mediaCardAndSettingsUseControllerPreparedCardPresentation() {
+    const QString cardSource = qmlSource(QStringLiteral("MediaCard.qml"));
+    const QString settingsSource = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    QVERIFY(!cardSource.isEmpty());
+    QVERIFY(!settingsSource.isEmpty());
+
+    QVERIFY(cardSource.contains(QStringLiteral("text: card.status")));
+    QVERIFY(cardSource.contains(QStringLiteral("text: card.progress")));
+    QVERIFY(cardSource.contains(QStringLiteral("text: card.score")));
+    QVERIFY(!cardSource.contains(QStringLiteral("Minha lista:")));
+    QVERIFY(!cardSource.contains(QStringLiteral("Exibição:")));
+    QVERIFY(!cardSource.contains(QStringLiteral("Progresso ")));
+    QVERIFY(!cardSource.contains(QStringLiteral("Nota ")));
+    QVERIFY(settingsSource.contains(QStringLiteral("model: controller.cardStatusPresentationOptions")));
+    QVERIFY(settingsSource.contains(QStringLiteral("controller.cardStatusPresentationKey")));
+    QVERIFY(!settingsSource.contains(QStringLiteral("personal-list-status")));
+    QVERIFY(!settingsSource.contains(QStringLiteral("media-release-status")));
 }
 
 QTEST_GUILESS_MAIN(QmlStructureTests)

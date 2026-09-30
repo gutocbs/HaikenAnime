@@ -67,6 +67,8 @@ private slots:
     void repositoryFailurePreservesDraftAndDoesNotApply();
     void discardRestoresPersistedSnapshot();
     void appliesExternalHomeSortToBothSnapshots();
+    void savesBackendProvidedCardStatusPresentation();
+    void rejectsInvalidCardStatusPresentation();
     void libraryDraftSavesAndDiscardsAtomically();
     void invalidLibraryDraftCannotSave();
     void extensionsAreNormalizedAndOptionsRetainPersistedSelections();
@@ -173,6 +175,33 @@ void SettingsControllerTests::appliesExternalHomeSortToBothSnapshots() {
     controller.SetCoverQuality(QStringLiteral("large"));
     controller.Save();
     QCOMPARE(repository.stored.homeSortKey, QStringLiteral("title_desc"));
+}
+
+void SettingsControllerTests::savesBackendProvidedCardStatusPresentation() {
+    FakePreferencesRepository repository;
+    SettingsController controller(&repository, {});
+
+    QCOMPARE(controller.cardStatusPresentationOptions().size(), 2);
+    QCOMPARE(controller.cardStatusPresentationKey(), QStringLiteral("personal-list-status"));
+    controller.SetCardStatusPresentation(QStringLiteral("media-release-status"));
+    QVERIFY(controller.valid());
+    controller.Save();
+
+    QCOMPARE(repository.stored.cardStatusPresentation,
+             CardStatusPresentation::MediaReleaseStatus);
+}
+
+void SettingsControllerTests::rejectsInvalidCardStatusPresentation() {
+    FakePreferencesRepository repository;
+    SettingsController controller(&repository, {});
+
+    controller.SetCardStatusPresentation(QStringLiteral("unsupported"));
+
+    QVERIFY(!controller.valid());
+    controller.Save();
+    QCOMPARE(repository.replaceCalls, 0);
+    controller.Discard();
+    QCOMPARE(controller.cardStatusPresentationKey(), QStringLiteral("personal-list-status"));
 }
 
 void SettingsControllerTests::invalidLibraryDraftCannotSave() {

@@ -58,6 +58,10 @@ UserPreferencesValidationResult ValidateUserPreferences(const UserPreferences &p
         && preferences.coverQuality != CoverQuality::ExtraLarge) {
         return {false, QStringLiteral("Cover quality is unsupported.")};
     }
+    if (preferences.cardStatusPresentation != CardStatusPresentation::PersonalListStatus
+        && preferences.cardStatusPresentation != CardStatusPresentation::MediaReleaseStatus) {
+        return {false, QStringLiteral("Card status presentation is unsupported.")};
+    }
     if (preferences.synchronizationIntervalMs < MinimumSynchronizationIntervalMs
         || preferences.synchronizationIntervalMs > MaximumSynchronizationIntervalMs) {
         return {false, QStringLiteral("Synchronization interval is outside the supported range.")};

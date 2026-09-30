@@ -125,7 +125,8 @@ QVariantMap scoreScaleOption(const double minimum, const double maximum, const d
 SettingsController::SettingsController(IUserPreferencesRepository *repository,
                                        UserPreferences initial, QObject *parent)
     : QObject(parent), repository_(repository), persisted_(initial), draft_(initial),
-      coverQualityKey_(CoverQualityName(initial.coverQuality)) {
+      coverQualityKey_(CoverQualityName(initial.coverQuality)),
+      cardStatusPresentationKey_(CardStatusPresentationKey(initial.cardStatusPresentation)) {
     qRegisterMetaType<UserPreferences>();
     scanStatusMessage_ = tr("Nenhuma varredura iniciada.");
     refreshValidation();
@@ -137,6 +138,7 @@ double SettingsController::scoreStep() const { return draft_.scoreStep; }
 QString SettingsController::coverQualityKey() const { return coverQualityKey_; }
 bool SettingsController::synchronizationEnabled() const { return draft_.synchronizationEnabled; }
 int SettingsController::synchronizationIntervalMs() const { return draft_.synchronizationIntervalMs; }
+QString SettingsController::cardStatusPresentationKey() const { return cardStatusPresentationKey_; }
 bool SettingsController::dirty() const { return !extensionInputValid_ || !(draft_ == persisted_); }
 bool SettingsController::valid() const { return valid_; }
 bool SettingsController::saving() const { return saving_; }
@@ -160,6 +162,11 @@ QVariantList SettingsController::synchronizationIntervalOptions() const {
             intervalOption(3600000, tr("1 hora")), intervalOption(10800000, tr("3 horas")),
             intervalOption(21600000, tr("6 horas")), intervalOption(43200000, tr("12 horas")),
             intervalOption(86400000, tr("24 horas"))};
+}
+
+QVariantList SettingsController::cardStatusPresentationOptions() const {
+    return {option(QStringLiteral("personal-list-status"), tr("Status da minha lista")),
+            option(QStringLiteral("media-release-status"), tr("Status de exibição"))};
 }
 
 void SettingsController::SetScoreScale(const double minimum, const double maximum,
@@ -188,6 +195,14 @@ void SettingsController::SetSynchronizationInterval(const int intervalMs) {
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }
 
+void SettingsController::SetCardStatusPresentation(const QString &key) {
+    cardStatusPresentationKey_ = key;
+    const auto presentation = ParseCardStatusPresentation(key);
+    cardStatusPresentationKeyValid_ = presentation.has_value();
+    if (presentation) draft_.cardStatusPresentation = presentation.value();
+    statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
+}
+
 void SettingsController::Save() {
     if (saving_) return;
     refreshValidation();
@@ -209,14 +224,17 @@ void SettingsController::Discard() {
     draft_ = persisted_;
     coverQualityKey_ = CoverQualityName(draft_.coverQuality);
     qualityKeyValid_ = true;
+    cardStatusPresentationKey_ = CardStatusPresentationKey(draft_.cardStatusPresentation);
+    cardStatusPresentationKeyValid_ = true;
     extensionInputValid_ = true;
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }
 
 void SettingsController::refreshValidation() {
     const auto result = ValidateUserPreferences(draft_);
-    valid_ = qualityKeyValid_ && extensionInputValid_ && result.valid;
+    valid_ = qualityKeyValid_ && cardStatusPresentationKeyValid_ && extensionInputValid_ && result.valid;
     if (!qualityKeyValid_) errorMessage_ = tr("Qualidade de capa inválida.");
+    else if (!cardStatusPresentationKeyValid_) errorMessage_ = tr("Apresentação de status inválida.");
     else if (!extensionInputValid_) errorMessage_ = tr("Extensão de arquivo inválida.");
     else if (!result.valid) errorMessage_ = result.error;
 }

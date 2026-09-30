@@ -57,7 +57,7 @@ Rectangle {
 
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 7
+            spacing: 6
 
             Label {
                 Layout.fillWidth: true
@@ -69,9 +69,11 @@ Rectangle {
             }
 
             Label {
+                Layout.fillWidth: true
                 text: card.status
                 color: "#8793a5"
                 font.pixelSize: 11
+                elide: Text.ElideRight
             }
 
             RowLayout {
@@ -79,9 +81,11 @@ Rectangle {
                 spacing: 8
 
                 Label {
+                    Layout.fillWidth: true
                     text: card.progress
                     color: "#68758a"
                     font.pixelSize: 11
+                    elide: Text.ElideRight
                 }
 
                 Rectangle {
@@ -91,9 +95,12 @@ Rectangle {
                 }
 
                 Label {
+                    Layout.fillWidth: true
                     text: card.score
                     color: "#68758a"
                     font.pixelSize: 11
+                    horizontalAlignment: Text.AlignRight
+                    elide: Text.ElideRight
                 }
             }
         }

@@ -17,9 +17,11 @@ class SettingsController final : public QObject {
     Q_PROPERTY(QString coverQualityKey READ coverQualityKey NOTIFY changed)
     Q_PROPERTY(bool synchronizationEnabled READ synchronizationEnabled NOTIFY changed)
     Q_PROPERTY(int synchronizationIntervalMs READ synchronizationIntervalMs NOTIFY changed)
+    Q_PROPERTY(QString cardStatusPresentationKey READ cardStatusPresentationKey NOTIFY changed)
     Q_PROPERTY(QVariantList coverQualityOptions READ coverQualityOptions CONSTANT)
     Q_PROPERTY(QVariantList scoreScaleOptions READ scoreScaleOptions CONSTANT)
     Q_PROPERTY(QVariantList synchronizationIntervalOptions READ synchronizationIntervalOptions CONSTANT)
+    Q_PROPERTY(QVariantList cardStatusPresentationOptions READ cardStatusPresentationOptions CONSTANT)
     Q_PROPERTY(bool dirty READ dirty NOTIFY changed)
     Q_PROPERTY(bool valid READ valid NOTIFY changed)
     Q_PROPERTY(bool saving READ saving NOTIFY changed)
@@ -41,9 +43,11 @@ public:
     QString coverQualityKey() const;
     bool synchronizationEnabled() const;
     int synchronizationIntervalMs() const;
+    QString cardStatusPresentationKey() const;
     QVariantList coverQualityOptions() const;
     QVariantList scoreScaleOptions() const;
     QVariantList synchronizationIntervalOptions() const;
+    QVariantList cardStatusPresentationOptions() const;
     bool dirty() const;
     bool valid() const;
     bool saving() const;
@@ -63,6 +67,7 @@ public:
     Q_INVOKABLE void SetCoverQuality(const QString &key);
     Q_INVOKABLE void SetSynchronizationEnabled(bool enabled);
     Q_INVOKABLE void SetSynchronizationInterval(int intervalMs);
+    Q_INVOKABLE void SetCardStatusPresentation(const QString &key);
     Q_INVOKABLE void Save();
     Q_INVOKABLE void Discard();
     Q_INVOKABLE void SetLibraryRoot(const QString &root);
@@ -79,6 +84,8 @@ private:
     UserPreferences draft_;
     QString coverQualityKey_;
     bool qualityKeyValid_ = true;
+    QString cardStatusPresentationKey_;
+    bool cardStatusPresentationKeyValid_ = true;
     bool valid_ = true;
     bool saving_ = false;
     QString statusMessage_;

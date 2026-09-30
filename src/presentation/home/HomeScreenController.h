@@ -8,6 +8,7 @@
 
 #include "../../application/media/IMediaReader.h"
 #include "../../application/covers/CoverDownloadCoordinator.h"
+#include "../../application/configuration/CardStatusPresentation.h"
 
 class HomeMediaModel final : public QAbstractListModel {
     Q_OBJECT
@@ -34,11 +35,14 @@ public:
     bool UpdateCover(int mediaId, QString source, CoverState state);
     QList<Media> media() const;
     void ClearCovers();
+    void ConfigureCardPresentation(CardStatusPresentation presentation, double scoreMaximum);
 
 private:
     QList<Media> media_;
     QHash<int, QString> coverSources_;
     QHash<int, CoverState> coverStates_;
+    CardStatusPresentation cardStatusPresentation_ = CardStatusPresentation::PersonalListStatus;
+    double scoreMaximum_ = 10.0;
 };
 
 class HomeScreenController final : public QObject {
@@ -126,6 +130,7 @@ public:
     void ConfigureInitialSort(QString key);
     void ConfigureScoreScale(double minimum, double maximum, double step);
     void ConfigureCoverQuality(CoverQuality quality);
+    void ConfigureCardStatusPresentation(CardStatusPresentation presentation);
 
     void reload();
     void notifySynchronizationCompleted();
@@ -187,6 +192,7 @@ private:
     double scoreMinimum_ = 0.0;
     double scoreMaximum_ = 10.0;
     double scoreStep_ = 1.0;
+    CardStatusPresentation cardStatusPresentation_ = CardStatusPresentation::PersonalListStatus;
 };
 
 #endif // HAIKENANIME_HOMESCREENCONTROLLER_H

@@ -4,6 +4,7 @@
 #include <QStringList>
 
 #include "../covers/CoverQuality.h"
+#include "CardStatusPresentation.h"
 
 struct UserPreferences final {
     double scoreMinimum = 0.0;
@@ -13,6 +14,7 @@ struct UserPreferences final {
     bool synchronizationEnabled = true;
     int synchronizationIntervalMs = 3600000;
     QString homeSortKey = QStringLiteral("title_asc");
+    CardStatusPresentation cardStatusPresentation = CardStatusPresentation::PersonalListStatus;
     QString libraryRoot = QStringLiteral("Q:\\");
     QStringList scanExtensions = {QStringLiteral(".mkv"), QStringLiteral(".mp4"),
                                   QStringLiteral(".avi"), QStringLiteral(".webm"),
@@ -28,6 +30,7 @@ inline bool operator==(const UserPreferences &left, const UserPreferences &right
         && left.synchronizationEnabled == right.synchronizationEnabled
         && left.synchronizationIntervalMs == right.synchronizationIntervalMs
         && left.homeSortKey == right.homeSortKey
+        && left.cardStatusPresentation == right.cardStatusPresentation
         && left.libraryRoot == right.libraryRoot
         && left.scanExtensions == right.scanExtensions;
 }

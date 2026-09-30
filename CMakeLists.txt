@@ -73,6 +73,7 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/configuration/HttpSettings.h
         src/application/configuration/Settings.h
         src/application/configuration/UserPreferences.h
+        src/application/configuration/CardStatusPresentation.h
         src/application/configuration/UserPreferencesValidator.h
         src/application/configuration/UserPreferencesValidator.cpp
         src/application/covers/CoverQuality.h

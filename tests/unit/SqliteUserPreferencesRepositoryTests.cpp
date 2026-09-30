@@ -16,6 +16,8 @@ private slots:
     void rejectsMalformedStoredExtensions();
     void preservesExternalStoredHomeSortKey();
     void normalizesExtensionsAtPersistenceBoundary();
+    void cardStatusPresentationMigratesWithSafeDefault();
+    void cardStatusPresentationSurvivesRestartAndInvalidStoredValueFallsBack();
 };
 
 static SqliteUserPreferencesRepository Repository(SqliteDatabase &database) {
@@ -139,6 +141,55 @@ void SqliteUserPreferencesRepositoryTests::normalizesExtensionsAtPersistenceBoun
     QVERIFY(repository.read(loaded, found, error));
     QVERIFY(found);
     QCOMPARE(loaded.scanExtensions, QStringList({".webm", ".mkv"}));
+}
+
+void SqliteUserPreferencesRepositoryTests::cardStatusPresentationMigratesWithSafeDefault() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("preferences.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("SELECT card_status_presentation FROM user_preferences WHERE id = 1")));
+    QVERIFY(!query.next());
+
+    auto repository = Repository(database);
+    QString error;
+    QVERIFY(repository.replace(UserPreferences{}, error));
+    QVERIFY(query.exec(QStringLiteral("SELECT card_status_presentation FROM user_preferences WHERE id = 1")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("personal-list-status"));
+}
+
+void SqliteUserPreferencesRepositoryTests::cardStatusPresentationSurvivesRestartAndInvalidStoredValueFallsBack() {
+    QTemporaryDir directory;
+    const auto path = directory.filePath(QStringLiteral("preferences.sqlite"));
+    QString error;
+    {
+        SqliteDatabase database(path);
+        QVERIFY(database.open());
+        QVERIFY(database.migrate());
+        auto repository = Repository(database);
+        UserPreferences expected;
+        expected.cardStatusPresentation = CardStatusPresentation::MediaReleaseStatus;
+        QVERIFY2(repository.replace(expected, error), qPrintable(error));
+    }
+
+    SqliteDatabase reopened(path);
+    QVERIFY(reopened.open());
+    QVERIFY(reopened.migrate());
+    auto repository = Repository(reopened);
+    UserPreferences loaded;
+    bool found = false;
+    QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
+    QVERIFY(found);
+    QCOMPARE(loaded.cardStatusPresentation, CardStatusPresentation::MediaReleaseStatus);
+
+    QSqlQuery query(reopened.connection());
+    QVERIFY(query.exec(QStringLiteral("UPDATE user_preferences SET card_status_presentation = 'obsolete'")));
+    QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
+    QVERIFY(found);
+    QCOMPARE(loaded.cardStatusPresentation, CardStatusPresentation::PersonalListStatus);
 }
 
 void SqliteUserPreferencesRepositoryTests::readsMissingAndRoundTripsReplacement() {

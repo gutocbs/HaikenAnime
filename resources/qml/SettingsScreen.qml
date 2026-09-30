@@ -670,6 +670,15 @@ Item {
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.coverQualityKey)
                         onActivated: controller.SetCoverQuality(model[index].key)
                     }
+                    SettingsComboBox {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        caption: qsTr("STATUS NOS CARTÕES")
+                        model: controller.cardStatusPresentationOptions
+                        textRole: "label"
+                        currentIndex: settingsScreen.optionIndex(model, "key", controller.cardStatusPresentationKey)
+                        onActivated: controller.SetCardStatusPresentation(model[index].key)
+                    }
                 }
             }
         }

@@ -52,6 +52,8 @@ private slots:
     void synchronizationCompletionReloadsMedia();
     void exposesPresentationReadyStatus_data();
     void exposesPresentationReadyStatus();
+    void exposesSelfDescribingCardValues();
+    void exposesPlaceholdersAndConfiguredScoreMaximumOnCards();
     void exposesNineItemPreviewAndCompleteFilteredLibrary();
     void changesMediaTypeUsingStableKeys();
     void exposesBackendDrivenBrowseOptions();
@@ -117,7 +119,7 @@ void HomeScreenControllerTests::exposesReadyMedia() {
     QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::TitleRole).toString(),
              QStringLiteral("Frieren"));
     QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::ProgressRole).toString(),
-             QStringLiteral("12/28"));
+             QStringLiteral("Progresso 12/28"));
 }
 
 void HomeScreenControllerTests::exposesEmptyState() {
@@ -186,6 +188,7 @@ void HomeScreenControllerTests::exposesPresentationReadyStatus_data() {
 void HomeScreenControllerTests::exposesPresentationReadyStatus() {
     QFETCH(int, status);
     QFETCH(QString, expectedLabel);
+    const auto expectedCardLabel = QStringLiteral("Exibição: %1").arg(expectedLabel);
     FakeMediaReader reader;
     Media media;
     media.Id = 42;
@@ -194,12 +197,13 @@ void HomeScreenControllerTests::exposesPresentationReadyStatus() {
     media.Type = MediaType::Anime;
     reader.result.append(media);
     HomeScreenController controller(reader);
+    controller.ConfigureCardStatusPresentation(CardStatusPresentation::MediaReleaseStatus);
 
     controller.reload();
 
     const auto index = controller.mediaModel()->index(0, 0);
     QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::StatusLabelRole).toString(),
-             expectedLabel);
+             expectedCardLabel);
 }
 
 void HomeScreenControllerTests::exposesNineItemPreviewAndCompleteFilteredLibrary() {
@@ -287,6 +291,58 @@ void HomeScreenControllerTests::exposesBackendDrivenBrowseOptions() {
     QCOMPARE(sortOptions.first().toMap().value(QStringLiteral("key")).toString(), QStringLiteral("title_asc"));
     QCOMPARE(controller.activeListFilter(), QStringLiteral("all"));
     QCOMPARE(controller.activeSort(), QStringLiteral("title_asc"));
+}
+
+void HomeScreenControllerTests::exposesSelfDescribingCardValues() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Completed;
+    media.Status = MediaStatus::Released;
+    media.ConsumedChapters = 12;
+    media.TotalChapters = 24;
+    media.PersonalScore = 9;
+    reader.result.append(media);
+    HomeScreenController controller(reader);
+
+    controller.reload();
+
+    const auto index = controller.mediaModel()->index(0, 0);
+    QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::StatusLabelRole).toString(),
+             QStringLiteral("Minha lista: Concluído"));
+    QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::ProgressRole).toString(),
+             QStringLiteral("Progresso 12/24"));
+    QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::ScoreRole).toString(),
+             QStringLiteral("Nota 9/10"));
+}
+
+void HomeScreenControllerTests::exposesPlaceholdersAndConfiguredScoreMaximumOnCards() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.TotalChapters = 0;
+    media.ConsumedChapters = 0;
+    media.PersonalScore = 0;
+    reader.result.append(media);
+    HomeScreenController controller(reader);
+    controller.ConfigureScoreScale(0.0, 100.0, 5.0);
+
+    controller.reload();
+
+    const auto index = controller.mediaModel()->index(0, 0);
+    QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::ProgressRole).toString(),
+             QStringLiteral("Progresso —"));
+    QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::ScoreRole).toString(),
+             QStringLiteral("Nota —"));
+    reader.result.first().PersonalScore = 85;
+    controller.reload();
+    QCOMPARE(controller.mediaModel()->data(controller.mediaModel()->index(0, 0),
+                                            HomeMediaModel::ScoreRole).toString(),
+             QStringLiteral("Nota 85/100"));
 }
 
 void HomeScreenControllerTests::restoresConfiguredSortBeforeFirstModelPublication() {

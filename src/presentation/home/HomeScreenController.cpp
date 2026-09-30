@@ -51,8 +51,47 @@ QString mediaProgress(const Media &media) {
     return QStringLiteral("%1/%2").arg(media.ConsumedChapters).arg(media.TotalChapters);
 }
 
+QString cardProgress(const Media &media) {
+    if (media.TotalChapters <= 0) return QStringLiteral("Progresso —");
+    return QStringLiteral("Progresso %1/%2").arg(media.ConsumedChapters).arg(media.TotalChapters);
+}
+
 QString personalScore(const Media &media) {
     return media.PersonalScore > 0 ? QString::number(media.PersonalScore) : QStringLiteral("—");
+}
+
+QString cardScore(const Media &media, const double scoreMaximum) {
+    if (media.PersonalScore <= 0) return QStringLiteral("Nota —");
+    return QStringLiteral("Nota %1/%2")
+        .arg(media.PersonalScore)
+        .arg(QString::number(scoreMaximum, 'g', 15));
+}
+
+QString userListStatusLabel(const UserListStatus status) {
+    switch (status) {
+    case UserListStatus::Current:
+        return QCoreApplication::translate("HomeMediaModel", "Em andamento");
+    case UserListStatus::Planning:
+        return QCoreApplication::translate("HomeMediaModel", "Planejando");
+    case UserListStatus::OnHold:
+        return QCoreApplication::translate("HomeMediaModel", "Em pausa");
+    case UserListStatus::Dropped:
+        return QCoreApplication::translate("HomeMediaModel", "Abandonado");
+    case UserListStatus::Completed:
+        return QCoreApplication::translate("HomeMediaModel", "Concluído");
+    case UserListStatus::Unknown:
+    default:
+        return QCoreApplication::translate("HomeMediaModel", "Desconhecido");
+    }
+}
+
+QString cardStatusLabel(const Media &media, const CardStatusPresentation presentation) {
+    if (presentation == CardStatusPresentation::MediaReleaseStatus) {
+        return QCoreApplication::translate("HomeMediaModel", "Exibição: %1")
+            .arg(mediaStatusLabel(media.Status));
+    }
+    return QCoreApplication::translate("HomeMediaModel", "Minha lista: %1")
+        .arg(userListStatusLabel(media.ListStatus));
 }
 
 QString userListStatusKey(const UserListStatus status) {
@@ -149,11 +188,11 @@ QVariant HomeMediaModel::data(const QModelIndex &index, int role) const {
     case TitleRole:
         return media.Name;
     case ProgressRole:
-        return mediaProgress(media);
+        return cardProgress(media);
     case ScoreRole:
-        return personalScore(media);
+        return cardScore(media, scoreMaximum_);
     case StatusLabelRole:
-        return mediaStatusLabel(media.Status);
+        return cardStatusLabel(media, cardStatusPresentation_);
     case RemoteCoverUrlRole:
         return media.CoverUrl;
     case CoverSourceRole:
@@ -307,7 +346,9 @@ QString HomeScreenController::selectedSynopsis() const { return hasSelection_ ? 
 QString HomeScreenController::selectedTypeLabel() const { return hasSelection_ ? mediaTypeLabel(selectedMedia_.Type) : QString(); }
 QString HomeScreenController::selectedStatusLabel() const { return hasSelection_ ? mediaStatusLabel(selectedMedia_.Status) : QString(); }
 QString HomeScreenController::selectedProgress() const { return hasSelection_ ? mediaProgress(selectedMedia_) : QString(); }
-QString HomeScreenController::selectedScore() const { return hasSelection_ ? personalScore(selectedMedia_) : QString(); }
+QString HomeScreenController::selectedScore() const {
+    return hasSelection_ ? personalScore(selectedMedia_) : QString();
+}
 QString HomeScreenController::selectedAverageScore() const {
     return hasSelection_ && selectedMedia_.AverageScore > 0 ? QString::number(selectedMedia_.AverageScore) : QStringLiteral("—");
 }
@@ -333,11 +374,21 @@ void HomeScreenController::ConfigureScoreScale(const double minimum, const doubl
     scoreMinimum_ = minimum;
     scoreMaximum_ = maximum;
     scoreStep_ = step;
+    model_.ConfigureCardPresentation(cardStatusPresentation_, scoreMaximum_);
+    fullModel_.ConfigureCardPresentation(cardStatusPresentation_, scoreMaximum_);
     emit editingOptionsChanged();
 }
 
 void HomeScreenController::ConfigureCoverQuality(const CoverQuality quality) {
     coverQuality_ = quality;
+}
+
+void HomeScreenController::ConfigureCardStatusPresentation(
+    const CardStatusPresentation presentation) {
+    if (cardStatusPresentation_ == presentation) return;
+    cardStatusPresentation_ = presentation;
+    model_.ConfigureCardPresentation(cardStatusPresentation_, scoreMaximum_);
+    fullModel_.ConfigureCardPresentation(cardStatusPresentation_, scoreMaximum_);
 }
 
 void HomeScreenController::ConfigureBrowseOptions(QVariantList mediaTypeOptions,
@@ -368,6 +419,17 @@ void HomeScreenController::ConfigureBrowseOptions(QVariantList mediaTypeOptions,
         emit mediaCountChanged();
     }
     emit browseOptionsChanged();
+}
+
+void HomeMediaModel::ConfigureCardPresentation(const CardStatusPresentation presentation,
+                                               const double scoreMaximum) {
+    if (cardStatusPresentation_ == presentation && qFuzzyCompare(scoreMaximum_, scoreMaximum)) return;
+    cardStatusPresentation_ = presentation;
+    scoreMaximum_ = scoreMaximum;
+    if (!media_.isEmpty()) {
+        emit dataChanged(index(0), index(media_.size() - 1),
+                         {ProgressRole, ScoreRole, StatusLabelRole});
+    }
 }
 
 void HomeScreenController::ConfigureInitialSort(QString key) {

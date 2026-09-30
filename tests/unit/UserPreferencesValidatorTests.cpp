@@ -15,6 +15,7 @@ private slots:
     void rejectsInvalidScanExtensions_data();
     void rejectsInvalidScanExtensions();
     void acceptsHomeSortKeyForControllerNormalization();
+    void rejectsUnsupportedCardStatusPresentation();
     void rejectsEmptyLibraryRoot();
     void comparesScannerPreferences();
 };
@@ -119,6 +120,16 @@ void UserPreferencesValidatorTests::acceptsHomeSortKeyForControllerNormalization
 
     QVERIFY(result.valid);
     QVERIFY(result.error.isEmpty());
+}
+
+void UserPreferencesValidatorTests::rejectsUnsupportedCardStatusPresentation() {
+    UserPreferences preferences;
+    preferences.cardStatusPresentation = static_cast<CardStatusPresentation>(99);
+
+    const auto result = ValidateUserPreferences(preferences);
+
+    QVERIFY(!result.valid);
+    QVERIFY(!result.error.isEmpty());
 }
 
 void UserPreferencesValidatorTests::rejectsEmptyLibraryRoot() {
