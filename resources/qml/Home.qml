@@ -359,25 +359,47 @@ Item {
                             }
                         }
 
-                        Label {
+                        TextEdit {
+                            id: selectedTitleText
                             Layout.fillWidth: true
+                            Layout.preferredHeight: contentHeight
                             text: controller.selectedTitle
                             color: ink
                             font.pixelSize: 20
                             font.weight: Font.Bold
-                            wrapMode: Text.Wrap
+                            readOnly: true
+                            selectByMouse: true
+                            wrapMode: TextEdit.Wrap
+                            Accessible.name: qsTr("Título selecionado")
                         }
 
                         RowLayout {
                             Layout.fillWidth: true
                             spacing: 8
 
-                            Label { text: controller.selectedTypeLabel; color: accent; font.weight: Font.DemiBold }
+                            TextEdit {
+                                id: selectedTypeText
+                                Layout.preferredWidth: contentWidth
+                                Layout.preferredHeight: contentHeight
+                                text: controller.selectedTypeLabel
+                                color: accent
+                                font.weight: Font.DemiBold
+                                readOnly: true
+                                selectByMouse: true
+                                wrapMode: TextEdit.NoWrap
+                                Accessible.name: qsTr("Tipo da mídia selecionada")
+                            }
                             Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: line }
-                            Label {
+                            TextEdit {
+                                id: selectedStatusText
+                                Layout.preferredHeight: contentHeight
                                 text: home.previewValue(controller.selectedMediaId, "detailStatusText",
                                                         controller.selectedStatusLabel)
                                 color: muted
+                                readOnly: true
+                                selectByMouse: true
+                                wrapMode: TextEdit.NoWrap
+                                Accessible.name: qsTr("Status da mídia selecionada")
                             }
                         }
 
@@ -389,19 +411,36 @@ Item {
 
                             Label { text: qsTr("Progresso"); color: muted; font.pixelSize: 11 }
                             Label { text: qsTr("Sua nota"); color: muted; font.pixelSize: 11 }
-                            Label {
+                            TextEdit {
+                                id: selectedProgressText
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: contentHeight
                                 text: home.previewValue(controller.selectedMediaId, "detailProgressText",
                                                         controller.selectedProgress)
-                                color: ink; font.weight: Font.DemiBold
+                                color: ink
+                                font.weight: Font.DemiBold
+                                readOnly: true
+                                selectByMouse: true
+                                wrapMode: TextEdit.NoWrap
+                                Accessible.name: qsTr("Progresso da mídia selecionada")
                             }
-                            Label {
+                            TextEdit {
+                                id: selectedScoreText
+                                Layout.fillWidth: true
+                                Layout.preferredHeight: contentHeight
                                 text: home.previewValue(controller.selectedMediaId, "detailScoreText",
                                                         controller.selectedScore)
-                                color: ink; font.weight: Font.DemiBold
+                                color: ink
+                                font.weight: Font.DemiBold
+                                readOnly: true
+                                selectByMouse: true
+                                wrapMode: TextEdit.NoWrap
+                                Accessible.name: qsTr("Nota da mídia selecionada")
                             }
                         }
 
-                        Label {
+                        TextEdit {
+                            id: selectedSynopsisText
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             text: controller.selectedSynopsis.length > 0
@@ -409,9 +448,12 @@ Item {
                                   : qsTr("Sinopse não disponível.")
                             color: muted
                             font.pixelSize: 12
-                            wrapMode: Text.Wrap
+                            readOnly: true
+                            selectByMouse: true
+                            wrapMode: TextEdit.Wrap
                             verticalAlignment: Text.AlignTop
-                            elide: Text.ElideRight
+                            clip: true
+                            Accessible.name: qsTr("Sinopse da mídia selecionada")
                         }
                     }
 

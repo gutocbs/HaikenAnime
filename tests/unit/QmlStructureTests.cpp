@@ -71,6 +71,7 @@ private slots:
     void mediaCardAndSettingsUseControllerPreparedCardPresentation();
     void previewCardsUseControllerPreparedMetadataInBothGrids();
     void compactDetailsUseSeparatePreviewMetadata();
+    void compactDetailsAreReadOnlyAndSelectable();
 
 private:
     static QString qmlSource(const QString &name);
@@ -292,6 +293,36 @@ void QmlStructureTests::compactDetailsUseSeparatePreviewMetadata() {
         "home.previewValue(controller.selectedMediaId, \"detailProgressText\",")));
     QVERIFY(source.contains(QStringLiteral(
         "home.previewValue(controller.selectedMediaId, \"detailScoreText\",")));
+}
+
+void QmlStructureTests::compactDetailsAreReadOnlyAndSelectable() {
+    const QString source = qmlSource(QStringLiteral("Home.qml"));
+    QVERIFY(!source.isEmpty());
+
+    const qsizetype detailsStart = source.indexOf(QStringLiteral("visible: controller.hasSelection"));
+    const qsizetype detailsEnd = source.indexOf(QStringLiteral("EditMediaPanel {"), detailsStart);
+    QVERIFY(detailsStart >= 0);
+    QVERIFY(detailsEnd > detailsStart);
+    const QString details = source.mid(detailsStart, detailsEnd - detailsStart);
+
+    for (const QString &controlId : {QStringLiteral("selectedTitleText"),
+                                    QStringLiteral("selectedTypeText"),
+                                    QStringLiteral("selectedStatusText"),
+                                    QStringLiteral("selectedProgressText"),
+                                    QStringLiteral("selectedScoreText"),
+                                    QStringLiteral("selectedSynopsisText")}) {
+        QVERIFY2(details.contains(QRegularExpression(
+                     QStringLiteral(R"(TextEdit\s*\{[^}]*id\s*:\s*)") + controlId
+                     + QStringLiteral(R"([^}]*readOnly\s*:\s*true[^}]*selectByMouse\s*:\s*true)"))),
+                 qPrintable(controlId + QStringLiteral(" must remain read-only and selectable by mouse.")));
+    }
+
+    QVERIFY2(details.contains(QRegularExpression(
+                 QStringLiteral(R"(id\s*:\s*selectedTitleText[^}]*wrapMode\s*:\s*TextEdit\.Wrap)"))),
+             "The selected title must preserve wrapped presentation.");
+    QVERIFY2(details.contains(QRegularExpression(
+                 QStringLiteral(R"(id\s*:\s*selectedSynopsisText[^}]*wrapMode\s*:\s*TextEdit\.Wrap[^}]*verticalAlignment\s*:\s*Text\.AlignTop[^}]*clip\s*:\s*true)"))),
+             "The selected synopsis must preserve its wrapped, top-aligned, clipped details boundary.");
 }
 
 QTEST_GUILESS_MAIN(QmlStructureTests)
