@@ -439,7 +439,7 @@ Item {
                             }
                         }
 
-                        TextEdit {
+                        Text {
                             id: selectedSynopsisText
                             Layout.fillWidth: true
                             Layout.fillHeight: true
@@ -448,11 +448,10 @@ Item {
                                   : qsTr("Sinopse não disponível.")
                             color: muted
                             font.pixelSize: 12
-                            readOnly: true
                             selectByMouse: true
-                            wrapMode: TextEdit.Wrap
+                            wrapMode: Text.Wrap
                             verticalAlignment: Text.AlignTop
-                            clip: true
+                            elide: Text.ElideRight
                             Accessible.name: qsTr("Sinopse da mídia selecionada")
                         }
                     }

@@ -309,8 +309,7 @@ void QmlStructureTests::compactDetailsAreReadOnlyAndSelectable() {
                                     QStringLiteral("selectedTypeText"),
                                     QStringLiteral("selectedStatusText"),
                                     QStringLiteral("selectedProgressText"),
-                                    QStringLiteral("selectedScoreText"),
-                                    QStringLiteral("selectedSynopsisText")}) {
+                                    QStringLiteral("selectedScoreText")}) {
         QVERIFY2(details.contains(QRegularExpression(
                      QStringLiteral(R"(TextEdit\s*\{[^}]*id\s*:\s*)") + controlId
                      + QStringLiteral(R"([^}]*readOnly\s*:\s*true[^}]*selectByMouse\s*:\s*true)"))),
@@ -321,8 +320,10 @@ void QmlStructureTests::compactDetailsAreReadOnlyAndSelectable() {
                  QStringLiteral(R"(id\s*:\s*selectedTitleText[^}]*wrapMode\s*:\s*TextEdit\.Wrap)"))),
              "The selected title must preserve wrapped presentation.");
     QVERIFY2(details.contains(QRegularExpression(
-                 QStringLiteral(R"(id\s*:\s*selectedSynopsisText[^}]*wrapMode\s*:\s*TextEdit\.Wrap[^}]*verticalAlignment\s*:\s*Text\.AlignTop[^}]*clip\s*:\s*true)"))),
-             "The selected synopsis must preserve its wrapped, top-aligned, clipped details boundary.");
+                 QStringLiteral(R"(Text\s*\{[^}]*id\s*:\s*selectedSynopsisText[^}]*selectByMouse\s*:\s*true[^}]*wrapMode\s*:\s*Text\.Wrap[^}]*verticalAlignment\s*:\s*Text\.AlignTop[^}]*elide\s*:\s*Text\.ElideRight)"))),
+             "The selected synopsis must preserve its wrapped, top-aligned, ellipsized details boundary while remaining selectable.");
+    QVERIFY(!details.contains(QRegularExpression(
+        QStringLiteral(R"(id\s*:\s*selectedSynopsisText[^}]*clip\s*:\s*true)"))));
 }
 
 QTEST_GUILESS_MAIN(QmlStructureTests)
