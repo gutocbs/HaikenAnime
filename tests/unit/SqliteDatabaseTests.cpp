@@ -482,10 +482,19 @@ void SqliteDatabaseTests::migrationAddsLanguageWithoutLosingExistingData() {
     QTemporaryDir directory;
     SqliteDatabase database(directory.filePath(QStringLiteral("legacy.sqlite")));
     QVERIFY(database.open());
-    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
     QSqlQuery query(database.connection());
-    QVERIFY(query.exec(QStringLiteral("INSERT INTO user_preferences (id, score_minimum, score_maximum, score_step, cover_quality, synchronization_enabled, synchronization_interval_ms, home_sort_key, card_status_presentation, library_root, scan_extensions) VALUES (1, 0, 10, 1, 'large', 0, 1800000, 'title_desc', 'media-release-status', 'R:/Anime', '[\".mkv\"]')")));
-    QVERIFY(query.exec(QStringLiteral("DELETE FROM schema_version WHERE version = 11")));
+    QVERIFY(query.exec(QStringLiteral("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)")));
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO schema_version (version) VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10)")));
+    QVERIFY(query.exec(QStringLiteral(
+        "CREATE TABLE user_preferences ("
+        "id INTEGER PRIMARY KEY, score_minimum REAL, score_maximum REAL, score_step REAL, "
+        "cover_quality TEXT, synchronization_enabled INTEGER, synchronization_interval_ms INTEGER, "
+        "home_sort_key TEXT, card_status_presentation TEXT, library_root TEXT, scan_extensions TEXT)")));
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO user_preferences VALUES "
+        "(1, 0, 10, 1, 'large', 0, 1800000, 'title_desc', 'media-release-status', "
+        "'R:/Anime', '[\".mkv\"]')")));
 
     QVERIFY2(database.migrate(), qPrintable(database.lastError()));
     QVERIFY(query.exec(QStringLiteral("SELECT language_key, cover_quality, synchronization_enabled, home_sort_key FROM user_preferences WHERE id = 1")));

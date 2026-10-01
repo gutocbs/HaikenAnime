@@ -1,8 +1,12 @@
 #include <QCoreApplication>
 #include <QDir>
+#include <QQmlComponent>
+#include <QQmlEngine>
 #include <QtTest>
 
 #include "../../src/app/TranslationLoader.h"
+
+#include <memory>
 
 class TranslationLoaderTests final : public QObject {
     Q_OBJECT
@@ -10,6 +14,7 @@ class TranslationLoaderTests final : public QObject {
 private slots:
     void installsPortugueseCatalog();
     void installsEnglishCatalog();
+    void installsEnglishCatalogBeforeQmlComponentCreation();
     void invalidKeyFallsBackToPortuguese();
     void missingCatalogReportsErrorAndKeepsDefaultLanguage();
 };
@@ -30,6 +35,23 @@ void TranslationLoaderTests::installsEnglishCatalog() {
     QVERIFY(error.isEmpty());
     QCOMPARE(QCoreApplication::translate("SettingsController", "Alterações salvas."),
              QStringLiteral("Changes saved."));
+}
+
+void TranslationLoaderTests::installsEnglishCatalogBeforeQmlComponentCreation() {
+    QString error;
+    QVERIFY2(TranslationLoader::Install(*QCoreApplication::instance(), QStringLiteral("en"), error),
+             qPrintable(error));
+
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    component.setData("import QtQml\n"
+                      "QtObject { property string text: qsTranslate(\"SettingsController\", "
+                      "\"Altera\303\247\303\265es salvas.\") }",
+                      QUrl());
+    QVERIFY2(component.isReady(), qPrintable(component.errorString()));
+    std::unique_ptr<QObject> root(component.create());
+    QVERIFY2(root, qPrintable(component.errorString()));
+    QCOMPARE(root->property("text").toString(), QStringLiteral("Changes saved."));
 }
 
 void TranslationLoaderTests::invalidKeyFallsBackToPortuguese() {

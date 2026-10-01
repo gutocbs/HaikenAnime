@@ -503,7 +503,7 @@ add_executable(TranslationLoaderTests
         tests/unit/TranslationLoaderTests.cpp
         src/app/TranslationLoader.cpp
 )
-target_link_libraries(TranslationLoaderTests PRIVATE Qt6::Core Qt6::Test)
+target_link_libraries(TranslationLoaderTests PRIVATE Qt6::Core Qt6::Qml Qt6::Test)
 qt_add_translations(TranslationLoaderTests
         TS_FILES ${HAIKENANIME_TS_FILES}
         RESOURCE_PREFIX "/i18n"
