@@ -8,6 +8,8 @@ class SqliteUserPreferencesRepository final : public IUserPreferencesRepository 
 public:
     SqliteUserPreferencesRepository(QSqlDatabase database, QString readQuery, QString upsertQuery);
     [[nodiscard]] bool read(UserPreferences &preferences, bool &found, QString &error) override;
+    [[nodiscard]] bool read(UserPreferences &preferences, bool &found, QString &error,
+                            QString &warning);
     [[nodiscard]] bool replace(const UserPreferences &preferences, QString &error) override;
 private:
     QSqlDatabase database_;

@@ -212,20 +212,26 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     SqlQueryStore upsertPreferencesStore(queryConfiguration.upsertUserPreferencesPath);
     if (readPreferencesStore.load(readPreferencesQuery, queryError)
         && upsertPreferencesStore.load(upsertPreferencesQuery, queryError)) {
-        context.userPreferencesRepository = std::make_unique<SqliteUserPreferencesRepository>(
+        auto preferencesRepository = std::make_unique<SqliteUserPreferencesRepository>(
             context.database->connection(), std::move(readPreferencesQuery),
             std::move(upsertPreferencesQuery));
         bool found = false;
         QString preferencesError;
-        if (!context.userPreferencesRepository->read(context.userPreferences, found, preferencesError)) {
+        QString preferencesWarning;
+        if (!preferencesRepository->read(context.userPreferences, found, preferencesError,
+                                         preferencesWarning)) {
             context.userPreferences = settings.userPreferences;
             context.logger->warning(LogCategory::Configuration, preferencesError);
         } else if (!found) {
             context.userPreferences = settings.userPreferences;
-            if (!context.userPreferencesRepository->replace(context.userPreferences, preferencesError)) {
+            if (!preferencesRepository->replace(context.userPreferences, preferencesError)) {
                 context.logger->warning(LogCategory::Configuration, preferencesError);
             }
         }
+        if (!preferencesWarning.isEmpty()) {
+            context.logger->warning(LogCategory::Configuration, preferencesWarning);
+        }
+        context.userPreferencesRepository = std::move(preferencesRepository);
     } else {
         context.userPreferences = settings.userPreferences;
         context.logger->warning(LogCategory::Configuration, queryError);

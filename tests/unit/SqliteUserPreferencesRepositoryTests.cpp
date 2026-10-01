@@ -19,7 +19,7 @@ private slots:
     void cardStatusPresentationMigratesWithSafeDefault();
     void cardStatusPresentationSurvivesRestartAndInvalidStoredValueFallsBack();
     void languageSurvivesRestartAndInvalidStoredValueFallsBackWithoutLosingPreferences();
-    void preferredTitleSurvivesRestartAndInvalidStoredValueFallsBackWithoutLosingPreferences();
+    void preferredTitleSurvivesRestartAndInvalidStoredValueWarnsWithoutLosingPreferences();
 };
 
 static SqliteUserPreferencesRepository Repository(SqliteDatabase &database) {
@@ -228,7 +228,7 @@ void SqliteUserPreferencesRepositoryTests::languageSurvivesRestartAndInvalidStor
     QCOMPARE(loaded.coverQuality, CoverQuality::Large);
 }
 
-void SqliteUserPreferencesRepositoryTests::preferredTitleSurvivesRestartAndInvalidStoredValueFallsBackWithoutLosingPreferences() {
+void SqliteUserPreferencesRepositoryTests::preferredTitleSurvivesRestartAndInvalidStoredValueWarnsWithoutLosingPreferences() {
     QTemporaryDir directory;
     const auto path = directory.filePath(QStringLiteral("preferences.sqlite"));
     QString error;
@@ -249,17 +249,21 @@ void SqliteUserPreferencesRepositoryTests::preferredTitleSurvivesRestartAndInval
     auto repository = Repository(reopened);
     UserPreferences loaded;
     bool found = false;
-    QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
+    QString warning;
+    QVERIFY2(repository.read(loaded, found, error, warning), qPrintable(error));
     QVERIFY(found);
+    QVERIFY(warning.isEmpty());
     QCOMPARE(loaded.preferredTitleKey, QStringLiteral("native"));
     QCOMPARE(loaded.coverQuality, CoverQuality::Large);
 
     QSqlQuery query(reopened.connection());
     QVERIFY(query.exec(QStringLiteral("UPDATE user_preferences SET preferred_title_key = 'obsolete'")));
-    QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
+    QVERIFY2(repository.read(loaded, found, error, warning), qPrintable(error));
     QVERIFY(found);
     QCOMPARE(loaded.preferredTitleKey, QStringLiteral("romaji"));
     QCOMPARE(loaded.coverQuality, CoverQuality::Large);
+    QVERIFY(warning.contains(QStringLiteral("obsolete")));
+    QVERIFY(warning.contains(QStringLiteral("romaji")));
 }
 
 void SqliteUserPreferencesRepositoryTests::readsMissingAndRoundTripsReplacement() {

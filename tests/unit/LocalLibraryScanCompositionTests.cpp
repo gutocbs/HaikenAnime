@@ -49,6 +49,7 @@ class LocalLibraryScanCompositionTests final : public QObject {
 private slots:
     void initTestCase() { QStandardPaths::setTestModeEnabled(true); }
     void persistedPreferencesOverrideDefaultsAfterRestart();
+    void invalidPreferredTitleFallsBackAndLogsConfigurationWarning();
     void restartPreservesExternalHomeSortForControllerFallback();
     void startupUsesPersistedSnapshotAndSchedulesOnce();
     void manualRootChangeRetainsOldInventory();
@@ -82,6 +83,36 @@ void LocalLibraryScanCompositionTests::persistedPreferencesOverrideDefaultsAfter
     QCOMPARE(restarted.userPreferences.homeSortKey, QStringLiteral("title_desc"));
     QCOMPARE(restarted.userPreferences.preferredTitleKey, QStringLiteral("english"));
     QVERIFY(restarted.localLibraryScan);
+}
+
+void LocalLibraryScanCompositionTests::invalidPreferredTitleFallsBackAndLogsConfigurationWarning() {
+    QTemporaryDir directory;
+    const auto options = optionsFor(directory);
+    {
+        auto context = createApplicationContext(options);
+        QVERIFY2(context.isReady(), qPrintable(context.initializationError));
+        auto preferences = context.userPreferences;
+        preferences.coverQuality = CoverQuality::Large;
+        QString error;
+        QVERIFY2(context.userPreferencesRepository->replace(preferences, error), qPrintable(error));
+        QSqlQuery query(context.database->connection());
+        QVERIFY(query.exec(QStringLiteral(
+            "UPDATE user_preferences SET preferred_title_key = 'obsolete' WHERE id = 1")));
+    }
+
+    QFile::remove(scanLogPath());
+    auto restarted = createApplicationContext(options);
+    QVERIFY2(restarted.isReady(), qPrintable(restarted.initializationError));
+    QCOMPARE(restarted.userPreferences.preferredTitleKey, QStringLiteral("romaji"));
+    QCOMPARE(restarted.userPreferences.coverQuality, CoverQuality::Large);
+    restarted.logger->stop();
+
+    QFile log(scanLogPath());
+    QVERIFY(log.open(QIODevice::ReadOnly | QIODevice::Text));
+    const auto entries = QString::fromUtf8(log.readAll());
+    QVERIFY(entries.contains(QStringLiteral(
+        "[WARN] [Configuration] Stored preferred title key 'obsolete' is unsupported; "
+        "falling back to 'romaji'.")));
 }
 
 void LocalLibraryScanCompositionTests::restartPreservesExternalHomeSortForControllerFallback() {

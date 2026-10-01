@@ -13,7 +13,14 @@ SqliteUserPreferencesRepository::SqliteUserPreferencesRepository(
 
 bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &found,
                                            QString &error) {
+    QString warning;
+    return read(preferences, found, error, warning);
+}
+
+bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &found,
+                                           QString &error, QString &warning) {
     error.clear();
+    warning.clear();
     found = false;
     QSqlQuery query(database_);
     if (!query.exec(readQuery_)) {
@@ -52,7 +59,13 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
     loaded.cardStatusPresentation = ParseCardStatusPresentation(query.value(9).toString())
                                         .value_or(CardStatusPresentation::PersonalListStatus);
     loaded.languageKey = NormalizeLanguageKey(query.value(10).toString());
-    loaded.preferredTitleKey = NormalizePreferredTitleKey(query.value(11).toString());
+    const auto storedPreferredTitleKey = query.value(11).toString();
+    loaded.preferredTitleKey = NormalizePreferredTitleKey(storedPreferredTitleKey);
+    if (!IsSupportedPreferredTitleKey(storedPreferredTitleKey)) {
+        warning = QStringLiteral(
+            "Stored preferred title key '%1' is unsupported; falling back to '%2'.")
+                      .arg(storedPreferredTitleKey, loaded.preferredTitleKey);
+    }
     const auto validation = ValidateUserPreferences(loaded);
     if (!validation.valid) {
         error = validation.error;
