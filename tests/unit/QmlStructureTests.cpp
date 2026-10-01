@@ -72,6 +72,7 @@ private slots:
     void previewCardsUseControllerPreparedMetadataInBothGrids();
     void compactDetailsUseSeparatePreviewMetadata();
     void compactDetailsAreReadOnlyAndSelectable();
+    void coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads();
 
 private:
     static QString qmlSource(const QString &name);
@@ -329,6 +330,42 @@ void QmlStructureTests::compactDetailsAreReadOnlyAndSelectable() {
     QVERIFY(details.contains(QStringLiteral("id: selectedSynopsisOverflowIndicator")));
     QVERIFY(details.contains(QStringLiteral("visible: selectedSynopsisText.contentHeight > selectedSynopsisText.height")));
     QVERIFY(details.contains(QStringLiteral("text: \"…\"")));
+}
+
+void QmlStructureTests::coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads() {
+    const QString homeSource = qmlSource(QStringLiteral("Home.qml"));
+    const QString previewSource = qmlSource(QStringLiteral("CoverPreview.qml"));
+    QVERIFY(!homeSource.isEmpty());
+    QVERIFY2(!previewSource.isEmpty(), "Cover preview must be a dedicated QML component.");
+
+    QVERIFY2(homeSource.contains(QStringLiteral("CoverPreview {")),
+             "Home must compose the local cover preview component.");
+    QVERIFY2(homeSource.contains(QStringLiteral("source: controller.selectedCoverSource")),
+             "Home must pass only the selected cover source to the preview.");
+    QVERIFY2(previewSource.contains(QStringLiteral("property url source")),
+             "The preview must expose the selected cover source as its input.");
+    QVERIFY2(previewSource.contains(QStringLiteral("source: preview.source")),
+             "The preview image must use the supplied selected cover source.");
+    QVERIFY2(previewSource.contains(QStringLiteral("fillMode: Image.PreserveAspectFit")),
+             "The preview must preserve portrait, landscape, wide, and narrow image proportions.");
+    QVERIFY2(previewSource.contains(QStringLiteral("modal: true"))
+                 && previewSource.contains(QStringLiteral("focus: true")),
+             "The preview must be a focus-containing modal surface.");
+    QVERIFY2(previewSource.contains(QStringLiteral("Popup.CloseOnEscape | Popup.CloseOnPressOutside")),
+             "The preview must close on Escape and backdrop press.");
+    QVERIFY2(previewSource.contains(QStringLiteral("returnFocusItem.forceActiveFocus()")),
+             "The preview must restore focus to the invoking cover after close.");
+    QVERIFY2(homeSource.contains(QStringLiteral("coverPreview.openForSource(coverTrigger)")),
+             "The selected cover must open its local preview.");
+    QVERIFY2(previewSource.contains(QStringLiteral("image.status === Image.Error")),
+             "A missing local cover must remain a non-fatal preview state.");
+
+    QVERIFY2(!previewSource.contains(QStringLiteral("RequestCoverWindow")),
+             "Opening the preview must not request a cover download window.");
+    QVERIFY2(!previewSource.contains(QStringLiteral("RequestCover")),
+             "Opening the preview must not request cover downloads.");
+    QVERIFY2(!previewSource.contains(QStringLiteral("CoverDownload")),
+             "The preview must not depend on the cover download controller.");
 }
 
 QTEST_GUILESS_MAIN(QmlStructureTests)

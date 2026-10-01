@@ -341,12 +341,22 @@ Item {
                         spacing: 14
 
                         Rectangle {
+                            id: coverTrigger
                             Layout.alignment: Qt.AlignHCenter
                             Layout.preferredWidth: 150
                             Layout.preferredHeight: 214
                             radius: 6
                             color: accentSoft
                             clip: true
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.Button
+                            Accessible.name: qsTr("Ampliar capa selecionada")
+
+                            TapHandler {
+                                onTapped: coverPreview.openForSource(coverTrigger)
+                            }
+                            Keys.onReturnPressed: coverPreview.openForSource(coverTrigger)
+                            Keys.onSpacePressed: coverPreview.openForSource(coverTrigger)
 
                             Image {
                                 anchors.fill: parent
@@ -578,6 +588,15 @@ Item {
         onApplyRequested: function(mediaId, progress, statusKey, score, path, alternativeNames) {
             home.applyPreviewEdit(mediaId, progress, statusKey, score, path, alternativeNames)
         }
+    }
+
+    CoverPreview {
+        id: coverPreview
+        source: controller.selectedCoverSource
+        ink: home.ink
+        muted: home.muted
+        line: home.line
+        surface: home.surface
     }
 
     Popup {
