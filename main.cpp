@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "src/app/ApplicationComposition.h"
+#include "src/app/TranslationLoader.h"
 #include "src/presentation/home/HomeScreenController.h"
 #include "src/presentation/settings/SettingsController.h"
 
@@ -26,6 +27,11 @@ int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
 
     auto context = createApplicationContext();
+    QString translationError;
+    if (!TranslationLoader::Install(app, context.userPreferences.languageKey, translationError)
+        && context.logger) {
+        context.logger->warning(LogCategory::Configuration, translationError);
+    }
     QObject::connect(&app, &QCoreApplication::aboutToQuit, [&context]() {
         if (context.localLibraryScan) {
             context.localLibraryScan->shutdown();

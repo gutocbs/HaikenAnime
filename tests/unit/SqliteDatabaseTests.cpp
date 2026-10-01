@@ -30,6 +30,7 @@ private slots:
     void migrationAddsHomeSortKeyWithoutLosingExistingData();
     void migrationRequiresVersionNineAndRollsBack();
     void migrationAddsCardStatusPresentationWithoutLosingExistingData();
+    void migrationAddsLanguageWithoutLosingExistingData();
 };
 
 void SqliteDatabaseTests::opensAndCreatesDatabaseFile() {
@@ -99,7 +100,7 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 10);
+    QCOMPARE(query.value(0).toInt(), 11);
 }
 
 void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
@@ -199,7 +200,7 @@ void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
     QVERIFY(versions.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
     QList<int> values;
     while (versions.next()) values.append(versions.value(0).toInt());
-    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10}));
+    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}));
 }
 
 void SqliteDatabaseTests::migrationCreatesUserPreferencesVersionFive() {
@@ -475,6 +476,24 @@ void SqliteDatabaseTests::migrationAddsCardStatusPresentationWithoutLosingExisti
     QVERIFY(query.exec(QStringLiteral("SELECT name FROM media WHERE id = 17")));
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toString(), QStringLiteral("Preserved media"));
+}
+
+void SqliteDatabaseTests::migrationAddsLanguageWithoutLosingExistingData() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("legacy.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("INSERT INTO user_preferences (id, score_minimum, score_maximum, score_step, cover_quality, synchronization_enabled, synchronization_interval_ms, home_sort_key, card_status_presentation, library_root, scan_extensions) VALUES (1, 0, 10, 1, 'large', 0, 1800000, 'title_desc', 'media-release-status', 'R:/Anime', '[\".mkv\"]')")));
+    QVERIFY(query.exec(QStringLiteral("DELETE FROM schema_version WHERE version = 11")));
+
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+    QVERIFY(query.exec(QStringLiteral("SELECT language_key, cover_quality, synchronization_enabled, home_sort_key FROM user_preferences WHERE id = 1")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("pt-BR"));
+    QCOMPARE(query.value(1).toString(), QStringLiteral("large"));
+    QCOMPARE(query.value(2).toBool(), false);
+    QCOMPARE(query.value(3).toString(), QStringLiteral("title_desc"));
 }
 
 QTEST_MAIN(SqliteDatabaseTests)

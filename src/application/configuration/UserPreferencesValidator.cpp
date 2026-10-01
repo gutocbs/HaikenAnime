@@ -62,6 +62,9 @@ UserPreferencesValidationResult ValidateUserPreferences(const UserPreferences &p
         && preferences.cardStatusPresentation != CardStatusPresentation::MediaReleaseStatus) {
         return {false, QStringLiteral("Card status presentation is unsupported.")};
     }
+    if (!IsSupportedLanguageKey(preferences.languageKey)) {
+        return {false, QStringLiteral("Language is unsupported.")};
+    }
     if (preferences.synchronizationIntervalMs < MinimumSynchronizationIntervalMs
         || preferences.synchronizationIntervalMs > MaximumSynchronizationIntervalMs) {
         return {false, QStringLiteral("Synchronization interval is outside the supported range.")};

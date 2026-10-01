@@ -126,7 +126,9 @@ SettingsController::SettingsController(IUserPreferencesRepository *repository,
                                        UserPreferences initial, QObject *parent)
     : QObject(parent), repository_(repository), persisted_(initial), draft_(initial),
       coverQualityKey_(CoverQualityName(initial.coverQuality)),
-      cardStatusPresentationKey_(CardStatusPresentationKey(initial.cardStatusPresentation)) {
+      cardStatusPresentationKey_(CardStatusPresentationKey(initial.cardStatusPresentation)),
+      languageKey_(NormalizeLanguageKey(initial.languageKey)),
+      appliedLanguageKey_(NormalizeLanguageKey(initial.languageKey)) {
     qRegisterMetaType<UserPreferences>();
     scanStatusMessage_ = tr("Nenhuma varredura iniciada.");
     refreshValidation();
@@ -139,6 +141,7 @@ QString SettingsController::coverQualityKey() const { return coverQualityKey_; }
 bool SettingsController::synchronizationEnabled() const { return draft_.synchronizationEnabled; }
 int SettingsController::synchronizationIntervalMs() const { return draft_.synchronizationIntervalMs; }
 QString SettingsController::cardStatusPresentationKey() const { return cardStatusPresentationKey_; }
+QString SettingsController::languageKey() const { return languageKey_; }
 bool SettingsController::dirty() const { return !extensionInputValid_ || !(draft_ == persisted_); }
 bool SettingsController::valid() const { return valid_; }
 bool SettingsController::saving() const { return saving_; }
@@ -167,6 +170,17 @@ QVariantList SettingsController::synchronizationIntervalOptions() const {
 QVariantList SettingsController::cardStatusPresentationOptions() const {
     return {option(QStringLiteral("personal-list-status"), tr("Status da minha lista")),
             option(QStringLiteral("media-release-status"), tr("Status de exibição"))};
+}
+
+QVariantList SettingsController::languageOptions() const {
+    return {option(QStringLiteral("pt-BR"), tr("Português (Brasil)")),
+            option(QStringLiteral("en"), tr("English"))};
+}
+
+QString SettingsController::restartRequiredMessage() const {
+    return languageKey_ == appliedLanguageKey_
+        ? QString{}
+        : tr("Reinicie o aplicativo para aplicar o idioma selecionado.");
 }
 
 void SettingsController::SetScoreScale(const double minimum, const double maximum,
@@ -203,6 +217,13 @@ void SettingsController::SetCardStatusPresentation(const QString &key) {
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }
 
+void SettingsController::SetLanguage(const QString &key) {
+    languageKey_ = key;
+    languageKeyValid_ = IsSupportedLanguageKey(key);
+    if (languageKeyValid_) draft_.languageKey = key;
+    statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
+}
+
 void SettingsController::Save() {
     if (saving_) return;
     refreshValidation();
@@ -226,15 +247,19 @@ void SettingsController::Discard() {
     qualityKeyValid_ = true;
     cardStatusPresentationKey_ = CardStatusPresentationKey(draft_.cardStatusPresentation);
     cardStatusPresentationKeyValid_ = true;
+    languageKey_ = draft_.languageKey;
+    languageKeyValid_ = true;
     extensionInputValid_ = true;
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }
 
 void SettingsController::refreshValidation() {
     const auto result = ValidateUserPreferences(draft_);
-    valid_ = qualityKeyValid_ && cardStatusPresentationKeyValid_ && extensionInputValid_ && result.valid;
+    valid_ = qualityKeyValid_ && cardStatusPresentationKeyValid_ && languageKeyValid_
+        && extensionInputValid_ && result.valid;
     if (!qualityKeyValid_) errorMessage_ = tr("Qualidade de capa inválida.");
     else if (!cardStatusPresentationKeyValid_) errorMessage_ = tr("Apresentação de status inválida.");
+    else if (!languageKeyValid_) errorMessage_ = tr("Idioma inválido.");
     else if (!extensionInputValid_) errorMessage_ = tr("Extensão de arquivo inválida.");
     else if (!result.valid) errorMessage_ = result.error;
 }

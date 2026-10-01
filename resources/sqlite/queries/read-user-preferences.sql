@@ -7,6 +7,7 @@ SELECT score_minimum,
        library_root,
        scan_extensions,
        home_sort_key,
-       card_status_presentation
+       card_status_presentation,
+       language_key
 FROM user_preferences
 WHERE id = 1

@@ -29,7 +29,7 @@ if (DEFINED ENV{VULKAN_SDK} AND EXISTS "$ENV{VULKAN_SDK}/Include/vulkan/vulkan.h
             "Vulkan SDK include directory")
 endif ()
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Qml Quick QuickControls2 Sql)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui LinguistTools Network Qml Quick QuickControls2 Sql)
 
 include(CTest)
 if (BUILD_TESTING)
@@ -48,6 +48,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/app/InitialSyncCoordinator.cpp
         src/app/LocalLibraryScanCoordinator.h
         src/app/LocalLibraryScanCoordinator.cpp
+        src/app/TranslationLoader.h
+        src/app/TranslationLoader.cpp
         src/domain/media/Media.h
         src/application/media/MediaPage.h
         src/application/media/MediaSyncFilter.h
@@ -74,6 +76,7 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/configuration/Settings.h
         src/application/configuration/UserPreferences.h
         src/application/configuration/CardStatusPresentation.h
+        src/application/configuration/LanguagePreference.h
         src/application/configuration/UserPreferencesValidator.h
         src/application/configuration/UserPreferencesValidator.cpp
         src/application/covers/CoverQuality.h
@@ -304,6 +307,16 @@ target_link_libraries(HaikenAnime
         Qt6::Sql
 )
 
+set(HAIKENANIME_TS_FILES
+        translations/HaikenAnime_pt_BR.ts
+        translations/HaikenAnime_en.ts
+)
+qt_add_translations(HaikenAnime
+        TS_FILES ${HAIKENANIME_TS_FILES}
+        RESOURCE_PREFIX "/i18n"
+        LUPDATE_OPTIONS -no-obsolete
+)
+
 if (BUILD_TESTING)
 add_executable(MediaDomainTests
         tests/unit/MediaDomainTests.cpp
@@ -485,6 +498,18 @@ add_executable(UserPreferencesValidatorTests
 )
 target_link_libraries(UserPreferencesValidatorTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME UserPreferencesValidatorTests COMMAND UserPreferencesValidatorTests)
+
+add_executable(TranslationLoaderTests
+        tests/unit/TranslationLoaderTests.cpp
+        src/app/TranslationLoader.cpp
+)
+target_link_libraries(TranslationLoaderTests PRIVATE Qt6::Core Qt6::Test)
+qt_add_translations(TranslationLoaderTests
+        TS_FILES ${HAIKENANIME_TS_FILES}
+        RESOURCE_PREFIX "/i18n"
+        LUPDATE_OPTIONS -no-obsolete
+)
+add_test(NAME TranslationLoaderTests COMMAND TranslationLoaderTests)
 
 add_executable(CoverSettingsTests
         tests/unit/CoverSettingsTests.cpp
@@ -835,6 +860,7 @@ set(HAIKENANIME_TESTS
         FileSecretStoreTests
         JsonSettingsReaderTests
         UserPreferencesValidatorTests
+        TranslationLoaderTests
         CoverSettingsTests
         CoverSourceResolverTests
         CoverFileStoreTests

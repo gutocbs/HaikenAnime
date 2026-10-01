@@ -69,6 +69,7 @@ private slots:
     void appliesExternalHomeSortToBothSnapshots();
     void savesBackendProvidedCardStatusPresentation();
     void rejectsInvalidCardStatusPresentation();
+    void exposesBackendLanguageOptionsAndRestartNotice();
     void libraryDraftSavesAndDiscardsAtomically();
     void invalidLibraryDraftCannotSave();
     void extensionsAreNormalizedAndOptionsRetainPersistedSelections();
@@ -202,6 +203,27 @@ void SettingsControllerTests::rejectsInvalidCardStatusPresentation() {
     QCOMPARE(repository.replaceCalls, 0);
     controller.Discard();
     QCOMPARE(controller.cardStatusPresentationKey(), QStringLiteral("personal-list-status"));
+}
+
+void SettingsControllerTests::exposesBackendLanguageOptionsAndRestartNotice() {
+    FakePreferencesRepository repository;
+    SettingsController controller(&repository, {});
+
+    QCOMPARE(controller.languageOptions().size(), 2);
+    QCOMPARE(controller.languageKey(), QStringLiteral("pt-BR"));
+    QVERIFY(controller.restartRequiredMessage().isEmpty());
+
+    controller.SetLanguage(QStringLiteral("en"));
+    QVERIFY(controller.valid());
+    QVERIFY(!controller.restartRequiredMessage().isEmpty());
+    controller.Save();
+    QCOMPARE(repository.stored.languageKey, QStringLiteral("en"));
+    QVERIFY(!controller.restartRequiredMessage().isEmpty());
+
+    controller.SetLanguage(QStringLiteral("obsolete"));
+    QVERIFY(!controller.valid());
+    controller.Discard();
+    QCOMPARE(controller.languageKey(), QStringLiteral("en"));
 }
 
 void SettingsControllerTests::invalidLibraryDraftCannotSave() {

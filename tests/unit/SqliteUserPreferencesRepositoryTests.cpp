@@ -18,6 +18,7 @@ private slots:
     void normalizesExtensionsAtPersistenceBoundary();
     void cardStatusPresentationMigratesWithSafeDefault();
     void cardStatusPresentationSurvivesRestartAndInvalidStoredValueFallsBack();
+    void languageSurvivesRestartAndInvalidStoredValueFallsBackWithoutLosingPreferences();
 };
 
 static SqliteUserPreferencesRepository Repository(SqliteDatabase &database) {
@@ -190,6 +191,40 @@ void SqliteUserPreferencesRepositoryTests::cardStatusPresentationSurvivesRestart
     QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
     QVERIFY(found);
     QCOMPARE(loaded.cardStatusPresentation, CardStatusPresentation::PersonalListStatus);
+}
+
+void SqliteUserPreferencesRepositoryTests::languageSurvivesRestartAndInvalidStoredValueFallsBackWithoutLosingPreferences() {
+    QTemporaryDir directory;
+    const auto path = directory.filePath(QStringLiteral("preferences.sqlite"));
+    QString error;
+    {
+        SqliteDatabase database(path);
+        QVERIFY(database.open());
+        QVERIFY(database.migrate());
+        auto repository = Repository(database);
+        UserPreferences expected;
+        expected.languageKey = QStringLiteral("en");
+        expected.coverQuality = CoverQuality::Large;
+        QVERIFY2(repository.replace(expected, error), qPrintable(error));
+    }
+
+    SqliteDatabase reopened(path);
+    QVERIFY(reopened.open());
+    QVERIFY(reopened.migrate());
+    auto repository = Repository(reopened);
+    UserPreferences loaded;
+    bool found = false;
+    QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
+    QVERIFY(found);
+    QCOMPARE(loaded.languageKey, QStringLiteral("en"));
+    QCOMPARE(loaded.coverQuality, CoverQuality::Large);
+
+    QSqlQuery query(reopened.connection());
+    QVERIFY(query.exec(QStringLiteral("UPDATE user_preferences SET language_key = 'obsolete'")));
+    QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
+    QVERIFY(found);
+    QCOMPARE(loaded.languageKey, QStringLiteral("pt-BR"));
+    QCOMPARE(loaded.coverQuality, CoverQuality::Large);
 }
 
 void SqliteUserPreferencesRepositoryTests::readsMissingAndRoundTripsReplacement() {

@@ -73,6 +73,7 @@ private slots:
     void compactDetailsUseSeparatePreviewMetadata();
     void compactDetailsAreReadOnlyAndSelectable();
     void coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads();
+    void languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml();
 
 private:
     static QString qmlSource(const QString &name);
@@ -330,6 +331,22 @@ void QmlStructureTests::compactDetailsAreReadOnlyAndSelectable() {
     QVERIFY(details.contains(QStringLiteral("id: selectedSynopsisOverflowIndicator")));
     QVERIFY(details.contains(QStringLiteral("visible: selectedSynopsisText.contentHeight > selectedSynopsisText.height")));
     QVERIFY(details.contains(QStringLiteral("text: \"…\"")));
+}
+
+void QmlStructureTests::languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml() {
+    const QString settingsSource = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    QVERIFY(settingsSource.contains(QStringLiteral("model: controller.languageOptions")));
+    QVERIFY(settingsSource.contains(QStringLiteral("controller.languageKey")));
+    QVERIFY(settingsSource.contains(QStringLiteral("controller.restartRequiredMessage")));
+    QVERIFY(!settingsSource.contains(QStringLiteral("model: [\"pt-BR\", \"en\"]")));
+
+    QFile mainFile(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/main.cpp"));
+    QVERIFY(mainFile.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString mainSource = QString::fromUtf8(mainFile.readAll());
+    const auto installIndex = mainSource.indexOf(QStringLiteral("TranslationLoader::Install"));
+    const auto engineIndex = mainSource.indexOf(QStringLiteral("QQmlApplicationEngine engine"));
+    QVERIFY(installIndex >= 0);
+    QVERIFY(engineIndex > installIndex);
 }
 
 void QmlStructureTests::coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads() {

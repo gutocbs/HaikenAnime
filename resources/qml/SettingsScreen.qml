@@ -664,6 +664,16 @@ Item {
                     SettingsComboBox {
                         Layout.fillWidth: true
                         Layout.preferredWidth: 1
+                        caption: qsTr("IDIOMA")
+                        model: controller.languageOptions
+                        textRole: "label"
+                        currentIndex: settingsScreen.optionIndex(model, "key", controller.languageKey)
+                        onActivated: controller.SetLanguage(model[index].key)
+                    }
+
+                    SettingsComboBox {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
                         caption: qsTr("QUALIDADE DAS CAPAS")
                         model: controller.coverQualityOptions
                         textRole: "label"
@@ -679,6 +689,14 @@ Item {
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.cardStatusPresentationKey)
                         onActivated: controller.SetCardStatusPresentation(model[index].key)
                     }
+                }
+                Label {
+                    Layout.fillWidth: true
+                    visible: controller.restartRequiredMessage.length > 0
+                    text: controller.restartRequiredMessage
+                    color: accent
+                    font.pixelSize: 10
+                    wrapMode: Text.Wrap
                 }
             }
         }
