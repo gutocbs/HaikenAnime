@@ -309,6 +309,13 @@ Item {
                             font.letterSpacing: 1.5
                         }
                         Button {
+                            id: detailsButton
+                            text: qsTr("Ver detalhes")
+                            flat: true
+                            visible: controller.hasSelection
+                            onClicked: mediaDetailsPanel.openForItem(detailsButton)
+                        }
+                        Button {
                             text: qsTr("Editar")
                             flat: true
                             visible: controller.hasSelection
@@ -597,6 +604,17 @@ Item {
         muted: home.muted
         line: home.line
         surface: home.surface
+    }
+
+    MediaDetailsPanel {
+        id: mediaDetailsPanel
+        controller: home.controller
+        ink: home.ink
+        muted: home.muted
+        line: home.line
+        surface: home.surface
+        surfaceSoft: home.surfaceSoft
+        accent: home.accent
     }
 
     Popup {

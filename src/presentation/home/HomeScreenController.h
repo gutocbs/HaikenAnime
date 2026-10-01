@@ -76,6 +76,9 @@ class HomeScreenController final : public QObject {
     Q_PROPERTY(QString selectedProgress READ selectedProgress NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedScore READ selectedScore NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedAverageScore READ selectedAverageScore NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedSeasonLabel READ selectedSeasonLabel NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedNextAiringLabel READ selectedNextAiringLabel NOTIFY selectionChanged)
+    Q_PROPERTY(QVariantList selectedMediaLinks READ selectedMediaLinks NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedCoverSource READ selectedCoverSource NOTIFY selectionChanged)
     Q_PROPERTY(int selectedProgressValue READ selectedProgressValue NOTIFY selectionChanged)
     Q_PROPERTY(int selectedProgressMaximum READ selectedProgressMaximum NOTIFY selectionChanged)
@@ -118,6 +121,9 @@ public:
     QString selectedProgress() const;
     QString selectedScore() const;
     QString selectedAverageScore() const;
+    QString selectedSeasonLabel() const;
+    QString selectedNextAiringLabel() const;
+    QVariantList selectedMediaLinks() const;
     QString selectedCoverSource() const;
     int selectedProgressValue() const;
     int selectedProgressMaximum() const;

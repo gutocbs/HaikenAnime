@@ -68,6 +68,11 @@ private slots:
     void usesResolvedTitleConsistentlyAfterStartupConfiguration();
     void clearsBrowseCriteriaWithoutChangingMediaType();
     void selectsMediaAndExposesItsDetails();
+    void presentsCompleteExtendedMediaDetails();
+    void presentsMissingExtendedMediaDetailsDeterministically();
+    void keepsLongSynopsisAvailableForDetailsPresentation();
+    void presentsNextAiringEpisodeAndTimestamp();
+    void exposesControllerApprovedDeduplicatedMediaLinks();
     void exposesConfigurableEditingOptions();
     void selectedCoverFallsBackWhenCachedFileIsMissing();
     void updatesOnlyOneCoverRowAndPreservesOldCoverOnFailure();
@@ -626,6 +631,109 @@ void HomeScreenControllerTests::selectsMediaAndExposesItsDetails() {
     QVERIFY(!controller.hasSelection());
     QCOMPARE(controller.filteredMediaCount(), 0);
     QCOMPARE(controller.state(), QStringLiteral("ready"));
+}
+
+void HomeScreenControllerTests::presentsCompleteExtendedMediaDetails() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Synopsis = QStringLiteral("A long-lived elf begins a new journey.");
+    media.Type = MediaType::Anime;
+    media.Status = MediaStatus::Releasing;
+    media.TotalChapters = 28;
+    media.ConsumedChapters = 12;
+    media.AverageScore = 88;
+    media.PersonalScore = 9;
+    media.Season = QStringLiteral("FALL");
+    media.SeasonYear = 2026;
+    media.NextAiringEpisode = 5;
+    media.NextAiringAt = 1790834400;
+    media.AniListUrl = QStringLiteral("https://anilist.co/anime/154587");
+    media.ExternalLinks = {{QStringLiteral("Crunchyroll"), QStringLiteral("https://www.crunchyroll.com/frieren")}};
+    reader.result.append(media);
+    HomeScreenController controller(reader);
+    controller.reload();
+    controller.SelectMedia(media.Id);
+
+    QCOMPARE(controller.selectedSeasonLabel(), QStringLiteral("Outono de 2026"));
+    QCOMPARE(controller.selectedNextAiringLabel(), QStringLiteral("Episódio 5 · 01/10/2026 06:00 UTC"));
+    const QVariantList links = controller.selectedMediaLinks();
+    QCOMPARE(links.size(), 2);
+    QCOMPARE(links.at(0).toMap().value(QStringLiteral("site")).toString(), QStringLiteral("AniList"));
+    QCOMPARE(links.at(0).toMap().value(QStringLiteral("url")).toString(), media.AniListUrl);
+    QCOMPARE(links.at(1).toMap().value(QStringLiteral("site")).toString(), QStringLiteral("Crunchyroll"));
+}
+
+void HomeScreenControllerTests::presentsMissingExtendedMediaDetailsDeterministically() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Unknown media");
+    media.Type = MediaType::Anime;
+    reader.result.append(media);
+    HomeScreenController controller(reader);
+    controller.reload();
+    controller.SelectMedia(media.Id);
+
+    QCOMPARE(controller.selectedSeasonLabel(), QString());
+    QCOMPARE(controller.selectedNextAiringLabel(), QString());
+    QVERIFY(controller.selectedMediaLinks().isEmpty());
+}
+
+void HomeScreenControllerTests::keepsLongSynopsisAvailableForDetailsPresentation() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Long synopsis");
+    media.Type = MediaType::Anime;
+    media.Synopsis = QString(1200, QLatin1Char('x'));
+    reader.result.append(media);
+    HomeScreenController controller(reader);
+    controller.reload();
+    controller.SelectMedia(media.Id);
+
+    QCOMPARE(controller.selectedSynopsis().size(), 1200);
+    QCOMPARE(controller.selectedSynopsis(), media.Synopsis);
+}
+
+void HomeScreenControllerTests::presentsNextAiringEpisodeAndTimestamp() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Airing media");
+    media.Type = MediaType::Anime;
+    media.NextAiringEpisode = 7;
+    media.NextAiringAt = 0;
+    reader.result.append(media);
+    HomeScreenController controller(reader);
+    controller.reload();
+    controller.SelectMedia(media.Id);
+
+    QCOMPARE(controller.selectedNextAiringLabel(), QStringLiteral("Episódio 7 · 01/01/1970 00:00 UTC"));
+}
+
+void HomeScreenControllerTests::exposesControllerApprovedDeduplicatedMediaLinks() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Linked media");
+    media.Type = MediaType::Anime;
+    media.AniListUrl = QStringLiteral("https://anilist.co/anime/42");
+    media.ExternalLinks = {
+        {QStringLiteral("Crunchyroll"), QStringLiteral("https://www.crunchyroll.com/series/42")},
+        {QStringLiteral("Netflix"), QStringLiteral("https://www.netflix.com/title/42")}
+    };
+    reader.result.append(media);
+    HomeScreenController controller(reader);
+    controller.reload();
+    controller.SelectMedia(media.Id);
+
+    const QVariantList links = controller.selectedMediaLinks();
+    QCOMPARE(links.size(), 3);
+    QCOMPARE(links.at(0).toMap().value(QStringLiteral("url")).toString(), media.AniListUrl);
+    QCOMPARE(links.at(1).toMap().value(QStringLiteral("url")).toString(), media.ExternalLinks.at(0).Url);
+    QCOMPARE(links.at(2).toMap().value(QStringLiteral("url")).toString(), media.ExternalLinks.at(1).Url);
 }
 
 void HomeScreenControllerTests::exposesConfigurableEditingOptions() {

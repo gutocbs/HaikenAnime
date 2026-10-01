@@ -291,6 +291,7 @@ qt_add_qml_module(HaikenAnime
         resources/qml/Main.qml
         resources/qml/Home.qml
         resources/qml/CoverPreview.qml
+        resources/qml/MediaDetailsPanel.qml
         resources/qml/SettingsScreen.qml
         resources/qml/BrowseControls.qml
         resources/qml/EditMediaPanel.qml
