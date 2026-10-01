@@ -19,6 +19,21 @@ query MediaPage($page: Int, $perPage: Int) {
       episodes
       chapters
       averageScore
+      season
+      seasonYear
+      nextAiringEpisode {
+        episode
+        airingAt
+      }
+      siteUrl
+      externalLinks {
+        site
+        url
+      }
+      streamingEpisodes {
+        site
+        url
+      }
       coverImage {
         medium
         large

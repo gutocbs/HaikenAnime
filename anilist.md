@@ -129,9 +129,13 @@ O contrato GraphQL de leitura solicita somente campos com consumidor no modelo e
 | `episodes` e `chapters` | Total conhecido conforme o tipo de mídia. Ambos podem ser nulos. |
 | `averageScore` | Nota média pública, anulável. |
 | `coverImage.large` | URL da capa usada pela apresentação. |
-| `description` | Sinopse persistida e apresentada. |
+| `description` | Sinopse normalizada para texto simples antes da persistência. |
+| `season` e `seasonYear` | Temporada e ano de lançamento, quando disponíveis. |
+| `nextAiringEpisode` | Número e timestamp Unix do próximo episódio, quando disponíveis. |
+| `siteUrl` | Página da mídia no AniList, aceita somente com esquema HTTP(S). |
+| `externalLinks` e `streamingEpisodes` | Pares estruturados de site/URL, validados e deduplicados antes da persistência. |
 
-`season`, `seasonYear`, `startDate`, `endDate`, `volumes`, `siteUrl`, `nextAiringEpisode` e `streamingEpisodes` não possuem consumidor no domínio ou na apresentação atuais. Eles permanecem fora da query e do DTO até existir um requisito concreto, evitando ampliar o modelo apenas porque o AniList os disponibiliza.
+`startDate`, `endDate` e `volumes` ainda não possuem consumidor aprovado e permanecem fora da query e do DTO. Os links persistidos aceitam somente URLs absolutas HTTP(S); a deduplicação usa o nome do site normalizado e a URL canônica, preservando a ordem da primeira ocorrência.
 
 ### Secrets e autorização
 

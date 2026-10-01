@@ -32,6 +32,7 @@ private slots:
     void migrationAddsCardStatusPresentationWithoutLosingExistingData();
     void migrationAddsLanguageWithoutLosingExistingData();
     void migrationAddsPreferredTitleWithoutLosingExistingData();
+    void migrationAddsExtendedMediaMetadataWithoutLosingExistingData();
 };
 
 void SqliteDatabaseTests::opensAndCreatesDatabaseFile() {
@@ -83,7 +84,10 @@ void SqliteDatabaseTests::migrationCreatesMediaSchema() {
         QStringLiteral("cover_extra_large_url"),
         QStringLiteral("synopsis"), QStringLiteral("type"), QStringLiteral("status"),
         QStringLiteral("user_list_status"),
-        QStringLiteral("source_removed_at")
+        QStringLiteral("source_removed_at"), QStringLiteral("season"),
+        QStringLiteral("season_year"), QStringLiteral("next_airing_episode"),
+        QStringLiteral("next_airing_at"), QStringLiteral("anilist_url"),
+        QStringLiteral("external_links")
     };
 
     QCOMPARE(columns, expectedColumns);
@@ -101,7 +105,7 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 12);
+    QCOMPARE(query.value(0).toInt(), 13);
 }
 
 void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
@@ -201,7 +205,7 @@ void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
     QVERIFY(versions.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
     QList<int> values;
     while (versions.next()) values.append(versions.value(0).toInt());
-    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}));
+    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}));
 }
 
 void SqliteDatabaseTests::migrationCreatesUserPreferencesVersionFive() {
@@ -534,6 +538,76 @@ void SqliteDatabaseTests::migrationAddsPreferredTitleWithoutLosingExistingData()
     QVERIFY(query.exec(QStringLiteral("SELECT name FROM media WHERE id = 17")));
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toString(), QStringLiteral("Preserved media"));
+}
+
+void SqliteDatabaseTests::migrationAddsExtendedMediaMetadataWithoutLosingExistingData() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("legacy.sqlite")));
+    QVERIFY(database.open());
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)")));
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO schema_version (version) VALUES "
+        "(1),(2),(3),(4),(5),(6),(7),(8),(9),(10),(11),(12)")));
+    QVERIFY(query.exec(QStringLiteral(
+        "CREATE TABLE media ("
+        "id INTEGER PRIMARY KEY, name TEXT NOT NULL, english_name TEXT, original_name TEXT, "
+        "alternative_names TEXT NOT NULL DEFAULT '[]', total_chapters INTEGER NOT NULL DEFAULT 0, "
+        "consumed_chapters INTEGER NOT NULL DEFAULT 0, next_chapter INTEGER NOT NULL DEFAULT 0, "
+        "average_score INTEGER NOT NULL DEFAULT 0, personal_score INTEGER NOT NULL DEFAULT 0, "
+        "cover_url TEXT, cover_medium_url TEXT, cover_large_url TEXT, cover_extra_large_url TEXT, "
+        "synopsis TEXT, type INTEGER NOT NULL, status INTEGER NOT NULL, "
+        "user_list_status INTEGER NOT NULL DEFAULT -1, source_removed_at TEXT)")));
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO media (id, name, consumed_chapters, personal_score, type, status, user_list_status) "
+        "VALUES (17, 'Preserved media', 12, 90, 1, 1, 4)")));
+    QVERIFY(query.exec(QStringLiteral(
+        "CREATE TABLE cover_cache (media_id INTEGER PRIMARY KEY, remote_url TEXT NOT NULL, "
+        "quality TEXT NOT NULL, relative_path TEXT NOT NULL, mime_type TEXT NOT NULL, "
+        "byte_size INTEGER NOT NULL, etag TEXT NOT NULL DEFAULT '', last_modified TEXT NOT NULL DEFAULT '', "
+        "validated_at TEXT NOT NULL, FOREIGN KEY(media_id) REFERENCES media(id) ON DELETE CASCADE)")));
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO cover_cache (media_id, remote_url, quality, relative_path, mime_type, byte_size, validated_at) "
+        "VALUES (17, 'https://example.test/17.jpg', 'large', 'covers/17.jpg', 'image/jpeg', 17, "
+        "'2026-09-27T00:00:00Z')")));
+    QVERIFY(query.exec(QStringLiteral(
+        "CREATE TABLE library_scans (id INTEGER PRIMARY KEY AUTOINCREMENT, root_path TEXT NOT NULL, "
+        "started_at TEXT NOT NULL, finished_at TEXT, status TEXT NOT NULL, observed_count INTEGER NOT NULL DEFAULT 0, "
+        "diagnostic TEXT NOT NULL DEFAULT '')")));
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO library_scans (id, root_path, started_at, status) "
+        "VALUES (3, 'R:/Anime', '2026-09-27T00:00:00Z', 'succeeded')")));
+    QVERIFY(query.exec(QStringLiteral(
+        "CREATE TABLE local_files (id INTEGER PRIMARY KEY AUTOINCREMENT, root_path TEXT NOT NULL, "
+        "relative_path TEXT NOT NULL, normalized_relative_path TEXT NOT NULL, file_name TEXT NOT NULL, "
+        "extension TEXT NOT NULL, size_bytes INTEGER NOT NULL, modified_at TEXT NOT NULL, "
+        "available INTEGER NOT NULL DEFAULT 1, last_seen_scan_id INTEGER NOT NULL REFERENCES library_scans(id), "
+        "recognition_state TEXT NOT NULL DEFAULT 'unprocessed', UNIQUE(root_path, normalized_relative_path))")));
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO local_files (root_path, relative_path, normalized_relative_path, file_name, extension, "
+        "size_bytes, modified_at, last_seen_scan_id) VALUES "
+        "('R:/Anime', 'Show/Episode.mkv', 'show/episode.mkv', 'Episode.mkv', '.mkv', 17, "
+        "'2026-09-27T00:00:00Z', 3)")));
+
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+
+    QVERIFY(query.exec(QStringLiteral(
+        "SELECT name, consumed_chapters, personal_score, user_list_status FROM media WHERE id = 17")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("Preserved media"));
+    QCOMPARE(query.value(1).toInt(), 12);
+    QCOMPARE(query.value(2).toInt(), 90);
+    QCOMPARE(query.value(3).toInt(), 4);
+    QVERIFY(query.exec(QStringLiteral("SELECT remote_url FROM cover_cache WHERE media_id = 17")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("https://example.test/17.jpg"));
+    QVERIFY(query.exec(QStringLiteral("SELECT file_name, available FROM local_files WHERE id = 1")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("Episode.mkv"));
+    QCOMPARE(query.value(1).toInt(), 1);
+    QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version WHERE version = 13")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 1);
 }
 
 QTEST_MAIN(SqliteDatabaseTests)

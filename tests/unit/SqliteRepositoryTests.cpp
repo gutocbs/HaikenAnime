@@ -9,16 +9,32 @@
 namespace {
 const auto UpsertMedia = QStringLiteral(
     "INSERT INTO media (id, name, english_name, original_name, alternative_names, "
-    "total_chapters, average_score, cover_url, cover_medium_url, cover_large_url, cover_extra_large_url, synopsis, type, status, user_list_status) "
+    "total_chapters, average_score, cover_url, cover_medium_url, cover_large_url, "
+    "cover_extra_large_url, synopsis, type, status, user_list_status, "
+    "season, season_year, next_airing_episode, next_airing_at, anilist_url, external_links) "
     "VALUES (:id, :name, :english_name, :original_name, :alternative_names, "
-    ":total_chapters, :average_score, :cover_url, :cover_medium_url, :cover_large_url, :cover_extra_large_url, :synopsis, :type, :status, :user_list_status) "
-    "ON CONFLICT(id) DO UPDATE SET name = excluded.name, cover_url = excluded.cover_url, cover_medium_url=excluded.cover_medium_url, cover_large_url=excluded.cover_large_url, cover_extra_large_url=excluded.cover_extra_large_url, "
+    ":total_chapters, :average_score, :cover_url, :cover_medium_url, :cover_large_url, "
+    ":cover_extra_large_url, :synopsis, :type, :status, :user_list_status, "
+    ":season, :season_year, :next_airing_episode, :next_airing_at, :anilist_url, :external_links) "
+    "ON CONFLICT(id) DO UPDATE SET "
+    "name = excluded.name, english_name = excluded.english_name, original_name = excluded.original_name, "
+    "alternative_names = excluded.alternative_names, total_chapters = excluded.total_chapters, "
+    "average_score = excluded.average_score, cover_url = excluded.cover_url, "
+    "cover_medium_url = excluded.cover_medium_url, cover_large_url = excluded.cover_large_url, "
+    "cover_extra_large_url = excluded.cover_extra_large_url, synopsis = excluded.synopsis, "
+    "type = excluded.type, status = excluded.status, season = excluded.season, "
+    "season_year = excluded.season_year, next_airing_episode = excluded.next_airing_episode, "
+    "next_airing_at = excluded.next_airing_at, anilist_url = excluded.anilist_url, "
+    "external_links = excluded.external_links, "
+    "user_list_status = CASE WHEN excluded.user_list_status = -1 "
+    "THEN media.user_list_status ELSE excluded.user_list_status END, "
     "source_removed_at = NULL");
 
 const auto ReadMedia = QStringLiteral(
     "SELECT id, name, english_name, original_name, alternative_names, total_chapters, "
     "consumed_chapters, next_chapter, average_score, personal_score, cover_url, cover_medium_url, cover_large_url, cover_extra_large_url, synopsis, "
-    "type, status, user_list_status FROM media WHERE source_removed_at IS NULL ORDER BY id");
+    "type, status, user_list_status, season, season_year, next_airing_episode, next_airing_at, anilist_url, external_links "
+    "FROM media WHERE source_removed_at IS NULL ORDER BY id");
 
 const auto ReadActiveMediaIds = QStringLiteral(
     "SELECT id FROM media WHERE source_removed_at IS NULL ORDER BY id");
@@ -59,6 +75,8 @@ class SqliteRepositoryTests : public QObject {
 
 private slots:
     void mediaRoundTripPreservesAlternativeNames();
+    void mediaRoundTripPreservesExtendedMetadata();
+    void extendedMetadataUpsertPreservesUserEditedFields();
     void pendingChangeRoundTripPreservesRemoteObservedAt();
     void malformedPendingValueFailsInsteadOfBecomingEmptyText();
     void fractionalPendingIntegerIsRejected();
@@ -94,6 +112,101 @@ void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
     QCOMPARE(actual.first().CoverMediumUrl, expected.CoverMediumUrl);
     QCOMPARE(actual.first().CoverLargeUrl, expected.CoverLargeUrl);
     QCOMPARE(actual.first().CoverExtraLargeUrl, expected.CoverExtraLargeUrl);
+}
+
+void SqliteRepositoryTests::mediaRoundTripPreservesExtendedMetadata() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved);
+
+    Media expected;
+    expected.Id = 77;
+    expected.Name = QStringLiteral("Extended");
+    expected.Season = QStringLiteral("WINTER");
+    expected.SeasonYear = 2026;
+    expected.NextAiringEpisode = 11;
+    expected.NextAiringAt = qint64(1790518560);
+    expected.AniListUrl = QStringLiteral("https://anilist.co/anime/77");
+    expected.ExternalLinks = {
+        MediaLink{QStringLiteral("Official"), QStringLiteral("https://example.test/official")},
+        MediaLink{QStringLiteral("Stream"), QStringLiteral("https://stream.example/watch")}
+    };
+    Media missing;
+    missing.Id = 78;
+    missing.Name = QStringLiteral("Missing optionals");
+    QString error;
+    QVERIFY2(repository.upsert({expected, missing}, error), qPrintable(error));
+
+    QList<Media> actual;
+    QVERIFY2(repository.readAll(actual, error), qPrintable(error));
+    QCOMPARE(actual.size(), 2);
+    QCOMPARE(actual.first().Season, expected.Season);
+    QCOMPARE(actual.first().SeasonYear, expected.SeasonYear);
+    QCOMPARE(actual.first().NextAiringEpisode, expected.NextAiringEpisode);
+    QCOMPARE(actual.first().NextAiringAt, expected.NextAiringAt);
+    QCOMPARE(actual.first().AniListUrl, expected.AniListUrl);
+    QCOMPARE(actual.first().ExternalLinks.size(), 2);
+    QCOMPARE(actual.first().ExternalLinks.at(0).Site, expected.ExternalLinks.at(0).Site);
+    QCOMPARE(actual.first().ExternalLinks.at(0).Url, expected.ExternalLinks.at(0).Url);
+    QCOMPARE(actual.first().ExternalLinks.at(1).Site, expected.ExternalLinks.at(1).Site);
+    QCOMPARE(actual.first().ExternalLinks.at(1).Url, expected.ExternalLinks.at(1).Url);
+    QVERIFY(actual.at(1).Season.isEmpty());
+    QVERIFY(!actual.at(1).SeasonYear.has_value());
+    QVERIFY(!actual.at(1).NextAiringEpisode.has_value());
+    QVERIFY(!actual.at(1).NextAiringAt.has_value());
+    QVERIFY(actual.at(1).AniListUrl.isEmpty());
+    QVERIFY(actual.at(1).ExternalLinks.isEmpty());
+}
+
+void SqliteRepositoryTests::extendedMetadataUpsertPreservesUserEditedFields() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved);
+
+    Media initial;
+    initial.Id = 79;
+    initial.Name = QStringLiteral("Before refresh");
+    QString error;
+    QVERIFY2(repository.upsert({initial}, error), qPrintable(error));
+
+    QSqlQuery localEdit(database.connection());
+    QVERIFY(localEdit.exec(QStringLiteral(
+        "UPDATE media SET consumed_chapters = 6, next_chapter = 7, personal_score = 91 "
+        "WHERE id = 79")));
+
+    Media refreshed;
+    refreshed.Id = 79;
+    refreshed.Name = QStringLiteral("After refresh");
+    refreshed.Season = QStringLiteral("SPRING");
+    refreshed.SeasonYear = 2026;
+    refreshed.NextAiringEpisode = 8;
+    refreshed.NextAiringAt = qint64(1790518560);
+    refreshed.AniListUrl = QStringLiteral("https://anilist.co/anime/79");
+    refreshed.ExternalLinks = {
+        MediaLink{QStringLiteral("Official"), QStringLiteral("https://example.test/79")}
+    };
+    QVERIFY2(repository.upsert({refreshed}, error), qPrintable(error));
+
+    QList<Media> actual;
+    QVERIFY2(repository.readAll(actual, error), qPrintable(error));
+    QCOMPARE(actual.size(), 1);
+    QCOMPARE(actual.first().Name, QStringLiteral("After refresh"));
+    QCOMPARE(actual.first().ConsumedChapters, 6);
+    QCOMPARE(actual.first().NextChapter, 7);
+    QCOMPARE(actual.first().PersonalScore, 91);
+    QCOMPARE(actual.first().Season, QStringLiteral("SPRING"));
+    QCOMPARE(actual.first().SeasonYear, std::optional<int>(2026));
+    QCOMPARE(actual.first().NextAiringEpisode, std::optional<int>(8));
+    QCOMPARE(actual.first().NextAiringAt, std::optional<qint64>(1790518560));
+    QCOMPARE(actual.first().AniListUrl, QStringLiteral("https://anilist.co/anime/79"));
+    QCOMPARE(actual.first().ExternalLinks.size(), 1);
+    QCOMPARE(actual.first().ExternalLinks.first().Url, QStringLiteral("https://example.test/79"));
 }
 
 void SqliteRepositoryTests::authoritativeSnapshotMarksOnlyUnseenActiveMedia() {

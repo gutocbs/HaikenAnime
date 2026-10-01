@@ -47,6 +47,12 @@
                     "volumes": null,
                     "nextAiringEpisode": null,
                     "siteUrl": "https://anilist.co/anime/1",
+                    "externalLinks": [
+                        {
+                            "site": "Official Site",
+                            "url": "https://www.cowboy-bebop.net/"
+                        }
+                    ],
                     "streamingEpisodes": [
                         {
                             "site": "Crunchyroll",

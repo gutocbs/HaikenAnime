@@ -6,7 +6,9 @@
 #define HAIKENANIME_MEDIA_H
 #include <QString>
 #include <QStringList>
+#include <optional>
 
+#include "MediaLink.h"
 #include "MediaStatus.h"
 #include "MediaType.h"
 #include "UserListStatus.h"
@@ -29,6 +31,12 @@ public:
     QString CoverLargeUrl;
     QString CoverExtraLargeUrl;
     QString Synopsis;
+    QString Season;
+    std::optional<int> SeasonYear;
+    std::optional<int> NextAiringEpisode;
+    std::optional<qint64> NextAiringAt;
+    QString AniListUrl;
+    QList<MediaLink> ExternalLinks;
     MediaStatus Status = MediaStatus::Unknown;
     UserListStatus ListStatus = UserListStatus::Unknown;
     MediaType Type = MediaType::Unknown;

@@ -11,6 +11,11 @@ struct AniListCoverImagesDto {
     QString extraLarge;
 };
 
+struct AniListMediaLinkDto {
+    QString site;
+    QString url;
+};
+
 /** Represents the external AniList payload before domain mapping. */
 struct AniListMediaDto {
     int id = 0;
@@ -30,6 +35,12 @@ struct AniListMediaDto {
     AniListCoverImagesDto coverImages;
     QString coverImageUrl;
     QString description;
+    QString season;
+    std::optional<int> seasonYear;
+    std::optional<int> nextAiringEpisode;
+    std::optional<qint64> nextAiringAt;
+    QString siteUrl;
+    QList<AniListMediaLinkDto> externalLinks;
 };
 
 #endif // HAIKENANIME_ANILISTMEDIADTO_H

@@ -1,6 +1,10 @@
 #include "AniListMediaMapper.h"
 
 #include <QJsonArray>
+#include <QRegularExpression>
+#include <QSet>
+#include <QTextDocumentFragment>
+#include <QUrl>
 #include <QtMath>
 
 namespace {
@@ -17,6 +21,87 @@ std::optional<int> OptionalInteger(const QString &value) {
         return std::nullopt;
     }
     return value.toInt();
+}
+
+std::optional<qint64> OptionalInteger64(const QJsonValue &value) {
+    if (!value.isDouble()) {
+        return std::nullopt;
+    }
+    const double number = value.toDouble();
+    const auto integer = static_cast<qint64>(number);
+    if (number != static_cast<double>(integer)) {
+        return std::nullopt;
+    }
+    return integer;
+}
+
+void AppendLinks(const QJsonValue &value, QList<AniListMediaLinkDto> &links) {
+    for (const auto &entry : value.toArray()) {
+        if (!entry.isObject()) {
+            continue;
+        }
+        const auto object = entry.toObject();
+        links.append({object.value(QStringLiteral("site")).toString(),
+                      object.value(QStringLiteral("url")).toString()});
+    }
+}
+
+QString NormalizeSynopsis(QString html) {
+    if (html.trimmed().isEmpty()) {
+        return {};
+    }
+    html.replace(QRegularExpression(QStringLiteral("<\\s*/\\s*(p|div)\\s*>"),
+                                    QRegularExpression::CaseInsensitiveOption),
+                 QStringLiteral("<br><br>"));
+    html.remove(QRegularExpression(QStringLiteral("<\\s*(p|div)(?:\\s+[^>]*)?>"),
+                                   QRegularExpression::CaseInsensitiveOption));
+    html.replace(QRegularExpression(QStringLiteral("<\\s*br\\s*/?\\s*>"),
+                                    QRegularExpression::CaseInsensitiveOption),
+                 QStringLiteral("<br>"));
+    const auto text = QTextDocumentFragment::fromHtml(html).toPlainText();
+    QString normalized = text;
+    normalized.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    normalized.replace(u'\r', u'\n');
+    normalized.replace(QRegularExpression(QStringLiteral("[ \\t]+\\n")), QStringLiteral("\n"));
+    normalized.replace(QRegularExpression(QStringLiteral("\\n[ \\t]+")), QStringLiteral("\n"));
+    normalized.replace(QRegularExpression(QStringLiteral("\\n{3,}")), QStringLiteral("\n\n"));
+    return normalized.trimmed();
+}
+
+QString ValidHttpUrl(const QString &candidate) {
+    QUrl url(candidate.trimmed(), QUrl::StrictMode);
+    const auto scheme = url.scheme().toLower();
+    if (!url.isValid() || url.isRelative() || url.host().isEmpty()
+        || (scheme != QStringLiteral("http") && scheme != QStringLiteral("https"))) {
+        return {};
+    }
+    url.setScheme(scheme);
+    url.setHost(url.host().toLower());
+    if ((scheme == QStringLiteral("http") && url.port() == 80)
+        || (scheme == QStringLiteral("https") && url.port() == 443)) {
+        url.setPort(-1);
+    }
+    url = url.adjusted(QUrl::NormalizePathSegments | QUrl::RemoveFragment);
+    return url.toString(QUrl::FullyEncoded);
+}
+
+QList<MediaLink> NormalizeLinks(const QList<AniListMediaLinkDto> &externalLinks) {
+    QList<MediaLink> links;
+    QSet<QString> seen;
+    for (const auto &candidate : externalLinks) {
+        const auto site = candidate.site.simplified();
+        const auto url = ValidHttpUrl(candidate.url);
+        if (site.isEmpty() || url.isEmpty()) {
+            continue;
+        }
+        const auto key = site.toCaseFolded() + u'\n' + url;
+        if (seen.contains(key)) {
+            continue;
+        }
+        seen.insert(key);
+        links.append({site, url});
+    }
+    return links;
 }
 
 }
@@ -69,6 +154,14 @@ AniListMediaDto AniListMediaMapper::FromGraphQlJson(const QJsonObject &object) {
     media.coverImages.extraLarge = coverImage.value(QStringLiteral("extraLarge")).toString();
     media.coverImageUrl = SelectCoverUrl(media.coverImages, CoverQuality::Medium);
     media.description = object.value(QStringLiteral("description")).toString();
+    media.season = object.value(QStringLiteral("season")).toString();
+    media.seasonYear = OptionalInteger(object.value(QStringLiteral("seasonYear")));
+    const auto nextAiringEpisode = object.value(QStringLiteral("nextAiringEpisode")).toObject();
+    media.nextAiringEpisode = OptionalInteger(nextAiringEpisode.value(QStringLiteral("episode")));
+    media.nextAiringAt = OptionalInteger64(nextAiringEpisode.value(QStringLiteral("airingAt")));
+    media.siteUrl = object.value(QStringLiteral("siteUrl")).toString();
+    AppendLinks(object.value(QStringLiteral("externalLinks")), media.externalLinks);
+    AppendLinks(object.value(QStringLiteral("streamingEpisodes")), media.externalLinks);
     return media;
 }
 
@@ -110,7 +203,13 @@ Media AniListMediaMapper::ToDomainMedia(const AniListMediaDto &externalMedia) {
     media.CoverMediumUrl = externalMedia.coverImages.medium;
     media.CoverLargeUrl = externalMedia.coverImages.large;
     media.CoverExtraLargeUrl = externalMedia.coverImages.extraLarge;
-    media.Synopsis = externalMedia.description;
+    media.Synopsis = NormalizeSynopsis(externalMedia.description);
+    media.Season = externalMedia.season;
+    media.SeasonYear = externalMedia.seasonYear;
+    media.NextAiringEpisode = externalMedia.nextAiringEpisode;
+    media.NextAiringAt = externalMedia.nextAiringAt;
+    media.AniListUrl = ValidHttpUrl(externalMedia.siteUrl);
+    media.ExternalLinks = NormalizeLinks(externalMedia.externalLinks);
 
     if (externalMedia.mediaFormat.compare(QStringLiteral("NOVEL"), Qt::CaseInsensitive) == 0) {
         media.Type = MediaType::Novel;

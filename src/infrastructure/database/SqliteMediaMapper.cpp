@@ -2,6 +2,7 @@
 
 #include <QJsonArray>
 #include <QJsonDocument>
+#include <QJsonObject>
 
 Media SqliteMediaMapper::Map(const QSqlQuery &query) {
     Media media;
@@ -28,5 +29,19 @@ Media SqliteMediaMapper::Map(const QSqlQuery &query) {
     media.Type = static_cast<MediaType>(query.value(15).toInt());
     media.Status = static_cast<MediaStatus>(query.value(16).toInt());
     media.ListStatus = static_cast<UserListStatus>(query.value(17).toInt());
+    media.Season = query.value(18).toString();
+    if (!query.value(19).isNull()) media.SeasonYear = query.value(19).toInt();
+    if (!query.value(20).isNull()) media.NextAiringEpisode = query.value(20).toInt();
+    if (!query.value(21).isNull()) media.NextAiringAt = query.value(21).toLongLong();
+    media.AniListUrl = query.value(22).toString();
+    const auto externalLinks = QJsonDocument::fromJson(query.value(23).toByteArray());
+    for (const auto &value : externalLinks.array()) {
+        const auto link = value.toObject();
+        const auto site = link.value(QStringLiteral("site"));
+        const auto url = link.value(QStringLiteral("url"));
+        if (site.isString() && url.isString()) {
+            media.ExternalLinks.append(MediaLink{site.toString(), url.toString()});
+        }
+    }
     return media;
 }

@@ -50,6 +50,7 @@ qt_add_executable(HaikenAnime main.cpp
         src/app/LocalLibraryScanCoordinator.cpp
         src/app/TranslationLoader.h
         src/app/TranslationLoader.cpp
+        src/domain/media/MediaLink.h
         src/domain/media/Media.h
         src/application/media/MediaPage.h
         src/application/media/MediaSyncFilter.h
@@ -322,6 +323,7 @@ qt_add_translations(HaikenAnime
 if (BUILD_TESTING)
 add_executable(MediaDomainTests
         tests/unit/MediaDomainTests.cpp
+        src/domain/media/MediaLink.h
         src/domain/media/Media.h
         src/domain/media/MediaStatus.h
         src/domain/media/UserListStatus.h
@@ -616,6 +618,7 @@ add_executable(AniListFlowTests
 target_link_libraries(AniListFlowTests
         PRIVATE
         Qt6::Core
+        Qt6::Gui
         Qt6::Test
 )
 
@@ -645,6 +648,7 @@ add_executable(AniListGraphQlParsingTests
 target_link_libraries(AniListGraphQlParsingTests
         PRIVATE
         Qt6::Core
+        Qt6::Gui
         Qt6::Test
 )
 
@@ -828,6 +832,7 @@ add_executable(InitialSyncCoordinatorTests
 target_link_libraries(InitialSyncCoordinatorTests
         PRIVATE
         Qt6::Core
+        Qt6::Gui
         Qt6::Sql
         Qt6::Test
 )

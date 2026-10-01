@@ -96,7 +96,13 @@ bool SqliteDatabase::migrate() {
         "type INTEGER NOT NULL,"
         "status INTEGER NOT NULL,"
         "user_list_status INTEGER NOT NULL DEFAULT -1,"
-        "source_removed_at TEXT"
+        "source_removed_at TEXT,"
+        "season TEXT,"
+        "season_year INTEGER,"
+        "next_airing_episode INTEGER,"
+        "next_airing_at INTEGER,"
+        "anilist_url TEXT,"
+        "external_links TEXT NOT NULL DEFAULT '[]'"
         ")"));
     const bool pendingChangesCreated = mediaCreated && query.exec(QStringLiteral(
         "CREATE TABLE IF NOT EXISTS anilist_pending_changes ("
@@ -145,6 +151,12 @@ bool SqliteDatabase::migrate() {
     bool coverMediumColumnExists = false;
     bool coverLargeColumnExists = false;
     bool coverExtraLargeColumnExists = false;
+    bool seasonColumnExists = false;
+    bool seasonYearColumnExists = false;
+    bool nextAiringEpisodeColumnExists = false;
+    bool nextAiringAtColumnExists = false;
+    bool aniListUrlColumnExists = false;
+    bool externalLinksColumnExists = false;
     bool sourceRemovalReady = false;
     bool userListStatusReady = false;
     if (userPreferencesCreated && query.exec(QStringLiteral("PRAGMA table_info(media)"))) {
@@ -155,6 +167,12 @@ bool SqliteDatabase::migrate() {
             if (column == QStringLiteral("cover_medium_url")) coverMediumColumnExists = true;
             if (column == QStringLiteral("cover_large_url")) coverLargeColumnExists = true;
             if (column == QStringLiteral("cover_extra_large_url")) coverExtraLargeColumnExists = true;
+            if (column == QStringLiteral("season")) seasonColumnExists = true;
+            if (column == QStringLiteral("season_year")) seasonYearColumnExists = true;
+            if (column == QStringLiteral("next_airing_episode")) nextAiringEpisodeColumnExists = true;
+            if (column == QStringLiteral("next_airing_at")) nextAiringAtColumnExists = true;
+            if (column == QStringLiteral("anilist_url")) aniListUrlColumnExists = true;
+            if (column == QStringLiteral("external_links")) externalLinksColumnExists = true;
         }
         sourceRemovalReady = sourceRemovalColumnExists
             || query.exec(QStringLiteral("ALTER TABLE media ADD COLUMN source_removed_at TEXT"));
@@ -267,7 +285,22 @@ bool SqliteDatabase::migrate() {
     }
     const bool preferredTitleVersionInserted = preferredTitleKeyReady && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (12)"));
-    const bool versionQueried = preferredTitleVersionInserted && query.exec(QStringLiteral(
+    const bool seasonReady = preferredTitleVersionInserted && (seasonColumnExists
+        || query.exec(QStringLiteral("ALTER TABLE media ADD COLUMN season TEXT")));
+    const bool seasonYearReady = seasonReady && (seasonYearColumnExists
+        || query.exec(QStringLiteral("ALTER TABLE media ADD COLUMN season_year INTEGER")));
+    const bool nextAiringEpisodeReady = seasonYearReady && (nextAiringEpisodeColumnExists
+        || query.exec(QStringLiteral("ALTER TABLE media ADD COLUMN next_airing_episode INTEGER")));
+    const bool nextAiringAtReady = nextAiringEpisodeReady && (nextAiringAtColumnExists
+        || query.exec(QStringLiteral("ALTER TABLE media ADD COLUMN next_airing_at INTEGER")));
+    const bool aniListUrlReady = nextAiringAtReady && (aniListUrlColumnExists
+        || query.exec(QStringLiteral("ALTER TABLE media ADD COLUMN anilist_url TEXT")));
+    const bool externalLinksReady = aniListUrlReady && (externalLinksColumnExists
+        || query.exec(QStringLiteral(
+            "ALTER TABLE media ADD COLUMN external_links TEXT NOT NULL DEFAULT '[]'")));
+    const bool extendedMediaVersionInserted = externalLinksReady && query.exec(QStringLiteral(
+        "INSERT OR IGNORE INTO schema_version (version) VALUES (13)"));
+    const bool versionQueried = extendedMediaVersionInserted && query.exec(QStringLiteral(
         "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 1), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 2), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 3), "
@@ -279,12 +312,13 @@ bool SqliteDatabase::migrate() {
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 9), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 10), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 11), "
-        "EXISTS(SELECT 1 FROM schema_version WHERE version = 12)"));
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 12), "
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 13)"));
     const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool()
         && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
         && query.value(4).toBool() && query.value(5).toBool() && query.value(6).toBool()
         && query.value(7).toBool() && query.value(8).toBool() && query.value(9).toBool()
-        && query.value(10).toBool() && query.value(11).toBool();
+        && query.value(10).toBool() && query.value(11).toBool() && query.value(12).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();
@@ -301,7 +335,7 @@ bool SqliteDatabase::migrate() {
 
     lastError_ = query.lastError().text();
     if (lastError_.isEmpty()) {
-        lastError_ = QStringLiteral("SQLite migration versions 1 through 12 were not recorded.");
+        lastError_ = QStringLiteral("SQLite migration versions 1 through 13 were not recorded.");
     }
     database_.rollback();
     if (logger_) logger_->error(LogCategory::Migration, query.lastError().text());
