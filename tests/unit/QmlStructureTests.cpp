@@ -351,6 +351,10 @@ void QmlStructureTests::coverPreviewReusesSelectedCoverSourceWithoutRequestingDo
     QVERIFY2(previewSource.contains(QStringLiteral("modal: true"))
                  && previewSource.contains(QStringLiteral("focus: true")),
              "The preview must be a focus-containing modal surface.");
+    QVERIFY2(previewSource.contains(QStringLiteral("Keys.onTabPressed"))
+                 && previewSource.contains(QStringLiteral("Keys.onBacktabPressed"))
+                 && previewSource.count(QStringLiteral("closeButton.forceActiveFocus()")) >= 3,
+             "The preview must explicitly cycle Tab and Shift+Tab focus within the modal.");
     QVERIFY2(previewSource.contains(QStringLiteral("Popup.CloseOnEscape | Popup.CloseOnPressOutside")),
              "The preview must close on Escape and backdrop press.");
     QVERIFY2(previewSource.contains(QStringLiteral("returnFocusItem.forceActiveFocus()")),

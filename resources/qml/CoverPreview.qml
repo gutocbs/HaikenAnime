@@ -31,6 +31,15 @@ Popup {
     onClosed: {
         if (returnFocusItem) returnFocusItem.forceActiveFocus()
     }
+    Keys.priority: Keys.BeforeItem
+    Keys.onTabPressed: function(event) {
+        closeButton.forceActiveFocus()
+        event.accepted = true
+    }
+    Keys.onBacktabPressed: function(event) {
+        closeButton.forceActiveFocus()
+        event.accepted = true
+    }
 
     Overlay.modal: Rectangle { color: "#730f1d2e" }
     background: Rectangle {
