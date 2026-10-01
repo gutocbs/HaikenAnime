@@ -7,13 +7,23 @@
 #include <QUrl>
 #include <QtMath>
 
+#include <cmath>
+#include <limits>
+
 namespace {
 
 std::optional<int> OptionalInteger(const QJsonValue &value) {
-    if (value.isNull() || value.isUndefined()) {
+    if (!value.isDouble()) {
         return std::nullopt;
     }
-    return value.toInt();
+    const double number = value.toDouble();
+    if (!std::isfinite(number)
+        || number < static_cast<double>(std::numeric_limits<int>::min())
+        || number > static_cast<double>(std::numeric_limits<int>::max())) {
+        return std::nullopt;
+    }
+    const auto integer = static_cast<int>(number);
+    return number == static_cast<double>(integer) ? std::optional<int>(integer) : std::nullopt;
 }
 
 std::optional<int> OptionalInteger(const QString &value) {
@@ -28,11 +38,13 @@ std::optional<qint64> OptionalInteger64(const QJsonValue &value) {
         return std::nullopt;
     }
     const double number = value.toDouble();
-    const auto integer = static_cast<qint64>(number);
-    if (number != static_cast<double>(integer)) {
+    constexpr double minimum = static_cast<double>(std::numeric_limits<qint64>::min());
+    constexpr double exclusiveMaximum = -minimum;
+    if (!std::isfinite(number) || number < minimum || number >= exclusiveMaximum) {
         return std::nullopt;
     }
-    return integer;
+    const auto integer = static_cast<qint64>(number);
+    return number == static_cast<double>(integer) ? std::optional<qint64>(integer) : std::nullopt;
 }
 
 void AppendLinks(const QJsonValue &value, QList<AniListMediaLinkDto> &links) {

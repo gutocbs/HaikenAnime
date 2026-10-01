@@ -1,6 +1,8 @@
 #include <QtTest>
 #include <QFile>
 
+#include <limits>
+
 #include "../../src/infrastructure/anilist/AniListGraphQlPageParser.h"
 #include "../../src/infrastructure/anilist/AniListGraphQlResponseParser.h"
 #include "../../src/infrastructure/anilist/AniListMediaMapper.h"
@@ -18,6 +20,8 @@ private slots:
     void fallsBackToAvailableLargeCoverWhenMediumIsMissing();
     void mapsExtendedMetadataAndNormalizesPresentationData();
     void omitsInvalidAndMissingExtendedMetadata();
+    void omitsMalformedNumericExtendedMetadata();
+    void canonicalizesAndDeduplicatesExternalLinks();
     void recordedLibraryFixtureIsComplete();
 };
 
@@ -220,6 +224,62 @@ void AniListGraphQlParsingTests::omitsInvalidAndMissingExtendedMetadata() {
     QVERIFY(media.AniListUrl.isEmpty());
     QVERIFY(media.ExternalLinks.isEmpty());
     QVERIFY(media.Synopsis.isEmpty());
+}
+
+void AniListGraphQlParsingTests::omitsMalformedNumericExtendedMetadata() {
+    const QJsonObject object{
+        {QStringLiteral("seasonYear"), QStringLiteral("2026")},
+        {QStringLiteral("nextAiringEpisode"),
+         QJsonObject{{QStringLiteral("episode"), QStringLiteral("7")},
+                     {QStringLiteral("airingAt"), QStringLiteral("1790518560")}}}
+    };
+
+    const auto wrongTypedMedia = AniListMediaMapper::ToDomainMedia(
+        AniListMediaMapper::FromGraphQlJson(object));
+
+    QVERIFY(!wrongTypedMedia.SeasonYear.has_value());
+    QVERIFY(!wrongTypedMedia.NextAiringEpisode.has_value());
+    QVERIFY(!wrongTypedMedia.NextAiringAt.has_value());
+
+    const QJsonObject invalidNumbers{
+        {QStringLiteral("seasonYear"), std::numeric_limits<double>::max()},
+        {QStringLiteral("nextAiringEpisode"),
+         QJsonObject{{QStringLiteral("episode"), 7.5},
+                     {QStringLiteral("airingAt"), std::numeric_limits<double>::max()}}}
+    };
+
+    const auto invalidNumberMedia = AniListMediaMapper::ToDomainMedia(
+        AniListMediaMapper::FromGraphQlJson(invalidNumbers));
+
+    QVERIFY(!invalidNumberMedia.SeasonYear.has_value());
+    QVERIFY(!invalidNumberMedia.NextAiringEpisode.has_value());
+    QVERIFY(!invalidNumberMedia.NextAiringAt.has_value());
+}
+
+void AniListGraphQlParsingTests::canonicalizesAndDeduplicatesExternalLinks() {
+    const QJsonObject object{
+        {QStringLiteral("externalLinks"),
+         QJsonArray{
+             QJsonObject{{QStringLiteral("site"), QStringLiteral(" Official ")},
+                         {QStringLiteral("url"),
+                          QStringLiteral("HTTPS://EXAMPLE.TEST:443/info#overview")}},
+             QJsonObject{{QStringLiteral("site"), QStringLiteral("official")},
+                         {QStringLiteral("url"), QStringLiteral("https://example.test/info")}},
+             QJsonObject{{QStringLiteral("site"), QStringLiteral("Stream")},
+                         {QStringLiteral("url"),
+                          QStringLiteral("HTTP://STREAM.EXAMPLE:80/watch#episode")}},
+             QJsonObject{{QStringLiteral("site"), QStringLiteral("stream")},
+                         {QStringLiteral("url"), QStringLiteral("http://stream.example/watch")}}}}
+    };
+
+    const auto media = AniListMediaMapper::ToDomainMedia(
+        AniListMediaMapper::FromGraphQlJson(object));
+
+    QCOMPARE(media.ExternalLinks.size(), 2);
+    QCOMPARE(media.ExternalLinks.at(0).Site, QStringLiteral("Official"));
+    QCOMPARE(media.ExternalLinks.at(0).Url, QStringLiteral("https://example.test/info"));
+    QCOMPARE(media.ExternalLinks.at(1).Site, QStringLiteral("Stream"));
+    QCOMPARE(media.ExternalLinks.at(1).Url, QStringLiteral("http://stream.example/watch"));
 }
 
 void AniListGraphQlParsingTests::recordedLibraryFixtureIsComplete() {
