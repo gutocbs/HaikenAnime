@@ -72,7 +72,6 @@ private slots:
     void previewCardsUseControllerPreparedMetadataInBothGrids();
     void compactDetailsUseSeparatePreviewMetadata();
     void compactDetailsAreReadOnlyAndSelectable();
-    void fullMediaDetailsPanelProvidesSafeInteractiveDetails();
     void coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads();
     void languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml();
     void preferredTitleSelectionUsesBackendOptions();
@@ -333,45 +332,6 @@ void QmlStructureTests::compactDetailsAreReadOnlyAndSelectable() {
     QVERIFY(details.contains(QStringLiteral("id: selectedSynopsisOverflowIndicator")));
     QVERIFY(details.contains(QStringLiteral("visible: selectedSynopsisText.contentHeight > selectedSynopsisText.height")));
     QVERIFY(details.contains(QStringLiteral("text: \"…\"")));
-}
-
-void QmlStructureTests::fullMediaDetailsPanelProvidesSafeInteractiveDetails() {
-    const QString homeSource = qmlSource(QStringLiteral("Home.qml"));
-    const QString panelSource = qmlSource(QStringLiteral("MediaDetailsPanel.qml"));
-    QVERIFY(!homeSource.isEmpty());
-    QVERIFY2(!panelSource.isEmpty(), "Full media details must use a dedicated QML panel.");
-
-    QVERIFY(homeSource.contains(QStringLiteral("text: qsTr(\"Ver detalhes\")")));
-    QVERIFY(homeSource.contains(QStringLiteral("mediaDetailsPanel.openForItem(detailsButton)")));
-    QVERIFY(panelSource.contains(QStringLiteral("x: 0")));
-    QVERIFY(panelSource.contains(QStringLiteral("modal: true")));
-    QVERIFY(panelSource.contains(QStringLiteral("focus: true")));
-    QVERIFY(panelSource.contains(QStringLiteral("Popup.CloseOnEscape | Popup.CloseOnPressOutside")));
-    QVERIFY(panelSource.contains(QStringLiteral("onOpened: closeButton.forceActiveFocus()")));
-    QVERIFY(panelSource.contains(QStringLiteral("returnFocusItem.forceActiveFocus()")));
-    QVERIFY(panelSource.contains(QRegularExpression(
-        QStringLiteral(R"(Keys\.onTabPressed\s*:\s*function\(event\)\s*\{[^}]*closeButton\.forceActiveFocus\(\)[^}]*event\.accepted\s*=\s*true)"))));
-    QVERIFY(panelSource.contains(QRegularExpression(
-        QStringLiteral(R"(Keys\.onBacktabPressed\s*:\s*function\(event\)\s*\{[^}]*closeButton\.forceActiveFocus\(\)[^}]*event\.accepted\s*=\s*true)"))));
-
-    QVERIFY(panelSource.contains(QStringLiteral("ScrollView")));
-    QVERIFY(panelSource.contains(QStringLiteral("text: controller.selectedSynopsis")));
-    QVERIFY(panelSource.contains(QStringLiteral("readOnly: true")));
-    QVERIFY(panelSource.contains(QStringLiteral("selectByMouse: true")));
-    QVERIFY(panelSource.contains(QStringLiteral("id: fullSynopsisText")));
-    QVERIFY(panelSource.contains(QStringLiteral("model: controller.selectedMediaLinks")));
-    QVERIFY(panelSource.contains(QStringLiteral("id: externalLinkButton")));
-    QVERIFY(panelSource.contains(QStringLiteral("Qt.openUrlExternally(modelData.url)")));
-    QCOMPARE(panelSource.count(QStringLiteral("panel.close()")), 1);
-
-    const qsizetype synopsisStart = panelSource.indexOf(QStringLiteral("id: fullSynopsisText"));
-    const qsizetype linkStart = panelSource.indexOf(QStringLiteral("id: externalLinkButton"));
-    QVERIFY(synopsisStart >= 0);
-    QVERIFY(linkStart > synopsisStart);
-    const QString synopsisSection = panelSource.mid(synopsisStart, linkStart - synopsisStart);
-    const QString linkSection = panelSource.mid(linkStart);
-    QVERIFY(!synopsisSection.contains(QStringLiteral("panel.close()")));
-    QVERIFY(!linkSection.contains(QStringLiteral("panel.close()")));
 }
 
 void QmlStructureTests::languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml() {

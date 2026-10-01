@@ -769,6 +769,9 @@ target_link_libraries(HomeScreenControllerTests
         Qt6::Core
         Qt6::Test
 )
+target_compile_definitions(HomeScreenControllerTests PRIVATE
+        HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
 
 add_test(NAME HomeScreenControllerTests COMMAND HomeScreenControllerTests)
 
