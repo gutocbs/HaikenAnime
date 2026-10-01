@@ -65,7 +65,7 @@ private slots:
     void emitsSortPreferenceOnlyForAcceptedSortChanges();
     void reconcilesActiveCriteriaWhenBackendOptionsChange();
     void appliesListSearchAndSortToBothLibraries();
-    void searchesAllKnownTitlesCaseInsensitively();
+    void usesResolvedTitleConsistentlyAfterStartupConfiguration();
     void clearsBrowseCriteriaWithoutChangingMediaType();
     void selectsMediaAndExposesItsDetails();
     void exposesConfigurableEditingOptions();
@@ -531,26 +531,36 @@ void HomeScreenControllerTests::appliesListSearchAndSortToBothLibraries() {
                                                 HomeMediaModel::IdRole).toInt(), 1);
 }
 
-void HomeScreenControllerTests::searchesAllKnownTitlesCaseInsensitively() {
+void HomeScreenControllerTests::usesResolvedTitleConsistentlyAfterStartupConfiguration() {
     FakeMediaReader reader;
-    Media media;
-    media.Id = 42;
-    media.Name = QStringLiteral("Sousou no Frieren");
-    media.EnglishName = QStringLiteral("Frieren: Beyond Journey's End");
-    media.OriginalName = QStringLiteral("葬送のフリーレン");
-    media.AlternativeNames = {QStringLiteral("Frieren at the Funeral")};
-    media.Type = MediaType::Anime;
-    media.ListStatus = UserListStatus::Planning;
-    reader.result.append(media);
+    Media first;
+    first.Id = 42;
+    first.Name = QStringLiteral("A Romaji");
+    first.EnglishName = QStringLiteral("Zulu English");
+    first.OriginalName = QStringLiteral("ネイティブ A");
+    first.Type = MediaType::Anime;
+    Media second;
+    second.Id = 43;
+    second.Name = QStringLiteral("Z Romaji");
+    second.EnglishName = QStringLiteral("Alpha English");
+    second.OriginalName = QStringLiteral("ネイティブ Z");
+    second.Type = MediaType::Anime;
+    reader.result = {first, second};
 
     HomeScreenController controller(reader);
+    controller.ConfigurePreferredTitle(QStringLiteral("english"));
     controller.reload();
-    controller.SetSearchQuery(QStringLiteral("BEYOND JOURNEY"));
 
+    QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(0, 0),
+                                                HomeMediaModel::TitleRole).toString(),
+             QStringLiteral("Alpha English"));
+    controller.SelectMedia(43);
+    QCOMPARE(controller.selectedTitle(), QStringLiteral("Alpha English"));
+    controller.SetSearchQuery(QStringLiteral("alpha english"));
     QCOMPARE(controller.fullMediaModel()->rowCount(), 1);
-    controller.SetSearchQuery(QStringLiteral("funeral"));
-    QCOMPARE(controller.fullMediaModel()->rowCount(), 1);
-    controller.SetSearchQuery(QStringLiteral("not present"));
+    QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(0, 0),
+                                                HomeMediaModel::IdRole).toInt(), 43);
+    controller.SetSearchQuery(QStringLiteral("Z Romaji"));
     QCOMPARE(controller.fullMediaModel()->rowCount(), 0);
 }
 

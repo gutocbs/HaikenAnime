@@ -17,6 +17,7 @@ private slots:
     void acceptsHomeSortKeyForControllerNormalization();
     void rejectsUnsupportedCardStatusPresentation();
     void rejectsUnsupportedLanguage();
+    void rejectsUnsupportedPreferredTitle();
     void rejectsEmptyLibraryRoot();
     void comparesScannerPreferences();
 };
@@ -136,6 +137,16 @@ void UserPreferencesValidatorTests::rejectsUnsupportedCardStatusPresentation() {
 void UserPreferencesValidatorTests::rejectsUnsupportedLanguage() {
     UserPreferences preferences;
     preferences.languageKey = QStringLiteral("obsolete");
+
+    const auto result = ValidateUserPreferences(preferences);
+
+    QVERIFY(!result.valid);
+    QVERIFY(!result.error.isEmpty());
+}
+
+void UserPreferencesValidatorTests::rejectsUnsupportedPreferredTitle() {
+    UserPreferences preferences;
+    preferences.preferredTitleKey = QStringLiteral("obsolete");
 
     const auto result = ValidateUserPreferences(preferences);
 

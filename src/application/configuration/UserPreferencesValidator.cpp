@@ -65,6 +65,9 @@ UserPreferencesValidationResult ValidateUserPreferences(const UserPreferences &p
     if (!IsSupportedLanguageKey(preferences.languageKey)) {
         return {false, QStringLiteral("Language is unsupported.")};
     }
+    if (!IsSupportedPreferredTitleKey(preferences.preferredTitleKey)) {
+        return {false, QStringLiteral("Preferred title is unsupported.")};
+    }
     if (preferences.synchronizationIntervalMs < MinimumSynchronizationIntervalMs
         || preferences.synchronizationIntervalMs > MaximumSynchronizationIntervalMs) {
         return {false, QStringLiteral("Synchronization interval is outside the supported range.")};

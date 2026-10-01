@@ -71,6 +71,7 @@ void LocalLibraryScanCompositionTests::persistedPreferencesOverrideDefaultsAfter
         preferences.libraryRoot = directory.path();
         preferences.scanExtensions = {".webm"};
         preferences.homeSortKey = QStringLiteral("title_desc");
+        preferences.preferredTitleKey = QStringLiteral("english");
         QString error;
         QVERIFY2(context.userPreferencesRepository->replace(preferences, error), qPrintable(error));
     }
@@ -79,6 +80,7 @@ void LocalLibraryScanCompositionTests::persistedPreferencesOverrideDefaultsAfter
     QCOMPARE(restarted.userPreferences.libraryRoot, directory.path());
     QCOMPARE(restarted.userPreferences.scanExtensions, QStringList({".webm"}));
     QCOMPARE(restarted.userPreferences.homeSortKey, QStringLiteral("title_desc"));
+    QCOMPARE(restarted.userPreferences.preferredTitleKey, QStringLiteral("english"));
     QVERIFY(restarted.localLibraryScan);
 }
 

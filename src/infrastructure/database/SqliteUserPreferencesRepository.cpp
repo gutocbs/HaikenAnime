@@ -52,6 +52,7 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
     loaded.cardStatusPresentation = ParseCardStatusPresentation(query.value(9).toString())
                                         .value_or(CardStatusPresentation::PersonalListStatus);
     loaded.languageKey = NormalizeLanguageKey(query.value(10).toString());
+    loaded.preferredTitleKey = NormalizePreferredTitleKey(query.value(11).toString());
     const auto validation = ValidateUserPreferences(loaded);
     if (!validation.valid) {
         error = validation.error;
@@ -90,6 +91,7 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
     query.bindValue(QStringLiteral(":card_status_presentation"),
                     CardStatusPresentationKey(preferences.cardStatusPresentation));
     query.bindValue(QStringLiteral(":language_key"), preferences.languageKey);
+    query.bindValue(QStringLiteral(":preferred_title_key"), preferences.preferredTitleKey);
     query.bindValue(QStringLiteral(":library_root"), preferences.libraryRoot);
     query.bindValue(QStringLiteral(":scan_extensions"), QString::fromUtf8(
         QJsonDocument(QJsonArray::fromStringList(NormalizeScanExtensions(preferences.scanExtensions, error)))

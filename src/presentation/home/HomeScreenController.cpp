@@ -146,17 +146,9 @@ QVariantList defaultSortOptions() {
     };
 }
 
-bool matchesSearch(const Media &media, const QString &query) {
+bool matchesSearch(const Media &media, const QString &query, const QString &preferredTitleKey) {
     if (query.isEmpty()) return true;
-    if (media.Name.contains(query, Qt::CaseInsensitive)
-        || media.EnglishName.contains(query, Qt::CaseInsensitive)
-        || media.OriginalName.contains(query, Qt::CaseInsensitive)) {
-        return true;
-    }
-    return std::any_of(media.AlternativeNames.cbegin(), media.AlternativeNames.cend(),
-                       [&query](const QString &title) {
-                           return title.contains(query, Qt::CaseInsensitive);
-                       });
+    return ResolveMediaTitle(media, preferredTitleKey).contains(query, Qt::CaseInsensitive);
 }
 
 bool containsOptionKey(const QVariantList &options, const QString &key) {
@@ -191,7 +183,7 @@ QVariant HomeMediaModel::data(const QModelIndex &index, int role) const {
     case IdRole:
         return media.Id;
     case TitleRole:
-        return media.Name;
+        return ResolveMediaTitle(media, preferredTitleKey_);
     case ProgressRole:
         return cardProgress(media);
     case ScoreRole:
@@ -245,6 +237,13 @@ void HomeMediaModel::setMedia(QList<Media> media) {
     beginResetModel();
     media_ = std::move(media);
     endResetModel();
+}
+
+void HomeMediaModel::ConfigurePreferredTitle(QString key) {
+    key = NormalizePreferredTitleKey(key);
+    if (preferredTitleKey_ == key) return;
+    preferredTitleKey_ = std::move(key);
+    if (!media_.isEmpty()) emit dataChanged(index(0), index(media_.size() - 1), {TitleRole});
 }
 
 HomeScreenController::HomeScreenController(IMediaReader &reader, QObject *parent)
@@ -346,7 +345,9 @@ bool HomeScreenController::browseCriteriaActive() const {
 }
 bool HomeScreenController::hasSelection() const { return hasSelection_; }
 int HomeScreenController::selectedMediaId() const { return hasSelection_ ? selectedMedia_.Id : 0; }
-QString HomeScreenController::selectedTitle() const { return hasSelection_ ? selectedMedia_.Name : QString(); }
+QString HomeScreenController::selectedTitle() const {
+    return hasSelection_ ? ResolveMediaTitle(selectedMedia_, preferredTitleKey_) : QString();
+}
 QString HomeScreenController::selectedSynopsis() const { return hasSelection_ ? selectedMedia_.Synopsis : QString(); }
 QString HomeScreenController::selectedTypeLabel() const { return hasSelection_ ? mediaTypeLabel(selectedMedia_.Type) : QString(); }
 QString HomeScreenController::selectedStatusLabel() const { return hasSelection_ ? mediaStatusLabel(selectedMedia_.Status) : QString(); }
@@ -413,6 +414,16 @@ void HomeScreenController::ConfigureCardStatusPresentation(
     cardStatusPresentation_ = presentation;
     model_.ConfigureCardPresentation(cardStatusPresentation_, scoreMaximum_);
     fullModel_.ConfigureCardPresentation(cardStatusPresentation_, scoreMaximum_);
+}
+
+void HomeScreenController::ConfigurePreferredTitle(QString key) {
+    key = NormalizePreferredTitleKey(key);
+    if (preferredTitleKey_ == key) return;
+    preferredTitleKey_ = std::move(key);
+    model_.ConfigurePreferredTitle(preferredTitleKey_);
+    fullModel_.ConfigurePreferredTitle(preferredTitleKey_);
+    rebuildMediaModels();
+    if (hasSelection_) emit selectionChanged();
 }
 
 void HomeScreenController::ConfigureBrowseOptions(QVariantList mediaTypeOptions,
@@ -686,11 +697,13 @@ void HomeScreenController::rebuildMediaModels() {
         if (mediaTypeKey(media.Type) != activeMediaType_) continue;
         if (activeListFilter_ != QStringLiteral("all")
             && userListStatusKey(media.ListStatus) != activeListFilter_) continue;
-        if (!matchesSearch(media, searchQuery_)) continue;
+        if (!matchesSearch(media, searchQuery_, preferredTitleKey_)) continue;
         filtered.append(media);
     }
-    const auto titleLess = [](const Media &left, const Media &right) {
-        return QString::compare(left.Name, right.Name, Qt::CaseInsensitive) < 0;
+    const auto titleLess = [this](const Media &left, const Media &right) {
+        return QString::compare(ResolveMediaTitle(left, preferredTitleKey_),
+                                ResolveMediaTitle(right, preferredTitleKey_),
+                                Qt::CaseInsensitive) < 0;
     };
     std::stable_sort(filtered.begin(), filtered.end(), [this, &titleLess](const Media &left, const Media &right) {
         if (activeSort_ == QStringLiteral("title_desc")) return titleLess(right, left);

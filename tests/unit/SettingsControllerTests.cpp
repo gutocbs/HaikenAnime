@@ -70,6 +70,7 @@ private slots:
     void savesBackendProvidedCardStatusPresentation();
     void rejectsInvalidCardStatusPresentation();
     void exposesBackendLanguageOptionsAndRestartNotice();
+    void exposesBackendPreferredTitleOptionsAndRestartNotice();
     void libraryDraftSavesAndDiscardsAtomically();
     void invalidLibraryDraftCannotSave();
     void extensionsAreNormalizedAndOptionsRetainPersistedSelections();
@@ -224,6 +225,27 @@ void SettingsControllerTests::exposesBackendLanguageOptionsAndRestartNotice() {
     QVERIFY(!controller.valid());
     controller.Discard();
     QCOMPARE(controller.languageKey(), QStringLiteral("en"));
+}
+
+void SettingsControllerTests::exposesBackendPreferredTitleOptionsAndRestartNotice() {
+    FakePreferencesRepository repository;
+    SettingsController controller(&repository, {});
+
+    QCOMPARE(controller.preferredTitleOptions().size(), 3);
+    QCOMPARE(controller.preferredTitleKey(), QStringLiteral("romaji"));
+    QVERIFY(controller.restartRequiredMessage().isEmpty());
+
+    controller.SetPreferredTitle(QStringLiteral("native"));
+    QVERIFY(controller.valid());
+    QVERIFY(!controller.restartRequiredMessage().isEmpty());
+    controller.Save();
+    QCOMPARE(repository.stored.preferredTitleKey, QStringLiteral("native"));
+    QVERIFY(!controller.restartRequiredMessage().isEmpty());
+
+    controller.SetPreferredTitle(QStringLiteral("obsolete"));
+    QVERIFY(!controller.valid());
+    controller.Discard();
+    QCOMPARE(controller.preferredTitleKey(), QStringLiteral("native"));
 }
 
 void SettingsControllerTests::invalidLibraryDraftCannotSave() {

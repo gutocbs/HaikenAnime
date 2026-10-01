@@ -19,11 +19,13 @@ class SettingsController final : public QObject {
     Q_PROPERTY(int synchronizationIntervalMs READ synchronizationIntervalMs NOTIFY changed)
     Q_PROPERTY(QString cardStatusPresentationKey READ cardStatusPresentationKey NOTIFY changed)
     Q_PROPERTY(QString languageKey READ languageKey NOTIFY changed)
+    Q_PROPERTY(QString preferredTitleKey READ preferredTitleKey NOTIFY changed)
     Q_PROPERTY(QVariantList coverQualityOptions READ coverQualityOptions CONSTANT)
     Q_PROPERTY(QVariantList scoreScaleOptions READ scoreScaleOptions CONSTANT)
     Q_PROPERTY(QVariantList synchronizationIntervalOptions READ synchronizationIntervalOptions CONSTANT)
     Q_PROPERTY(QVariantList cardStatusPresentationOptions READ cardStatusPresentationOptions CONSTANT)
     Q_PROPERTY(QVariantList languageOptions READ languageOptions CONSTANT)
+    Q_PROPERTY(QVariantList preferredTitleOptions READ preferredTitleOptions CONSTANT)
     Q_PROPERTY(QString restartRequiredMessage READ restartRequiredMessage NOTIFY changed)
     Q_PROPERTY(bool dirty READ dirty NOTIFY changed)
     Q_PROPERTY(bool valid READ valid NOTIFY changed)
@@ -48,11 +50,13 @@ public:
     int synchronizationIntervalMs() const;
     QString cardStatusPresentationKey() const;
     QString languageKey() const;
+    QString preferredTitleKey() const;
     QVariantList coverQualityOptions() const;
     QVariantList scoreScaleOptions() const;
     QVariantList synchronizationIntervalOptions() const;
     QVariantList cardStatusPresentationOptions() const;
     QVariantList languageOptions() const;
+    QVariantList preferredTitleOptions() const;
     QString restartRequiredMessage() const;
     bool dirty() const;
     bool valid() const;
@@ -75,6 +79,7 @@ public:
     Q_INVOKABLE void SetSynchronizationInterval(int intervalMs);
     Q_INVOKABLE void SetCardStatusPresentation(const QString &key);
     Q_INVOKABLE void SetLanguage(const QString &key);
+    Q_INVOKABLE void SetPreferredTitle(const QString &key);
     Q_INVOKABLE void Save();
     Q_INVOKABLE void Discard();
     Q_INVOKABLE void SetLibraryRoot(const QString &root);
@@ -96,6 +101,9 @@ private:
     QString languageKey_;
     QString appliedLanguageKey_;
     bool languageKeyValid_ = true;
+    QString preferredTitleKey_;
+    QString appliedPreferredTitleKey_;
+    bool preferredTitleKeyValid_ = true;
     bool valid_ = true;
     bool saving_ = false;
     QString statusMessage_;

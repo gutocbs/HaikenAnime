@@ -53,6 +53,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/domain/media/Media.h
         src/application/media/MediaPage.h
         src/application/media/MediaSyncFilter.h
+        src/application/media/MediaTitleResolver.h
+        src/application/media/MediaTitleResolver.cpp
         src/domain/media/MediaType.h
         src/domain/media/MediaStatus.h
         src/domain/media/UserListStatus.h
@@ -334,6 +336,13 @@ target_link_libraries(MediaDomainTests
 
 add_test(NAME MediaDomainTests COMMAND MediaDomainTests)
 
+add_executable(MediaTitleResolverTests
+        tests/unit/MediaTitleResolverTests.cpp
+        src/application/media/MediaTitleResolver.cpp
+)
+target_link_libraries(MediaTitleResolverTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME MediaTitleResolverTests COMMAND MediaTitleResolverTests)
+
 add_executable(SqliteDatabaseTests
         tests/unit/SqliteDatabaseTests.cpp
         src/infrastructure/database/SqliteDatabase.h
@@ -356,6 +365,7 @@ add_executable(SqliteUserPreferencesRepositoryTests
         src/infrastructure/database/SqliteDatabase.cpp
         src/infrastructure/database/SqliteUserPreferencesRepository.cpp
         src/application/configuration/UserPreferencesValidator.cpp
+        src/application/media/MediaTitleResolver.cpp
         src/infrastructure/logging/AsyncLogger.cpp
 )
 target_link_libraries(SqliteUserPreferencesRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
@@ -479,6 +489,7 @@ add_executable(JsonSettingsReaderTests
         src/infrastructure/configuration/JsonSettingsReader.h
         src/infrastructure/configuration/JsonSettingsReader.cpp
         src/application/configuration/UserPreferencesValidator.cpp
+        src/application/media/MediaTitleResolver.cpp
 )
 
 target_link_libraries(JsonSettingsReaderTests
@@ -495,6 +506,7 @@ target_compile_definitions(JsonSettingsReaderTests PRIVATE
 add_executable(UserPreferencesValidatorTests
         tests/unit/UserPreferencesValidatorTests.cpp
         src/application/configuration/UserPreferencesValidator.cpp
+        src/application/media/MediaTitleResolver.cpp
 )
 target_link_libraries(UserPreferencesValidatorTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME UserPreferencesValidatorTests COMMAND UserPreferencesValidatorTests)
@@ -743,6 +755,7 @@ add_executable(HomeScreenControllerTests
         src/application/covers/CoverDownloadCoordinator.h
         src/application/covers/CoverDownloadCoordinator.cpp
         src/application/covers/CoverSourceResolver.cpp
+        src/application/media/MediaTitleResolver.cpp
         src/infrastructure/logging/AsyncLogger.cpp
 )
 
@@ -758,6 +771,7 @@ add_executable(SettingsControllerTests
         tests/unit/SettingsControllerTests.cpp
         src/presentation/settings/SettingsController.cpp
         src/application/configuration/UserPreferencesValidator.cpp
+        src/application/media/MediaTitleResolver.cpp
         src/app/LocalLibraryScanCoordinator.h
         src/app/LocalLibraryScanCoordinator.cpp
         src/infrastructure/logging/AsyncLogger.h
@@ -849,6 +863,7 @@ add_test(NAME LocalLibraryScanCompositionTests COMMAND LocalLibraryScanCompositi
 # used by the application target. Make Qt runtime DLLs available to CTest.
 set(HAIKENANIME_TESTS
         MediaDomainTests
+        MediaTitleResolverTests
         SqliteDatabaseTests
         SqliteUserPreferencesRepositoryTests
         SqliteRepositoryTests

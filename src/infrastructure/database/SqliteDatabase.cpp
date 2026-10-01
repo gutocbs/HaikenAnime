@@ -138,7 +138,8 @@ bool SqliteDatabase::migrate() {
         "synchronization_interval_ms INTEGER NOT NULL,"
         "home_sort_key TEXT NOT NULL DEFAULT 'title_asc',"
         "card_status_presentation TEXT NOT NULL DEFAULT 'personal-list-status',"
-        "language_key TEXT NOT NULL DEFAULT 'pt-BR')"));
+        "language_key TEXT NOT NULL DEFAULT 'pt-BR',"
+        "preferred_title_key TEXT NOT NULL DEFAULT 'romaji')"));
     bool sourceRemovalColumnExists = false;
     bool userListStatusColumnExists = false;
     bool coverMediumColumnExists = false;
@@ -253,7 +254,20 @@ bool SqliteDatabase::migrate() {
     }
     const bool languageVersionInserted = languageKeyReady && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (11)"));
-    const bool versionQueried = languageVersionInserted && query.exec(QStringLiteral(
+    bool preferredTitleKeyExists = false;
+    bool preferredTitleKeyReady = false;
+    if (languageVersionInserted && query.exec(QStringLiteral("PRAGMA table_info(user_preferences)"))) {
+        while (query.next()) {
+            if (query.value(1).toString() == QStringLiteral("preferred_title_key")) {
+                preferredTitleKeyExists = true;
+            }
+        }
+        preferredTitleKeyReady = preferredTitleKeyExists || query.exec(QStringLiteral(
+            "ALTER TABLE user_preferences ADD COLUMN preferred_title_key TEXT NOT NULL DEFAULT 'romaji'"));
+    }
+    const bool preferredTitleVersionInserted = preferredTitleKeyReady && query.exec(QStringLiteral(
+        "INSERT OR IGNORE INTO schema_version (version) VALUES (12)"));
+    const bool versionQueried = preferredTitleVersionInserted && query.exec(QStringLiteral(
         "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 1), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 2), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 3), "
@@ -264,12 +278,13 @@ bool SqliteDatabase::migrate() {
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 8), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 9), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 10), "
-        "EXISTS(SELECT 1 FROM schema_version WHERE version = 11)"));
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 11), "
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 12)"));
     const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool()
         && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
         && query.value(4).toBool() && query.value(5).toBool() && query.value(6).toBool()
         && query.value(7).toBool() && query.value(8).toBool() && query.value(9).toBool()
-        && query.value(10).toBool();
+        && query.value(10).toBool() && query.value(11).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();
@@ -286,7 +301,7 @@ bool SqliteDatabase::migrate() {
 
     lastError_ = query.lastError().text();
     if (lastError_.isEmpty()) {
-        lastError_ = QStringLiteral("SQLite migration versions 1 through 11 were not recorded.");
+        lastError_ = QStringLiteral("SQLite migration versions 1 through 12 were not recorded.");
     }
     database_.rollback();
     if (logger_) logger_->error(LogCategory::Migration, query.lastError().text());

@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
                                        context.userPreferences.scoreMaximum,
                                        context.userPreferences.scoreStep);
     homeController.ConfigureCardStatusPresentation(context.userPreferences.cardStatusPresentation);
+    homeController.ConfigurePreferredTitle(context.userPreferences.preferredTitleKey);
     homeController.ConfigureInitialSort(context.userPreferences.homeSortKey);
     SettingsController settingsController(context.userPreferencesRepository.get(),
                                           context.userPreferences);

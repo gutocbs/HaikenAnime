@@ -35,6 +35,12 @@ void TranslationLoaderTests::installsEnglishCatalog() {
     QVERIFY(error.isEmpty());
     QCOMPARE(QCoreApplication::translate("SettingsController", "Alterações salvas."),
              QStringLiteral("Changes saved."));
+    QCOMPARE(QCoreApplication::translate("SettingsController", "Inglês"),
+             QStringLiteral("English"));
+    QCOMPARE(QCoreApplication::translate(
+                 "SettingsController",
+                 "Reinicie o aplicativo para aplicar as preferências de aparência selecionadas."),
+             QStringLiteral("Restart the application to apply the selected appearance preferences."));
 }
 
 void TranslationLoaderTests::installsEnglishCatalogBeforeQmlComponentCreation() {

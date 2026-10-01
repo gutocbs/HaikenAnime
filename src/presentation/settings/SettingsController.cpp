@@ -128,7 +128,9 @@ SettingsController::SettingsController(IUserPreferencesRepository *repository,
       coverQualityKey_(CoverQualityName(initial.coverQuality)),
       cardStatusPresentationKey_(CardStatusPresentationKey(initial.cardStatusPresentation)),
       languageKey_(NormalizeLanguageKey(initial.languageKey)),
-      appliedLanguageKey_(NormalizeLanguageKey(initial.languageKey)) {
+      appliedLanguageKey_(NormalizeLanguageKey(initial.languageKey)),
+      preferredTitleKey_(NormalizePreferredTitleKey(initial.preferredTitleKey)),
+      appliedPreferredTitleKey_(NormalizePreferredTitleKey(initial.preferredTitleKey)) {
     qRegisterMetaType<UserPreferences>();
     scanStatusMessage_ = tr("Nenhuma varredura iniciada.");
     refreshValidation();
@@ -142,6 +144,7 @@ bool SettingsController::synchronizationEnabled() const { return draft_.synchron
 int SettingsController::synchronizationIntervalMs() const { return draft_.synchronizationIntervalMs; }
 QString SettingsController::cardStatusPresentationKey() const { return cardStatusPresentationKey_; }
 QString SettingsController::languageKey() const { return languageKey_; }
+QString SettingsController::preferredTitleKey() const { return preferredTitleKey_; }
 bool SettingsController::dirty() const { return !extensionInputValid_ || !(draft_ == persisted_); }
 bool SettingsController::valid() const { return valid_; }
 bool SettingsController::saving() const { return saving_; }
@@ -177,10 +180,16 @@ QVariantList SettingsController::languageOptions() const {
             option(QStringLiteral("en"), tr("English"))};
 }
 
+QVariantList SettingsController::preferredTitleOptions() const {
+    return {option(QStringLiteral("romaji"), tr("Romaji")),
+            option(QStringLiteral("english"), tr("Inglês")),
+            option(QStringLiteral("native"), tr("Nativo"))};
+}
+
 QString SettingsController::restartRequiredMessage() const {
-    return languageKey_ == appliedLanguageKey_
+    return languageKey_ == appliedLanguageKey_ && preferredTitleKey_ == appliedPreferredTitleKey_
         ? QString{}
-        : tr("Reinicie o aplicativo para aplicar o idioma selecionado.");
+        : tr("Reinicie o aplicativo para aplicar as preferências de aparência selecionadas.");
 }
 
 void SettingsController::SetScoreScale(const double minimum, const double maximum,
@@ -224,6 +233,13 @@ void SettingsController::SetLanguage(const QString &key) {
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }
 
+void SettingsController::SetPreferredTitle(const QString &key) {
+    preferredTitleKey_ = key;
+    preferredTitleKeyValid_ = IsSupportedPreferredTitleKey(key);
+    if (preferredTitleKeyValid_) draft_.preferredTitleKey = key;
+    statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
+}
+
 void SettingsController::Save() {
     if (saving_) return;
     refreshValidation();
@@ -249,6 +265,8 @@ void SettingsController::Discard() {
     cardStatusPresentationKeyValid_ = true;
     languageKey_ = draft_.languageKey;
     languageKeyValid_ = true;
+    preferredTitleKey_ = draft_.preferredTitleKey;
+    preferredTitleKeyValid_ = true;
     extensionInputValid_ = true;
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }
@@ -256,10 +274,12 @@ void SettingsController::Discard() {
 void SettingsController::refreshValidation() {
     const auto result = ValidateUserPreferences(draft_);
     valid_ = qualityKeyValid_ && cardStatusPresentationKeyValid_ && languageKeyValid_
+        && preferredTitleKeyValid_
         && extensionInputValid_ && result.valid;
     if (!qualityKeyValid_) errorMessage_ = tr("Qualidade de capa inválida.");
     else if (!cardStatusPresentationKeyValid_) errorMessage_ = tr("Apresentação de status inválida.");
     else if (!languageKeyValid_) errorMessage_ = tr("Idioma inválido.");
+    else if (!preferredTitleKeyValid_) errorMessage_ = tr("Título preferido inválido.");
     else if (!extensionInputValid_) errorMessage_ = tr("Extensão de arquivo inválida.");
     else if (!result.valid) errorMessage_ = result.error;
 }

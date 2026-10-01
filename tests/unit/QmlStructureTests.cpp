@@ -74,6 +74,7 @@ private slots:
     void compactDetailsAreReadOnlyAndSelectable();
     void coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads();
     void languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml();
+    void preferredTitleSelectionUsesBackendOptions();
 
 private:
     static QString qmlSource(const QString &name);
@@ -347,6 +348,14 @@ void QmlStructureTests::languageSelectionUsesBackendOptionsAndStartupInstallsBef
     const auto engineIndex = mainSource.indexOf(QStringLiteral("QQmlApplicationEngine engine"));
     QVERIFY(installIndex >= 0);
     QVERIFY(engineIndex > installIndex);
+}
+
+void QmlStructureTests::preferredTitleSelectionUsesBackendOptions() {
+    const QString settingsSource = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    QVERIFY(settingsSource.contains(QStringLiteral("model: controller.preferredTitleOptions")));
+    QVERIFY(settingsSource.contains(QStringLiteral("controller.preferredTitleKey")));
+    QVERIFY(settingsSource.contains(QStringLiteral("controller.SetPreferredTitle")));
+    QVERIFY(!settingsSource.contains(QStringLiteral("model: [\"romaji\", \"english\", \"native\"]")));
 }
 
 void QmlStructureTests::coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads() {

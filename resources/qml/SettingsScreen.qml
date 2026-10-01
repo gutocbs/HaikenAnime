@@ -680,6 +680,16 @@ Item {
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.coverQualityKey)
                         onActivated: controller.SetCoverQuality(model[index].key)
                     }
+
+                    SettingsComboBox {
+                        Layout.fillWidth: true
+                        Layout.preferredWidth: 1
+                        caption: qsTr("TÍTULO PREFERIDO")
+                        model: controller.preferredTitleOptions
+                        textRole: "label"
+                        currentIndex: settingsScreen.optionIndex(model, "key", controller.preferredTitleKey)
+                        onActivated: controller.SetPreferredTitle(model[index].key)
+                    }
                     SettingsComboBox {
                         Layout.fillWidth: true
                         Layout.preferredWidth: 1

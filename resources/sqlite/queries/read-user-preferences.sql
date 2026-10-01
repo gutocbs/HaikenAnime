@@ -8,6 +8,7 @@ SELECT score_minimum,
        scan_extensions,
        home_sort_key,
        card_status_presentation,
-       language_key
+       language_key,
+       preferred_title_key
 FROM user_preferences
 WHERE id = 1

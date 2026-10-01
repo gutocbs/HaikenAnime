@@ -475,7 +475,7 @@
     <name>SettingsController</name>
     <message>
         <location filename="../src/presentation/settings/SettingsController.cpp" line="25"/>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="133"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="135"/>
         <source>Nenhuma varredura iniciada.</source>
         <translation>Nenhuma varredura iniciada.</translation>
     </message>
@@ -522,131 +522,151 @@
         <translation>Não foi possível iniciar a varredura. O serviço pode estar ocupado ou encerrando.</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="152"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="155"/>
         <source>Média</source>
         <translation>Média</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="153"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="156"/>
         <source>Grande</source>
         <translation>Grande</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="154"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="157"/>
         <source>Extra grande</source>
         <translation>Extra grande</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="158"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="161"/>
         <source>0–10 · intervalo 1</source>
         <translation>0–10 · intervalo 1</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="159"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="162"/>
         <source>0–100 · intervalo 1</source>
         <translation>0–100 · intervalo 1</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="160"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="163"/>
         <source>0–100 · intervalo 5</source>
         <translation>0–100 · intervalo 5</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="164"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="167"/>
         <source>15 minutos</source>
         <translation>15 minutos</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="164"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="167"/>
         <source>30 minutos</source>
         <translation>30 minutos</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="165"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="168"/>
         <source>1 hora</source>
         <translation>1 hora</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="165"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="168"/>
         <source>3 horas</source>
         <translation>3 horas</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="166"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="169"/>
         <source>6 horas</source>
         <translation>6 horas</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="166"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="169"/>
         <source>12 horas</source>
         <translation>12 horas</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="167"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="170"/>
         <source>24 horas</source>
         <translation>24 horas</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="171"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="174"/>
         <source>Status da minha lista</source>
         <translation>Status da minha lista</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="172"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="175"/>
         <source>Status de exibição</source>
         <translation>Status de exibição</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="176"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="179"/>
         <source>Português (Brasil)</source>
         <translation>Português (Brasil)</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="177"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="180"/>
         <source>English</source>
         <translation>English</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="183"/>
-        <source>Reinicie o aplicativo para aplicar o idioma selecionado.</source>
-        <translation>Reinicie o aplicativo para aplicar o idioma selecionado.</translation>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="184"/>
+        <source>Romaji</source>
+        <translation>Romaji</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="230"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="185"/>
+        <source>Inglês</source>
+        <translation>Inglês</translation>
+    </message>
+    <message>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="186"/>
+        <source>Nativo</source>
+        <translation>Nativo</translation>
+    </message>
+    <message>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="192"/>
+        <source>Reinicie o aplicativo para aplicar as preferências de aparência selecionadas.</source>
+        <translation>Reinicie o aplicativo para aplicar as preferências de aparência selecionadas.</translation>
+    </message>
+    <message>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="246"/>
         <source>Revise os valores informados.</source>
         <translation>Revise os valores informados.</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="231"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="247"/>
         <source>As configurações não estão disponíveis.</source>
         <translation>As configurações não estão disponíveis.</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="239"/>
-        <location filename="../tests/unit/TranslationLoaderTests.cpp" line="22"/>
-        <location filename="../tests/unit/TranslationLoaderTests.cpp" line="31"/>
-        <location filename="../tests/unit/TranslationLoaderTests.cpp" line="40"/>
-        <location filename="../tests/unit/TranslationLoaderTests.cpp" line="50"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="255"/>
+        <location filename="../tests/unit/TranslationLoaderTests.cpp" line="27"/>
+        <location filename="../tests/unit/TranslationLoaderTests.cpp" line="36"/>
+        <location filename="../tests/unit/TranslationLoaderTests.cpp" line="62"/>
+        <location filename="../tests/unit/TranslationLoaderTests.cpp" line="72"/>
         <source>Alterações salvas.</source>
         <translation>Alterações salvas.</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="260"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="279"/>
         <source>Qualidade de capa inválida.</source>
         <translation>Qualidade de capa inválida.</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="261"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="280"/>
         <source>Apresentação de status inválida.</source>
         <translation>Apresentação de status inválida.</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="262"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="281"/>
         <source>Idioma inválido.</source>
         <translation>Idioma inválido.</translation>
     </message>
     <message>
-        <location filename="../src/presentation/settings/SettingsController.cpp" line="263"/>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="282"/>
+        <source>Título preferido inválido.</source>
+        <translation>Título preferido inválido.</translation>
+    </message>
+    <message>
+        <location filename="../src/presentation/settings/SettingsController.cpp" line="283"/>
         <source>Extensão de arquivo inválida.</source>
         <translation>Extensão de arquivo inválida.</translation>
     </message>
@@ -1088,42 +1108,47 @@
         <translation>QUALIDADE DAS CAPAS</translation>
     </message>
     <message>
-        <location filename="../resources/qml/SettingsScreen.qml" line="686"/>
+        <location filename="../resources/qml/SettingsScreen.qml" line="687"/>
+        <source>TÍTULO PREFERIDO</source>
+        <translation>TÍTULO PREFERIDO</translation>
+    </message>
+    <message>
+        <location filename="../resources/qml/SettingsScreen.qml" line="696"/>
         <source>STATUS NOS CARTÕES</source>
         <translation>STATUS NOS CARTÕES</translation>
     </message>
     <message>
-        <location filename="../resources/qml/SettingsScreen.qml" line="710"/>
+        <location filename="../resources/qml/SettingsScreen.qml" line="720"/>
         <source>Histórico local</source>
         <translation>Histórico local</translation>
     </message>
     <message>
-        <location filename="../resources/qml/SettingsScreen.qml" line="711"/>
+        <location filename="../resources/qml/SettingsScreen.qml" line="721"/>
         <source>Quando o histórico estiver conectado, atividades de reprodução, reconhecimento e sincronização aparecerão aqui.</source>
         <translation>Quando o histórico estiver conectado, atividades de reprodução, reconhecimento e sincronização aparecerão aqui.</translation>
     </message>
     <message>
-        <location filename="../resources/qml/SettingsScreen.qml" line="715"/>
+        <location filename="../resources/qml/SettingsScreen.qml" line="725"/>
         <source>Nenhuma atividade disponível</source>
         <translation>Nenhuma atividade disponível</translation>
     </message>
     <message>
-        <location filename="../resources/qml/SettingsScreen.qml" line="716"/>
+        <location filename="../resources/qml/SettingsScreen.qml" line="726"/>
         <source>O histórico será preenchido em uma etapa posterior.</source>
         <translation>O histórico será preenchido em uma etapa posterior.</translation>
     </message>
     <message>
-        <location filename="../resources/qml/SettingsScreen.qml" line="725"/>
+        <location filename="../resources/qml/SettingsScreen.qml" line="735"/>
         <source>Selecionar pasta da biblioteca</source>
         <translation>Selecionar pasta da biblioteca</translation>
     </message>
     <message>
-        <location filename="../resources/qml/SettingsScreen.qml" line="740"/>
+        <location filename="../resources/qml/SettingsScreen.qml" line="750"/>
         <source>Descartar alterações?</source>
         <translation>Descartar alterações?</translation>
     </message>
     <message>
-        <location filename="../resources/qml/SettingsScreen.qml" line="748"/>
+        <location filename="../resources/qml/SettingsScreen.qml" line="758"/>
         <source>Existem configurações alteradas que ainda não foram salvas.</source>
         <translation>Existem configurações alteradas que ainda não foram salvas.</translation>
     </message>
