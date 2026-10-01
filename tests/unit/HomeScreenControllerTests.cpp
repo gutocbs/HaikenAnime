@@ -721,8 +721,9 @@ void HomeScreenControllerTests::exposesControllerApprovedDeduplicatedMediaLinks(
     media.Type = MediaType::Anime;
     media.AniListUrl = QStringLiteral("https://anilist.co/anime/42");
     media.ExternalLinks = {
+        {QStringLiteral("anilist"), QStringLiteral("https://anilist.co/anime/42")},
         {QStringLiteral("Crunchyroll"), QStringLiteral("https://www.crunchyroll.com/series/42")},
-        {QStringLiteral("Netflix"), QStringLiteral("https://www.netflix.com/title/42")}
+        {QStringLiteral("crunchyroll"), QStringLiteral("https://www.crunchyroll.com/series/42")}
     };
     reader.result.append(media);
     HomeScreenController controller(reader);
@@ -730,10 +731,11 @@ void HomeScreenControllerTests::exposesControllerApprovedDeduplicatedMediaLinks(
     controller.SelectMedia(media.Id);
 
     const QVariantList links = controller.selectedMediaLinks();
-    QCOMPARE(links.size(), 3);
+    QCOMPARE(links.size(), 2);
+    QCOMPARE(links.at(0).toMap().value(QStringLiteral("site")).toString(), QStringLiteral("AniList"));
     QCOMPARE(links.at(0).toMap().value(QStringLiteral("url")).toString(), media.AniListUrl);
-    QCOMPARE(links.at(1).toMap().value(QStringLiteral("url")).toString(), media.ExternalLinks.at(0).Url);
-    QCOMPARE(links.at(2).toMap().value(QStringLiteral("url")).toString(), media.ExternalLinks.at(1).Url);
+    QCOMPARE(links.at(1).toMap().value(QStringLiteral("site")).toString(), QStringLiteral("Crunchyroll"));
+    QCOMPARE(links.at(1).toMap().value(QStringLiteral("url")).toString(), media.ExternalLinks.at(1).Url);
 }
 
 void HomeScreenControllerTests::exposesConfigurableEditingOptions() {

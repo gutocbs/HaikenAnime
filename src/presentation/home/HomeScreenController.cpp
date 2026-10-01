@@ -3,6 +3,7 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QSet>
 #include <QTimeZone>
 #include <QVariant>
 #include <QUrl>
@@ -425,11 +426,17 @@ QVariantList HomeScreenController::selectedMediaLinks() const {
     if (!hasSelection_) return {};
 
     QVariantList links;
-    if (!selectedMedia_.AniListUrl.isEmpty()) {
-        links.append(mediaLink(QStringLiteral("AniList"), selectedMedia_.AniListUrl));
-    }
+    QSet<QString> seen;
+    const auto appendLink = [&links, &seen](const QString &site, const QString &url) {
+        const QString key = site.toCaseFolded() + u'\n' + url;
+        if (site.isEmpty() || url.isEmpty() || seen.contains(key)) return;
+        seen.insert(key);
+        links.append(mediaLink(site, url));
+    };
+
+    appendLink(QStringLiteral("AniList"), selectedMedia_.AniListUrl);
     for (const auto &link : selectedMedia_.ExternalLinks) {
-        links.append(mediaLink(link.Site, link.Url));
+        appendLink(link.Site, link.Url);
     }
     return links;
 }

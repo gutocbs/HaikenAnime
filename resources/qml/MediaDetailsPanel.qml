@@ -181,6 +181,7 @@ Popup {
                     }
 
                     TextEdit {
+                        id: fullSynopsisText
                         visible: controller.selectedSynopsis.length > 0
                         Layout.fillWidth: true
                         Layout.preferredHeight: contentHeight
@@ -215,6 +216,7 @@ Popup {
                         model: controller.selectedMediaLinks
 
                         delegate: Button {
+                            id: externalLinkButton
                             required property var modelData
                             Layout.fillWidth: true
                             text: modelData.site
