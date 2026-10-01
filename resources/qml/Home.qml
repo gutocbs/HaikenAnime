@@ -439,20 +439,35 @@ Item {
                             }
                         }
 
-                        Text {
-                            id: selectedSynopsisText
+                        Item {
                             Layout.fillWidth: true
                             Layout.fillHeight: true
-                            text: controller.selectedSynopsis.length > 0
-                                  ? controller.selectedSynopsis
-                                  : qsTr("Sinopse não disponível.")
-                            color: muted
-                            font.pixelSize: 12
-                            selectByMouse: true
-                            wrapMode: Text.Wrap
-                            verticalAlignment: Text.AlignTop
-                            elide: Text.ElideRight
-                            Accessible.name: qsTr("Sinopse da mídia selecionada")
+
+                            TextEdit {
+                                id: selectedSynopsisText
+                                anchors.fill: parent
+                                text: controller.selectedSynopsis.length > 0
+                                      ? controller.selectedSynopsis
+                                      : qsTr("Sinopse não disponível.")
+                                color: muted
+                                font.pixelSize: 12
+                                readOnly: true
+                                selectByMouse: true
+                                wrapMode: TextEdit.Wrap
+                                verticalAlignment: TextEdit.AlignTop
+                                clip: true
+                                Accessible.name: qsTr("Sinopse da mídia selecionada")
+                            }
+
+                            Text {
+                                id: selectedSynopsisOverflowIndicator
+                                anchors.right: parent.right
+                                anchors.bottom: parent.bottom
+                                color: muted
+                                enabled: false
+                                text: "…"
+                                visible: selectedSynopsisText.contentHeight > selectedSynopsisText.height
+                            }
                         }
                     }
 
