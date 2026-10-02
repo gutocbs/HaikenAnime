@@ -1,0 +1,41 @@
+query ($id: Int, $perPage: Int) {
+        Page (page: variablePage, perPage: $perPage) {
+                mediaList(userName: variableUsername, id: $id, sort: MEDIA_ID) {
+			status
+			score
+			progress
+			media{
+				format
+				averageScore
+				id
+				title{
+					romaji
+					english
+				}
+				synonyms
+				description
+				status
+				coverImage{
+					large
+				}
+				season
+				startDate {
+					year
+					month
+				}
+				chapters
+				volumes
+				episodes
+				nextAiringEpisode{
+					airingAt
+					episode
+				}
+				siteUrl
+				streamingEpisodes{
+					site
+					url
+				}
+			} 		
+		} 	  	
+	}  
+}

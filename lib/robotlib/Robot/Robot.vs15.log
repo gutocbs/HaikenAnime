@@ -1,0 +1,21 @@
+﻿  Bounds.cc
+  Clipboard.cc
+  Color.cc
+  Hash.cc
+  Image.cc
+  Keyboard.cc
+  Memory.cc
+  Module.cc
+  Mouse.cc
+  Point.cc
+  Process.cc
+  Range.cc
+  Screen.cc
+  Size.cc
+  Timer.cc
+  Window.cc
+     Creating library C:\Users\Guto\Desktop\robot-2.0.0\\Binaries\Win32\Robot.lib and object C:\Users\Guto\Desktop\robot-2.0.0\\Binaries\Win32\Robot.exp
+  Generating code
+  All 3507 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  Robot.vs15.vcxproj -> C:\Users\Guto\Desktop\robot-2.0.0\\Binaries\Win32\Robot.dll

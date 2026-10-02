@@ -1,0 +1,5 @@
+query{ 
+        MediaList(mediaId: variableID, userName: variableUsername){
+		id 
+	}
+}

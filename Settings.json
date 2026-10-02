@@ -1,0 +1,52 @@
+{
+  "anilist": {
+    "endpoint": "https://graphql.anilist.co",
+    "mediaQueryFile": "resources/anilist/queries/media-page.graphql"
+  },
+  "http": {
+    "timeoutMs": 30000,
+    "maxRetries": 2,
+    "retryDelayMs": 1000
+  },
+  "seasonalCatalog": {
+    "cacheTtlMs": 300000,
+    "maxCacheEntries": 24,
+    "minimumRequestIntervalMs": 1000
+  },
+  "covers": {
+    "quality": "medium",
+    "maxConcurrentDownloads": 3,
+    "timeoutMs": 30000,
+    "maxRetries": 2,
+    "retryDelayMs": 1000,
+    "maxResponseBytes": 5242880,
+    "minDimension": 32,
+    "maxDimension": 4096,
+    "failureCooldownMs": 300000
+  },
+  "sync": {
+    "timeoutMs": 60000,
+    "intervalMs": 3600000
+  },
+  "logging": {
+    "retentionDays": 7
+  },
+  "userPreferences": {
+    "library": {
+      "root": "Q:\\",
+      "extensions": [".mkv", ".mp4", ".avi", ".webm", ".m4v", ".mov", ".wmv", ".ts"]
+    },
+    "score": {
+      "minimum": 0,
+      "maximum": 10,
+      "step": 1
+    },
+    "covers": {
+      "quality": "medium"
+    },
+    "sync": {
+      "enabled": true,
+      "intervalMs": 3600000
+    }
+  }
+}
