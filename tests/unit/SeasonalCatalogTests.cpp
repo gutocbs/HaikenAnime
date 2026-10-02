@@ -116,6 +116,7 @@ private slots:
     void coordinatorCacheKeyDistinguishesAdultPolicyAndPage();
     void coordinatorExpiresAndEvictsCachedPages();
     void coordinatorExpiresCachedPagesFromTheirFetchTime();
+    void coordinatorExpiresCachedPagesAtExactTtl();
     void coordinatorCoalescesRapidSelectionsAndSuppressesDuplicateInFlightPage();
     void coordinatorKeepsActiveResultWhenRapidSelectionReturnsToItsIdentity();
     void coordinatorEnforcesDeterministicMinimumRequestInterval();
@@ -318,6 +319,24 @@ void SeasonalCatalogTests::coordinatorExpiresCachedPagesFromTheirFetchTime() {
     coordinator.SetYear(2027);
     coordinator.SetYear(2026);
     now = 11;
+    coordinator.SetYear(2027);
+    coordinator.SetYear(2026);
+
+    QCOMPARE(source.requests.size(), 3);
+}
+
+void SeasonalCatalogTests::coordinatorExpiresCachedPagesAtExactTtl() {
+    RecordingSource source;
+    source.pages.insert(1, page(1, 1, false, {12}));
+    SeasonalCatalogCachePolicy policy;
+    policy.timeToLiveMs = 10;
+    policy.minimumRequestIntervalMs = 0;
+    qint64 now = 0;
+    SeasonalCatalogCoordinator coordinator(source, 50, nullptr, policy, [&] { return now; });
+
+    coordinator.SetSeason(QStringLiteral("FALL"));
+    coordinator.SetYear(2026);
+    now = 10;
     coordinator.SetYear(2027);
     coordinator.SetYear(2026);
 

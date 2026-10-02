@@ -60,7 +60,9 @@ QVariant SeasonalCatalogMediaModel::data(const QModelIndex &index, const int rol
     case TitleRole: return ResolveMediaTitle(media, preferredTitleKey_);
     case StatusLabelRole: return mediaStatusLabel(media.Status);
     case ProgressRole: return PresentMediaSeason(media);
-    case ScoreRole: return media.AverageScore > 0 ? QStringLiteral("AniList %1").arg(media.AverageScore) : QStringLiteral("AniList —");
+    case ScoreRole:
+        return QCoreApplication::translate("SeasonalCatalogController", "Nota AniList: %1")
+            .arg(media.AverageScore > 0 ? QString::number(media.AverageScore) : QStringLiteral("—"));
     case CoverSourceRole: return ResolveCoverSource(media, coverQuality_);
     default: return {};
     }

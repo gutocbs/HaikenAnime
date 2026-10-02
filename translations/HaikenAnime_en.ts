@@ -35,6 +35,14 @@
     </message>
 </context>
 <context>
+    <name>SeasonalCatalogController</name>
+    <message>
+        <location filename="../src/presentation/seasonal/SeasonalCatalogController.cpp" line="65"/>
+        <source>Nota AniList: %1</source>
+        <translation>AniList score: %1</translation>
+    </message>
+</context>
+<context>
     <name>CoverPreview</name>
     <message>
         <location filename="../resources/qml/CoverPreview.qml" line="61"/>

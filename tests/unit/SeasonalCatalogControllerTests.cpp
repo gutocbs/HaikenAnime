@@ -53,6 +53,7 @@ private slots:
     void doesNotRequestUntilBothFiltersAreExplicitlySelected();
     void exposesBackendOwnedStableFilterOptionsWithoutDefaults();
     void exposesResultsSelectionAndPagingCommands();
+    void exposesExplicitAniListScoreLabel();
     void retainsResultsAndSuppressesDuplicateLoadsWhileAppending();
     void adultPolicyChangeReloadsActiveFiltersWithoutMixingPriorResults();
     void exposesHomeCompatibleDetailsPresentation();
@@ -109,6 +110,22 @@ void SeasonalCatalogControllerTests::exposesResultsSelectionAndPagingCommands() 
     controller.LoadNextPage();
     QCOMPARE(source.requests.size(), 2);
     QCOMPARE(controller.mediaModel()->rowCount(), 2);
+}
+
+void SeasonalCatalogControllerTests::exposesExplicitAniListScoreLabel() {
+    RecordingSource source;
+    auto item = media(7);
+    item.AverageScore = 72;
+    source.responses.insert(1, page(1, {item}));
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator);
+
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+
+    QCOMPARE(controller.mediaModel()->data(controller.mediaModel()->index(0, 0),
+                                           SeasonalCatalogMediaModel::ScoreRole),
+             QStringLiteral("Nota AniList: 72"));
 }
 
 void SeasonalCatalogControllerTests::retainsResultsAndSuppressesDuplicateLoadsWhileAppending() {

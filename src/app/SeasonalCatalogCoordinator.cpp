@@ -201,7 +201,7 @@ void SeasonalCatalogCoordinator::discardExpiredCacheEntries() {
     const auto now = clock_();
     for (qsizetype index = cache_.size() - 1; index >= 0; --index) {
         const auto age = qMax<qint64>(0, now - cache_.at(index).cachedAtMs);
-        if (age > cachePolicy_.timeToLiveMs) cache_.removeAt(index);
+        if (age >= cachePolicy_.timeToLiveMs) cache_.removeAt(index);
     }
 }
 
