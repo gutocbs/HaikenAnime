@@ -1,5 +1,0 @@
-mutation{     
-        DeleteMediaListEntry (id: variableID) {
-		deleted     
-	} 	
-}

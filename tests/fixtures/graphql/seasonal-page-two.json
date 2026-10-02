@@ -1,8 +1,0 @@
-{
-  "data": {
-    "Page": {
-      "pageInfo": {"currentPage": 2, "lastPage": 2, "hasNextPage": false},
-      "media": [{"id": 44, "type": "ANIME", "format": "TV", "title": {"romaji": "Duplicate fixture"}}, {"id": 45, "type": "ANIME", "format": "TV", "title": {"romaji": "Second fixture"}}]
-    }
-  }
-}
