@@ -2,12 +2,17 @@
 #define HAIKENANIME_SEASONALCATALOGCOORDINATOR_H
 
 #include <QObject>
+#include <QList>
 #include <QVariantList>
+
+#include <functional>
+#include <optional>
 
 #include "../application/catalog/SeasonalCatalogTypes.h"
 #include "../application/media/MediaPage.h"
 
 class ISeasonalCatalogDataSource;
+class AsyncLogger;
 
 /** Coordinates explicit seasonal requests, page bounds, and result generations. */
 class SeasonalCatalogCoordinator final : public QObject {
@@ -15,7 +20,12 @@ class SeasonalCatalogCoordinator final : public QObject {
 public:
     explicit SeasonalCatalogCoordinator(ISeasonalCatalogDataSource &dataSource,
                                         int perPage = kSeasonalCatalogMaximumPageSize,
-                                        QObject *parent = nullptr);
+                                        QObject *parent = nullptr,
+                                        SeasonalCatalogCachePolicy cachePolicy = {},
+                                        std::function<qint64()> clock = {},
+                                        std::function<void(qint64)> delay = {});
+
+    void setLogger(AsyncLogger *logger);
 
     void SetYear(int year);
     void SetSeason(QString seasonKey);
@@ -38,9 +48,26 @@ signals:
     void changed();
 
 private:
+    struct CachedPage final {
+        SeasonalCatalogRequest request;
+        MediaPage response;
+        qint64 cachedAtMs = 0;
+    };
+
+    struct PendingFetch final {
+        SeasonalCatalogRequest request;
+        bool append = false;
+    };
+
     void startFirstPageIfReady();
     void fetchPage(int page, bool append);
     void resetResult();
+    [[nodiscard]] bool readCachedPage(const SeasonalCatalogRequest &request, MediaPage &response);
+    void cachePage(const SeasonalCatalogRequest &request, const MediaPage &response);
+    void removeCachedPage(const SeasonalCatalogRequest &request);
+    void discardExpiredCacheEntries();
+    void enforceMinimumRequestInterval();
+    void startPendingFetchIfCurrent();
 
     ISeasonalCatalogDataSource &dataSource_;
     int year_ = 0;
@@ -56,6 +83,15 @@ private:
     QVariantList availableYearOptions_ = DefaultSeasonalCatalogYearOptions();
     QVariantList availableSeasonOptions_ = DefaultSeasonalCatalogSeasonOptions();
     quint64 generation_ = 0;
+    SeasonalCatalogCachePolicy cachePolicy_;
+    std::function<qint64()> clock_;
+    std::function<void(qint64)> delay_;
+    QList<CachedPage> cache_;
+    std::optional<qint64> lastNetworkRequestAtMs_;
+    bool requestInFlight_ = false;
+    SeasonalCatalogRequest inFlightRequest_;
+    std::optional<PendingFetch> pendingFetch_;
+    AsyncLogger *logger_ = nullptr;
 };
 
 #endif // HAIKENANIME_SEASONALCATALOGCOORDINATOR_H

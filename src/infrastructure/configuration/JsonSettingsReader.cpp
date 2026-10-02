@@ -43,6 +43,26 @@ bool readDouble(const QJsonObject &object, const QString &key, const double defa
     result = value.toDouble();
     return true;
 }
+
+void readPositivePolicyInteger(const QJsonObject &object, const QString &key, const qint64 defaultValue,
+                               qint64 &result) {
+    result = defaultValue;
+    const auto value = object.value(key);
+    if (!value.isDouble()) return;
+    const auto number = value.toDouble();
+    if (std::trunc(number) != number || number <= 0 || number > std::numeric_limits<qint64>::max()) return;
+    result = static_cast<qint64>(number);
+}
+
+void readPositivePolicyInteger(const QJsonObject &object, const QString &key, const int defaultValue,
+                               int &result) {
+    result = defaultValue;
+    const auto value = object.value(key);
+    if (!value.isDouble()) return;
+    const auto number = value.toDouble();
+    if (std::trunc(number) != number || number <= 0 || number > std::numeric_limits<int>::max()) return;
+    result = static_cast<int>(number);
+}
 }
 
 JsonSettingsReader::JsonSettingsReader(QString filePath)
@@ -78,6 +98,7 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
     const auto sync = root.value(QStringLiteral("sync")).toObject();
     const auto logging = root.value(QStringLiteral("logging")).toObject();
     const auto covers = root.value(QStringLiteral("covers")).toObject();
+    const auto seasonalCatalog = root.value(QStringLiteral("seasonalCatalog")).toObject();
     const auto userPreferencesValue = root.value(QStringLiteral("userPreferences"));
     if (!userPreferencesValue.isUndefined() && !userPreferencesValue.isObject()) {
         error = QStringLiteral("Settings.json userPreferences must be an object.");
@@ -161,6 +182,15 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
         }
         settings.userPreferences.synchronizationEnabled = syncEnabled.toBool();
     }
+    readPositivePolicyInteger(seasonalCatalog, QStringLiteral("cacheTtlMs"),
+                              SeasonalCatalogCachePolicy{}.timeToLiveMs,
+                              settings.seasonalCatalogCachePolicy.timeToLiveMs);
+    readPositivePolicyInteger(seasonalCatalog, QStringLiteral("maxCacheEntries"),
+                              SeasonalCatalogCachePolicy{}.maximumEntries,
+                              settings.seasonalCatalogCachePolicy.maximumEntries);
+    readPositivePolicyInteger(seasonalCatalog, QStringLiteral("minimumRequestIntervalMs"),
+                              SeasonalCatalogCachePolicy{}.minimumRequestIntervalMs,
+                              settings.seasonalCatalogCachePolicy.minimumRequestIntervalMs);
     if (!readInteger(http, QStringLiteral("timeoutMs"), 30000, settings.http.timeoutMs)
         || !readInteger(http, QStringLiteral("maxRetries"), 2, settings.http.maxRetries)
         || !readInteger(http, QStringLiteral("retryDelayMs"), 1000,

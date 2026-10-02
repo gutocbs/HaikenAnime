@@ -285,7 +285,9 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     context.seasonalCatalogDataSource = std::make_unique<GraphQlSeasonalCatalogDataSource>(
         *context.seasonalGraphQlClient, *context.seasonalQueryStore);
     context.seasonalCatalogCoordinator = std::make_unique<SeasonalCatalogCoordinator>(
-        *context.seasonalCatalogDataSource);
+        *context.seasonalCatalogDataSource, kSeasonalCatalogMaximumPageSize, nullptr,
+        settings.seasonalCatalogCachePolicy);
+    context.seasonalCatalogCoordinator->setLogger(context.logger.get());
     context.logger->info(LogCategory::Application, QStringLiteral("Application composition completed."));
     return context;
 }

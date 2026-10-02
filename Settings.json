@@ -8,6 +8,11 @@
     "maxRetries": 2,
     "retryDelayMs": 1000
   },
+  "seasonalCatalog": {
+    "cacheTtlMs": 300000,
+    "maxCacheEntries": 24,
+    "minimumRequestIntervalMs": 1000
+  },
   "covers": {
     "quality": "medium",
     "maxConcurrentDownloads": 3,

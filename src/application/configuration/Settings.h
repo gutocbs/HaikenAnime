@@ -5,6 +5,7 @@
 #include "HttpSettings.h"
 #include "UserPreferences.h"
 #include "../covers/CoverSettings.h"
+#include "../catalog/SeasonalCatalogTypes.h"
 
 /** Groups application settings without exposing their file format to consumers. */
 struct Settings {
@@ -12,6 +13,7 @@ struct Settings {
     HttpSettings http;
     CoverSettings covers;
     UserPreferences userPreferences;
+    SeasonalCatalogCachePolicy seasonalCatalogCachePolicy;
     int syncTimeoutMs = 60000;
     int syncIntervalMs = 3600000;
     int logRetentionDays = 7;

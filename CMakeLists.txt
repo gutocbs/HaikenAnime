@@ -710,6 +710,8 @@ add_executable(SeasonalCatalogTests
         src/infrastructure/anilist/AniListMediaMapper.cpp
         src/infrastructure/anilist/GraphQlQueryStore.h
         src/infrastructure/anilist/GraphQlQueryStore.cpp
+        src/infrastructure/logging/AsyncLogger.h
+        src/infrastructure/logging/AsyncLogger.cpp
 )
 target_include_directories(SeasonalCatalogTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(SeasonalCatalogTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Test)
@@ -729,6 +731,8 @@ add_executable(SeasonalCatalogControllerTests
         src/application/covers/CoverSourceResolver.cpp
         src/application/media/MediaTitleResolver.cpp
         src/application/media/MediaDetailsPresentation.cpp
+        src/infrastructure/logging/AsyncLogger.h
+        src/infrastructure/logging/AsyncLogger.cpp
 )
 target_include_directories(SeasonalCatalogControllerTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(SeasonalCatalogControllerTests PRIVATE Qt6::Core Qt6::Test)

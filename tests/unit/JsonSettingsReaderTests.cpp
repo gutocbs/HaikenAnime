@@ -11,6 +11,9 @@ class JsonSettingsReaderTests : public QObject {
 
 private slots:
     void readsValidConfiguration();
+    void readsSeasonalCatalogCachePolicy();
+    void usesIndependentSafeDefaultsForInvalidSeasonalCatalogPolicyFields();
+    void usesSeasonalCatalogPolicyDefaultsWhenSectionIsMalformed();
     void usesSafeUserPreferenceDefaultsWhenObjectIsMissing();
     void rejectsWrongUserPreferenceTypes();
     void rejectsWrongUserPreferenceSectionTypes();
@@ -68,6 +71,74 @@ void JsonSettingsReaderTests::readsValidConfiguration() {
     QCOMPARE(settings.userPreferences.synchronizationEnabled, false);
     QCOMPARE(settings.userPreferences.synchronizationIntervalMs, 1800000);
     QVERIFY(error.isEmpty());
+}
+
+void JsonSettingsReaderTests::readsSeasonalCatalogCachePolicy() {
+    QTemporaryDir temporaryDirectory;
+    const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    file.write(R"({
+        "anilist": {"endpoint": "https://graphql.anilist.co", "mediaQueryFile": "query.graphql"},
+        "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100},
+        "seasonalCatalog": {"cacheTtlMs": 120000, "maxCacheEntries": 12, "minimumRequestIntervalMs": 750}
+    })");
+    file.close();
+    JsonSettingsReader reader(path);
+    Settings settings;
+    QString error;
+
+    QVERIFY2(reader.read(settings, error), qPrintable(error));
+    QCOMPARE(settings.seasonalCatalogCachePolicy.timeToLiveMs, 120000);
+    QCOMPARE(settings.seasonalCatalogCachePolicy.maximumEntries, 12);
+    QCOMPARE(settings.seasonalCatalogCachePolicy.minimumRequestIntervalMs, 750);
+}
+
+void JsonSettingsReaderTests::usesIndependentSafeDefaultsForInvalidSeasonalCatalogPolicyFields() {
+    QTemporaryDir temporaryDirectory;
+    const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    file.write(R"({
+        "anilist": {"endpoint": "https://graphql.anilist.co", "mediaQueryFile": "query.graphql"},
+        "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100},
+        "seasonalCatalog": {"cacheTtlMs": 9000, "maxCacheEntries": -1, "minimumRequestIntervalMs": "fast"}
+    })");
+    file.close();
+    JsonSettingsReader reader(path);
+    Settings settings;
+    QString error;
+
+    QVERIFY2(reader.read(settings, error), qPrintable(error));
+    QCOMPARE(settings.seasonalCatalogCachePolicy.timeToLiveMs, 9000);
+    QCOMPARE(settings.seasonalCatalogCachePolicy.maximumEntries,
+             SeasonalCatalogCachePolicy{}.maximumEntries);
+    QCOMPARE(settings.seasonalCatalogCachePolicy.minimumRequestIntervalMs,
+             SeasonalCatalogCachePolicy{}.minimumRequestIntervalMs);
+}
+
+void JsonSettingsReaderTests::usesSeasonalCatalogPolicyDefaultsWhenSectionIsMalformed() {
+    QTemporaryDir temporaryDirectory;
+    const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    file.write(R"({
+        "anilist": {"endpoint": "https://graphql.anilist.co", "mediaQueryFile": "query.graphql"},
+        "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100},
+        "seasonalCatalog": "not-an-object"
+    })");
+    file.close();
+    JsonSettingsReader reader(path);
+    Settings settings;
+    QString error;
+
+    QVERIFY2(reader.read(settings, error), qPrintable(error));
+    QCOMPARE(settings.seasonalCatalogCachePolicy.timeToLiveMs,
+             SeasonalCatalogCachePolicy{}.timeToLiveMs);
+    QCOMPARE(settings.seasonalCatalogCachePolicy.maximumEntries,
+             SeasonalCatalogCachePolicy{}.maximumEntries);
+    QCOMPARE(settings.seasonalCatalogCachePolicy.minimumRequestIntervalMs,
+             SeasonalCatalogCachePolicy{}.minimumRequestIntervalMs);
 }
 
 void JsonSettingsReaderTests::usesSafeUserPreferenceDefaultsWhenObjectIsMissing() {
