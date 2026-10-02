@@ -60,6 +60,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/media/MediaTitleResolver.cpp
         src/application/media/MediaDetailsPresentation.h
         src/application/media/MediaDetailsPresentation.cpp
+        src/application/media/SeasonalPersonalListService.h
+        src/application/media/SeasonalPersonalListService.cpp
         src/application/catalog/SeasonalCatalogTypes.h
         src/application/catalog/ISeasonalCatalogDataSource.h
         src/domain/media/MediaType.h
@@ -731,6 +733,8 @@ add_executable(SeasonalCatalogControllerTests
         src/application/covers/CoverSourceResolver.cpp
         src/application/media/MediaTitleResolver.cpp
         src/application/media/MediaDetailsPresentation.cpp
+        src/application/media/SeasonalPersonalListService.h
+        src/application/media/SeasonalPersonalListService.cpp
         src/infrastructure/logging/AsyncLogger.h
         src/infrastructure/logging/AsyncLogger.cpp
 )

@@ -595,6 +595,7 @@ Item {
     EditMediaPanel {
         id: editMediaPanel
         controller: home.controller
+        listOptions: home.controller.availableListOptions
         ink: home.ink
         muted: home.muted
         line: home.line

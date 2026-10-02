@@ -2,6 +2,7 @@
 
 #include "../../src/app/SeasonalCatalogCoordinator.h"
 #include "../../src/application/catalog/ISeasonalCatalogDataSource.h"
+#include "../../src/application/media/SeasonalPersonalListService.h"
 #include "../../src/presentation/seasonal/SeasonalCatalogController.h"
 
 namespace {
@@ -44,6 +45,36 @@ public:
     QString failure;
     std::function<void(const SeasonalCatalogRequest &)> onFetch;
 };
+
+class InMemoryMediaRepository final : public IMediaReader, public IMediaWriter {
+public:
+    bool readAll(QList<Media> &result, QString &error) override {
+        result = media;
+        error.clear();
+        return true;
+    }
+
+    bool upsert(const QList<Media> &items, QString &error) override {
+        if (!failure.isEmpty()) {
+            error = failure;
+            return false;
+        }
+        for (const Media &item : items) {
+            const auto found = std::find_if(media.begin(), media.end(), [&item](const Media &existing) {
+                return existing.Id == item.Id;
+            });
+            if (found == media.end()) media.append(item);
+            else *found = item;
+        }
+        ++upsertCalls;
+        error.clear();
+        return true;
+    }
+
+    QList<Media> media;
+    QString failure;
+    int upsertCalls = 0;
+};
 }
 
 class SeasonalCatalogControllerTests final : public QObject {
@@ -58,6 +89,10 @@ private slots:
     void adultPolicyChangeReloadsActiveFiltersWithoutMixingPriorResults();
     void exposesHomeCompatibleDetailsPresentation();
     void exposesErrorAndRetriesTheCurrentSelection();
+    void blocksAnAbsentSelectionUntilOnePersonalStatusIsChosen();
+    void addsAbsentSelectionIdempotentlyAndKeepsCatalogMetadata();
+    void reusesAnExistingLocalEntryWithoutOverwritingUserFields();
+    void retainsTheDraftWhenLocalPersistenceFails();
 };
 
 void SeasonalCatalogControllerTests::doesNotRequestUntilBothFiltersAreExplicitlySelected() {
@@ -213,6 +248,110 @@ void SeasonalCatalogControllerTests::exposesErrorAndRetriesTheCurrentSelection()
 
     QCOMPARE(source.requests.size(), 2);
     QCOMPARE(controller.state(), QStringLiteral("populated"));
+}
+
+void SeasonalCatalogControllerTests::blocksAnAbsentSelectionUntilOnePersonalStatusIsChosen() {
+    RecordingSource source;
+    Media selected = media(7);
+    source.responses.insert(1, page(1, {selected}));
+    InMemoryMediaRepository repository;
+    SeasonalPersonalListService personalLists(&repository, &repository);
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
+                                         DefaultPreferredTitleKey(), nullptr, &personalLists);
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+    controller.SelectMedia(selected.Id);
+
+    QVERIFY(!controller.selectedMediaInPersonalList());
+    QVERIFY(!controller.availablePersonalListOptions().isEmpty());
+    QVERIFY(!controller.SaveSelectedToPersonalList(QString()));
+    QCOMPARE(repository.upsertCalls, 0);
+    QVERIFY(!controller.personalListErrorMessage().isEmpty());
+    QCOMPARE(controller.selectedMediaId(), selected.Id);
+}
+
+void SeasonalCatalogControllerTests::addsAbsentSelectionIdempotentlyAndKeepsCatalogMetadata() {
+    RecordingSource source;
+    Media selected = media(7, QStringLiteral("Romaji"));
+    selected.AniListUrl = QStringLiteral("https://anilist.co/anime/7");
+    selected.ExternalLinks = {{QStringLiteral("Official"), QStringLiteral("https://example.test/official")}};
+    source.responses.insert(1, page(1, {selected}));
+    InMemoryMediaRepository repository;
+    SeasonalPersonalListService personalLists(&repository, &repository);
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
+                                         DefaultPreferredTitleKey(), nullptr, &personalLists);
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+    controller.SelectMedia(selected.Id);
+
+    QVERIFY(controller.SaveSelectedToPersonalList(QStringLiteral("planning")));
+    QVERIFY(controller.selectedMediaInPersonalList());
+    QCOMPARE(repository.upsertCalls, 1);
+    QCOMPARE(repository.media.size(), 1);
+    QCOMPARE(repository.media.first().Name, selected.Name);
+    QCOMPARE(repository.media.first().EnglishName, selected.EnglishName);
+    QCOMPARE(repository.media.first().CoverLargeUrl, selected.CoverLargeUrl);
+    QCOMPARE(repository.media.first().Synopsis, selected.Synopsis);
+    QCOMPARE(repository.media.first().AniListUrl, selected.AniListUrl);
+    QCOMPARE(repository.media.first().ExternalLinks.first().Url, selected.ExternalLinks.first().Url);
+    QCOMPARE(repository.media.first().ListStatus, UserListStatus::Planning);
+
+    QVERIFY(controller.SaveSelectedToPersonalList(QStringLiteral("planning")));
+    QCOMPARE(repository.upsertCalls, 1);
+    QCOMPARE(repository.media.size(), 1);
+}
+
+void SeasonalCatalogControllerTests::reusesAnExistingLocalEntryWithoutOverwritingUserFields() {
+    RecordingSource source;
+    Media selected = media(7, QStringLiteral("Catalog title"));
+    source.responses.insert(1, page(1, {selected}));
+    InMemoryMediaRepository repository;
+    Media existing = selected;
+    existing.ConsumedChapters = 6;
+    existing.PersonalScore = 9;
+    existing.AlternativeNames = {QStringLiteral("My custom title")};
+    existing.ListStatus = UserListStatus::Current;
+    repository.media.append(existing);
+    SeasonalPersonalListService personalLists(&repository, &repository);
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
+                                         DefaultPreferredTitleKey(), nullptr, &personalLists);
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+    controller.SelectMedia(selected.Id);
+
+    QVERIFY(controller.selectedMediaInPersonalList());
+    QCOMPARE(controller.selectedProgressValue(), 6);
+    QCOMPARE(controller.selectedScoreValue(), 9.0);
+    QCOMPARE(controller.selectedAlternativeNames(), existing.AlternativeNames);
+    QCOMPARE(controller.selectedListStatusKey(), QStringLiteral("current"));
+    QVERIFY(controller.SaveSelectedToPersonalList(QStringLiteral("current")));
+    QCOMPARE(repository.upsertCalls, 0);
+    QCOMPARE(repository.media.first().ConsumedChapters, 6);
+    QCOMPARE(repository.media.first().PersonalScore, 9);
+    QCOMPARE(repository.media.first().AlternativeNames, existing.AlternativeNames);
+}
+
+void SeasonalCatalogControllerTests::retainsTheDraftWhenLocalPersistenceFails() {
+    RecordingSource source;
+    Media selected = media(7);
+    source.responses.insert(1, page(1, {selected}));
+    InMemoryMediaRepository repository;
+    repository.failure = QStringLiteral("disk full");
+    SeasonalPersonalListService personalLists(&repository, &repository);
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
+                                         DefaultPreferredTitleKey(), nullptr, &personalLists);
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+    controller.SelectMedia(selected.Id);
+
+    QVERIFY(!controller.SaveSelectedToPersonalList(QStringLiteral("planning")));
+    QCOMPARE(controller.selectedMediaId(), selected.Id);
+    QVERIFY(!controller.selectedMediaInPersonalList());
+    QCOMPARE(controller.personalListErrorMessage(), QStringLiteral("disk full"));
 }
 
 QTEST_GUILESS_MAIN(SeasonalCatalogControllerTests)

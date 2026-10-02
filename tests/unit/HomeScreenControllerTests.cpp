@@ -60,6 +60,7 @@ private slots:
     void preparesCompactDetailPreviewMetadataSeparatelyFromCards();
     void preparesCompactDetailPreviewProgressWithZeroTotal();
     void exposesNineItemPreviewAndCompleteFilteredLibrary();
+    void reloadReflectsANewLocalPersonalListEntryInPreviewAndFullList();
     void changesMediaTypeUsingStableKeys();
     void exposesBackendDrivenBrowseOptions();
     void restoresConfiguredSortBeforeFirstModelPublication();
@@ -89,6 +90,27 @@ QString HomeScreenControllerTests::qmlSource(const QString &name) {
     QFile file(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/resources/qml/") + name);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return {};
     return QString::fromUtf8(file.readAll());
+}
+
+void HomeScreenControllerTests::reloadReflectsANewLocalPersonalListEntryInPreviewAndFullList() {
+    FakeMediaReader reader;
+    HomeScreenController controller(reader);
+    controller.reload();
+    QCOMPARE(controller.mediaModel()->rowCount(), 0);
+    QCOMPARE(controller.fullMediaModel()->rowCount(), 0);
+
+    Media added;
+    added.Id = 77;
+    added.Name = QStringLiteral("Seasonal addition");
+    added.Type = MediaType::Anime;
+    added.ListStatus = UserListStatus::Planning;
+    reader.result.append(added);
+    controller.reload();
+
+    QCOMPARE(controller.mediaModel()->rowCount(), 1);
+    QCOMPARE(controller.fullMediaModel()->rowCount(), 1);
+    QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(0, 0),
+                                                HomeMediaModel::IdRole).toInt(), added.Id);
 }
 
 void HomeScreenControllerTests::coverQualityChangesFutureRequestsWithoutClearingDisplayedCover() {

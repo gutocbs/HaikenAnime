@@ -5,10 +5,13 @@
 #include <QObject>
 #include <QVariantList>
 
+#include <optional>
+
 #include "../../application/covers/CoverQuality.h"
 #include "../../application/media/MediaTitleResolver.h"
 
 class SeasonalCatalogCoordinator;
+class SeasonalPersonalListService;
 
 class SeasonalCatalogMediaModel final : public QAbstractListModel {
     Q_OBJECT
@@ -58,12 +61,25 @@ class SeasonalCatalogController final : public QObject {
     Q_PROPERTY(QVariantList selectedMediaLinks READ selectedMediaLinks NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedCoverSource READ selectedCoverSource NOTIFY selectionChanged)
     Q_PROPERTY(QStringList selectedAlternativeNames READ selectedAlternativeNames NOTIFY selectionChanged)
+    Q_PROPERTY(QVariantList availablePersonalListOptions READ availablePersonalListOptions
+               NOTIFY personalListChanged)
+    Q_PROPERTY(bool selectedMediaInPersonalList READ selectedMediaInPersonalList
+               NOTIFY personalListChanged)
+    Q_PROPERTY(QString selectedListStatusKey READ selectedListStatusKey NOTIFY personalListChanged)
+    Q_PROPERTY(int selectedProgressValue READ selectedProgressValue NOTIFY personalListChanged)
+    Q_PROPERTY(int selectedProgressMaximum READ selectedProgressMaximum NOTIFY selectionChanged)
+    Q_PROPERTY(double selectedScoreValue READ selectedScoreValue NOTIFY personalListChanged)
+    Q_PROPERTY(QString personalListErrorMessage READ personalListErrorMessage NOTIFY personalListChanged)
+    Q_PROPERTY(double scoreMinimum READ scoreMinimum NOTIFY editingOptionsChanged)
+    Q_PROPERTY(double scoreMaximum READ scoreMaximum NOTIFY editingOptionsChanged)
+    Q_PROPERTY(double scoreStep READ scoreStep NOTIFY editingOptionsChanged)
 
 public:
     explicit SeasonalCatalogController(SeasonalCatalogCoordinator *coordinator,
                                        CoverQuality quality = CoverQuality::Medium,
                                        QString preferredTitleKey = DefaultPreferredTitleKey(),
-                                       QObject *parent = nullptr);
+                                       QObject *parent = nullptr,
+                                       SeasonalPersonalListService *personalLists = nullptr);
 
     SeasonalCatalogMediaModel *mediaModel();
     QVariantList availableYearOptions() const;
@@ -89,31 +105,53 @@ public:
     QVariantList selectedMediaLinks() const;
     QString selectedCoverSource() const;
     QStringList selectedAlternativeNames() const;
+    QVariantList availablePersonalListOptions() const;
+    bool selectedMediaInPersonalList() const;
+    QString selectedListStatusKey() const;
+    int selectedProgressValue() const;
+    int selectedProgressMaximum() const;
+    double selectedScoreValue() const;
+    QString personalListErrorMessage() const;
+    double scoreMinimum() const;
+    double scoreMaximum() const;
+    double scoreStep() const;
 
     void ConfigureCoverQuality(CoverQuality quality);
     void ConfigurePreferredTitle(QString key);
     void ConfigureIncludeAdultContent(bool enabled);
+    void ConfigureScoreScale(double minimum, double maximum, double step);
 
     Q_INVOKABLE void SetYear(int year);
     Q_INVOKABLE void SetSeason(const QString &seasonKey);
     Q_INVOKABLE void Retry();
     Q_INVOKABLE void LoadNextPage();
     Q_INVOKABLE void SelectMedia(int mediaId);
+    Q_INVOKABLE bool SaveSelectedToPersonalList(const QString &statusKey);
 
 signals:
     void filtersChanged();
     void stateChanged();
     void selectionChanged();
+    void personalListChanged();
+    void personalListSaved();
+    void editingOptionsChanged();
 
 private:
     void synchronizeFromCoordinator();
     void clearSelection();
+    void refreshPersonalListMembership();
     const Media *selectedMedia() const;
 
     SeasonalCatalogCoordinator *coordinator_ = nullptr;
     SeasonalCatalogMediaModel mediaModel_;
     QList<Media> media_;
     int selectedMediaId_ = 0;
+    SeasonalPersonalListService *personalLists_ = nullptr;
+    std::optional<Media> selectedLocalMedia_;
+    QString personalListErrorMessage_;
+    double scoreMinimum_ = 0.0;
+    double scoreMaximum_ = 10.0;
+    double scoreStep_ = 1.0;
     CoverQuality coverQuality_ = CoverQuality::Medium;
     QString preferredTitleKey_ = DefaultPreferredTitleKey();
 };

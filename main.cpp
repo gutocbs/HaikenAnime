@@ -9,6 +9,7 @@
 #include "src/presentation/home/HomeScreenController.h"
 #include "src/presentation/seasonal/SeasonalCatalogController.h"
 #include "src/presentation/settings/SettingsController.h"
+#include "src/application/media/SeasonalPersonalListService.h"
 
 bool persistHomeSortPreference(ApplicationContext &context, const QString &key, QString &error) {
     error.clear();
@@ -49,10 +50,15 @@ int main(int argc, char *argv[]) {
     });
     HomeScreenController homeController(context.mediaRepository.get(), context.coverCoordinator.get(),
                                         context.userPreferences.coverQuality, context.initializationError);
+    SeasonalPersonalListService personalLists(context.mediaRepository.get(), context.mediaRepository.get());
     SeasonalCatalogController seasonalCatalogController(context.seasonalCatalogCoordinator.get(),
                                                         context.userPreferences.coverQuality,
-                                                        context.userPreferences.preferredTitleKey);
+                                                        context.userPreferences.preferredTitleKey, nullptr,
+                                                        &personalLists);
     seasonalCatalogController.ConfigureIncludeAdultContent(context.userPreferences.includeAdultContent);
+    seasonalCatalogController.ConfigureScoreScale(context.userPreferences.scoreMinimum,
+                                                  context.userPreferences.scoreMaximum,
+                                                  context.userPreferences.scoreStep);
     homeController.ConfigureScoreScale(context.userPreferences.scoreMinimum,
                                        context.userPreferences.scoreMaximum,
                                        context.userPreferences.scoreStep);
@@ -72,6 +78,8 @@ int main(int argc, char *argv[]) {
         }
     });
     homeController.reload();
+    QObject::connect(&seasonalCatalogController, &SeasonalCatalogController::personalListSaved,
+                     &homeController, &HomeScreenController::reload);
 
     if (context.initialSync) {
         context.initialSync->configureAutomaticSynchronization(
@@ -97,6 +105,9 @@ int main(int argc, char *argv[]) {
         seasonalCatalogController.ConfigureCoverQuality(preferences.coverQuality);
         seasonalCatalogController.ConfigurePreferredTitle(preferences.preferredTitleKey);
         seasonalCatalogController.ConfigureIncludeAdultContent(preferences.includeAdultContent);
+        seasonalCatalogController.ConfigureScoreScale(preferences.scoreMinimum,
+                                                      preferences.scoreMaximum,
+                                                      preferences.scoreStep);
         if (context.initialSync) {
             context.initialSync->configureAutomaticSynchronization(
                 preferences.synchronizationEnabled, preferences.synchronizationIntervalMs);

@@ -76,6 +76,7 @@ private slots:
     void languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml();
     void preferredTitleSelectionUsesBackendOptions();
     void seasonalCatalogRequiresExplicitFiltersAndHasResponsiveContent();
+    void seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated();
     void mainKeepsSeasonalCatalogAsSeparateNavigation();
 
 private:
@@ -437,7 +438,7 @@ void QmlStructureTests::seasonalCatalogRequiresExplicitFiltersAndHasResponsiveCo
     QVERIFY(source.contains(QStringLiteral("width: filterLayout.width >= 560 ? 170 : filterLayout.width")));
     QVERIFY(source.contains(QStringLiteral("MediaDetailsPanel {")));
     QVERIFY(source.contains(QStringLiteral("seasonalLayout: true")));
-    QVERIFY(!source.contains(QStringLiteral("EditMediaPanel {")));
+    QVERIFY(source.contains(QStringLiteral("EditMediaPanel {")));
 
     QVERIFY(detailsSource.contains(QStringLiteral("property bool seasonalLayout: false")));
     QVERIFY(detailsSource.contains(QStringLiteral("id: seasonalDetailsLayout")));
@@ -449,6 +450,26 @@ void QmlStructureTests::seasonalCatalogRequiresExplicitFiltersAndHasResponsiveCo
     QVERIFY(detailsSource.contains(QStringLiteral("source: controller.selectedCoverSource")));
     QVERIFY(detailsSource.contains(QStringLiteral("id: externalLinksGrid")));
     QVERIFY(detailsSource.contains(QStringLiteral("columns: width >= 340 ? 2 : 1")));
+}
+
+void QmlStructureTests::seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated() {
+    const QString seasonalSource = qmlSource(QStringLiteral("SeasonalCatalogScreen.qml"));
+    const QString detailsSource = qmlSource(QStringLiteral("MediaDetailsPanel.qml"));
+    const QString editorSource = qmlSource(QStringLiteral("EditMediaPanel.qml"));
+
+    QVERIFY(seasonalSource.contains(QStringLiteral("EditMediaPanel {")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("controller.SaveSelectedToPersonalList")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("if (controller.SaveSelectedToPersonalList")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("requiresExplicitStatus: true")));
+    QVERIFY(detailsSource.contains(QStringLiteral("id: addToMyListButton")));
+    QVERIFY(detailsSource.contains(QStringLiteral("text: qsTr(\"Adicionar à minha lista\")")));
+    QVERIFY(detailsSource.contains(QStringLiteral("visible: panel.seasonalLayout && !controller.selectedMediaInPersonalList")));
+    QVERIFY(detailsSource.contains(QStringLiteral("id: editPersonalListButton")));
+    QVERIFY(detailsSource.contains(QStringLiteral("visible: panel.seasonalLayout && controller.selectedMediaInPersonalList")));
+    QVERIFY(editorSource.contains(QStringLiteral("property bool requiresExplicitStatus: false")));
+    QVERIFY(editorSource.contains(QStringLiteral("enabled: !panel.requiresExplicitStatus || statusField.currentIndex >= 0")));
+    QVERIFY(editorSource.contains(QStringLiteral("if (panel.requiresExplicitStatus && statusField.currentIndex < 0) return")));
+    QVERIFY(editorSource.contains(QStringLiteral("panel.close()")));
 }
 
 void QmlStructureTests::mainKeepsSeasonalCatalogAsSeparateNavigation() {

@@ -313,5 +313,36 @@ Item {
         surface: seasonalCatalog.surface
         surfaceSoft: seasonalCatalog.surfaceSoft
         accent: seasonalCatalog.accent
+        seasonalListErrorMessage: controller.personalListErrorMessage
+        onAddToMyListRequested: {
+            personalListEditor.openForMedia(controller.selectedMediaId,
+                                            controller.selectedProgressValue,
+                                            "", controller.selectedScoreValue,
+                                            "", controller.selectedAlternativeNames.join("; "))
+        }
+        onEditPersonalListRequested: {
+            personalListEditor.openForMedia(controller.selectedMediaId,
+                                            controller.selectedProgressValue,
+                                            controller.selectedListStatusKey,
+                                            controller.selectedScoreValue,
+                                            "", controller.selectedAlternativeNames.join("; "))
+        }
+    }
+
+    EditMediaPanel {
+        id: personalListEditor
+        controller: seasonalCatalog.controller
+        listOptions: seasonalCatalog.controller.availablePersonalListOptions
+        requiresExplicitStatus: true
+        closeOnApply: false
+        ink: seasonalCatalog.ink
+        muted: seasonalCatalog.muted
+        line: seasonalCatalog.line
+        surface: seasonalCatalog.surface
+        surfaceSoft: seasonalCatalog.surfaceSoft
+        accent: seasonalCatalog.accent
+        onApplyRequested: function(mediaId, progress, statusKey, score, path, alternativeNames) {
+            if (controller.SaveSelectedToPersonalList(statusKey)) personalListEditor.close()
+        }
     }
 }

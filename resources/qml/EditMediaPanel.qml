@@ -15,6 +15,9 @@ Popup {
     property color surfaceSoft: "#f6f8fb"
     property color accent: "#315d91"
     property int editingMediaId: 0
+    property var listOptions: []
+    property bool requiresExplicitStatus: false
+    property bool closeOnApply: true
     property int scoreDecimals: controller.scoreStep < 0.1 ? 2 : controller.scoreStep < 1 ? 1 : 0
     property int scoreFactor: Math.pow(10, scoreDecimals)
 
@@ -25,7 +28,7 @@ Popup {
         for (let i = 0; i < statusField.count; ++i) {
             if (statusField.valueAt(i) === key) return i
         }
-        return 0
+        return -1
     }
 
     function openForMedia(mediaId, progress, statusKey, score, path, alternativeNames) {
@@ -110,7 +113,7 @@ Popup {
                     Basic.ComboBox {
                         id: statusField
                         Layout.fillWidth: true
-                        model: panel.controller.availableListOptions.filter(function(option) {
+                        model: panel.listOptions.filter(function(option) {
                             return option.key !== "all"
                         })
                         textRole: "label"
@@ -211,12 +214,14 @@ Popup {
             Button {
                 text: qsTr("Aplicar alterações")
                 highlighted: true
+                enabled: !panel.requiresExplicitStatus || statusField.currentIndex >= 0
                 onClicked: {
+                    if (panel.requiresExplicitStatus && statusField.currentIndex < 0) return
                     panel.applyRequested(panel.editingMediaId, progressField.value,
                                          statusField.currentValue,
                                          scoreField.value / panel.scoreFactor,
                                          pathField.text.trim(), alternativeNamesField.text.trim())
-                    panel.close()
+                    if (panel.closeOnApply) panel.close()
                 }
             }
         }

@@ -14,6 +14,10 @@ Popup {
     property color surfaceSoft: "#f6f8fb"
     property color accent: "#315d91"
     property bool seasonalLayout: false
+    property string seasonalListErrorMessage: ""
+
+    signal addToMyListRequested()
+    signal editPersonalListRequested()
 
     function openForItem(focusItem) {
         returnFocusItem = focusItem
@@ -257,6 +261,47 @@ Popup {
                     fillMode: Image.PreserveAspectCrop
                     clip: true
                 }
+            }
+        }
+
+        Rectangle {
+            visible: panel.seasonalLayout
+            Layout.fillWidth: true
+            Layout.preferredHeight: visible ? 1 : 0
+            color: panel.line
+        }
+
+        RowLayout {
+            visible: panel.seasonalLayout
+            Layout.fillWidth: true
+            Layout.margins: 18
+            spacing: 12
+
+            Label {
+                Layout.fillWidth: true
+                visible: panel.seasonalListErrorMessage.length > 0
+                text: panel.seasonalListErrorMessage
+                color: "#8f3038"
+                font.pixelSize: 11
+                wrapMode: Text.Wrap
+            }
+
+            Item { Layout.fillWidth: panel.seasonalListErrorMessage.length === 0 }
+
+            Button {
+                id: addToMyListButton
+                visible: panel.seasonalLayout && !controller.selectedMediaInPersonalList
+                text: qsTr("Adicionar à minha lista")
+                highlighted: true
+                onClicked: panel.addToMyListRequested()
+            }
+
+            Button {
+                id: editPersonalListButton
+                visible: panel.seasonalLayout && controller.selectedMediaInPersonalList
+                text: qsTr("Editar mídia")
+                highlighted: true
+                onClicked: panel.editPersonalListRequested()
             }
         }
     }
