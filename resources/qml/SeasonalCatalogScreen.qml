@@ -206,6 +206,7 @@ Item {
     MediaDetailsPanel {
         id: seasonalDetails
         controller: seasonalCatalog.controller
+        seasonalLayout: true
         ink: seasonalCatalog.ink
         muted: seasonalCatalog.muted
         line: seasonalCatalog.line

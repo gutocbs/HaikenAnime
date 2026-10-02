@@ -402,7 +402,9 @@ void QmlStructureTests::coverPreviewReusesSelectedCoverSourceWithoutRequestingDo
 
 void QmlStructureTests::seasonalCatalogRequiresExplicitFiltersAndHasResponsiveContent() {
     const QString source = qmlSource(QStringLiteral("SeasonalCatalogScreen.qml"));
+    const QString detailsSource = qmlSource(QStringLiteral("MediaDetailsPanel.qml"));
     QVERIFY2(!source.isEmpty(), "The seasonal catalog needs its own screen.");
+    QVERIFY(!detailsSource.isEmpty());
     QVERIFY(source.contains(QStringLiteral("currentIndex: controller.selectedYear > 0")));
     QVERIFY(source.contains(QStringLiteral("currentIndex: controller.selectedSeasonKey.length > 0")));
     QVERIFY(source.contains(QStringLiteral("controller.SetYear")));
@@ -415,7 +417,19 @@ void QmlStructureTests::seasonalCatalogRequiresExplicitFiltersAndHasResponsiveCo
     QVERIFY(source.contains(QStringLiteral("width: filterLayout.width >= 560 ? 150 : filterLayout.width")));
     QVERIFY(source.contains(QStringLiteral("width: filterLayout.width >= 560 ? 170 : filterLayout.width")));
     QVERIFY(source.contains(QStringLiteral("MediaDetailsPanel {")));
+    QVERIFY(source.contains(QStringLiteral("seasonalLayout: true")));
     QVERIFY(!source.contains(QStringLiteral("EditMediaPanel {")));
+
+    QVERIFY(detailsSource.contains(QStringLiteral("property bool seasonalLayout: false")));
+    QVERIFY(detailsSource.contains(QStringLiteral("id: seasonalDetailsLayout")));
+    QVERIFY(detailsSource.contains(QStringLiteral("id: seasonalMetadata")));
+    QVERIFY(detailsSource.contains(QStringLiteral("id: seasonalCover")));
+    QVERIFY(detailsSource.indexOf(QStringLiteral("id: seasonalMetadata"))
+        < detailsSource.indexOf(QStringLiteral("id: seasonalCover")));
+    QVERIFY(detailsSource.contains(QStringLiteral("visible: panel.seasonalLayout")));
+    QVERIFY(detailsSource.contains(QStringLiteral("source: controller.selectedCoverSource")));
+    QVERIFY(detailsSource.contains(QStringLiteral("id: externalLinksGrid")));
+    QVERIFY(detailsSource.contains(QStringLiteral("columns: width >= 340 ? 2 : 1")));
 }
 
 void QmlStructureTests::mainKeepsSeasonalCatalogAsSeparateNavigation() {

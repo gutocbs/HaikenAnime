@@ -13,6 +13,7 @@ Popup {
     property color surface: "#ffffff"
     property color surfaceSoft: "#f6f8fb"
     property color accent: "#315d91"
+    property bool seasonalLayout: false
 
     function openForItem(focusItem) {
         returnFocusItem = focusItem
@@ -101,131 +102,160 @@ Popup {
             clip: true
             contentWidth: availableWidth
 
-            ColumnLayout {
+            RowLayout {
+                id: seasonalDetailsLayout
                 width: detailsScroll.availableWidth
                 spacing: 18
 
-                GridLayout {
-                    Layout.fillWidth: true
-                    columns: width >= 400 ? 2 : 1
-                    columnSpacing: 18
-                    rowSpacing: 10
-
-                    Label { text: qsTr("Tipo"); color: panel.muted; font.pixelSize: 11 }
-                    Label { text: controller.selectedTypeLabel; color: panel.ink; font.weight: Font.DemiBold }
-                    Label { text: qsTr("Status"); color: panel.muted; font.pixelSize: 11 }
-                    Label { text: controller.selectedStatusLabel; color: panel.ink; font.weight: Font.DemiBold }
-                    Label { text: qsTr("Progresso"); color: panel.muted; font.pixelSize: 11 }
-                    Label { text: controller.selectedProgress; color: panel.ink; font.weight: Font.DemiBold }
-                    Label { text: qsTr("Sua nota"); color: panel.muted; font.pixelSize: 11 }
-                    Label { text: controller.selectedScore; color: panel.ink; font.weight: Font.DemiBold }
-                    Label { text: qsTr("Nota AniList"); color: panel.muted; font.pixelSize: 11 }
-                    Label { text: controller.selectedAverageScore; color: panel.ink; font.weight: Font.DemiBold }
-                    Label {
-                        visible: controller.selectedSeasonLabel.length > 0
-                        text: qsTr("Temporada")
-                        color: panel.muted
-                        font.pixelSize: 11
-                    }
-                    Label {
-                        visible: controller.selectedSeasonLabel.length > 0
-                        text: controller.selectedSeasonLabel
-                        color: panel.ink
-                        font.weight: Font.DemiBold
-                    }
-                    Label {
-                        visible: controller.selectedNextAiringLabel.length > 0
-                        text: qsTr("Próximo episódio")
-                        color: panel.muted
-                        font.pixelSize: 11
-                    }
-                    Label {
-                        visible: controller.selectedNextAiringLabel.length > 0
-                        text: controller.selectedNextAiringLabel
-                        color: panel.ink
-                        font.weight: Font.DemiBold
-                        wrapMode: Text.Wrap
-                    }
-                }
-
                 ColumnLayout {
+                    id: seasonalMetadata
                     Layout.fillWidth: true
-                    visible: controller.selectedAlternativeNames.length > 0
-                    spacing: 5
+                    Layout.minimumWidth: 0
+                    spacing: 18
 
-                    Label {
-                        text: qsTr("Também conhecido como")
-                        color: panel.muted
-                        font.pixelSize: 11
-                    }
-
-                    TextEdit {
+                    GridLayout {
                         Layout.fillWidth: true
-                        Layout.preferredHeight: contentHeight
-                        text: controller.selectedAlternativeNames.join(" · ")
-                        color: panel.ink
-                        readOnly: true
-                        selectByMouse: true
-                        wrapMode: TextEdit.Wrap
-                    }
-                }
+                        columns: width >= 400 ? 2 : 1
+                        columnSpacing: 18
+                        rowSpacing: 10
 
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 5
-
-                    Label {
-                        text: qsTr("Sinopse")
-                        color: panel.muted
-                        font.pixelSize: 11
-                    }
-
-                    TextEdit {
-                        id: fullSynopsisText
-                        visible: controller.selectedSynopsis.length > 0
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: contentHeight
-                        text: controller.selectedSynopsis
-                        color: panel.ink
-                        readOnly: true
-                        selectByMouse: true
-                        wrapMode: TextEdit.Wrap
-                        Accessible.name: qsTr("Sinopse completa")
-                    }
-
-                    Label {
-                        visible: controller.selectedSynopsis.length === 0
-                        text: qsTr("Sinopse não disponível.")
-                        color: panel.muted
-                        font.pixelSize: 13
-                    }
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    visible: controller.selectedMediaLinks.length > 0
-                    spacing: 5
-
-                    Label {
-                        text: qsTr("Links")
-                        color: panel.muted
-                        font.pixelSize: 11
-                    }
-
-                    Repeater {
-                        model: controller.selectedMediaLinks
-
-                        delegate: Button {
-                            id: externalLinkButton
-                            required property var modelData
-                            Layout.fillWidth: true
-                            text: modelData.site
-                            flat: true
-                            horizontalAlignment: Qt.AlignLeft
-                            Accessible.name: qsTr("Abrir %1").arg(modelData.site)
-                            onClicked: Qt.openUrlExternally(modelData.url)
+                        Label { text: qsTr("Tipo"); color: panel.muted; font.pixelSize: 11 }
+                        Label { text: controller.selectedTypeLabel; color: panel.ink; font.weight: Font.DemiBold }
+                        Label { text: qsTr("Status"); color: panel.muted; font.pixelSize: 11 }
+                        Label { text: controller.selectedStatusLabel; color: panel.ink; font.weight: Font.DemiBold }
+                        Label { text: qsTr("Progresso"); color: panel.muted; font.pixelSize: 11 }
+                        Label { text: controller.selectedProgress; color: panel.ink; font.weight: Font.DemiBold }
+                        Label { text: qsTr("Sua nota"); color: panel.muted; font.pixelSize: 11 }
+                        Label { text: controller.selectedScore; color: panel.ink; font.weight: Font.DemiBold }
+                        Label { text: qsTr("Nota AniList"); color: panel.muted; font.pixelSize: 11 }
+                        Label { text: controller.selectedAverageScore; color: panel.ink; font.weight: Font.DemiBold }
+                        Label {
+                            visible: controller.selectedSeasonLabel.length > 0
+                            text: qsTr("Temporada")
+                            color: panel.muted
+                            font.pixelSize: 11
+                        }
+                        Label {
+                            visible: controller.selectedSeasonLabel.length > 0
+                            text: controller.selectedSeasonLabel
+                            color: panel.ink
+                            font.weight: Font.DemiBold
+                        }
+                        Label {
+                            visible: controller.selectedNextAiringLabel.length > 0
+                            text: qsTr("Próximo episódio")
+                            color: panel.muted
+                            font.pixelSize: 11
+                        }
+                        Label {
+                            visible: controller.selectedNextAiringLabel.length > 0
+                            text: controller.selectedNextAiringLabel
+                            color: panel.ink
+                            font.weight: Font.DemiBold
+                            wrapMode: Text.Wrap
                         }
                     }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        visible: controller.selectedAlternativeNames.length > 0
+                        spacing: 5
+
+                        Label {
+                            text: qsTr("Também conhecido como")
+                            color: panel.muted
+                            font.pixelSize: 11
+                        }
+
+                        TextEdit {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: contentHeight
+                            text: controller.selectedAlternativeNames.join(" · ")
+                            color: panel.ink
+                            readOnly: true
+                            selectByMouse: true
+                            wrapMode: TextEdit.Wrap
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 5
+
+                        Label {
+                            text: qsTr("Sinopse")
+                            color: panel.muted
+                            font.pixelSize: 11
+                        }
+
+                        TextEdit {
+                            id: fullSynopsisText
+                            visible: controller.selectedSynopsis.length > 0
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: contentHeight
+                            text: controller.selectedSynopsis
+                            color: panel.ink
+                            readOnly: true
+                            selectByMouse: true
+                            wrapMode: TextEdit.Wrap
+                            Accessible.name: qsTr("Sinopse completa")
+                        }
+
+                        Label {
+                            visible: controller.selectedSynopsis.length === 0
+                            text: qsTr("Sinopse não disponível.")
+                            color: panel.muted
+                            font.pixelSize: 13
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        visible: controller.selectedMediaLinks.length > 0
+                        spacing: 5
+
+                        Label {
+                            text: qsTr("Links")
+                            color: panel.muted
+                            font.pixelSize: 11
+                        }
+
+                        GridLayout {
+                            id: externalLinksGrid
+                            Layout.fillWidth: true
+                            columns: width >= 340 ? 2 : 1
+                            columnSpacing: 8
+                            rowSpacing: 4
+
+                            Repeater {
+                                model: controller.selectedMediaLinks
+
+                                delegate: Button {
+                                    id: externalLinkButton
+                                    required property var modelData
+                                    Layout.fillWidth: true
+                                    text: modelData.site
+                                    flat: true
+                                    horizontalAlignment: Qt.AlignLeft
+                                    Accessible.name: qsTr("Abrir %1").arg(modelData.site)
+                                    onClicked: Qt.openUrlExternally(modelData.url)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Image {
+                    id: seasonalCover
+                    visible: panel.seasonalLayout
+                    Layout.alignment: Qt.AlignTop
+                    readonly property real coverWidth: Math.min(180, Math.max(96,
+                        Math.round(detailsScroll.availableWidth * 0.32)))
+                    Layout.preferredWidth: coverWidth
+                    Layout.preferredHeight: Math.round(coverWidth * 1.45)
+                    source: controller.selectedCoverSource
+                    fillMode: Image.PreserveAspectCrop
+                    clip: true
                 }
             }
         }
