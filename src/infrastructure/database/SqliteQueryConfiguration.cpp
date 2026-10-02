@@ -9,6 +9,7 @@ void SqliteQueryConfiguration::setLogger(AsyncLogger *value) { logger = value; }
 
 bool SqliteQueryConfiguration::load(QString &error, const QString &configurationPath) {
     upsertMediaPath.clear();
+    updatePersonalListMediaPath.clear();
     readMediaPath.clear();
     readActiveMediaIdsPath.clear();
     markMediaSourceRemovedPath.clear();
@@ -46,6 +47,7 @@ bool SqliteQueryConfiguration::load(QString &error, const QString &configuration
     }
 
     upsertMediaPath = queries.value(QStringLiteral("upsertMedia")).toString();
+    updatePersonalListMediaPath = queries.value(QStringLiteral("updatePersonalListMedia")).toString();
     readMediaPath = queries.value(QStringLiteral("readMedia")).toString();
     readActiveMediaIdsPath = queries.value(QStringLiteral("readActiveMediaIds")).toString();
     markMediaSourceRemovedPath = queries.value(QStringLiteral("markMediaSourceRemoved")).toString();
@@ -63,7 +65,7 @@ bool SqliteQueryConfiguration::load(QString &error, const QString &configuration
     completeLibraryScanPath = queries.value(QStringLiteral("completeLibraryScan")).toString();
     failLibraryScanPath = queries.value(QStringLiteral("failLibraryScan")).toString();
     markLocalFilesUnavailablePath = queries.value(QStringLiteral("markLocalFilesUnavailable")).toString();
-    if (upsertMediaPath.isEmpty() || readMediaPath.isEmpty() || readActiveMediaIdsPath.isEmpty()
+    if (upsertMediaPath.isEmpty() || updatePersonalListMediaPath.isEmpty() || readMediaPath.isEmpty() || readActiveMediaIdsPath.isEmpty()
         || markMediaSourceRemovedPath.isEmpty() || enqueuePendingChangePath.isEmpty()
         || readPendingChangesPath.isEmpty() || updatePendingChangePath.isEmpty()
         || readCoverCachePath.isEmpty() || upsertCoverCachePath.isEmpty()

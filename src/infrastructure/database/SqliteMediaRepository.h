@@ -11,11 +11,13 @@ class SqliteMediaRepository final : public IMediaRepository {
 public:
     /** Creates a repository using an opened database connection and external upsert SQL. */
     SqliteMediaRepository(QSqlDatabase database, QString upsertQuery, QString readQuery,
-                          QString readActiveMediaIdsQuery, QString markSourceRemovedQuery);
+                          QString readActiveMediaIdsQuery, QString markSourceRemovedQuery,
+                          QString updatePersonalListQuery = {});
     void setLogger(AsyncLogger *logger);
 
     /** Upserts external media in one transaction while preserving local user fields. */
     [[nodiscard]] bool upsert(const QList<Media> &media, QString &error) override;
+    [[nodiscard]] bool updatePersonalListMedia(const Media &media, QString &error) override;
 
     /** Reads persisted media using the supplied ordered SELECT query. */
     [[nodiscard]] bool readAll(QList<Media> &media, QString &error) override;
@@ -28,6 +30,7 @@ private:
     QString readQuery_;
     QString readActiveMediaIdsQuery_;
     QString markSourceRemovedQuery_;
+    QString updatePersonalListQuery_;
     AsyncLogger *logger_ = nullptr;
 };
 

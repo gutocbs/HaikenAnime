@@ -325,7 +325,8 @@ Item {
                                             controller.selectedProgressValue,
                                             controller.selectedListStatusKey,
                                             controller.selectedScoreValue,
-                                            "", controller.selectedAlternativeNames.join("; "))
+                                            controller.selectedLocalPath,
+                                            controller.selectedAlternativeNames.join("; "))
         }
     }
 
@@ -342,7 +343,7 @@ Item {
         surfaceSoft: seasonalCatalog.surfaceSoft
         accent: seasonalCatalog.accent
         onApplyRequested: function(mediaId, progress, statusKey, score, path, alternativeNames) {
-            if (controller.SaveSelectedToPersonalList(statusKey)) personalListEditor.close()
+            if (controller.SaveSelectedToPersonalList(progress, statusKey, score, path, alternativeNames)) personalListEditor.close()
         }
     }
 }

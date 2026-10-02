@@ -10,11 +10,11 @@ namespace {
 const auto UpsertMedia = QStringLiteral(
     "INSERT INTO media (id, name, english_name, original_name, alternative_names, "
     "total_chapters, average_score, cover_url, cover_medium_url, cover_large_url, "
-    "cover_extra_large_url, synopsis, type, status, user_list_status, "
+    "cover_extra_large_url, synopsis, type, status, user_list_status, local_path, "
     "season, season_year, next_airing_episode, next_airing_at, anilist_url, external_links) "
     "VALUES (:id, :name, :english_name, :original_name, :alternative_names, "
     ":total_chapters, :average_score, :cover_url, :cover_medium_url, :cover_large_url, "
-    ":cover_extra_large_url, :synopsis, :type, :status, :user_list_status, "
+    ":cover_extra_large_url, :synopsis, :type, :status, :user_list_status, :local_path, "
     ":season, :season_year, :next_airing_episode, :next_airing_at, :anilist_url, :external_links) "
     "ON CONFLICT(id) DO UPDATE SET "
     "name = excluded.name, english_name = excluded.english_name, original_name = excluded.original_name, "
@@ -28,11 +28,12 @@ const auto UpsertMedia = QStringLiteral(
     "external_links = excluded.external_links, "
     "user_list_status = CASE WHEN excluded.user_list_status = -1 "
     "THEN media.user_list_status ELSE excluded.user_list_status END, "
+    "local_path = CASE WHEN excluded.local_path = '' THEN media.local_path ELSE excluded.local_path END, "
     "source_removed_at = NULL");
 
 const auto ReadMedia = QStringLiteral(
     "SELECT id, name, english_name, original_name, alternative_names, total_chapters, "
-    "consumed_chapters, next_chapter, average_score, personal_score, cover_url, cover_medium_url, cover_large_url, cover_extra_large_url, synopsis, "
+    "consumed_chapters, next_chapter, average_score, personal_score, local_path, cover_url, cover_medium_url, cover_large_url, cover_extra_large_url, synopsis, "
     "type, status, user_list_status, season, season_year, next_airing_episode, next_airing_at, anilist_url, external_links "
     "FROM media WHERE source_removed_at IS NULL ORDER BY id");
 
@@ -42,6 +43,11 @@ const auto ReadActiveMediaIds = QStringLiteral(
 const auto MarkSourceRemoved = QStringLiteral(
     "UPDATE media SET source_removed_at = :source_removed_at "
     "WHERE id = :id AND source_removed_at IS NULL");
+
+const auto UpdatePersonalListMedia = QStringLiteral(
+    "UPDATE media SET consumed_chapters = :consumed_chapters, personal_score = :personal_score, "
+    "user_list_status = :user_list_status, local_path = :local_path, "
+    "alternative_names = :alternative_names, source_removed_at = NULL WHERE id = :id");
 
 const auto EnqueueChange = QStringLiteral(
     "INSERT INTO anilist_pending_changes "
@@ -77,6 +83,7 @@ private slots:
     void mediaRoundTripPreservesAlternativeNames();
     void mediaRoundTripPreservesExtendedMetadata();
     void extendedMetadataUpsertPreservesUserEditedFields();
+    void personalListUpdatePersistsEditorFieldsWithoutOverwritingCatalogMetadata();
     void pendingChangeRoundTripPreservesRemoteObservedAt();
     void malformedPendingValueFailsInsteadOfBecomingEmptyText();
     void fractionalPendingIntegerIsRejected();
@@ -207,6 +214,49 @@ void SqliteRepositoryTests::extendedMetadataUpsertPreservesUserEditedFields() {
     QCOMPARE(actual.first().AniListUrl, QStringLiteral("https://anilist.co/anime/79"));
     QCOMPARE(actual.first().ExternalLinks.size(), 1);
     QCOMPARE(actual.first().ExternalLinks.first().Url, QStringLiteral("https://example.test/79"));
+}
+
+void SqliteRepositoryTests::personalListUpdatePersistsEditorFieldsWithoutOverwritingCatalogMetadata() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved, UpdatePersonalListMedia);
+
+    Media existing;
+    existing.Id = 80;
+    existing.Name = QStringLiteral("Catalog title");
+    existing.Synopsis = QStringLiteral("Catalog synopsis");
+    existing.NextChapter = 11;
+    existing.Season = QStringLiteral("SUMMER");
+    existing.AlternativeNames = {QStringLiteral("Original title")};
+    existing.LocalPath = QStringLiteral("D:\\Original\\catalog.mkv");
+    QString error;
+    QVERIFY2(repository.upsert({existing}, error), qPrintable(error));
+    QSqlQuery localEdit(database.connection());
+    QVERIFY(localEdit.exec(QStringLiteral("UPDATE media SET next_chapter = 11 WHERE id = 80")));
+
+    Media edited = existing;
+    edited.ConsumedChapters = 8;
+    edited.PersonalScore = 7;
+    edited.ListStatus = UserListStatus::Completed;
+    edited.LocalPath = QStringLiteral("D:\\Anime\\edited.mkv");
+    edited.AlternativeNames = {QStringLiteral("Edited title"), QStringLiteral("Localized title")};
+    QVERIFY2(repository.updatePersonalListMedia(edited, error), qPrintable(error));
+
+    QList<Media> actual;
+    QVERIFY2(repository.readAll(actual, error), qPrintable(error));
+    QCOMPARE(actual.size(), 1);
+    QCOMPARE(actual.first().ConsumedChapters, edited.ConsumedChapters);
+    QCOMPARE(actual.first().PersonalScore, edited.PersonalScore);
+    QCOMPARE(actual.first().ListStatus, edited.ListStatus);
+    QCOMPARE(actual.first().LocalPath, edited.LocalPath);
+    QCOMPARE(actual.first().AlternativeNames, edited.AlternativeNames);
+    QCOMPARE(actual.first().Name, existing.Name);
+    QCOMPARE(actual.first().Synopsis, existing.Synopsis);
+    QCOMPARE(actual.first().NextChapter, existing.NextChapter);
+    QCOMPARE(actual.first().Season, existing.Season);
 }
 
 void SqliteRepositoryTests::authoritativeSnapshotMarksOnlyUnseenActiveMedia() {

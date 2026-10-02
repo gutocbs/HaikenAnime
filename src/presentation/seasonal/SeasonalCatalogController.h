@@ -69,6 +69,7 @@ class SeasonalCatalogController final : public QObject {
     Q_PROPERTY(int selectedProgressValue READ selectedProgressValue NOTIFY personalListChanged)
     Q_PROPERTY(int selectedProgressMaximum READ selectedProgressMaximum NOTIFY selectionChanged)
     Q_PROPERTY(double selectedScoreValue READ selectedScoreValue NOTIFY personalListChanged)
+    Q_PROPERTY(QString selectedLocalPath READ selectedLocalPath NOTIFY personalListChanged)
     Q_PROPERTY(QString personalListErrorMessage READ personalListErrorMessage NOTIFY personalListChanged)
     Q_PROPERTY(double scoreMinimum READ scoreMinimum NOTIFY editingOptionsChanged)
     Q_PROPERTY(double scoreMaximum READ scoreMaximum NOTIFY editingOptionsChanged)
@@ -111,6 +112,7 @@ public:
     int selectedProgressValue() const;
     int selectedProgressMaximum() const;
     double selectedScoreValue() const;
+    QString selectedLocalPath() const;
     QString personalListErrorMessage() const;
     double scoreMinimum() const;
     double scoreMaximum() const;
@@ -126,7 +128,9 @@ public:
     Q_INVOKABLE void Retry();
     Q_INVOKABLE void LoadNextPage();
     Q_INVOKABLE void SelectMedia(int mediaId);
-    Q_INVOKABLE bool SaveSelectedToPersonalList(const QString &statusKey);
+    Q_INVOKABLE bool SaveSelectedToPersonalList(int progress, const QString &statusKey, double score,
+                                                const QString &path,
+                                                const QStringList &alternativeNames);
 
 signals:
     void filtersChanged();

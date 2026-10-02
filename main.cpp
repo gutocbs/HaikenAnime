@@ -50,7 +50,8 @@ int main(int argc, char *argv[]) {
     });
     HomeScreenController homeController(context.mediaRepository.get(), context.coverCoordinator.get(),
                                         context.userPreferences.coverQuality, context.initializationError);
-    SeasonalPersonalListService personalLists(context.mediaRepository.get(), context.mediaRepository.get());
+    SeasonalPersonalListService personalLists(context.mediaRepository.get(), context.mediaRepository.get(),
+                                              context.mediaRepository.get());
     SeasonalCatalogController seasonalCatalogController(context.seasonalCatalogCoordinator.get(),
                                                         context.userPreferences.coverQuality,
                                                         context.userPreferences.preferredTitleKey, nullptr,

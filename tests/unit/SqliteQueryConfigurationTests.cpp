@@ -24,6 +24,8 @@ void SqliteQueryConfigurationTests::successfulLoadReplacesStateAndClearsError() 
     QVERIFY(configuration.load(error));
     QCOMPARE(configuration.upsertMediaPath,
              QStringLiteral(":/sqlite/queries/upsert-media.sql"));
+    QCOMPARE(configuration.updatePersonalListMediaPath,
+             QStringLiteral(":/sqlite/queries/update-personal-list-media.sql"));
     QCOMPARE(configuration.readActiveMediaIdsPath,
              QStringLiteral(":/sqlite/queries/read-active-media-ids.sql"));
     QCOMPARE(configuration.markMediaSourceRemovedPath,
@@ -44,7 +46,7 @@ void SqliteQueryConfigurationTests::packagedInventoryQueriesAreUsable() {
     QFile configuration(QStringLiteral(":/sqlite/queries/sqlite-queries.json"));
     QVERIFY(configuration.open(QIODevice::ReadOnly));
     const auto queries = QJsonDocument::fromJson(configuration.readAll()).object().value(QStringLiteral("queries")).toObject();
-    for (const auto &key : {"beginLibraryScan", "upsertLocalFile", "completeLibraryScan",
+    for (const auto &key : {"updatePersonalListMedia", "beginLibraryScan", "upsertLocalFile", "completeLibraryScan",
                             "failLibraryScan", "markLocalFilesUnavailable"}) {
         const auto path = queries.value(QString::fromLatin1(key)).toString();
         QVERIFY2(!path.isEmpty(), key);
@@ -56,7 +58,7 @@ void SqliteQueryConfigurationTests::packagedInventoryQueriesAreUsable() {
 
 void SqliteQueryConfigurationTests::rejectsEachMissingInventoryQuery_data() {
     QTest::addColumn<QString>("key");
-    for (const auto &key : {"beginLibraryScan", "upsertLocalFile", "completeLibraryScan",
+    for (const auto &key : {"updatePersonalListMedia", "beginLibraryScan", "upsertLocalFile", "completeLibraryScan",
                             "failLibraryScan", "markLocalFilesUnavailable"}) {
         QTest::newRow(key) << QString::fromLatin1(key);
     }

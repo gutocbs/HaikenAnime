@@ -1,10 +1,10 @@
 INSERT INTO media (id, name, english_name, original_name, alternative_names,
                    total_chapters, average_score, cover_url, cover_medium_url, cover_large_url,
-                   cover_extra_large_url, synopsis, type, status, user_list_status,
+                   cover_extra_large_url, synopsis, type, status, user_list_status, local_path,
                    season, season_year, next_airing_episode, next_airing_at, anilist_url, external_links)
 VALUES (:id, :name, :english_name, :original_name, :alternative_names,
         :total_chapters, :average_score, :cover_url, :cover_medium_url, :cover_large_url,
-        :cover_extra_large_url, :synopsis, :type, :status, :user_list_status,
+        :cover_extra_large_url, :synopsis, :type, :status, :user_list_status, :local_path,
         :season, :season_year, :next_airing_episode, :next_airing_at, :anilist_url, :external_links)
 ON CONFLICT(id) DO UPDATE SET
     name = excluded.name,
@@ -28,4 +28,5 @@ ON CONFLICT(id) DO UPDATE SET
     external_links = excluded.external_links,
     user_list_status = CASE WHEN excluded.user_list_status = -1
                             THEN media.user_list_status ELSE excluded.user_list_status END,
+    local_path = CASE WHEN excluded.local_path = '' THEN media.local_path ELSE excluded.local_path END,
     source_removed_at = NULL

@@ -458,8 +458,10 @@ void QmlStructureTests::seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated
     const QString editorSource = qmlSource(QStringLiteral("EditMediaPanel.qml"));
 
     QVERIFY(seasonalSource.contains(QStringLiteral("EditMediaPanel {")));
-    QVERIFY(seasonalSource.contains(QStringLiteral("controller.SaveSelectedToPersonalList")));
-    QVERIFY(seasonalSource.contains(QStringLiteral("if (controller.SaveSelectedToPersonalList")));
+    QVERIFY(seasonalSource.contains(QStringLiteral(
+        "controller.SaveSelectedToPersonalList(progress, statusKey, score, path, alternativeNames)")));
+    QVERIFY(seasonalSource.contains(QStringLiteral(
+        "if (controller.SaveSelectedToPersonalList(progress, statusKey, score, path, alternativeNames))")));
     QVERIFY(seasonalSource.contains(QStringLiteral("requiresExplicitStatus: true")));
     QVERIFY(detailsSource.contains(QStringLiteral("id: addToMyListButton")));
     QVERIFY(detailsSource.contains(QStringLiteral("text: qsTr(\"Adicionar à minha lista\")")));

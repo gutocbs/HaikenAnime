@@ -46,7 +46,8 @@ public:
     std::function<void(const SeasonalCatalogRequest &)> onFetch;
 };
 
-class InMemoryMediaRepository final : public IMediaReader, public IMediaWriter {
+class InMemoryMediaRepository final : public IMediaReader, public IMediaWriter,
+                                      public IPersonalListMediaWriter {
 public:
     bool readAll(QList<Media> &result, QString &error) override {
         result = media;
@@ -71,9 +72,28 @@ public:
         return true;
     }
 
+    bool updatePersonalListMedia(const Media &item, QString &error) override {
+        if (!failure.isEmpty()) {
+            error = failure;
+            return false;
+        }
+        const auto found = std::find_if(media.begin(), media.end(), [&item](const Media &existing) {
+            return existing.Id == item.Id;
+        });
+        if (found == media.end()) {
+            error = QStringLiteral("Local media record was not found.");
+            return false;
+        }
+        *found = item;
+        ++personalListUpdateCalls;
+        error.clear();
+        return true;
+    }
+
     QList<Media> media;
     QString failure;
     int upsertCalls = 0;
+    int personalListUpdateCalls = 0;
 };
 }
 
@@ -255,7 +275,7 @@ void SeasonalCatalogControllerTests::blocksAnAbsentSelectionUntilOnePersonalStat
     Media selected = media(7);
     source.responses.insert(1, page(1, {selected}));
     InMemoryMediaRepository repository;
-    SeasonalPersonalListService personalLists(&repository, &repository);
+    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -265,7 +285,7 @@ void SeasonalCatalogControllerTests::blocksAnAbsentSelectionUntilOnePersonalStat
 
     QVERIFY(!controller.selectedMediaInPersonalList());
     QVERIFY(!controller.availablePersonalListOptions().isEmpty());
-    QVERIFY(!controller.SaveSelectedToPersonalList(QString()));
+    QVERIFY(!controller.SaveSelectedToPersonalList(0, QString(), 0.0, QString(), {}));
     QCOMPARE(repository.upsertCalls, 0);
     QVERIFY(!controller.personalListErrorMessage().isEmpty());
     QCOMPARE(controller.selectedMediaId(), selected.Id);
@@ -278,7 +298,7 @@ void SeasonalCatalogControllerTests::addsAbsentSelectionIdempotentlyAndKeepsCata
     selected.ExternalLinks = {{QStringLiteral("Official"), QStringLiteral("https://example.test/official")}};
     source.responses.insert(1, page(1, {selected}));
     InMemoryMediaRepository repository;
-    SeasonalPersonalListService personalLists(&repository, &repository);
+    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -286,7 +306,7 @@ void SeasonalCatalogControllerTests::addsAbsentSelectionIdempotentlyAndKeepsCata
     controller.SetSeason(QStringLiteral("SPRING"));
     controller.SelectMedia(selected.Id);
 
-    QVERIFY(controller.SaveSelectedToPersonalList(QStringLiteral("planning")));
+    QVERIFY(controller.SaveSelectedToPersonalList(0, QStringLiteral("planning"), 0.0, QString(), {}));
     QVERIFY(controller.selectedMediaInPersonalList());
     QCOMPARE(repository.upsertCalls, 1);
     QCOMPARE(repository.media.size(), 1);
@@ -298,9 +318,11 @@ void SeasonalCatalogControllerTests::addsAbsentSelectionIdempotentlyAndKeepsCata
     QCOMPARE(repository.media.first().ExternalLinks.first().Url, selected.ExternalLinks.first().Url);
     QCOMPARE(repository.media.first().ListStatus, UserListStatus::Planning);
 
-    QVERIFY(controller.SaveSelectedToPersonalList(QStringLiteral("planning")));
-    QCOMPARE(repository.upsertCalls, 1);
+    QVERIFY(controller.SaveSelectedToPersonalList(0, QStringLiteral("planning"), 0.0, QString(), {}));
+    QCOMPARE(repository.media.first().ListStatus, UserListStatus::Planning);
     QCOMPARE(repository.media.size(), 1);
+    QCOMPARE(repository.upsertCalls, 1);
+    QCOMPARE(repository.personalListUpdateCalls, 1);
 }
 
 void SeasonalCatalogControllerTests::reusesAnExistingLocalEntryWithoutOverwritingUserFields() {
@@ -311,10 +333,12 @@ void SeasonalCatalogControllerTests::reusesAnExistingLocalEntryWithoutOverwritin
     Media existing = selected;
     existing.ConsumedChapters = 6;
     existing.PersonalScore = 9;
+    existing.NextChapter = 7;
+    existing.LocalPath = QStringLiteral("D:\\Original\\Frieren");
     existing.AlternativeNames = {QStringLiteral("My custom title")};
     existing.ListStatus = UserListStatus::Current;
     repository.media.append(existing);
-    SeasonalPersonalListService personalLists(&repository, &repository);
+    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -325,13 +349,21 @@ void SeasonalCatalogControllerTests::reusesAnExistingLocalEntryWithoutOverwritin
     QVERIFY(controller.selectedMediaInPersonalList());
     QCOMPARE(controller.selectedProgressValue(), 6);
     QCOMPARE(controller.selectedScoreValue(), 9.0);
+    QCOMPARE(controller.selectedLocalPath(), existing.LocalPath);
     QCOMPARE(controller.selectedAlternativeNames(), existing.AlternativeNames);
     QCOMPARE(controller.selectedListStatusKey(), QStringLiteral("current"));
-    QVERIFY(controller.SaveSelectedToPersonalList(QStringLiteral("current")));
+    const QStringList editedAlternativeNames{QStringLiteral("Edited title"), QStringLiteral("Localized title")};
+    QVERIFY(controller.SaveSelectedToPersonalList(8, QStringLiteral("completed"), 7.0,
+                                                  QStringLiteral("C:\\Media\\Frieren"),
+                                                  editedAlternativeNames));
     QCOMPARE(repository.upsertCalls, 0);
-    QCOMPARE(repository.media.first().ConsumedChapters, 6);
-    QCOMPARE(repository.media.first().PersonalScore, 9);
-    QCOMPARE(repository.media.first().AlternativeNames, existing.AlternativeNames);
+    QCOMPARE(repository.personalListUpdateCalls, 1);
+    QCOMPARE(repository.media.first().ConsumedChapters, 8);
+    QCOMPARE(repository.media.first().PersonalScore, 7);
+    QCOMPARE(repository.media.first().ListStatus, UserListStatus::Completed);
+    QCOMPARE(repository.media.first().AlternativeNames, editedAlternativeNames);
+    QCOMPARE(repository.media.first().LocalPath, QStringLiteral("C:\\Media\\Frieren"));
+    QCOMPARE(repository.media.first().NextChapter, existing.NextChapter);
 }
 
 void SeasonalCatalogControllerTests::retainsTheDraftWhenLocalPersistenceFails() {
@@ -340,7 +372,7 @@ void SeasonalCatalogControllerTests::retainsTheDraftWhenLocalPersistenceFails() 
     source.responses.insert(1, page(1, {selected}));
     InMemoryMediaRepository repository;
     repository.failure = QStringLiteral("disk full");
-    SeasonalPersonalListService personalLists(&repository, &repository);
+    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -348,7 +380,7 @@ void SeasonalCatalogControllerTests::retainsTheDraftWhenLocalPersistenceFails() 
     controller.SetSeason(QStringLiteral("SPRING"));
     controller.SelectMedia(selected.Id);
 
-    QVERIFY(!controller.SaveSelectedToPersonalList(QStringLiteral("planning")));
+    QVERIFY(!controller.SaveSelectedToPersonalList(0, QStringLiteral("planning"), 0.0, QString(), {}));
     QCOMPARE(controller.selectedMediaId(), selected.Id);
     QVERIFY(!controller.selectedMediaInPersonalList());
     QCOMPARE(controller.personalListErrorMessage(), QStringLiteral("disk full"));

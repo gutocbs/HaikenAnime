@@ -204,6 +204,9 @@ int SeasonalCatalogController::selectedProgressMaximum() const {
 double SeasonalCatalogController::selectedScoreValue() const {
     return selectedLocalMedia_ ? selectedLocalMedia_->PersonalScore : 0.0;
 }
+QString SeasonalCatalogController::selectedLocalPath() const {
+    return selectedLocalMedia_ ? selectedLocalMedia_->LocalPath : QString();
+}
 QString SeasonalCatalogController::personalListErrorMessage() const { return personalListErrorMessage_; }
 double SeasonalCatalogController::scoreMinimum() const { return scoreMinimum_; }
 double SeasonalCatalogController::scoreMaximum() const { return scoreMaximum_; }
@@ -252,7 +255,9 @@ void SeasonalCatalogController::SelectMedia(const int mediaId) {
     emit selectionChanged();
 }
 
-bool SeasonalCatalogController::SaveSelectedToPersonalList(const QString &statusKey) {
+bool SeasonalCatalogController::SaveSelectedToPersonalList(const int progress, const QString &statusKey,
+                                                            const double score, const QString &path,
+                                                            const QStringList &alternativeNames) {
     const Media *catalogMedia = selectedMedia();
     if (!catalogMedia) {
         personalListErrorMessage_ = tr("Selecione uma mídia antes de salvar.");
@@ -276,7 +281,9 @@ bool SeasonalCatalogController::SaveSelectedToPersonalList(const QString &status
     QString error;
     const UserListStatus requestedStatus = status == UserListStatus::Unknown && selectedLocalMedia_
         ? selectedLocalMedia_->ListStatus : status;
-    if (!personalLists_->add(*catalogMedia, requestedStatus, saved, created, error)) {
+    PersonalListMediaEdit edit{qMax(0, progress), qRound(score), path.trimmed(), alternativeNames,
+                               requestedStatus};
+    if (!personalLists_->save(*catalogMedia, edit, saved, created, error)) {
         personalListErrorMessage_ = std::move(error);
         emit personalListChanged();
         return false;

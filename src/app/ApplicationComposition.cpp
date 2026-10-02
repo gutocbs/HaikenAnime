@@ -70,7 +70,8 @@ private:
 };
 
 bool hasExistingQueries(const SqliteQueryConfiguration &queries) {
-    return !queries.upsertMediaPath.isEmpty() && !queries.readMediaPath.isEmpty()
+    return !queries.upsertMediaPath.isEmpty() && !queries.updatePersonalListMediaPath.isEmpty()
+        && !queries.readMediaPath.isEmpty()
         && !queries.readActiveMediaIdsPath.isEmpty() && !queries.markMediaSourceRemovedPath.isEmpty()
         && !queries.enqueuePendingChangePath.isEmpty() && !queries.readPendingChangesPath.isEmpty()
         && !queries.updatePendingChangePath.isEmpty() && !queries.readCoverCachePath.isEmpty()
@@ -150,6 +151,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     }
 
     QString upsertQuery;
+    QString updatePersonalListQuery;
     QString readQuery;
     QString readActiveMediaIdsQuery;
     QString markSourceRemovedQuery;
@@ -168,12 +170,14 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         return context;
     }
     SqlQueryStore upsertStore(queryConfiguration.upsertMediaPath);
+    SqlQueryStore updatePersonalListStore(queryConfiguration.updatePersonalListMediaPath);
     SqlQueryStore readStore(queryConfiguration.readMediaPath);
     SqlQueryStore readActiveMediaIdsStore(queryConfiguration.readActiveMediaIdsPath);
     SqlQueryStore markSourceRemovedStore(queryConfiguration.markMediaSourceRemovedPath);
     upsertStore.setLogger(context.logger.get());
     readStore.setLogger(context.logger.get());
     if (!upsertStore.load(upsertQuery, queryError)
+        || !updatePersonalListStore.load(updatePersonalListQuery, queryError)
         || !readStore.load(readQuery, queryError)
         || !readActiveMediaIdsStore.load(readActiveMediaIdsQuery, queryError)
         || !markSourceRemovedStore.load(markSourceRemovedQuery, queryError)) {
@@ -198,7 +202,8 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
 
     auto mediaRepository = std::make_unique<SqliteMediaRepository>(
         context.database->connection(), std::move(upsertQuery), std::move(readQuery),
-        std::move(readActiveMediaIdsQuery), std::move(markSourceRemovedQuery));
+        std::move(readActiveMediaIdsQuery), std::move(markSourceRemovedQuery),
+        std::move(updatePersonalListQuery));
     mediaRepository->setLogger(context.logger.get());
     context.mediaRepository = std::move(mediaRepository);
     context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(

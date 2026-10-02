@@ -6,6 +6,7 @@ class AsyncLogger;
 
 struct SqliteQueryConfiguration final {
     QString upsertMediaPath;
+    QString updatePersonalListMediaPath;
     QString readMediaPath;
     QString readActiveMediaIdsPath;
     QString markMediaSourceRemovedPath;

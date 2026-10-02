@@ -107,6 +107,7 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/media/IMediaRepository.h
         src/application/media/IMediaReader.h
         src/application/media/IMediaWriter.h
+        src/application/media/IPersonalListMediaWriter.h
         src/application/media/IMediaSnapshotReconciler.h
         src/application/anilist/AniListSyncService.h
         src/application/anilist/AniListSyncService.cpp
@@ -206,6 +207,9 @@ set_source_files_properties(
         resources/sqlite/queries/upsert-media.sql
         PROPERTIES QT_RESOURCE_ALIAS "upsert-media.sql")
 set_source_files_properties(
+        resources/sqlite/queries/update-personal-list-media.sql
+        PROPERTIES QT_RESOURCE_ALIAS "update-personal-list-media.sql")
+set_source_files_properties(
         resources/sqlite/queries/read-media.sql
         PROPERTIES QT_RESOURCE_ALIAS "read-media.sql")
 set_source_files_properties(
@@ -269,6 +273,7 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         ${LIBRARY_SCAN_SQL_RESOURCES}
         resources/sqlite/sqlite-queries.json
         resources/sqlite/queries/upsert-media.sql
+        resources/sqlite/queries/update-personal-list-media.sql
         resources/sqlite/queries/read-media.sql
         resources/sqlite/queries/read-active-media-ids.sql
         resources/sqlite/queries/mark-media-source-removed.sql
@@ -482,7 +487,8 @@ add_executable(SqliteQueryConfigurationTests
 
 qt_add_resources(SqliteQueryConfigurationTests sqlite_query_configuration_test_resources
         PREFIX "/sqlite/queries"
-        FILES resources/sqlite/sqlite-queries.json ${LIBRARY_SCAN_SQL_RESOURCES}
+        FILES resources/sqlite/sqlite-queries.json resources/sqlite/queries/update-personal-list-media.sql
+        ${LIBRARY_SCAN_SQL_RESOURCES}
 )
 
 target_link_libraries(SqliteQueryConfigurationTests

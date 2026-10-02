@@ -26,6 +26,7 @@ public:
     int NextChapter = 0;
     int AverageScore = 0;
     int PersonalScore = 0;
+    QString LocalPath;
     QString CoverUrl;
     QString CoverMediumUrl;
     QString CoverLargeUrl;

@@ -85,6 +85,7 @@ void SqliteDatabaseTests::migrationCreatesMediaSchema() {
         QStringLiteral("cover_extra_large_url"),
         QStringLiteral("synopsis"), QStringLiteral("type"), QStringLiteral("status"),
         QStringLiteral("user_list_status"),
+        QStringLiteral("local_path"),
         QStringLiteral("source_removed_at"), QStringLiteral("season"),
         QStringLiteral("season_year"), QStringLiteral("next_airing_episode"),
         QStringLiteral("next_airing_at"), QStringLiteral("anilist_url"),
@@ -106,7 +107,7 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 14);
+    QCOMPARE(query.value(0).toInt(), 15);
 }
 
 void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
@@ -206,7 +207,7 @@ void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
     QVERIFY(versions.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
     QList<int> values;
     while (versions.next()) values.append(versions.value(0).toInt());
-    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}));
+    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}));
 }
 
 void SqliteDatabaseTests::migrationCreatesUserPreferencesVersionFive() {
@@ -593,12 +594,13 @@ void SqliteDatabaseTests::migrationAddsExtendedMediaMetadataWithoutLosingExistin
     QVERIFY2(database.migrate(), qPrintable(database.lastError()));
 
     QVERIFY(query.exec(QStringLiteral(
-        "SELECT name, consumed_chapters, personal_score, user_list_status FROM media WHERE id = 17")));
+        "SELECT name, consumed_chapters, personal_score, user_list_status, local_path FROM media WHERE id = 17")));
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toString(), QStringLiteral("Preserved media"));
     QCOMPARE(query.value(1).toInt(), 12);
     QCOMPARE(query.value(2).toInt(), 90);
     QCOMPARE(query.value(3).toInt(), 4);
+    QVERIFY(query.value(4).toString().isEmpty());
     QVERIFY(query.exec(QStringLiteral("SELECT remote_url FROM cover_cache WHERE media_id = 17")));
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toString(), QStringLiteral("https://example.test/17.jpg"));
@@ -607,6 +609,9 @@ void SqliteDatabaseTests::migrationAddsExtendedMediaMetadataWithoutLosingExistin
     QCOMPARE(query.value(0).toString(), QStringLiteral("Episode.mkv"));
     QCOMPARE(query.value(1).toInt(), 1);
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version WHERE version = 13")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 1);
+    QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version WHERE version = 15")));
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toInt(), 1);
 }

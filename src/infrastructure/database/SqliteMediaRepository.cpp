@@ -34,11 +34,13 @@ QString SerializeLinks(const QList<MediaLink> &links) {
 
 SqliteMediaRepository::SqliteMediaRepository(QSqlDatabase database, QString upsertQuery, QString readQuery,
                                              QString readActiveMediaIdsQuery,
-                                             QString markSourceRemovedQuery)
+                                             QString markSourceRemovedQuery,
+                                             QString updatePersonalListQuery)
     : database_(std::move(database)), upsertQuery_(std::move(upsertQuery)),
       readQuery_(std::move(readQuery)),
       readActiveMediaIdsQuery_(std::move(readActiveMediaIdsQuery)),
-      markSourceRemovedQuery_(std::move(markSourceRemovedQuery)) {
+      markSourceRemovedQuery_(std::move(markSourceRemovedQuery)),
+      updatePersonalListQuery_(std::move(updatePersonalListQuery)) {
 }
 
 void SqliteMediaRepository::setLogger(AsyncLogger *logger) { logger_ = logger; }
@@ -105,6 +107,7 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
         query.bindValue(QStringLiteral(":type"), static_cast<int>(item.Type));
         query.bindValue(QStringLiteral(":status"), static_cast<int>(item.Status));
         query.bindValue(QStringLiteral(":user_list_status"), static_cast<int>(item.ListStatus));
+        query.bindValue(QStringLiteral(":local_path"), item.LocalPath.isNull() ? QStringLiteral("") : item.LocalPath);
         query.bindValue(QStringLiteral(":season"), item.Season);
         query.bindValue(QStringLiteral(":season_year"), OptionalIntegerValue(item.SeasonYear));
         query.bindValue(QStringLiteral(":next_airing_episode"),
@@ -127,6 +130,37 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
         return false;
     }
     if (logger_) logger_->info(LogCategory::Database, QStringLiteral("Upserted %1 media records into SQLite.").arg(media.size()));
+    return true;
+}
+
+bool SqliteMediaRepository::updatePersonalListMedia(const Media &media, QString &error) {
+    error.clear();
+    if (!database_.isOpen()) {
+        error = QStringLiteral("SQLite database is not open.");
+        return false;
+    }
+    if (updatePersonalListQuery_.isEmpty()) {
+        error = QStringLiteral("SQLite personal-list update query is empty.");
+        return false;
+    }
+    QSqlQuery query(database_);
+    if (!query.prepare(updatePersonalListQuery_)) {
+        error = query.lastError().text();
+        return false;
+    }
+    query.bindValue(QStringLiteral(":id"), media.Id);
+    query.bindValue(QStringLiteral(":consumed_chapters"), media.ConsumedChapters);
+    query.bindValue(QStringLiteral(":personal_score"), media.PersonalScore);
+    query.bindValue(QStringLiteral(":user_list_status"), static_cast<int>(media.ListStatus));
+    query.bindValue(QStringLiteral(":local_path"), media.LocalPath.isNull() ? QStringLiteral("") : media.LocalPath);
+    query.bindValue(QStringLiteral(":alternative_names"),
+                    QString::fromUtf8(QJsonDocument::fromVariant(media.AlternativeNames).toJson()));
+    if (!query.exec() || query.numRowsAffected() != 1) {
+        error = query.lastError().text();
+        if (error.isEmpty()) error = QStringLiteral("Local media record was not found.");
+        if (logger_) logger_->error(LogCategory::Database, error);
+        return false;
+    }
     return true;
 }
 
