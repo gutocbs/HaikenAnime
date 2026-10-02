@@ -75,6 +75,8 @@ private slots:
     void coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads();
     void languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml();
     void preferredTitleSelectionUsesBackendOptions();
+    void seasonalCatalogRequiresExplicitFiltersAndHasResponsiveContent();
+    void mainKeepsSeasonalCatalogAsSeparateNavigation();
 
 private:
     static QString qmlSource(const QString &name);
@@ -396,6 +398,28 @@ void QmlStructureTests::coverPreviewReusesSelectedCoverSourceWithoutRequestingDo
              "Opening the preview must not request cover downloads.");
     QVERIFY2(!previewSource.contains(QStringLiteral("CoverDownload")),
              "The preview must not depend on the cover download controller.");
+}
+
+void QmlStructureTests::seasonalCatalogRequiresExplicitFiltersAndHasResponsiveContent() {
+    const QString source = qmlSource(QStringLiteral("SeasonalCatalogScreen.qml"));
+    QVERIFY2(!source.isEmpty(), "The seasonal catalog needs its own screen.");
+    QVERIFY(source.contains(QStringLiteral("currentIndex: controller.selectedYear > 0")));
+    QVERIFY(source.contains(QStringLiteral("currentIndex: controller.selectedSeasonKey.length > 0")));
+    QVERIFY(source.contains(QStringLiteral("controller.SetYear")));
+    QVERIFY(source.contains(QStringLiteral("controller.SetSeason")));
+    QVERIFY(source.contains(QStringLiteral("controller.Retry()")));
+    QVERIFY(source.contains(QStringLiteral("controller.LoadNextPage()")));
+    QVERIFY(source.contains(QStringLiteral("columns: width >= 860 ? 3 : width >= 560 ? 2 : 1")));
+    QVERIFY(source.contains(QStringLiteral("MediaDetailsPanel {")));
+    QVERIFY(!source.contains(QStringLiteral("EditMediaPanel {")));
+}
+
+void QmlStructureTests::mainKeepsSeasonalCatalogAsSeparateNavigation() {
+    const QString source = qmlSource(QStringLiteral("Main.qml"));
+    QVERIFY(source.contains(QStringLiteral("property string page: \"home\"")));
+    QVERIFY(source.contains(QStringLiteral("SeasonalCatalogScreen {")));
+    QVERIFY(source.contains(QStringLiteral("onOpenSeasonalCatalogRequested: root.page = \"seasonal\"")));
+    QVERIFY(source.contains(QStringLiteral("onBackRequested: root.page = \"home\"")));
 }
 
 QTEST_GUILESS_MAIN(QmlStructureTests)

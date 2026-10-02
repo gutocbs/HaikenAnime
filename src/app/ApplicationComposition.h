@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include <QNetworkAccessManager>
+
 #include "../application/media/IMediaRepository.h"
 #include "../application/anilist/IPendingChangeRepository.h"
 #include "../infrastructure/database/SqliteDatabase.h"
@@ -12,6 +14,10 @@
 #include "../application/covers/CoverDownloadCoordinator.h"
 #include "../application/configuration/IUserPreferencesRepository.h"
 #include "../application/configuration/UserPreferences.h"
+#include "../infrastructure/anilist/AniListGraphQlClient.h"
+#include "../infrastructure/anilist/GraphQlQueryStore.h"
+#include "../infrastructure/anilist/GraphQlSeasonalCatalogDataSource.h"
+#include "SeasonalCatalogCoordinator.h"
 
 
 struct ApplicationContext final {
@@ -27,6 +33,11 @@ struct ApplicationContext final {
     std::unique_ptr<IUserPreferencesRepository> userPreferencesRepository;
     UserPreferences userPreferences;
     CoverQuality coverQuality = CoverQuality::Medium;
+    std::unique_ptr<QNetworkAccessManager> seasonalNetworkManager;
+    std::unique_ptr<AniListGraphQlClient> seasonalGraphQlClient;
+    std::unique_ptr<GraphQlQueryStore> seasonalQueryStore;
+    std::unique_ptr<GraphQlSeasonalCatalogDataSource> seasonalCatalogDataSource;
+    std::unique_ptr<SeasonalCatalogCoordinator> seasonalCatalogCoordinator;
     QString initializationError;
     bool startupLibraryScanScheduled = false;
     // Declared last so destruction joins the worker before other dependencies.

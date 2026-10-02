@@ -18,17 +18,25 @@ ApplicationWindow {
     palette.buttonText: "#172033"
     palette.highlight: "#315d91"
 
-    property bool showingSettings: false
+    property bool showingSettings: page === "settings"
+    property string page: "home"
 
     Home {
         anchors.fill: parent
-        visible: !root.showingSettings
-        onOpenSettingsRequested: root.showingSettings = true
+        visible: root.page === "home"
+        onOpenSettingsRequested: root.page = "settings"
+        onOpenSeasonalCatalogRequested: root.page = "seasonal"
     }
 
     SettingsScreen {
         anchors.fill: parent
-        visible: root.showingSettings
-        onBackRequested: root.showingSettings = false
+        visible: root.page === "settings"
+        onBackRequested: root.page = "home"
+    }
+
+    SeasonalCatalogScreen {
+        anchors.fill: parent
+        visible: root.page === "seasonal"
+        onBackRequested: root.page = "home"
     }
 }

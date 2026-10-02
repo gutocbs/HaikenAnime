@@ -189,6 +189,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/logging/AsyncLogger.cpp
         src/presentation/home/HomeScreenController.h
         src/presentation/home/HomeScreenController.cpp
+        src/presentation/seasonal/SeasonalCatalogController.h
+        src/presentation/seasonal/SeasonalCatalogController.cpp
         src/presentation/settings/SettingsController.h
         src/presentation/settings/SettingsController.cpp
 )
@@ -306,6 +308,7 @@ qt_add_qml_module(HaikenAnime
         resources/qml/CoverPreview.qml
         resources/qml/MediaDetailsPanel.qml
         resources/qml/SettingsScreen.qml
+        resources/qml/SeasonalCatalogScreen.qml
         resources/qml/BrowseControls.qml
         resources/qml/EditMediaPanel.qml
         resources/qml/MediaCard.qml
@@ -715,6 +718,19 @@ qt_add_resources(SeasonalCatalogTests seasonal_catalog_query_resource_bundle
         FILES resources/anilist/queries/seasonal-catalog.graphql)
 add_test(NAME SeasonalCatalogTests COMMAND SeasonalCatalogTests)
 
+add_executable(SeasonalCatalogControllerTests
+        tests/unit/SeasonalCatalogControllerTests.cpp
+        src/presentation/seasonal/SeasonalCatalogController.h
+        src/presentation/seasonal/SeasonalCatalogController.cpp
+        src/app/SeasonalCatalogCoordinator.h
+        src/app/SeasonalCatalogCoordinator.cpp
+        src/application/covers/CoverSourceResolver.cpp
+        src/application/media/MediaTitleResolver.cpp
+)
+target_include_directories(SeasonalCatalogControllerTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(SeasonalCatalogControllerTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME SeasonalCatalogControllerTests COMMAND SeasonalCatalogControllerTests)
+
 add_executable(AniListSyncErrorClassifierTests
         tests/unit/AniListSyncErrorClassifierTests.cpp
         src/application/anilist/AniListSyncErrorClassifier.h
@@ -937,6 +953,7 @@ set(HAIKENANIME_TESTS
         AniListGraphQlParsingTests
         GraphQlQueryStoreTests
         SeasonalCatalogTests
+        SeasonalCatalogControllerTests
         AniListSyncErrorClassifierTests
         AniListMergePolicyResolverTests
         AniListPendingChangeFactoryTests

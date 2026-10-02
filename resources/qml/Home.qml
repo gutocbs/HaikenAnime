@@ -6,6 +6,7 @@ Item {
     id: home
 
     signal openSettingsRequested()
+    signal openSeasonalCatalogRequested()
 
     onVisibleChanged: if (visible) mediaGrid.reportWindow()
 
@@ -98,6 +99,14 @@ Item {
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 Layout.alignment: Qt.AlignVCenter
+            }
+
+            Button {
+                text: qsTr("Catálogo sazonal")
+                flat: true
+                font.pixelSize: 13
+                Layout.alignment: Qt.AlignVCenter
+                onClicked: home.openSeasonalCatalogRequested()
             }
 
             Rectangle {

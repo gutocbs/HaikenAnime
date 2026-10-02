@@ -16,6 +16,7 @@
 #include "../infrastructure/library/LocalLibraryScanner.h"
 #include "../infrastructure/library/QtDirectoryEnumerator.h"
 #include "../infrastructure/database/SqliteLocalFileRepository.h"
+#include "../infrastructure/anilist/HttpFactory.h"
 #include <QStandardPaths>
 #include <QDir>
 #include <QPointer>
@@ -276,6 +277,15 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         queryConfiguration.markMediaSourceRemovedPath,
         settings.syncTimeoutMs, settings.syncIntervalMs);
     context.initialSync->setLogger(context.logger.get());
+    context.seasonalNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
+    context.seasonalGraphQlClient = std::make_unique<AniListGraphQlClient>(
+        *context.seasonalNetworkManager);
+    context.seasonalQueryStore = std::make_unique<GraphQlQueryStore>(
+        QStringLiteral(":/anilist/queries/seasonal-catalog.graphql"));
+    context.seasonalCatalogDataSource = std::make_unique<GraphQlSeasonalCatalogDataSource>(
+        *context.seasonalGraphQlClient, *context.seasonalQueryStore);
+    context.seasonalCatalogCoordinator = std::make_unique<SeasonalCatalogCoordinator>(
+        *context.seasonalCatalogDataSource);
     context.logger->info(LogCategory::Application, QStringLiteral("Application composition completed."));
     return context;
 }

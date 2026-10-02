@@ -7,6 +7,7 @@
 #include "src/app/ApplicationComposition.h"
 #include "src/app/TranslationLoader.h"
 #include "src/presentation/home/HomeScreenController.h"
+#include "src/presentation/seasonal/SeasonalCatalogController.h"
 #include "src/presentation/settings/SettingsController.h"
 
 bool persistHomeSortPreference(ApplicationContext &context, const QString &key, QString &error) {
@@ -48,6 +49,9 @@ int main(int argc, char *argv[]) {
     });
     HomeScreenController homeController(context.mediaRepository.get(), context.coverCoordinator.get(),
                                         context.userPreferences.coverQuality, context.initializationError);
+    SeasonalCatalogController seasonalCatalogController(context.seasonalCatalogCoordinator.get(),
+                                                        context.userPreferences.coverQuality,
+                                                        context.userPreferences.preferredTitleKey);
     homeController.ConfigureScoreScale(context.userPreferences.scoreMinimum,
                                        context.userPreferences.scoreMaximum,
                                        context.userPreferences.scoreStep);
@@ -82,13 +86,15 @@ int main(int argc, char *argv[]) {
     }
 
     QObject::connect(&settingsController, &SettingsController::preferencesApplied,
-                     [&homeController, &context](const UserPreferences &preferences) {
+                     [&homeController, &seasonalCatalogController, &context](const UserPreferences &preferences) {
         context.userPreferences = preferences;
         homeController.ConfigureScoreScale(preferences.scoreMinimum,
                                            preferences.scoreMaximum,
                                            preferences.scoreStep);
         homeController.ConfigureCoverQuality(preferences.coverQuality);
         homeController.ConfigureCardStatusPresentation(preferences.cardStatusPresentation);
+        seasonalCatalogController.ConfigureCoverQuality(preferences.coverQuality);
+        seasonalCatalogController.ConfigurePreferredTitle(preferences.preferredTitleKey);
         if (context.initialSync) {
             context.initialSync->configureAutomaticSynchronization(
                 preferences.synchronizationEnabled, preferences.synchronizationIntervalMs);
@@ -98,6 +104,7 @@ int main(int argc, char *argv[]) {
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("homeController"), &homeController);
     engine.rootContext()->setContextProperty(QStringLiteral("settingsController"), &settingsController);
+    engine.rootContext()->setContextProperty(QStringLiteral("seasonalCatalogController"), &seasonalCatalogController);
 
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
                      &app, []() { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
