@@ -114,6 +114,7 @@ QString SeasonalCatalogController::state() const { return coordinator_ ? stateNa
 QString SeasonalCatalogController::errorMessage() const { return coordinator_ ? coordinator_->error() : QStringLiteral("Seasonal catalog is unavailable."); }
 bool SeasonalCatalogController::canLoadNextPage() const { return coordinator_ && coordinator_->canLoadNextPage(); }
 bool SeasonalCatalogController::hasResults() const { return !media_.isEmpty(); }
+bool SeasonalCatalogController::includeAdultContent() const { return coordinator_ && coordinator_->includeAdultContent(); }
 bool SeasonalCatalogController::hasSelection() const { return selectedMedia() != nullptr; }
 int SeasonalCatalogController::selectedMediaId() const { return hasSelection() ? selectedMediaId_ : 0; }
 QString SeasonalCatalogController::selectedTitle() const { const auto *media = selectedMedia(); return media ? ResolveMediaTitle(*media, preferredTitleKey_) : QString(); }
@@ -145,6 +146,10 @@ void SeasonalCatalogController::ConfigurePreferredTitle(QString key) {
     preferredTitleKey_ = std::move(key);
     mediaModel_.configurePresentation(coverQuality_, preferredTitleKey_);
     emit selectionChanged();
+}
+
+void SeasonalCatalogController::ConfigureIncludeAdultContent(const bool enabled) {
+    if (coordinator_) coordinator_->SetIncludeAdultContent(enabled);
 }
 
 void SeasonalCatalogController::SetYear(const int year) { if (coordinator_) coordinator_->SetYear(year); }

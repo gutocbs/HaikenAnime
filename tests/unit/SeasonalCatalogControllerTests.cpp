@@ -54,6 +54,7 @@ private slots:
     void exposesBackendOwnedStableFilterOptionsWithoutDefaults();
     void exposesResultsSelectionAndPagingCommands();
     void retainsResultsAndSuppressesDuplicateLoadsWhileAppending();
+    void adultPolicyChangeReloadsActiveFiltersWithoutMixingPriorResults();
     void exposesHomeCompatibleDetailsPresentation();
     void exposesErrorAndRetriesTheCurrentSelection();
 };
@@ -132,6 +133,25 @@ void SeasonalCatalogControllerTests::retainsResultsAndSuppressesDuplicateLoadsWh
     QCOMPARE(source.requests.size(), 2);
     QCOMPARE(controller.mediaModel()->rowCount(), 2);
     QVERIFY(!controller.canLoadNextPage());
+}
+
+void SeasonalCatalogControllerTests::adultPolicyChangeReloadsActiveFiltersWithoutMixingPriorResults() {
+    RecordingSource source;
+    source.responses.insert(1, page(1, {media(7)}));
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator);
+
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+    source.responses.insert(1, page(1, {media(8)}));
+    controller.ConfigureIncludeAdultContent(true);
+
+    QCOMPARE(source.requests.size(), 2);
+    QVERIFY(!source.requests.at(0).includeAdultContent);
+    QVERIFY(source.requests.at(1).includeAdultContent);
+    QCOMPARE(controller.mediaModel()->rowCount(), 1);
+    QCOMPARE(controller.mediaModel()->data(controller.mediaModel()->index(0, 0),
+                                           SeasonalCatalogMediaModel::MediaIdRole).toInt(), 8);
 }
 
 void SeasonalCatalogControllerTests::exposesHomeCompatibleDetailsPresentation() {

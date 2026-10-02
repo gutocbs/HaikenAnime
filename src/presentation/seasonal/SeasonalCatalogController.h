@@ -43,6 +43,7 @@ class SeasonalCatalogController final : public QObject {
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY stateChanged)
     Q_PROPERTY(bool canLoadNextPage READ canLoadNextPage NOTIFY stateChanged)
     Q_PROPERTY(bool hasResults READ hasResults NOTIFY stateChanged)
+    Q_PROPERTY(bool includeAdultContent READ includeAdultContent NOTIFY stateChanged)
     Q_PROPERTY(bool hasSelection READ hasSelection NOTIFY selectionChanged)
     Q_PROPERTY(int selectedMediaId READ selectedMediaId NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedTitle READ selectedTitle NOTIFY selectionChanged)
@@ -73,6 +74,7 @@ public:
     QString errorMessage() const;
     bool canLoadNextPage() const;
     bool hasResults() const;
+    bool includeAdultContent() const;
     bool hasSelection() const;
     int selectedMediaId() const;
     QString selectedTitle() const;
@@ -90,6 +92,7 @@ public:
 
     void ConfigureCoverQuality(CoverQuality quality);
     void ConfigurePreferredTitle(QString key);
+    void ConfigureIncludeAdultContent(bool enabled);
 
     Q_INVOKABLE void SetYear(int year);
     Q_INVOKABLE void SetSeason(const QString &seasonKey);

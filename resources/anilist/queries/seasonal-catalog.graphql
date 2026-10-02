@@ -1,11 +1,11 @@
-query SeasonalCatalog($year: Int!, $season: MediaSeason!, $page: Int!, $perPage: Int!) {
+query SeasonalCatalog($year: Int!, $season: MediaSeason!, $page: Int!, $perPage: Int!, $includeAdultContent: Boolean) {
   Page(page: $page, perPage: $perPage) {
     pageInfo {
       currentPage
       lastPage
       hasNextPage
     }
-    media(seasonYear: $year, season: $season) {
+    media(seasonYear: $year, season: $season, isAdult: $includeAdultContent) {
       id
       type
       format

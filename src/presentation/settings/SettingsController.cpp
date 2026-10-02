@@ -145,6 +145,7 @@ int SettingsController::synchronizationIntervalMs() const { return draft_.synchr
 QString SettingsController::cardStatusPresentationKey() const { return cardStatusPresentationKey_; }
 QString SettingsController::languageKey() const { return languageKey_; }
 QString SettingsController::preferredTitleKey() const { return preferredTitleKey_; }
+bool SettingsController::includeAdultContent() const { return draft_.includeAdultContent; }
 bool SettingsController::dirty() const { return !extensionInputValid_ || !(draft_ == persisted_); }
 bool SettingsController::valid() const { return valid_; }
 bool SettingsController::saving() const { return saving_; }
@@ -237,6 +238,12 @@ void SettingsController::SetPreferredTitle(const QString &key) {
     preferredTitleKey_ = key;
     preferredTitleKeyValid_ = IsSupportedPreferredTitleKey(key);
     if (preferredTitleKeyValid_) draft_.preferredTitleKey = key;
+    statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
+}
+
+void SettingsController::SetIncludeAdultContent(const bool enabled) {
+    if (draft_.includeAdultContent == enabled) return;
+    draft_.includeAdultContent = enabled;
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }
 

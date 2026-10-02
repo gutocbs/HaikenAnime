@@ -26,6 +26,13 @@ void SeasonalCatalogCoordinator::SetSeason(QString seasonKey) {
     startFirstPageIfReady();
 }
 
+void SeasonalCatalogCoordinator::SetIncludeAdultContent(const bool enabled) {
+    if (includeAdultContent_ == enabled) return;
+    includeAdultContent_ = enabled;
+    resetResult();
+    startFirstPageIfReady();
+}
+
 void SeasonalCatalogCoordinator::LoadNextPage() {
     if (!canLoadNextPage()) return;
     fetchPage(currentPage_ + 1, true);
@@ -38,7 +45,8 @@ void SeasonalCatalogCoordinator::Retry() {
 
 int SeasonalCatalogCoordinator::year() const { return year_; }
 QString SeasonalCatalogCoordinator::seasonKey() const { return seasonKey_; }
-SeasonalCatalogRequest SeasonalCatalogCoordinator::request() const { return {year_, seasonKey_, 1, perPage_}; }
+bool SeasonalCatalogCoordinator::includeAdultContent() const { return includeAdultContent_; }
+SeasonalCatalogRequest SeasonalCatalogCoordinator::request() const { return {year_, seasonKey_, 1, perPage_, includeAdultContent_}; }
 SeasonalCatalogState SeasonalCatalogCoordinator::state() const { return state_; }
 const QList<Media> &SeasonalCatalogCoordinator::media() const { return media_; }
 QString SeasonalCatalogCoordinator::error() const { return error_; }
@@ -60,7 +68,7 @@ void SeasonalCatalogCoordinator::startFirstPageIfReady() {
 }
 
 void SeasonalCatalogCoordinator::fetchPage(const int page, const bool append) {
-    SeasonalCatalogRequest pageRequest{year_, seasonKey_, page, perPage_};
+    SeasonalCatalogRequest pageRequest{year_, seasonKey_, page, perPage_, includeAdultContent_};
     if (!pageRequest.isValid()) return;
 
     const quint64 requestGeneration = ++generation_;

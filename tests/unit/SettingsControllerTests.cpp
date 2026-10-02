@@ -71,6 +71,7 @@ private slots:
     void rejectsInvalidCardStatusPresentation();
     void exposesBackendLanguageOptionsAndRestartNotice();
     void exposesBackendPreferredTitleOptionsAndRestartNotice();
+    void savesAdultContentDraftWithoutChangingUnrelatedPreferences();
     void libraryDraftSavesAndDiscardsAtomically();
     void invalidLibraryDraftCannotSave();
     void extensionsAreNormalizedAndOptionsRetainPersistedSelections();
@@ -246,6 +247,23 @@ void SettingsControllerTests::exposesBackendPreferredTitleOptionsAndRestartNotic
     QVERIFY(!controller.valid());
     controller.Discard();
     QCOMPARE(controller.preferredTitleKey(), QStringLiteral("native"));
+}
+
+void SettingsControllerTests::savesAdultContentDraftWithoutChangingUnrelatedPreferences() {
+    FakePreferencesRepository repository;
+    UserPreferences initial;
+    initial.homeSortKey = QStringLiteral("title_desc");
+    initial.coverQuality = CoverQuality::Large;
+    SettingsController controller(&repository, initial);
+
+    QVERIFY(!controller.includeAdultContent());
+    controller.SetIncludeAdultContent(true);
+    QVERIFY(controller.dirty());
+    controller.Save();
+
+    QVERIFY(repository.stored.includeAdultContent);
+    QCOMPARE(repository.stored.homeSortKey, QStringLiteral("title_desc"));
+    QCOMPARE(repository.stored.coverQuality, CoverQuality::Large);
 }
 
 void SettingsControllerTests::invalidLibraryDraftCannotSave() {

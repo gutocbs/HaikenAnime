@@ -33,6 +33,7 @@ private slots:
     void migrationAddsLanguageWithoutLosingExistingData();
     void migrationAddsPreferredTitleWithoutLosingExistingData();
     void migrationAddsExtendedMediaMetadataWithoutLosingExistingData();
+    void migrationAddsAdultContentWithDisabledFallbackWithoutLosingExistingData();
 };
 
 void SqliteDatabaseTests::opensAndCreatesDatabaseFile() {
@@ -105,7 +106,7 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 13);
+    QCOMPARE(query.value(0).toInt(), 14);
 }
 
 void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
@@ -205,7 +206,7 @@ void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
     QVERIFY(versions.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
     QList<int> values;
     while (versions.next()) values.append(versions.value(0).toInt());
-    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}));
+    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14}));
 }
 
 void SqliteDatabaseTests::migrationCreatesUserPreferencesVersionFive() {
@@ -608,6 +609,34 @@ void SqliteDatabaseTests::migrationAddsExtendedMediaMetadataWithoutLosingExistin
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version WHERE version = 13")));
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toInt(), 1);
+}
+
+void SqliteDatabaseTests::migrationAddsAdultContentWithDisabledFallbackWithoutLosingExistingData() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("legacy.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("DELETE FROM schema_version WHERE version = 14")));
+    QVERIFY(query.exec(QStringLiteral("ALTER TABLE user_preferences RENAME TO user_preferences_newer")));
+    QVERIFY(query.exec(QStringLiteral(
+        "CREATE TABLE user_preferences (id INTEGER PRIMARY KEY, score_minimum REAL, score_maximum REAL, "
+        "score_step REAL, cover_quality TEXT, synchronization_enabled INTEGER, synchronization_interval_ms INTEGER, "
+        "home_sort_key TEXT, card_status_presentation TEXT, language_key TEXT, preferred_title_key TEXT, "
+        "library_root TEXT, scan_extensions TEXT)")));
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO user_preferences VALUES "
+        "(1, 0, 10, 1, 'large', 0, 1800000, 'title_desc', 'media-release-status', 'en', 'native', "
+        "'R:/Anime', '[\".mkv\"]')")));
+    QVERIFY(query.exec(QStringLiteral("DROP TABLE user_preferences_newer")));
+
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+    QVERIFY(query.exec(QStringLiteral(
+        "SELECT include_adult_content, home_sort_key, preferred_title_key FROM user_preferences WHERE id = 1")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toBool(), false);
+    QCOMPARE(query.value(1).toString(), QStringLiteral("title_desc"));
+    QCOMPARE(query.value(2).toString(), QStringLiteral("native"));
 }
 
 QTEST_MAIN(SqliteDatabaseTests)

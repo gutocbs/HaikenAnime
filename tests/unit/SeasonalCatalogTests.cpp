@@ -101,6 +101,7 @@ class SeasonalCatalogTests final : public QObject {
 
 private slots:
     void requestRejectsInvalidYearSeasonAndPagination();
+    void requestAndGraphQlVariablesDistinguishAdultContentPolicy();
     void gateDoesNotCallSourceUntilBothFiltersAreValid();
     void coordinatorPaginatesAndPreservesFirstDuplicateOccurrence();
     void coordinatorStopsAtThePaginationEnvelopeAndHandlesEmptyPage();
@@ -119,6 +120,16 @@ void SeasonalCatalogTests::requestRejectsInvalidYearSeasonAndPagination() {
     QVERIFY(!(SeasonalCatalogRequest{2026, QStringLiteral("WINTER"), 0, 50}.isValid()));
     QVERIFY(!(SeasonalCatalogRequest{2026, QStringLiteral("WINTER"), 1, 51}.isValid()));
     QVERIFY((SeasonalCatalogRequest{2026, QStringLiteral("WINTER"), 1, 50}.isValid()));
+}
+
+void SeasonalCatalogTests::requestAndGraphQlVariablesDistinguishAdultContentPolicy() {
+    const SeasonalCatalogRequest disabled{2026, QStringLiteral("WINTER"), 1, 50, false};
+    const SeasonalCatalogRequest enabled{2026, QStringLiteral("WINTER"), 1, 50, true};
+    QVERIFY(disabled.isValid());
+    QVERIFY(enabled.isValid());
+    QVERIFY(!(disabled == enabled));
+    QCOMPARE(seasonalCatalogGraphQlVariables(disabled).value(QStringLiteral("includeAdultContent")).toBool(), false);
+    QVERIFY(seasonalCatalogGraphQlVariables(enabled).value(QStringLiteral("includeAdultContent")).isNull());
 }
 
 void SeasonalCatalogTests::gateDoesNotCallSourceUntilBothFiltersAreValid() {

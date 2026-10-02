@@ -358,6 +358,9 @@ void QmlStructureTests::preferredTitleSelectionUsesBackendOptions() {
     QVERIFY(settingsSource.contains(QStringLiteral("controller.preferredTitleKey")));
     QVERIFY(settingsSource.contains(QStringLiteral("controller.SetPreferredTitle")));
     QVERIFY(!settingsSource.contains(QStringLiteral("model: [\"romaji\", \"english\", \"native\"]")));
+    QVERIFY(settingsSource.contains(QStringLiteral("controller.includeAdultContent")));
+    QVERIFY(settingsSource.contains(QStringLiteral("controller.SetIncludeAdultContent")));
+    QVERIFY(settingsSource.contains(QStringLiteral("INCLUIR CONTEÚDO ADULTO")));
 }
 
 void QmlStructureTests::coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads() {

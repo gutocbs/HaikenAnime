@@ -33,6 +33,7 @@ struct SeasonalCatalogRequest final {
     QString seasonKey;
     int page = 1;
     int perPage = kSeasonalCatalogMaximumPageSize;
+    bool includeAdultContent = false;
 
     [[nodiscard]] bool isValid() const {
         return year >= 1 && year <= 9999 && page >= 1 && perPage >= 1

@@ -12,10 +12,13 @@ GraphQlSeasonalCatalogDataSource::GraphQlSeasonalCatalogDataSource(AniListGraphQ
 }
 
 QJsonObject seasonalCatalogGraphQlVariables(const SeasonalCatalogRequest &request) {
+    const QJsonValue adultFilter = request.includeAdultContent
+        ? QJsonValue(QJsonValue::Null) : QJsonValue(false);
     return {{QStringLiteral("year"), request.year},
             {QStringLiteral("season"), request.seasonKey},
             {QStringLiteral("page"), request.page},
-            {QStringLiteral("perPage"), request.perPage}};
+            {QStringLiteral("perPage"), request.perPage},
+            {QStringLiteral("includeAdultContent"), adultFilter}};
 }
 
 bool GraphQlSeasonalCatalogDataSource::Fetch(const SeasonalCatalogRequest &request,

@@ -20,6 +20,7 @@ private slots:
     void cardStatusPresentationSurvivesRestartAndInvalidStoredValueFallsBack();
     void languageSurvivesRestartAndInvalidStoredValueFallsBackWithoutLosingPreferences();
     void preferredTitleSurvivesRestartAndInvalidStoredValueWarnsWithoutLosingPreferences();
+    void adultContentDefaultsDisabledAndRoundTripsWithoutLosingPreferences();
 };
 
 static SqliteUserPreferencesRepository Repository(SqliteDatabase &database) {
@@ -264,6 +265,36 @@ void SqliteUserPreferencesRepositoryTests::preferredTitleSurvivesRestartAndInval
     QCOMPARE(loaded.coverQuality, CoverQuality::Large);
     QVERIFY(warning.contains(QStringLiteral("obsolete")));
     QVERIFY(warning.contains(QStringLiteral("romaji")));
+}
+
+void SqliteUserPreferencesRepositoryTests::adultContentDefaultsDisabledAndRoundTripsWithoutLosingPreferences() {
+    QTemporaryDir directory;
+    const auto path = directory.filePath(QStringLiteral("preferences.sqlite"));
+    QString error;
+    {
+        SqliteDatabase database(path);
+        QVERIFY(database.open());
+        QVERIFY(database.migrate());
+        auto repository = Repository(database);
+        UserPreferences defaults;
+        QVERIFY(!defaults.includeAdultContent);
+        defaults.includeAdultContent = true;
+        defaults.homeSortKey = QStringLiteral("title_desc");
+        defaults.coverQuality = CoverQuality::Large;
+        QVERIFY2(repository.replace(defaults, error), qPrintable(error));
+    }
+
+    SqliteDatabase reopened(path);
+    QVERIFY(reopened.open());
+    QVERIFY(reopened.migrate());
+    auto repository = Repository(reopened);
+    UserPreferences loaded;
+    bool found = false;
+    QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
+    QVERIFY(found);
+    QVERIFY(loaded.includeAdultContent);
+    QCOMPARE(loaded.homeSortKey, QStringLiteral("title_desc"));
+    QCOMPARE(loaded.coverQuality, CoverQuality::Large);
 }
 
 void SqliteUserPreferencesRepositoryTests::readsMissingAndRoundTripsReplacement() {

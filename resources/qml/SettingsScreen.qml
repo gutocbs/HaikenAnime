@@ -403,6 +403,8 @@ Item {
         id: settingSwitch
         property string title: ""
         property string description: ""
+        property bool checked: false
+        signal toggled(bool checked)
         Layout.fillWidth: true
         spacing: 16
         ColumnLayout {
@@ -411,7 +413,7 @@ Item {
             Label { Layout.fillWidth: true; text: settingSwitch.title; color: ink; font.pixelSize: 12; font.weight: Font.DemiBold; wrapMode: Text.Wrap }
             Label { Layout.fillWidth: true; text: settingSwitch.description; color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
         }
-        Switch { checked: false }
+        Switch { checked: settingSwitch.checked; onToggled: settingSwitch.toggled(checked) }
     }
 
     Component {
@@ -698,6 +700,14 @@ Item {
                         textRole: "label"
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.cardStatusPresentationKey)
                         onActivated: controller.SetCardStatusPresentation(model[index].key)
+                    }
+                    SettingSwitch {
+                        Layout.fillWidth: true
+                        Layout.columnSpan: 2
+                        title: qsTr("INCLUIR CONTEÚDO ADULTO")
+                        description: qsTr("Permite títulos adultos no catálogo sazonal.")
+                        checked: controller.includeAdultContent
+                        onToggled: controller.SetIncludeAdultContent(checked)
                     }
                 }
                 Label {

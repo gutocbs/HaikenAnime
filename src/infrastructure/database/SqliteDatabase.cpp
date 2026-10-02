@@ -145,7 +145,8 @@ bool SqliteDatabase::migrate() {
         "home_sort_key TEXT NOT NULL DEFAULT 'title_asc',"
         "card_status_presentation TEXT NOT NULL DEFAULT 'personal-list-status',"
         "language_key TEXT NOT NULL DEFAULT 'pt-BR',"
-        "preferred_title_key TEXT NOT NULL DEFAULT 'romaji')"));
+        "preferred_title_key TEXT NOT NULL DEFAULT 'romaji',"
+        "include_adult_content INTEGER NOT NULL DEFAULT 0 CHECK (include_adult_content IN (0, 1)))"));
     bool sourceRemovalColumnExists = false;
     bool userListStatusColumnExists = false;
     bool coverMediumColumnExists = false;
@@ -300,7 +301,21 @@ bool SqliteDatabase::migrate() {
             "ALTER TABLE media ADD COLUMN external_links TEXT NOT NULL DEFAULT '[]'")));
     const bool extendedMediaVersionInserted = externalLinksReady && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (13)"));
-    const bool versionQueried = extendedMediaVersionInserted && query.exec(QStringLiteral(
+    bool includeAdultContentExists = false;
+    bool adultContentReady = false;
+    if (extendedMediaVersionInserted && query.exec(QStringLiteral("PRAGMA table_info(user_preferences)"))) {
+        while (query.next()) {
+            if (query.value(1).toString() == QStringLiteral("include_adult_content")) {
+                includeAdultContentExists = true;
+            }
+        }
+        adultContentReady = includeAdultContentExists || query.exec(QStringLiteral(
+            "ALTER TABLE user_preferences ADD COLUMN include_adult_content INTEGER NOT NULL "
+            "DEFAULT 0 CHECK (include_adult_content IN (0, 1))"));
+    }
+    const bool adultContentVersionInserted = adultContentReady && query.exec(QStringLiteral(
+        "INSERT OR IGNORE INTO schema_version (version) VALUES (14)"));
+    const bool versionQueried = adultContentVersionInserted && query.exec(QStringLiteral(
         "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 1), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 2), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 3), "
@@ -313,12 +328,14 @@ bool SqliteDatabase::migrate() {
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 10), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 11), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 12), "
-        "EXISTS(SELECT 1 FROM schema_version WHERE version = 13)"));
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 13), "
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 14)"));
     const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool()
         && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
         && query.value(4).toBool() && query.value(5).toBool() && query.value(6).toBool()
         && query.value(7).toBool() && query.value(8).toBool() && query.value(9).toBool()
-        && query.value(10).toBool() && query.value(11).toBool() && query.value(12).toBool();
+        && query.value(10).toBool() && query.value(11).toBool() && query.value(12).toBool()
+        && query.value(13).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();
@@ -335,7 +352,7 @@ bool SqliteDatabase::migrate() {
 
     lastError_ = query.lastError().text();
     if (lastError_.isEmpty()) {
-        lastError_ = QStringLiteral("SQLite migration versions 1 through 13 were not recorded.");
+        lastError_ = QStringLiteral("SQLite migration versions 1 through 14 were not recorded.");
     }
     database_.rollback();
     if (logger_) logger_->error(LogCategory::Migration, query.lastError().text());

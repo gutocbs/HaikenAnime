@@ -19,6 +19,7 @@ struct UserPreferences final {
     CardStatusPresentation cardStatusPresentation = CardStatusPresentation::PersonalListStatus;
     QString languageKey = DefaultLanguageKey();
     QString preferredTitleKey = DefaultPreferredTitleKey();
+    bool includeAdultContent = false;
     QString libraryRoot = QStringLiteral("Q:\\");
     QStringList scanExtensions = {QStringLiteral(".mkv"), QStringLiteral(".mp4"),
                                   QStringLiteral(".avi"), QStringLiteral(".webm"),
@@ -37,6 +38,7 @@ inline bool operator==(const UserPreferences &left, const UserPreferences &right
         && left.cardStatusPresentation == right.cardStatusPresentation
         && left.languageKey == right.languageKey
         && left.preferredTitleKey == right.preferredTitleKey
+        && left.includeAdultContent == right.includeAdultContent
         && left.libraryRoot == right.libraryRoot
         && left.scanExtensions == right.scanExtensions;
 }

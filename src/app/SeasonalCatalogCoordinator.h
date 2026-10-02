@@ -19,11 +19,13 @@ public:
 
     void SetYear(int year);
     void SetSeason(QString seasonKey);
+    void SetIncludeAdultContent(bool enabled);
     void LoadNextPage();
     void Retry();
 
     [[nodiscard]] int year() const;
     [[nodiscard]] QString seasonKey() const;
+    [[nodiscard]] bool includeAdultContent() const;
     [[nodiscard]] SeasonalCatalogRequest request() const;
     [[nodiscard]] SeasonalCatalogState state() const;
     [[nodiscard]] const QList<Media> &media() const;
@@ -43,6 +45,7 @@ private:
     ISeasonalCatalogDataSource &dataSource_;
     int year_ = 0;
     QString seasonKey_;
+    bool includeAdultContent_ = false;
     int perPage_;
     SeasonalCatalogState state_ = SeasonalCatalogState::Idle;
     QList<Media> media_;

@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
     SeasonalCatalogController seasonalCatalogController(context.seasonalCatalogCoordinator.get(),
                                                         context.userPreferences.coverQuality,
                                                         context.userPreferences.preferredTitleKey);
+    seasonalCatalogController.ConfigureIncludeAdultContent(context.userPreferences.includeAdultContent);
     homeController.ConfigureScoreScale(context.userPreferences.scoreMinimum,
                                        context.userPreferences.scoreMaximum,
                                        context.userPreferences.scoreStep);
@@ -95,6 +96,7 @@ int main(int argc, char *argv[]) {
         homeController.ConfigureCardStatusPresentation(preferences.cardStatusPresentation);
         seasonalCatalogController.ConfigureCoverQuality(preferences.coverQuality);
         seasonalCatalogController.ConfigurePreferredTitle(preferences.preferredTitleKey);
+        seasonalCatalogController.ConfigureIncludeAdultContent(preferences.includeAdultContent);
         if (context.initialSync) {
             context.initialSync->configureAutomaticSynchronization(
                 preferences.synchronizationEnabled, preferences.synchronizationIntervalMs);
