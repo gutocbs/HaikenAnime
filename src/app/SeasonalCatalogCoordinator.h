@@ -2,6 +2,7 @@
 #define HAIKENANIME_SEASONALCATALOGCOORDINATOR_H
 
 #include <QObject>
+#include <QVariantList>
 
 #include "../application/catalog/SeasonalCatalogTypes.h"
 #include "../application/media/MediaPage.h"
@@ -28,6 +29,8 @@ public:
     [[nodiscard]] const QList<Media> &media() const;
     [[nodiscard]] QString error() const;
     [[nodiscard]] bool canLoadNextPage() const;
+    [[nodiscard]] QVariantList availableYearOptions() const;
+    [[nodiscard]] QVariantList availableSeasonOptions() const;
 
 signals:
     void changed();
@@ -47,6 +50,8 @@ private:
     int currentPage_ = 0;
     int totalPages_ = 0;
     bool hasNextPage_ = false;
+    QVariantList availableYearOptions_ = DefaultSeasonalCatalogYearOptions();
+    QVariantList availableSeasonOptions_ = DefaultSeasonalCatalogSeasonOptions();
     quint64 generation_ = 0;
 };
 

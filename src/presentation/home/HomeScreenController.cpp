@@ -1,10 +1,8 @@
 #include "HomeScreenController.h"
 #include "../../application/covers/CoverSourceResolver.h"
+#include "../../application/media/MediaDetailsPresentation.h"
 
 #include <QCoreApplication>
-#include <QDateTime>
-#include <QSet>
-#include <QTimeZone>
 #include <QVariant>
 #include <QUrl>
 #include <QVariantMap>
@@ -118,10 +116,6 @@ QVariantMap option(const QString &key, const QString &label) {
     return {{QStringLiteral("key"), key}, {QStringLiteral("label"), label}};
 }
 
-QVariantMap mediaLink(const QString &site, const QString &url) {
-    return {{QStringLiteral("site"), site}, {QStringLiteral("url"), url}};
-}
-
 QVariantList defaultListOptions(const QString &mediaType) {
     const auto currentLabel = mediaType == QStringLiteral("anime")
         ? QCoreApplication::translate("HomeScreenController", "Assistindo")
@@ -168,37 +162,6 @@ QString firstOptionKey(const QVariantList &options) {
     return options.first().toMap().value(QStringLiteral("key")).toString();
 }
 
-QString seasonLabel(const Media &media) {
-    QString season;
-    if (media.Season.compare(QStringLiteral("WINTER"), Qt::CaseInsensitive) == 0) {
-        season = QCoreApplication::translate("HomeScreenController", "Inverno");
-    } else if (media.Season.compare(QStringLiteral("SPRING"), Qt::CaseInsensitive) == 0) {
-        season = QCoreApplication::translate("HomeScreenController", "Primavera");
-    } else if (media.Season.compare(QStringLiteral("SUMMER"), Qt::CaseInsensitive) == 0) {
-        season = QCoreApplication::translate("HomeScreenController", "Verão");
-    } else if (media.Season.compare(QStringLiteral("FALL"), Qt::CaseInsensitive) == 0) {
-        season = QCoreApplication::translate("HomeScreenController", "Outono");
-    } else {
-        season = media.Season.simplified();
-    }
-
-    if (season.isEmpty()) {
-        return media.SeasonYear ? QString::number(*media.SeasonYear) : QString();
-    }
-    return media.SeasonYear
-        ? QCoreApplication::translate("HomeScreenController", "%1 de %2").arg(season).arg(*media.SeasonYear)
-        : season;
-}
-
-QString nextAiringLabel(const Media &media) {
-    if (!media.NextAiringEpisode) return {};
-    const QString episode = QCoreApplication::translate("HomeScreenController", "Episódio %1")
-                                .arg(*media.NextAiringEpisode);
-    if (!media.NextAiringAt) return episode;
-    const auto airingAt = QDateTime::fromSecsSinceEpoch(*media.NextAiringAt, QTimeZone::utc())
-                              .toString(QStringLiteral("dd/MM/yyyy HH:mm 'UTC'"));
-    return QStringLiteral("%1 · %2").arg(episode, airingAt);
-}
 }
 
 HomeMediaModel::HomeMediaModel(QObject *parent)
@@ -417,28 +380,13 @@ QString HomeScreenController::selectedAverageScore() const {
     return hasSelection_ && selectedMedia_.AverageScore > 0 ? QString::number(selectedMedia_.AverageScore) : QStringLiteral("—");
 }
 QString HomeScreenController::selectedSeasonLabel() const {
-    return hasSelection_ ? seasonLabel(selectedMedia_) : QString();
+    return hasSelection_ ? PresentMediaSeason(selectedMedia_) : QString();
 }
 QString HomeScreenController::selectedNextAiringLabel() const {
-    return hasSelection_ ? nextAiringLabel(selectedMedia_) : QString();
+    return hasSelection_ ? PresentMediaNextAiring(selectedMedia_) : QString();
 }
 QVariantList HomeScreenController::selectedMediaLinks() const {
-    if (!hasSelection_) return {};
-
-    QVariantList links;
-    QSet<QString> seen;
-    const auto appendLink = [&links, &seen](const QString &site, const QString &url) {
-        const QString key = site.toCaseFolded() + u'\n' + url;
-        if (site.isEmpty() || url.isEmpty() || seen.contains(key)) return;
-        seen.insert(key);
-        links.append(mediaLink(site, url));
-    };
-
-    appendLink(QStringLiteral("AniList"), selectedMedia_.AniListUrl);
-    for (const auto &link : selectedMedia_.ExternalLinks) {
-        appendLink(link.Site, link.Url);
-    }
-    return links;
+    return hasSelection_ ? PresentMediaLinks(selectedMedia_) : QVariantList{};
 }
 QString HomeScreenController::selectedCoverSource() const { return selectedCoverSource_; }
 int HomeScreenController::selectedProgressValue() const { return hasSelection_ ? selectedMedia_.ConsumedChapters : 0; }

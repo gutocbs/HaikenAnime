@@ -70,7 +70,7 @@ Item {
             border.width: 1
             radius: 8
 
-            RowLayout {
+            Flow {
                 id: filterLayout
                 anchors.fill: parent
                 anchors.margins: 16
@@ -80,7 +80,7 @@ Item {
 
                 ComboBox {
                     id: yearSelector
-                    Layout.preferredWidth: 150
+                    width: filterLayout.width >= 560 ? 150 : filterLayout.width
                     model: controller.availableYearOptions
                     textRole: "label"
                     valueRole: "key"
@@ -93,7 +93,7 @@ Item {
 
                 ComboBox {
                     id: seasonSelector
-                    Layout.preferredWidth: 170
+                    width: filterLayout.width >= 560 ? 170 : filterLayout.width
                     model: controller.availableSeasonOptions
                     textRole: "label"
                     valueRole: "key"
@@ -103,8 +103,6 @@ Item {
                     displayText: currentIndex < 0 ? qsTr("Temporada") : currentText
                     onActivated: controller.SetSeason(currentValue)
                 }
-
-                Item { Layout.fillWidth: true }
 
                 Button {
                     text: qsTr("Tentar novamente")

@@ -36,3 +36,13 @@ The composition target was recompiled with the new controller and dependencies b
 ## Visual validation
 
 QML compilation and structure checks passed, but no interactive desktop walkthrough was run in this non-interactive validation environment. In particular, live AniList responses, remote cover rendering, and manual wide/narrow resizing remain unverified here.
+
+## Review follow-up
+
+- Extracted the existing Home detail presentation into `MediaDetailsPresentation`, so Home and Seasonal now share case-insensitive season labels, next-airing formatting, and validated case-folded link de-duplication.
+- Added backend-owned immutable year/season option lists in `SeasonalCatalogTypes` and `SeasonalCatalogCoordinator`. The controller only exposes those lists; both filters remain explicitly unselected until the user chooses stable option keys.
+- Replaced the fixed-width filter row with a `Flow` layout that stacks controls below the established 560px narrow breakpoint.
+
+Focused review validation passed: `SeasonalCatalogTests`, `SeasonalCatalogControllerTests`, `HomeScreenControllerTests`, and `QmlStructureTests`. This includes next-airing presentation, case-insensitive season and link de-duplication, backend-owned filter options without defaults, and narrow filter layout structure.
+
+The full CTest rerun remains 35/37 passing, with the same unrelated `LocalLibraryScanCoordinatorTests` and `LocalLibraryScanCompositionTests` failures described above.

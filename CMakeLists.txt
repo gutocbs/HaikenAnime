@@ -58,6 +58,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/media/MediaSyncFilter.h
         src/application/media/MediaTitleResolver.h
         src/application/media/MediaTitleResolver.cpp
+        src/application/media/MediaDetailsPresentation.h
+        src/application/media/MediaDetailsPresentation.cpp
         src/application/catalog/SeasonalCatalogTypes.h
         src/application/catalog/ISeasonalCatalogDataSource.h
         src/domain/media/MediaType.h
@@ -726,6 +728,7 @@ add_executable(SeasonalCatalogControllerTests
         src/app/SeasonalCatalogCoordinator.cpp
         src/application/covers/CoverSourceResolver.cpp
         src/application/media/MediaTitleResolver.cpp
+        src/application/media/MediaDetailsPresentation.cpp
 )
 target_include_directories(SeasonalCatalogControllerTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(SeasonalCatalogControllerTests PRIVATE Qt6::Core Qt6::Test)
@@ -818,6 +821,7 @@ add_executable(HomeScreenControllerTests
         src/application/covers/CoverDownloadCoordinator.cpp
         src/application/covers/CoverSourceResolver.cpp
         src/application/media/MediaTitleResolver.cpp
+        src/application/media/MediaDetailsPresentation.cpp
         src/infrastructure/logging/AsyncLogger.cpp
 )
 

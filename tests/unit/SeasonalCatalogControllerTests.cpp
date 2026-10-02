@@ -49,7 +49,9 @@ class SeasonalCatalogControllerTests final : public QObject {
 
 private slots:
     void doesNotRequestUntilBothFiltersAreExplicitlySelected();
+    void exposesBackendOwnedStableFilterOptionsWithoutDefaults();
     void exposesResultsSelectionAndPagingCommands();
+    void exposesHomeCompatibleDetailsPresentation();
     void exposesErrorAndRetriesTheCurrentSelection();
 };
 
@@ -73,6 +75,18 @@ void SeasonalCatalogControllerTests::doesNotRequestUntilBothFiltersAreExplicitly
     QVERIFY(controller.canLoadNextPage());
 }
 
+void SeasonalCatalogControllerTests::exposesBackendOwnedStableFilterOptionsWithoutDefaults() {
+    RecordingSource source;
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator);
+
+    QCOMPARE(controller.availableYearOptions(), coordinator.availableYearOptions());
+    QCOMPARE(controller.availableSeasonOptions(), coordinator.availableSeasonOptions());
+    QCOMPARE(controller.selectedYear(), 0);
+    QVERIFY(controller.selectedSeasonKey().isEmpty());
+    QCOMPARE(source.requests.size(), 0);
+}
+
 void SeasonalCatalogControllerTests::exposesResultsSelectionAndPagingCommands() {
     RecordingSource source;
     source.responses.insert(1, page(1, {media(7, QStringLiteral("Romaji"))}, true));
@@ -91,6 +105,31 @@ void SeasonalCatalogControllerTests::exposesResultsSelectionAndPagingCommands() 
     controller.LoadNextPage();
     QCOMPARE(source.requests.size(), 2);
     QCOMPARE(controller.mediaModel()->rowCount(), 2);
+}
+
+void SeasonalCatalogControllerTests::exposesHomeCompatibleDetailsPresentation() {
+    RecordingSource source;
+    Media selected = media(7);
+    selected.Season = QStringLiteral("spring");
+    selected.NextAiringEpisode = 4;
+    selected.NextAiringAt = 0;
+    selected.AniListUrl = QStringLiteral("https://anilist.co/media/7");
+    selected.ExternalLinks = {{QStringLiteral("Official"), QStringLiteral("https://example.test/official")},
+                              {QStringLiteral("official"), QStringLiteral("https://example.test/official")},
+                              {QStringLiteral(""), QStringLiteral("https://example.test/invalid")}};
+    source.responses.insert(1, page(1, {selected}));
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator);
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+    controller.SelectMedia(7);
+
+    QCOMPARE(controller.selectedSeasonLabel(), QStringLiteral("Primavera de 2026"));
+    QCOMPARE(controller.selectedNextAiringLabel(), QStringLiteral("Episódio 4 · 01/01/1970 00:00 UTC"));
+    const auto links = controller.selectedMediaLinks();
+    QCOMPARE(links.size(), 2);
+    QCOMPARE(links.at(0).toMap().value(QStringLiteral("site")).toString(), QStringLiteral("AniList"));
+    QCOMPARE(links.at(1).toMap().value(QStringLiteral("site")).toString(), QStringLiteral("Official"));
 }
 
 void SeasonalCatalogControllerTests::exposesErrorAndRetriesTheCurrentSelection() {

@@ -2,8 +2,30 @@
 #define HAIKENANIME_SEASONALCATALOGTYPES_H
 
 #include <QString>
+#include <QDate>
+#include <QVariantList>
 
 inline constexpr int kSeasonalCatalogMaximumPageSize = 50;
+
+inline QVariantList DefaultSeasonalCatalogYearOptions(const int referenceYear = QDate::currentDate().year()) {
+    QVariantList options;
+    for (int year = referenceYear + 1; year >= referenceYear - 10; --year) {
+        options.append(QVariantMap{{QStringLiteral("key"), QString::number(year)},
+                                   {QStringLiteral("label"), QString::number(year)}});
+    }
+    return options;
+}
+
+inline QVariantList DefaultSeasonalCatalogSeasonOptions() {
+    return {QVariantMap{{QStringLiteral("key"), QStringLiteral("WINTER")},
+                        {QStringLiteral("label"), QStringLiteral("Inverno")}},
+            QVariantMap{{QStringLiteral("key"), QStringLiteral("SPRING")},
+                        {QStringLiteral("label"), QStringLiteral("Primavera")}},
+            QVariantMap{{QStringLiteral("key"), QStringLiteral("SUMMER")},
+                        {QStringLiteral("label"), QStringLiteral("Verão")}},
+            QVariantMap{{QStringLiteral("key"), QStringLiteral("FALL")},
+                        {QStringLiteral("label"), QStringLiteral("Outono")}}};
+}
 
 /** Identifies one explicit, bounded AniList seasonal catalog page. */
 struct SeasonalCatalogRequest final {

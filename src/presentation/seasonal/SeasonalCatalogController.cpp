@@ -2,19 +2,14 @@
 
 #include "../../app/SeasonalCatalogCoordinator.h"
 #include "../../application/covers/CoverSourceResolver.h"
+#include "../../application/media/MediaDetailsPresentation.h"
 
 #include <QCoreApplication>
-#include <QDate>
-#include <QSet>
 
 #include <algorithm>
 #include <utility>
 
 namespace {
-QVariantMap option(const QString &key, const QString &label) {
-    return {{QStringLiteral("key"), key}, {QStringLiteral("label"), label}};
-}
-
 QString stateName(const SeasonalCatalogState state) {
     switch (state) {
     case SeasonalCatalogState::Loading: return QStringLiteral("loading");
@@ -49,15 +44,6 @@ QString mediaStatusLabel(const MediaStatus status) {
     }
 }
 
-QString seasonLabel(const Media &media) {
-    const auto season = media.Season == QStringLiteral("WINTER") ? QCoreApplication::translate("SeasonalCatalogController", "Inverno")
-        : media.Season == QStringLiteral("SPRING") ? QCoreApplication::translate("SeasonalCatalogController", "Primavera")
-        : media.Season == QStringLiteral("SUMMER") ? QCoreApplication::translate("SeasonalCatalogController", "Verão")
-        : media.Season == QStringLiteral("FALL") ? QCoreApplication::translate("SeasonalCatalogController", "Outono")
-        : media.Season.simplified();
-    return media.SeasonYear && !season.isEmpty() ? QStringLiteral("%1 de %2").arg(season).arg(*media.SeasonYear)
-        : media.SeasonYear ? QString::number(*media.SeasonYear) : season;
-}
 }
 
 SeasonalCatalogMediaModel::SeasonalCatalogMediaModel(QObject *parent) : QAbstractListModel(parent) {}
@@ -73,7 +59,7 @@ QVariant SeasonalCatalogMediaModel::data(const QModelIndex &index, const int rol
     case MediaIdRole: return media.Id;
     case TitleRole: return ResolveMediaTitle(media, preferredTitleKey_);
     case StatusLabelRole: return mediaStatusLabel(media.Status);
-    case ProgressRole: return seasonLabel(media);
+    case ProgressRole: return PresentMediaSeason(media);
     case ScoreRole: return media.AverageScore > 0 ? QStringLiteral("AniList %1").arg(media.AverageScore) : QStringLiteral("AniList —");
     case CoverSourceRole: return ResolveCoverSource(media, coverQuality_);
     default: return {};
@@ -115,19 +101,11 @@ SeasonalCatalogController::SeasonalCatalogController(SeasonalCatalogCoordinator 
 SeasonalCatalogMediaModel *SeasonalCatalogController::mediaModel() { return &mediaModel_; }
 
 QVariantList SeasonalCatalogController::availableYearOptions() const {
-    QVariantList options;
-    const int currentYear = QDate::currentDate().year();
-    for (int year = currentYear + 1; year >= currentYear - 10; --year) {
-        options.append(option(QString::number(year), QString::number(year)));
-    }
-    return options;
+    return coordinator_ ? coordinator_->availableYearOptions() : QVariantList{};
 }
 
 QVariantList SeasonalCatalogController::availableSeasonOptions() const {
-    return {option(QStringLiteral("WINTER"), QCoreApplication::translate("SeasonalCatalogController", "Inverno")),
-            option(QStringLiteral("SPRING"), QCoreApplication::translate("SeasonalCatalogController", "Primavera")),
-            option(QStringLiteral("SUMMER"), QCoreApplication::translate("SeasonalCatalogController", "Verão")),
-            option(QStringLiteral("FALL"), QCoreApplication::translate("SeasonalCatalogController", "Outono"))};
+    return coordinator_ ? coordinator_->availableSeasonOptions() : QVariantList{};
 }
 
 int SeasonalCatalogController::selectedYear() const { return coordinator_ ? coordinator_->year() : 0; }
@@ -144,23 +122,11 @@ QString SeasonalCatalogController::selectedStatusLabel() const { const auto *med
 QString SeasonalCatalogController::selectedProgress() const { return hasSelection() ? QStringLiteral("—") : QString(); }
 QString SeasonalCatalogController::selectedScore() const { return hasSelection() ? QStringLiteral("—") : QString(); }
 QString SeasonalCatalogController::selectedAverageScore() const { const auto *media = selectedMedia(); return media && media->AverageScore > 0 ? QString::number(media->AverageScore) : hasSelection() ? QStringLiteral("—") : QString(); }
-QString SeasonalCatalogController::selectedSeasonLabel() const { const auto *media = selectedMedia(); return media ? seasonLabel(*media) : QString(); }
-QString SeasonalCatalogController::selectedNextAiringLabel() const { return {}; }
+QString SeasonalCatalogController::selectedSeasonLabel() const { const auto *media = selectedMedia(); return media ? PresentMediaSeason(*media) : QString(); }
+QString SeasonalCatalogController::selectedNextAiringLabel() const { const auto *media = selectedMedia(); return media ? PresentMediaNextAiring(*media) : QString(); }
 QVariantList SeasonalCatalogController::selectedMediaLinks() const {
     const auto *media = selectedMedia();
-    if (!media) return {};
-    QVariantList links;
-    if (!media->AniListUrl.isEmpty()) {
-        links.append(QVariantMap{{QStringLiteral("site"), QStringLiteral("AniList")},
-                                 {QStringLiteral("url"), media->AniListUrl}});
-    }
-    for (const auto &link : media->ExternalLinks) {
-        if (!link.Site.isEmpty() && !link.Url.isEmpty()) {
-            links.append(QVariantMap{{QStringLiteral("site"), link.Site},
-                                     {QStringLiteral("url"), link.Url}});
-        }
-    }
-    return links;
+    return media ? PresentMediaLinks(*media) : QVariantList{};
 }
 QString SeasonalCatalogController::selectedCoverSource() const { const auto *media = selectedMedia(); return media ? ResolveCoverSource(*media, coverQuality_) : QStringLiteral("qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg"); }
 QStringList SeasonalCatalogController::selectedAlternativeNames() const { const auto *media = selectedMedia(); return media ? media->AlternativeNames : QStringList{}; }

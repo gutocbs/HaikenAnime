@@ -48,6 +48,9 @@ bool SeasonalCatalogCoordinator::canLoadNextPage() const {
         && currentPage_ >= 1 && currentPage_ < totalPages_;
 }
 
+QVariantList SeasonalCatalogCoordinator::availableYearOptions() const { return availableYearOptions_; }
+QVariantList SeasonalCatalogCoordinator::availableSeasonOptions() const { return availableSeasonOptions_; }
+
 void SeasonalCatalogCoordinator::startFirstPageIfReady() {
     if (!request().isValid()) {
         emit changed();
