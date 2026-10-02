@@ -48,6 +48,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/app/InitialSyncCoordinator.cpp
         src/app/LocalLibraryScanCoordinator.h
         src/app/LocalLibraryScanCoordinator.cpp
+        src/app/SeasonalCatalogCoordinator.h
+        src/app/SeasonalCatalogCoordinator.cpp
         src/app/TranslationLoader.h
         src/app/TranslationLoader.cpp
         src/domain/media/MediaLink.h
@@ -56,6 +58,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/media/MediaSyncFilter.h
         src/application/media/MediaTitleResolver.h
         src/application/media/MediaTitleResolver.cpp
+        src/application/catalog/SeasonalCatalogTypes.h
+        src/application/catalog/ISeasonalCatalogDataSource.h
         src/domain/media/MediaType.h
         src/domain/media/MediaStatus.h
         src/domain/media/UserListStatus.h
@@ -175,6 +179,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/anilist/RecordedGraphQlAniListDataSource.cpp
         src/infrastructure/anilist/GraphQlAniListDataSource.h
         src/infrastructure/anilist/GraphQlAniListDataSource.cpp
+        src/infrastructure/anilist/GraphQlSeasonalCatalogDataSource.h
+        src/infrastructure/anilist/GraphQlSeasonalCatalogDataSource.cpp
         src/infrastructure/anilist/AniListMediaMapper.h
         src/infrastructure/anilist/AniListMediaMapper.cpp
         src/infrastructure/configuration/JsonSettingsReader.h
@@ -283,6 +289,13 @@ qt_add_resources(HaikenAnime fixture_resource_bundle
         tests/fixtures/media-library.json
         tests/fixtures/graphql/page-response.json
 )
+
+set_source_files_properties(
+        resources/anilist/queries/seasonal-catalog.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "seasonal-catalog.graphql")
+qt_add_resources(HaikenAnime anilist_query_resource_bundle
+        PREFIX "/anilist/queries"
+        FILES resources/anilist/queries/seasonal-catalog.graphql)
 
 qt_add_qml_module(HaikenAnime
         URI HaikenAnime
@@ -674,6 +687,34 @@ target_link_libraries(GraphQlQueryStoreTests
 
 add_test(NAME GraphQlQueryStoreTests COMMAND GraphQlQueryStoreTests)
 
+add_executable(SeasonalCatalogTests
+        tests/unit/SeasonalCatalogTests.cpp
+        src/app/SeasonalCatalogCoordinator.h
+        src/app/SeasonalCatalogCoordinator.cpp
+        src/application/catalog/SeasonalCatalogTypes.h
+        src/application/catalog/ISeasonalCatalogDataSource.h
+        src/infrastructure/anilist/GraphQlSeasonalCatalogDataSource.h
+        src/infrastructure/anilist/GraphQlSeasonalCatalogDataSource.cpp
+        src/infrastructure/anilist/AniListGraphQlClient.h
+        src/infrastructure/anilist/AniListGraphQlClient.cpp
+        src/infrastructure/anilist/AniListGraphQlResponseParser.h
+        src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
+        src/infrastructure/anilist/AniListGraphQlPageParser.h
+        src/infrastructure/anilist/AniListGraphQlPageParser.cpp
+        src/infrastructure/anilist/AniListMediaMapper.h
+        src/infrastructure/anilist/AniListMediaMapper.cpp
+        src/infrastructure/anilist/GraphQlQueryStore.h
+        src/infrastructure/anilist/GraphQlQueryStore.cpp
+)
+target_include_directories(SeasonalCatalogTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(SeasonalCatalogTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Test)
+target_compile_definitions(SeasonalCatalogTests PRIVATE
+        HAIKENANIME_SEASONAL_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql")
+qt_add_resources(SeasonalCatalogTests seasonal_catalog_query_resource_bundle
+        PREFIX "/anilist/queries"
+        FILES resources/anilist/queries/seasonal-catalog.graphql)
+add_test(NAME SeasonalCatalogTests COMMAND SeasonalCatalogTests)
+
 add_executable(AniListSyncErrorClassifierTests
         tests/unit/AniListSyncErrorClassifierTests.cpp
         src/application/anilist/AniListSyncErrorClassifier.h
@@ -895,6 +936,7 @@ set(HAIKENANIME_TESTS
         AniListFlowTests
         AniListGraphQlParsingTests
         GraphQlQueryStoreTests
+        SeasonalCatalogTests
         AniListSyncErrorClassifierTests
         AniListMergePolicyResolverTests
         AniListPendingChangeFactoryTests
