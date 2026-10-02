@@ -240,7 +240,6 @@ Popup {
                                     Layout.fillWidth: true
                                     text: modelData.site
                                     flat: true
-                                    horizontalAlignment: Qt.AlignLeft
                                     Accessible.name: qsTr("Abrir %1").arg(modelData.site)
                                     onClicked: Qt.openUrlExternally(modelData.url)
                                 }
