@@ -128,9 +128,11 @@ public:
     Q_INVOKABLE void Retry();
     Q_INVOKABLE void LoadNextPage();
     Q_INVOKABLE void SelectMedia(int mediaId);
+    Q_INVOKABLE bool SaveSelectedToPersonalListFromEditor(int progress, const QString &statusKey,
+                                                          double score, const QString &path,
+                                                          const QString &alternativeNames);
     Q_INVOKABLE bool SaveSelectedToPersonalList(int progress, const QString &statusKey, double score,
-                                                const QString &path,
-                                                const QStringList &alternativeNames);
+                                                const QString &path, const QStringList &alternativeNames);
 
 signals:
     void filtersChanged();

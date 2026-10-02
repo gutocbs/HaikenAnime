@@ -23,3 +23,8 @@
 - The original existing-record save path reused the stored record without writing editor changes. It now carries progress, score, status, local path, and alternative names from the seasonal editor through the controller and a dedicated local repository update boundary.
 - The SQLite schema now persists `local_path` (migration 15). The dedicated update only changes personal-list-owned fields, so catalog metadata and unrelated user fields such as `next_chapter` remain intact. The editor is prefilled with the saved path for existing records to avoid clearing an untouched value.
 - Added controller and SQLite regressions for changed editor values/status, repeat-save cardinality, metadata preservation, query configuration packaging, and the migration path. Focused tests and the Release application build passed after the correction.
+
+## Follow-up correction 2
+
+- The QML editor emits alternative names as one semicolon-delimited string. The controller now accepts that QML-shaped value, splits it on semicolons, trims each name, discards empty tokens, and delegates the normalized `QStringList` to the existing C++ save path.
+- Existing C++ callers retain the `QStringList` overload unchanged. A controller regression passes the exact QML-style value `"  Edited title ; ; Localized title ;  "` and verifies that only the two trimmed aliases persist.

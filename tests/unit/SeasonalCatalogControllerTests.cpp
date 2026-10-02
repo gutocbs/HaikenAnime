@@ -352,10 +352,11 @@ void SeasonalCatalogControllerTests::reusesAnExistingLocalEntryWithoutOverwritin
     QCOMPARE(controller.selectedLocalPath(), existing.LocalPath);
     QCOMPARE(controller.selectedAlternativeNames(), existing.AlternativeNames);
     QCOMPARE(controller.selectedListStatusKey(), QStringLiteral("current"));
+    const QString qmlAlternativeNames = QStringLiteral("  Edited title ; ; Localized title ;  ");
     const QStringList editedAlternativeNames{QStringLiteral("Edited title"), QStringLiteral("Localized title")};
-    QVERIFY(controller.SaveSelectedToPersonalList(8, QStringLiteral("completed"), 7.0,
-                                                  QStringLiteral("C:\\Media\\Frieren"),
-                                                  editedAlternativeNames));
+    QVERIFY(controller.SaveSelectedToPersonalListFromEditor(8, QStringLiteral("completed"), 7.0,
+                                                            QStringLiteral("C:\\Media\\Frieren"),
+                                                            qmlAlternativeNames));
     QCOMPARE(repository.upsertCalls, 0);
     QCOMPARE(repository.personalListUpdateCalls, 1);
     QCOMPARE(repository.media.first().ConsumedChapters, 8);

@@ -343,7 +343,7 @@ Item {
         surfaceSoft: seasonalCatalog.surfaceSoft
         accent: seasonalCatalog.accent
         onApplyRequested: function(mediaId, progress, statusKey, score, path, alternativeNames) {
-            if (controller.SaveSelectedToPersonalList(progress, statusKey, score, path, alternativeNames)) personalListEditor.close()
+            if (controller.SaveSelectedToPersonalListFromEditor(progress, statusKey, score, path, alternativeNames)) personalListEditor.close()
         }
     }
 }

@@ -255,6 +255,17 @@ void SeasonalCatalogController::SelectMedia(const int mediaId) {
     emit selectionChanged();
 }
 
+bool SeasonalCatalogController::SaveSelectedToPersonalListFromEditor(
+    const int progress, const QString &statusKey, const double score, const QString &path,
+    const QString &alternativeNames) {
+    QStringList normalizedAlternativeNames;
+    for (const QString &name : alternativeNames.split(QLatin1Char(';'), Qt::KeepEmptyParts)) {
+        const QString trimmedName = name.trimmed();
+        if (!trimmedName.isEmpty()) normalizedAlternativeNames.append(trimmedName);
+    }
+    return SaveSelectedToPersonalList(progress, statusKey, score, path, normalizedAlternativeNames);
+}
+
 bool SeasonalCatalogController::SaveSelectedToPersonalList(const int progress, const QString &statusKey,
                                                             const double score, const QString &path,
                                                             const QStringList &alternativeNames) {
