@@ -419,6 +419,16 @@ void QmlStructureTests::seasonalCatalogRequiresExplicitFiltersAndHasResponsiveCo
     QVERIFY(source.contains(QStringLiteral("onContentYChanged: requestNextPageIfNearEnd()")));
     QVERIFY(source.contains(QStringLiteral("onContentHeightChanged: requestNextPageIfNearEnd()")));
     QVERIFY(source.contains(QStringLiteral("id: nextPageLoadingIndicator")));
+    QVERIFY(source.contains(QStringLiteral("id: initialLoadingState")));
+    QVERIFY(source.contains(QStringLiteral("id: emptyState")));
+    QVERIFY(source.contains(QStringLiteral("id: errorState")));
+    QVERIFY(source.count(QStringLiteral("anchors.centerIn: parent")) >= 3);
+    QVERIFY(source.contains(QStringLiteral("id: seasonalErrorRetryButton")));
+    QVERIFY(source.contains(QStringLiteral("text: controller.errorMessage")));
+    const qsizetype errorRetryButton = source.indexOf(QStringLiteral("id: seasonalErrorRetryButton"));
+    QVERIFY(source.indexOf(QStringLiteral("onClicked: controller.Retry()"), errorRetryButton)
+        > errorRetryButton);
+    QVERIFY(source.contains(QStringLiteral("visible: controller.state === \"loading\" && controller.hasResults")));
     QVERIFY(!source.contains(QStringLiteral("Carregar próxima página")));
     QVERIFY(source.contains(QStringLiteral("columns: width >= 860 ? 3 : width >= 560 ? 2 : 1")));
     QVERIFY(source.contains(QStringLiteral("Flow {")));

@@ -123,42 +123,129 @@ Item {
             StackLayout {
                 anchors.fill: parent
                 anchors.margins: 18
-                currentIndex: controller.state === "populated"
-                              || (controller.state === "loading" && controller.hasResults) ? 1 : 0
+                currentIndex: controller.state === "loading"
+                              ? (controller.hasResults ? 4 : 0)
+                              : controller.state === "empty" ? 1
+                              : controller.state === "error" ? 2
+                              : controller.state === "populated" ? 4 : 3
 
-                ColumnLayout {
-                    Layout.alignment: Qt.AlignCenter
-                    spacing: 10
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
 
-                    Label {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: controller.state === "loading" ? qsTr("Carregando catálogo…")
-                              : controller.state === "error" ? qsTr("Não foi possível carregar o catálogo")
-                              : controller.state === "empty" ? qsTr("Nenhum título encontrado")
-                              : qsTr("Escolha um ano e uma temporada")
-                        color: controller.state === "error" ? "#8f3038" : ink
-                        font.pixelSize: 17
-                        font.weight: Font.DemiBold
+                    ColumnLayout {
+                        id: initialLoadingState
+                        anchors.centerIn: parent
+                        spacing: 10
+
+                        Label {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: qsTr("Carregando catálogo…")
+                            color: ink
+                            font.pixelSize: 17
+                            font.weight: Font.DemiBold
+                        }
+
+                        BusyIndicator {
+                            Layout.alignment: Qt.AlignHCenter
+                            running: true
+                        }
                     }
+                }
 
-                    Label {
-                        Layout.alignment: Qt.AlignHCenter
-                        Layout.maximumWidth: 480
-                        text: controller.state === "error" ? controller.errorMessage
-                              : controller.state === "empty" ? qsTr("Ajuste os filtros ou tente novamente.")
-                              : qsTr("Os resultados só são buscados quando ambos os filtros forem selecionados.")
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.Wrap
-                        color: muted
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
+                    ColumnLayout {
+                        id: emptyState
+                        anchors.centerIn: parent
+                        spacing: 10
+
+                        Label {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: qsTr("Nenhum título encontrado")
+                            color: ink
+                            font.pixelSize: 17
+                            font.weight: Font.DemiBold
+                        }
+
+                        Label {
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.maximumWidth: 480
+                            text: qsTr("Ajuste os filtros ou tente novamente.")
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.Wrap
+                            color: muted
+                        }
+
+                        Button {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: qsTr("Tentar novamente")
+                            onClicked: controller.Retry()
+                        }
                     }
+                }
 
-                    BusyIndicator { Layout.alignment: Qt.AlignHCenter; visible: controller.state === "loading"; running: visible }
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
 
-                    Button {
-                        Layout.alignment: Qt.AlignHCenter
-                        visible: controller.state === "error" || controller.state === "empty"
-                        text: qsTr("Tentar novamente")
-                        onClicked: controller.Retry()
+                    ColumnLayout {
+                        id: errorState
+                        anchors.centerIn: parent
+                        spacing: 10
+
+                        Label {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: qsTr("Não foi possível carregar o catálogo")
+                            color: "#8f3038"
+                            font.pixelSize: 17
+                            font.weight: Font.DemiBold
+                        }
+
+                        Label {
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.maximumWidth: 480
+                            text: controller.errorMessage
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.Wrap
+                            color: muted
+                        }
+
+                        Button {
+                            id: seasonalErrorRetryButton
+                            Layout.alignment: Qt.AlignHCenter
+                            text: qsTr("Tentar novamente")
+                            onClicked: controller.Retry()
+                        }
+                    }
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
+                    ColumnLayout {
+                        anchors.centerIn: parent
+                        spacing: 10
+
+                        Label {
+                            Layout.alignment: Qt.AlignHCenter
+                            text: qsTr("Escolha um ano e uma temporada")
+                            color: ink
+                            font.pixelSize: 17
+                            font.weight: Font.DemiBold
+                        }
+
+                        Label {
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.maximumWidth: 480
+                            text: qsTr("Os resultados só são buscados quando ambos os filtros forem selecionados.")
+                            horizontalAlignment: Text.AlignHCenter
+                            wrapMode: Text.Wrap
+                            color: muted
+                        }
                     }
                 }
 
