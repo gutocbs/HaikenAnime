@@ -113,6 +113,7 @@ QString SeasonalCatalogController::selectedSeasonKey() const { return coordinato
 QString SeasonalCatalogController::state() const { return coordinator_ ? stateName(coordinator_->state()) : QStringLiteral("error"); }
 QString SeasonalCatalogController::errorMessage() const { return coordinator_ ? coordinator_->error() : QStringLiteral("Seasonal catalog is unavailable."); }
 bool SeasonalCatalogController::canLoadNextPage() const { return coordinator_ && coordinator_->canLoadNextPage(); }
+bool SeasonalCatalogController::hasResults() const { return !media_.isEmpty(); }
 bool SeasonalCatalogController::hasSelection() const { return selectedMedia() != nullptr; }
 int SeasonalCatalogController::selectedMediaId() const { return hasSelection() ? selectedMediaId_ : 0; }
 QString SeasonalCatalogController::selectedTitle() const { const auto *media = selectedMedia(); return media ? ResolveMediaTitle(*media, preferredTitleKey_) : QString(); }

@@ -30,6 +30,7 @@ class RecordingSource final : public ISeasonalCatalogDataSource {
 public:
     bool Fetch(const SeasonalCatalogRequest &request, MediaPage &result, QString &error) override {
         requests.append(request);
+        if (onFetch) onFetch(request);
         if (!failure.isEmpty()) {
             error = failure;
             return false;
@@ -41,6 +42,7 @@ public:
     QList<SeasonalCatalogRequest> requests;
     QHash<int, MediaPage> responses;
     QString failure;
+    std::function<void(const SeasonalCatalogRequest &)> onFetch;
 };
 }
 
@@ -51,6 +53,7 @@ private slots:
     void doesNotRequestUntilBothFiltersAreExplicitlySelected();
     void exposesBackendOwnedStableFilterOptionsWithoutDefaults();
     void exposesResultsSelectionAndPagingCommands();
+    void retainsResultsAndSuppressesDuplicateLoadsWhileAppending();
     void exposesHomeCompatibleDetailsPresentation();
     void exposesErrorAndRetriesTheCurrentSelection();
 };
@@ -105,6 +108,30 @@ void SeasonalCatalogControllerTests::exposesResultsSelectionAndPagingCommands() 
     controller.LoadNextPage();
     QCOMPARE(source.requests.size(), 2);
     QCOMPARE(controller.mediaModel()->rowCount(), 2);
+}
+
+void SeasonalCatalogControllerTests::retainsResultsAndSuppressesDuplicateLoadsWhileAppending() {
+    RecordingSource source;
+    source.responses.insert(1, page(1, {media(7)}, true));
+    source.responses.insert(2, page(2, {media(8)}));
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator);
+    bool sawResultsWhileLoading = false;
+    source.onFetch = [&controller, &sawResultsWhileLoading](const SeasonalCatalogRequest &request) {
+        if (request.page != 2) return;
+        sawResultsWhileLoading = controller.state() == QStringLiteral("loading") && controller.hasResults();
+        controller.LoadNextPage();
+    };
+
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+    controller.LoadNextPage();
+    controller.LoadNextPage();
+
+    QVERIFY(sawResultsWhileLoading);
+    QCOMPARE(source.requests.size(), 2);
+    QCOMPARE(controller.mediaModel()->rowCount(), 2);
+    QVERIFY(!controller.canLoadNextPage());
 }
 
 void SeasonalCatalogControllerTests::exposesHomeCompatibleDetailsPresentation() {

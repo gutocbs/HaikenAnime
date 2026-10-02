@@ -123,7 +123,8 @@ Item {
             StackLayout {
                 anchors.fill: parent
                 anchors.margins: 18
-                currentIndex: controller.state === "populated" ? 1 : 0
+                currentIndex: controller.state === "populated"
+                              || (controller.state === "loading" && controller.hasResults) ? 1 : 0
 
                 ColumnLayout {
                     Layout.alignment: Qt.AlignCenter
@@ -170,6 +171,17 @@ Item {
                     cellWidth: width / columns
                     cellHeight: 154
                     model: controller.mediaModel
+
+                    function requestNextPageIfNearEnd() {
+                        if (!controller.canLoadNextPage) return
+                        const remainingContent = contentHeight - (contentY + height)
+                        if (remainingContent <= cellHeight * columns) controller.LoadNextPage()
+                    }
+
+                    onContentYChanged: requestNextPageIfNearEnd()
+                    onContentHeightChanged: requestNextPageIfNearEnd()
+                    onHeightChanged: requestNextPageIfNearEnd()
+                    onVisibleChanged: requestNextPageIfNearEnd()
                     delegate: MediaCard {
                         width: resultsGrid.cellWidth - 12
                         height: 142
@@ -190,12 +202,13 @@ Item {
 
                     footer: Item {
                         width: resultsGrid.width
-                        height: controller.canLoadNextPage ? 62 : 0
-                        Button {
+                        height: controller.canLoadNextPage
+                                || (controller.state === "loading" && controller.hasResults) ? 62 : 0
+                        BusyIndicator {
+                            id: nextPageLoadingIndicator
                             anchors.centerIn: parent
-                            visible: controller.canLoadNextPage
-                            text: qsTr("Carregar próxima página")
-                            onClicked: controller.LoadNextPage()
+                            visible: controller.state === "loading" && controller.hasResults
+                            running: visible
                         }
                     }
                 }

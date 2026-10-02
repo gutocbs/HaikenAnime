@@ -411,6 +411,12 @@ void QmlStructureTests::seasonalCatalogRequiresExplicitFiltersAndHasResponsiveCo
     QVERIFY(source.contains(QStringLiteral("controller.SetSeason")));
     QVERIFY(source.contains(QStringLiteral("controller.Retry()")));
     QVERIFY(source.contains(QStringLiteral("controller.LoadNextPage()")));
+    QVERIFY(source.contains(QStringLiteral("function requestNextPageIfNearEnd()")));
+    QVERIFY(source.contains(QStringLiteral("if (!controller.canLoadNextPage) return")));
+    QVERIFY(source.contains(QStringLiteral("onContentYChanged: requestNextPageIfNearEnd()")));
+    QVERIFY(source.contains(QStringLiteral("onContentHeightChanged: requestNextPageIfNearEnd()")));
+    QVERIFY(source.contains(QStringLiteral("id: nextPageLoadingIndicator")));
+    QVERIFY(!source.contains(QStringLiteral("Carregar próxima página")));
     QVERIFY(source.contains(QStringLiteral("columns: width >= 860 ? 3 : width >= 560 ? 2 : 1")));
     QVERIFY(source.contains(QStringLiteral("Flow {")));
     QVERIFY(source.contains(QStringLiteral("width >= 560")));
