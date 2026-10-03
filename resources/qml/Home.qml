@@ -1,5 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Controls.Basic as Basic
 import QtQuick.Layouts 1.15
 
 Item {
@@ -540,7 +541,7 @@ Item {
                         accent: home.accent
                     }
 
-                    Button {
+                    Basic.Button {
                         id: watchNextButton
                         Layout.preferredWidth: 104
                         Layout.preferredHeight: 44
