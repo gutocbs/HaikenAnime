@@ -766,12 +766,13 @@ Item {
                 delegate: MediaCard {
                     width: completeGrid.cellWidth - 12
                     height: 142
+                    compactMetadata: true
                     mediaId: model.mediaId
                     coverSource: model.coverSource
                     title: model.title
-                    status: home.previewValue(model.mediaId, "cardStatusText", model.statusLabel)
-                    progress: home.previewValue(model.mediaId, "cardProgressText", model.progress)
-                    score: home.previewValue(model.mediaId, "cardScoreText", model.score)
+                    status: home.previewValue(model.mediaId, "detailStatusText", model.statusLabel)
+                    progress: home.previewValue(model.mediaId, "detailProgressText", model.progress)
+                    score: home.previewValue(model.mediaId, "detailScoreText", model.score)
                     selected: controller.selectedMediaId === model.mediaId
                     onActivated: function(mediaId) {
                         controller.SelectMedia(mediaId)

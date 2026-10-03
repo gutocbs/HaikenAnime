@@ -15,3 +15,8 @@ Task 2: complete (tests: HomeScreenControllerTests → 42/42 pass; QmlStructureT
 - Added controller regression coverage for year precedence, both directions, and missing season/year values.
 - Kept sorting in C++; BrowseControls continues consuming controller-provided sort options.
 - Aligned BrowseControls synchronization references with its root id so the existing structural contract is valid.
+
+Task 3: complete (tests: HomeScreenControllerTests → 42/42 pass; QmlStructureTests → 18/18 pass, 1 skipped)
+- Kept normal cards on controller-prepared translated metadata and made progress/score labels use the active Qt translation context.
+- Added explicit compact metadata presentation for complete-library cards, preserving values while hiding progress and score labels and using compact status/progress/score metadata.
+- Preserved the existing controller-owned season detail property and structural details presentation.

@@ -298,9 +298,9 @@ void QmlStructureTests::previewCardsUseControllerPreparedMetadataInBothGrids() {
     QVERIFY(!source.contains(QStringLiteral("function statusLabel(")));
     QVERIFY(!source.contains(QStringLiteral("progress + \"/\"")));
     QVERIFY(!source.contains(QStringLiteral("score === 0 ? \"—\"")));
-    QCOMPARE(source.count(QStringLiteral("status: home.previewValue(model.mediaId, \"cardStatusText\", model.statusLabel)")), 2);
-    QCOMPARE(source.count(QStringLiteral("progress: home.previewValue(model.mediaId, \"cardProgressText\", model.progress)")), 2);
-    QCOMPARE(source.count(QStringLiteral("score: home.previewValue(model.mediaId, \"cardScoreText\", model.score)")), 2);
+    QCOMPARE(source.count(QStringLiteral("status: home.previewValue(model.mediaId, \"cardStatusText\", model.statusLabel)")), 1);
+    QCOMPARE(source.count(QStringLiteral("progress: home.previewValue(model.mediaId, \"cardProgressText\", model.progress)")), 1);
+    QCOMPARE(source.count(QStringLiteral("score: home.previewValue(model.mediaId, \"cardScoreText\", model.score)")), 1);
 }
 
 void QmlStructureTests::compactDetailsUseSeparatePreviewMetadata() {
@@ -321,6 +321,14 @@ void QmlStructureTests::compactDetailsUseSeparatePreviewMetadata() {
         "home.previewValue(controller.selectedMediaId, \"detailProgressText\",")));
     QVERIFY(source.contains(QStringLiteral(
         "home.previewValue(controller.selectedMediaId, \"detailScoreText\",")));
+    QVERIFY2(source.contains(QStringLiteral("compactMetadata: true")),
+             "The complete-library cards must explicitly use compact metadata presentation.");
+    QVERIFY2(source.contains(QStringLiteral(
+                 "progress: home.previewValue(model.mediaId, \"detailProgressText\", model.progress)")),
+             "Complete-library cards must receive the compact progress value without its label.");
+    QVERIFY2(source.contains(QStringLiteral(
+                 "score: home.previewValue(model.mediaId, \"detailScoreText\", model.score)")),
+             "Complete-library cards must receive the compact score value without its label.");
 }
 
 void QmlStructureTests::compactDetailsAreReadOnlyAndSelectable() {
