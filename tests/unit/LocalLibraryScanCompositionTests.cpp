@@ -52,6 +52,7 @@ private slots:
     void invalidPreferredTitleFallsBackAndLogsConfigurationWarning();
     void restartPreservesExternalHomeSortForControllerFallback();
     void startupUsesPersistedSnapshotAndSchedulesOnce();
+    void disabledAutomaticRecognitionDoesNotScheduleStartupScan();
     void manualRootChangeRetainsOldInventory();
     void scannerQueryFailureDoesNotDisableMedia_data();
     void scannerQueryFailureDoesNotDisableMedia();
@@ -176,6 +177,14 @@ void LocalLibraryScanCompositionTests::startupUsesPersistedSnapshotAndSchedulesO
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toString(), QStringLiteral("selected.webm"));
     QVERIFY(!query.next());
+}
+
+void LocalLibraryScanCompositionTests::disabledAutomaticRecognitionDoesNotScheduleStartupScan() {
+    QTemporaryDir directory;
+    auto context = createApplicationContext(optionsFor(directory));
+    context.userPreferences.automaticLocalFileRecognition = false;
+    QObject lifetime;
+    QVERIFY(!scheduleStartupLibraryScan(context, &lifetime));
 }
 
 void LocalLibraryScanCompositionTests::manualRootChangeRetainsOldInventory() {

@@ -378,7 +378,8 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
 }
 
 bool scheduleStartupLibraryScan(ApplicationContext &context, QObject *lifetime) {
-    if (!lifetime || !context.localLibraryScan || context.startupLibraryScanScheduled) return false;
+    if (!lifetime || !context.localLibraryScan || context.startupLibraryScanScheduled
+        || !context.userPreferences.automaticLocalFileRecognition) return false;
     context.startupLibraryScanScheduled = true;
     LocalLibraryScanRequest request;
     request.rootPath = context.userPreferences.libraryRoot;

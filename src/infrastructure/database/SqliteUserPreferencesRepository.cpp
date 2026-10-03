@@ -62,6 +62,7 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
     const auto storedPreferredTitleKey = query.value(11).toString();
     loaded.preferredTitleKey = NormalizePreferredTitleKey(storedPreferredTitleKey);
     loaded.includeAdultContent = query.value(12).toBool();
+    loaded.automaticLocalFileRecognition = query.value(13).toBool();
     if (!IsSupportedPreferredTitleKey(storedPreferredTitleKey)) {
         warning = QStringLiteral(
             "Stored preferred title key '%1' is unsupported; falling back to '%2'.")
@@ -107,6 +108,7 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
     query.bindValue(QStringLiteral(":language_key"), preferences.languageKey);
     query.bindValue(QStringLiteral(":preferred_title_key"), preferences.preferredTitleKey);
     query.bindValue(QStringLiteral(":include_adult_content"), preferences.includeAdultContent);
+    query.bindValue(QStringLiteral(":automatic_local_file_recognition"), preferences.automaticLocalFileRecognition);
     query.bindValue(QStringLiteral(":library_root"), preferences.libraryRoot);
     query.bindValue(QStringLiteral(":scan_extensions"), QString::fromUtf8(
         QJsonDocument(QJsonArray::fromStringList(NormalizeScanExtensions(preferences.scanExtensions, error)))

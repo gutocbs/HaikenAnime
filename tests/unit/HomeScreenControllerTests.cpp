@@ -25,10 +25,12 @@ public:
         requestedMediaId = mediaId; requestedConsumedEpisode = consumedEpisode; error = failure;
         episode = result; return failure.isEmpty() && result.episode > 0;
     }
+    bool readAvailableEpisodeCount(int, int &count, QString &error) override { count = availableCount; error.clear(); return true; }
     LocalEpisode result;
     QString failure;
     int requestedMediaId = 0;
     int requestedConsumedEpisode = -1;
+    int availableCount = 0;
 };
 
 class FakeLocalFileOpener final : public ILocalFileOpener {

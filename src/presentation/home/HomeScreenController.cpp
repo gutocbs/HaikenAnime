@@ -404,6 +404,7 @@ bool HomeScreenController::canWatch() const {
     return nextLocalEpisode_ > 0 && !nextLocalEpisodePath_.isEmpty() && fileOpener_ != nullptr;
 }
 int HomeScreenController::nextLocalEpisode() const { return nextLocalEpisode_; }
+int HomeScreenController::availableLocalEpisodeCount() const { return availableLocalEpisodeCount_; }
 QString HomeScreenController::localLibraryStatusMessage() const { return localLibraryStatusMessage_; }
 QString HomeScreenController::localLibraryErrorMessage() const { return localLibraryErrorMessage_; }
 double HomeScreenController::scoreMinimum() const { return scoreMinimum_; }
@@ -783,10 +784,14 @@ void HomeScreenController::clearSelection() {
 
 void HomeScreenController::refreshNextLocalEpisode() {
     nextLocalEpisode_ = 0;
+    availableLocalEpisodeCount_ = 0;
     nextLocalEpisodePath_.clear();
     localLibraryStatusMessage_.clear();
     localLibraryErrorMessage_.clear();
     if (!hasSelection_ || selectedMedia_.Type != MediaType::Anime || episodeReader_ == nullptr) return;
+
+    QString countError;
+    episodeReader_->readAvailableEpisodeCount(selectedMedia_.Id, availableLocalEpisodeCount_, countError);
 
     LocalEpisode episode;
     QString error;

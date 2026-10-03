@@ -72,6 +72,7 @@ private slots:
     void exposesBackendLanguageOptionsAndRestartNotice();
     void exposesBackendPreferredTitleOptionsAndRestartNotice();
     void savesAdultContentDraftWithoutChangingUnrelatedPreferences();
+    void savesAutomaticLocalRecognitionPreference();
     void libraryDraftSavesAndDiscardsAtomically();
     void invalidLibraryDraftCannotSave();
     void extensionsAreNormalizedAndOptionsRetainPersistedSelections();
@@ -166,6 +167,15 @@ void SettingsControllerTests::libraryDraftSavesAndDiscardsAtomically() {
     QCOMPARE(repository.stored.libraryRoot, QStringLiteral("D:\\Anime"));
     QVERIFY(!repository.stored.scanExtensions.contains(QStringLiteral(".avi")));
     QVERIFY(!controller.dirty());
+}
+
+void SettingsControllerTests::savesAutomaticLocalRecognitionPreference() {
+    FakePreferencesRepository repository;
+    SettingsController controller(&repository, {});
+    controller.SetAutomaticLocalFileRecognition(false);
+    QVERIFY(controller.dirty());
+    controller.Save();
+    QVERIFY(!repository.stored.automaticLocalFileRecognition);
 }
 
 void SettingsControllerTests::appliesExternalHomeSortToBothSnapshots() {

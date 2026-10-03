@@ -148,7 +148,8 @@ bool SqliteDatabase::migrate() {
         "card_status_presentation TEXT NOT NULL DEFAULT 'personal-list-status',"
         "language_key TEXT NOT NULL DEFAULT 'pt-BR',"
         "preferred_title_key TEXT NOT NULL DEFAULT 'romaji',"
-        "include_adult_content INTEGER NOT NULL DEFAULT 0 CHECK (include_adult_content IN (0, 1)))"));
+        "include_adult_content INTEGER NOT NULL DEFAULT 0 CHECK (include_adult_content IN (0, 1)),"
+        "automatic_local_file_recognition INTEGER NOT NULL DEFAULT 1 CHECK (automatic_local_file_recognition IN (0, 1)))"));
     bool sourceRemovalColumnExists = false;
     bool userListStatusColumnExists = false;
     bool coverMediumColumnExists = false;
@@ -386,7 +387,15 @@ bool SqliteDatabase::migrate() {
     }
     const bool recognitionStateVersionInserted = recognitionStateConstraintReady && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (17)"));
-    const bool versionQueried = recognitionStateVersionInserted && query.exec(QStringLiteral(
+    bool automaticRecognitionColumnExists = false;
+    if (recognitionStateVersionInserted && query.exec(QStringLiteral("PRAGMA table_info(user_preferences)"))) {
+        while (query.next()) automaticRecognitionColumnExists |= query.value(1).toString() == QStringLiteral("automatic_local_file_recognition");
+    }
+    const bool automaticRecognitionReady = recognitionStateVersionInserted && (automaticRecognitionColumnExists || query.exec(QStringLiteral(
+        "ALTER TABLE user_preferences ADD COLUMN automatic_local_file_recognition INTEGER NOT NULL DEFAULT 1 CHECK (automatic_local_file_recognition IN (0, 1))")));
+    const bool automaticRecognitionVersionInserted = automaticRecognitionReady && query.exec(QStringLiteral(
+        "INSERT OR IGNORE INTO schema_version (version) VALUES (18)"));
+    const bool versionQueried = automaticRecognitionVersionInserted && query.exec(QStringLiteral(
         "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 1), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 2), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 3), "
@@ -403,14 +412,14 @@ bool SqliteDatabase::migrate() {
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 14), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 15), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 16), "
-        "EXISTS(SELECT 1 FROM schema_version WHERE version = 17)"));
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 17), EXISTS(SELECT 1 FROM schema_version WHERE version = 18)"));
     const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool()
         && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
         && query.value(4).toBool() && query.value(5).toBool() && query.value(6).toBool()
         && query.value(7).toBool() && query.value(8).toBool() && query.value(9).toBool()
         && query.value(10).toBool() && query.value(11).toBool() && query.value(12).toBool()
         && query.value(13).toBool() && query.value(14).toBool() && query.value(15).toBool()
-        && query.value(16).toBool();
+        && query.value(16).toBool() && query.value(17).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();

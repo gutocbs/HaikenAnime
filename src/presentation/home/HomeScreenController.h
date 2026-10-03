@@ -90,6 +90,7 @@ class HomeScreenController final : public QObject {
     Q_PROPERTY(QStringList selectedAlternativeNames READ selectedAlternativeNames NOTIFY selectionChanged)
     Q_PROPERTY(bool canWatch READ canWatch NOTIFY selectionChanged)
     Q_PROPERTY(int nextLocalEpisode READ nextLocalEpisode NOTIFY selectionChanged)
+    Q_PROPERTY(int availableLocalEpisodeCount READ availableLocalEpisodeCount NOTIFY selectionChanged)
     Q_PROPERTY(QString localLibraryStatusMessage READ localLibraryStatusMessage NOTIFY selectionChanged)
     Q_PROPERTY(QString localLibraryErrorMessage READ localLibraryErrorMessage NOTIFY selectionChanged)
     Q_PROPERTY(double scoreMinimum READ scoreMinimum NOTIFY editingOptionsChanged)
@@ -139,6 +140,7 @@ public:
     QStringList selectedAlternativeNames() const;
     bool canWatch() const;
     int nextLocalEpisode() const;
+    int availableLocalEpisodeCount() const;
     QString localLibraryStatusMessage() const;
     QString localLibraryErrorMessage() const;
     double scoreMinimum() const;
@@ -221,6 +223,7 @@ private:
     ILocalEpisodeReader *episodeReader_ = nullptr;
     ILocalFileOpener *fileOpener_ = nullptr;
     int nextLocalEpisode_ = 0;
+    int availableLocalEpisodeCount_ = 0;
     QString nextLocalEpisodePath_;
     QString localLibraryStatusMessage_;
     QString localLibraryErrorMessage_;

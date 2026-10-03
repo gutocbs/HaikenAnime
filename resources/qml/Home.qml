@@ -433,6 +433,8 @@ Item {
                                 wrapMode: TextEdit.NoWrap
                                 Accessible.name: qsTr("Status da mídia selecionada")
                             }
+                            Rectangle { visible: controller.availableLocalEpisodeCount > 0; Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: line }
+                            TextEdit { visible: controller.availableLocalEpisodeCount > 0; Layout.preferredHeight: contentHeight; text: qsTr("%1 episódios disponíveis localmente").arg(controller.availableLocalEpisodeCount); color: muted; readOnly: true; selectByMouse: true; wrapMode: TextEdit.NoWrap }
                         }
 
                         GridLayout {

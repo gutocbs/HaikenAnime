@@ -603,7 +603,7 @@ Item {
             }
             SectionCard {
                 Label { text: qsTr("Reconhecimento"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
-                SettingSwitch { enabled: false; title: qsTr("Reconhecer arquivos automaticamente"); description: qsTr("Disponível em uma etapa futura.") }
+                SettingSwitch { title: qsTr("Reconhecer arquivos automaticamente"); description: qsTr("Verifica a biblioteca ao iniciar o aplicativo."); checked: controller.automaticLocalFileRecognition; onToggled: controller.SetAutomaticLocalFileRecognition(checked) }
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
                 StaticField { label: qsTr("Reprodutor preferido"); value: qsTr("Padrão do Windows") }
             }

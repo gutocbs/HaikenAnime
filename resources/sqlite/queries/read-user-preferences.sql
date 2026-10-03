@@ -10,6 +10,7 @@ SELECT score_minimum,
        card_status_presentation,
        language_key,
        preferred_title_key,
-       include_adult_content
+       include_adult_content,
+       automatic_local_file_recognition
 FROM user_preferences
 WHERE id = 1

@@ -146,6 +146,7 @@ QString SettingsController::cardStatusPresentationKey() const { return cardStatu
 QString SettingsController::languageKey() const { return languageKey_; }
 QString SettingsController::preferredTitleKey() const { return preferredTitleKey_; }
 bool SettingsController::includeAdultContent() const { return draft_.includeAdultContent; }
+bool SettingsController::automaticLocalFileRecognition() const { return draft_.automaticLocalFileRecognition; }
 bool SettingsController::dirty() const { return !extensionInputValid_ || !(draft_ == persisted_); }
 bool SettingsController::valid() const { return valid_; }
 bool SettingsController::saving() const { return saving_; }
@@ -244,6 +245,10 @@ void SettingsController::SetPreferredTitle(const QString &key) {
 void SettingsController::SetIncludeAdultContent(const bool enabled) {
     if (draft_.includeAdultContent == enabled) return;
     draft_.includeAdultContent = enabled;
+    statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
+}
+void SettingsController::SetAutomaticLocalFileRecognition(const bool enabled) {
+    draft_.automaticLocalFileRecognition = enabled;
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }
 
