@@ -145,7 +145,9 @@ QVariantList defaultSortOptions() {
         option(QStringLiteral("title_asc"), QCoreApplication::translate("HomeScreenController", "Título A–Z")),
         option(QStringLiteral("title_desc"), QCoreApplication::translate("HomeScreenController", "Título Z–A")),
         option(QStringLiteral("personal_score"), QCoreApplication::translate("HomeScreenController", "Maior nota")),
-        option(QStringLiteral("progress"), QCoreApplication::translate("HomeScreenController", "Maior progresso"))
+        option(QStringLiteral("progress"), QCoreApplication::translate("HomeScreenController", "Maior progresso")),
+        option(QStringLiteral("season_asc"), QCoreApplication::translate("HomeScreenController", "Temporada mais antiga")),
+        option(QStringLiteral("season_desc"), QCoreApplication::translate("HomeScreenController", "Temporada mais recente"))
     };
 }
 
@@ -162,6 +164,14 @@ bool containsOptionKey(const QVariantList &options, const QString &key) {
 
 QString firstOptionKey(const QVariantList &options) {
     return options.first().toMap().value(QStringLiteral("key")).toString();
+}
+
+int seasonRank(const QString &season) {
+    if (season.compare(QStringLiteral("WINTER"), Qt::CaseInsensitive) == 0) return 1;
+    if (season.compare(QStringLiteral("SPRING"), Qt::CaseInsensitive) == 0) return 2;
+    if (season.compare(QStringLiteral("SUMMER"), Qt::CaseInsensitive) == 0) return 3;
+    if (season.compare(QStringLiteral("FALL"), Qt::CaseInsensitive) == 0) return 4;
+    return 0;
 }
 
 }
@@ -755,12 +765,23 @@ void HomeScreenController::rebuildMediaModels() {
                                 ResolveMediaTitle(right, preferredTitleKey_),
                                 Qt::CaseInsensitive) < 0;
     };
-    std::stable_sort(filtered.begin(), filtered.end(), [this, &titleLess](const Media &left, const Media &right) {
+    const auto seasonLess = [this, &titleLess](const Media &left, const Media &right) {
+        const int leftYear = left.SeasonYear.value_or(0);
+        const int rightYear = right.SeasonYear.value_or(0);
+        if (leftYear != rightYear) return leftYear < rightYear;
+        const int leftRank = seasonRank(left.Season);
+        const int rightRank = seasonRank(right.Season);
+        if (leftRank != rightRank) return leftRank < rightRank;
+        return titleLess(left, right);
+    };
+    std::stable_sort(filtered.begin(), filtered.end(), [this, &titleLess, &seasonLess](const Media &left, const Media &right) {
         if (activeSort_ == QStringLiteral("title_desc")) return titleLess(right, left);
         if (activeSort_ == QStringLiteral("personal_score") && left.PersonalScore != right.PersonalScore)
             return left.PersonalScore > right.PersonalScore;
         if (activeSort_ == QStringLiteral("progress") && left.ConsumedChapters != right.ConsumedChapters)
             return left.ConsumedChapters > right.ConsumedChapters;
+        if (activeSort_ == QStringLiteral("season_desc")) return seasonLess(right, left);
+        if (activeSort_ == QStringLiteral("season_asc")) return seasonLess(left, right);
         return titleLess(left, right);
     });
     fullModel_.setMedia(filtered);

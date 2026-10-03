@@ -310,11 +310,12 @@ void InitialSyncCoordinatorTests::synchronizesRecordedUserListIntoDatabase() {
     SqliteDatabase database(databasePath);
     QVERIFY2(database.open(), qPrintable(database.lastError()));
     QSqlQuery query(database.connection());
-    QVERIFY(query.exec(QStringLiteral("SELECT consumed_chapters, personal_score, user_list_status FROM media WHERE id = 21366")));
+    QVERIFY(query.exec(QStringLiteral("SELECT consumed_chapters, total_chapters, personal_score, user_list_status FROM media WHERE id = 154587")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 22);
-    QCOMPARE(query.value(1).toInt(), 9);
-    QCOMPARE(query.value(2).toInt(), static_cast<int>(UserListStatus::Completed));
+    QCOMPARE(query.value(0).toInt(), 28);
+    QCOMPARE(query.value(1).toInt(), 28);
+    QCOMPARE(query.value(2).toInt(), 10);
+    QCOMPARE(query.value(3).toInt(), static_cast<int>(UserListStatus::Completed));
 }
 
 QTEST_MAIN(InitialSyncCoordinatorTests)

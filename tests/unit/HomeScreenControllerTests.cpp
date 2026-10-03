@@ -91,6 +91,7 @@ private slots:
     void emitsSortPreferenceOnlyForAcceptedSortChanges();
     void reconcilesActiveCriteriaWhenBackendOptionsChange();
     void appliesListSearchAndSortToBothLibraries();
+    void sortsBySeasonYearAndRankInBothDirections();
     void usesResolvedTitleConsistentlyAfterStartupConfiguration();
     void clearsBrowseCriteriaWithoutChangingMediaType();
     void selectsMediaAndExposesItsDetails();
@@ -594,6 +595,57 @@ void HomeScreenControllerTests::appliesListSearchAndSortToBothLibraries() {
                                             HomeMediaModel::IdRole).toInt(), 10);
     QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(9, 0),
                                                 HomeMediaModel::IdRole).toInt(), 1);
+}
+
+void HomeScreenControllerTests::sortsBySeasonYearAndRankInBothDirections() {
+    FakeMediaReader reader;
+    Media winter;
+    winter.Id = 1;
+    winter.Name = QStringLiteral("Winter");
+    winter.Type = MediaType::Anime;
+    winter.Season = QStringLiteral("WINTER");
+    winter.SeasonYear = 2024;
+    Media spring;
+    spring.Id = 2;
+    spring.Name = QStringLiteral("Spring");
+    spring.Type = MediaType::Anime;
+    spring.Season = QStringLiteral("SPRING");
+    spring.SeasonYear = 2024;
+    Media olderFall;
+    olderFall.Id = 3;
+    olderFall.Name = QStringLiteral("Older fall");
+    olderFall.Type = MediaType::Anime;
+    olderFall.Season = QStringLiteral("FALL");
+    olderFall.SeasonYear = 2023;
+    Media undated;
+    undated.Id = 4;
+    undated.Name = QStringLiteral("Undated");
+    undated.Type = MediaType::Anime;
+    reader.result = {spring, undated, olderFall, winter};
+
+    HomeScreenController controller(reader);
+    controller.ConfigureInitialSort(QStringLiteral("season_asc"));
+    controller.reload();
+
+    QCOMPARE(controller.activeSort(), QStringLiteral("season_asc"));
+    QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(0, 0),
+                                                HomeMediaModel::IdRole).toInt(), 4);
+    QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(1, 0),
+                                                HomeMediaModel::IdRole).toInt(), 3);
+    QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(2, 0),
+                                                HomeMediaModel::IdRole).toInt(), 1);
+    QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(3, 0),
+                                                HomeMediaModel::IdRole).toInt(), 2);
+
+    controller.SetSort(QStringLiteral("season_desc"));
+    QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(0, 0),
+                                                HomeMediaModel::IdRole).toInt(), 2);
+    QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(1, 0),
+                                                HomeMediaModel::IdRole).toInt(), 1);
+    QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(2, 0),
+                                                HomeMediaModel::IdRole).toInt(), 3);
+    QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(3, 0),
+                                                HomeMediaModel::IdRole).toInt(), 4);
 }
 
 void HomeScreenControllerTests::usesResolvedTitleConsistentlyAfterStartupConfiguration() {
