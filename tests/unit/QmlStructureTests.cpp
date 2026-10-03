@@ -248,6 +248,8 @@ void QmlStructureTests::browseControlsShowConfiguredLabelsAfterInitialization() 
     QVERIFY2(source.contains(QStringLiteral(
                  "currentIndex: count > 0 ? indexOfValue(controls.controller.activeSort) : -1")),
              "Sort selection must re-evaluate when backend-provided options arrive.");
+    QVERIFY2(source.contains(QStringLiteral("model: controls.controller.availableSortOptions")),
+             "Season sorting must be supplied by the controller rather than implemented in QML.");
     QVERIFY(!source.contains(QStringLiteral("currentIndex: 0")));
 }
 

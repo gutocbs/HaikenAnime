@@ -15,10 +15,10 @@ RowLayout {
     spacing: 8
 
     function synchronizeWithController() {
-        listFilter.currentIndex = listFilter.indexOfValue(controller.activeListFilter)
-        sortOrder.currentIndex = sortOrder.indexOfValue(controller.activeSort)
-        if (searchField.text !== controller.searchQuery)
-            searchField.text = controller.searchQuery
+        listFilter.currentIndex = listFilter.indexOfValue(controls.controller.activeListFilter)
+        sortOrder.currentIndex = sortOrder.indexOfValue(controls.controller.activeSort)
+        if (searchField.text !== controls.controller.searchQuery)
+            searchField.text = controls.controller.searchQuery
     }
 
     component BrowseComboBox: Basic.ComboBox {
