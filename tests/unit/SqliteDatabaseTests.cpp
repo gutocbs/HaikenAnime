@@ -34,6 +34,7 @@ private slots:
     void migrationAddsPreferredTitleWithoutLosingExistingData();
     void migrationAddsExtendedMediaMetadataWithoutLosingExistingData();
     void migrationAddsAdultContentWithDisabledFallbackWithoutLosingExistingData();
+    void migrationUpgradesRecognitionStateConstraintWithoutLosingExistingData();
 };
 
 void SqliteDatabaseTests::opensAndCreatesDatabaseFile() {
@@ -107,7 +108,7 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 16);
+    QCOMPARE(query.value(0).toInt(), 17);
 }
 
 void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
@@ -207,7 +208,7 @@ void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
     QVERIFY(versions.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
     QList<int> values;
     while (versions.next()) values.append(versions.value(0).toInt());
-    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}));
+    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17}));
 }
 
 void SqliteDatabaseTests::migrationCreatesUserPreferencesVersionFive() {
@@ -642,6 +643,48 @@ void SqliteDatabaseTests::migrationAddsAdultContentWithDisabledFallbackWithoutLo
     QCOMPARE(query.value(0).toBool(), false);
     QCOMPARE(query.value(1).toString(), QStringLiteral("title_desc"));
     QCOMPARE(query.value(2).toString(), QStringLiteral("native"));
+}
+
+void SqliteDatabaseTests::migrationUpgradesRecognitionStateConstraintWithoutLosingExistingData() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("legacy.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO library_scans (root_path, started_at, status) "
+        "VALUES ('Q:/Animes', '2026-10-03T00:00:00Z', 'succeeded')")));
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO local_files (root_path, relative_path, normalized_relative_path, file_name, extension, "
+        "size_bytes, modified_at, last_seen_scan_id, recognition_state, extracted_title, episode) VALUES "
+        "('Q:/Animes', 'Show/02.mkv', 'show/02.mkv', '02.mkv', '.mkv', 123, "
+        "'2026-10-03T00:00:00Z', 1, 'associated', 'Preserved', 2)")));
+    QVERIFY(query.exec(QStringLiteral("ALTER TABLE local_files RENAME TO local_files_current")));
+    QVERIFY(query.exec(QStringLiteral(
+        "CREATE TABLE local_files ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, root_path TEXT NOT NULL, relative_path TEXT NOT NULL, "
+        "normalized_relative_path TEXT NOT NULL, file_name TEXT NOT NULL, extension TEXT NOT NULL, "
+        "size_bytes INTEGER NOT NULL CHECK (size_bytes >= 0), modified_at TEXT NOT NULL, "
+        "available INTEGER NOT NULL DEFAULT 1 CHECK (available IN (0, 1)), "
+        "last_seen_scan_id INTEGER NOT NULL REFERENCES library_scans(id), "
+        "recognition_state TEXT NOT NULL DEFAULT 'unprocessed' "
+        "CHECK (recognition_state IN ('unprocessed', 'recognized', 'unrecognized', 'associated')), "
+        "extracted_title TEXT NOT NULL DEFAULT '', media_kind TEXT NOT NULL DEFAULT 'anime', "
+        "season INTEGER, episode INTEGER, media_id INTEGER, recognition_diagnostic TEXT NOT NULL DEFAULT '', "
+        "recognized_at TEXT, UNIQUE(root_path, normalized_relative_path))")));
+    QVERIFY(query.exec(QStringLiteral("INSERT INTO local_files SELECT * FROM local_files_current")));
+    QVERIFY(query.exec(QStringLiteral("DROP TABLE local_files_current")));
+
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+    QVERIFY(query.exec(QStringLiteral("UPDATE local_files SET recognition_state = 'ambiguous' WHERE id = 1")));
+    QVERIFY(query.exec(QStringLiteral("SELECT extracted_title, episode FROM local_files WHERE id = 1")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("Preserved"));
+    QCOMPARE(query.value(1).toInt(), 2);
+    QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version WHERE version = 17")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 1);
 }
 
 QTEST_MAIN(SqliteDatabaseTests)

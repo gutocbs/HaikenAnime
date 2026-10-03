@@ -29,6 +29,8 @@ bool ContainsEpisodeRangeOrList(const QString &fileName) {
 
 LocalFileRecognition AnitomyLocalFileRecognizer::recognize(const QString &fileName,
                                                            const LocalMediaKind requestedKind) const {
+    if (fileName.contains("Arakawa Under the Bridge_-_02"))
+        std::cout << "Arakawa" << std::endl;
     LocalFileRecognition result;
     result.mediaKind = requestedKind;
     if (requestedKind != LocalMediaKind::Anime) {
