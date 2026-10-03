@@ -79,6 +79,7 @@ private slots:
     void languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml();
     void preferredTitleSelectionUsesBackendOptions();
     void seasonalCatalogRequiresExplicitFiltersAndHasResponsiveContent();
+    void seasonalCatalogPublishesCardsOnlyAfterResultsAreReady();
     void secondaryScreenNavigationMatchesLibraryHeaderPlacement();
     void settingsHeaderReservesMessageSpaceAfterSaveAction();
     void seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated();
@@ -517,6 +518,19 @@ void QmlStructureTests::seasonalCatalogRequiresExplicitFiltersAndHasResponsiveCo
     QVERIFY(detailsSource.contains(QStringLiteral("source: controller.selectedCoverSource")));
     QVERIFY(detailsSource.contains(QStringLiteral("id: externalLinksGrid")));
     QVERIFY(detailsSource.contains(QStringLiteral("columns: width >= 340 ? 2 : 1")));
+}
+
+void QmlStructureTests::seasonalCatalogPublishesCardsOnlyAfterResultsAreReady() {
+    const QString seasonalSource = qmlSource(QStringLiteral("SeasonalCatalogScreen.qml"));
+    const QString cardSource = qmlSource(QStringLiteral("MediaCard.qml"));
+    QVERIFY(!seasonalSource.isEmpty());
+    QVERIFY(!cardSource.isEmpty());
+    QVERIFY(seasonalSource.contains(QStringLiteral("readonly property bool cardsReady:")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("controller.state === \"populated\"")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("controller.state === \"loading\"")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("model: cardsReady ? controller.mediaModel : null")));
+    QVERIFY(cardSource.contains(QStringLiteral("asynchronous: true")));
+    QVERIFY(cardSource.contains(QStringLiteral("source: card.coverSource")));
 }
 
 void QmlStructureTests::secondaryScreenNavigationMatchesLibraryHeaderPlacement() {

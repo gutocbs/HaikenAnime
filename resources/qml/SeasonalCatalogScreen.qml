@@ -270,10 +270,13 @@ Item {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
+                    readonly property bool cardsReady: controller.state === "populated"
+                                                     || (controller.state === "loading"
+                                                         && controller.hasResults)
                     readonly property int columns: width >= 860 ? 3 : width >= 560 ? 2 : 1
                     cellWidth: width / columns
                     cellHeight: 154
-                    model: controller.mediaModel
+                    model: cardsReady ? controller.mediaModel : null
 
                     function requestNextPageIfNearEnd() {
                         if (!controller.canLoadNextPage) return
