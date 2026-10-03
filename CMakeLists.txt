@@ -800,6 +800,7 @@ add_executable(LocalEpisodeReaderTests
         tests/unit/LocalEpisodeReaderTests.cpp
         src/application/library/LocalEpisodeReader.cpp
         src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/logging/AsyncLogger.cpp
 )
 target_link_libraries(LocalEpisodeReaderTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
