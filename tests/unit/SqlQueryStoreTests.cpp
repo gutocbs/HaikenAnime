@@ -10,6 +10,8 @@ class SqlQueryStoreTests : public QObject {
 private slots:
     void successfulLoadReplacesOutputsAndClearsError();
     void failedLoadClearsPreviousQuery();
+    void loadSourceReadsFileOnlyWhenRequested();
+    void loadSourceRejectsInlineSql();
 };
 
 void SqlQueryStoreTests::successfulLoadReplacesOutputsAndClearsError() {
@@ -36,6 +38,30 @@ void SqlQueryStoreTests::failedLoadClearsPreviousQuery() {
     QVERIFY(!store.load(query, error));
     QVERIFY(query.isEmpty());
     QVERIFY(!error.isEmpty());
+}
+
+void SqlQueryStoreTests::loadSourceReadsFileOnlyWhenRequested() {
+    QTemporaryDir temporaryDirectory;
+    const auto path = temporaryDirectory.filePath(QStringLiteral("query.sql"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    QVERIFY(file.write("SELECT 2;") > 0);
+    file.close();
+
+    QString query;
+    QString error;
+    QVERIFY(SqlQueryStore::loadSource(path, query, error));
+    QCOMPARE(query, QStringLiteral("SELECT 2;"));
+    QVERIFY(error.isEmpty());
+}
+
+void SqlQueryStoreTests::loadSourceRejectsInlineSql() {
+    QString query = QStringLiteral("stale query");
+    QString error;
+
+    QVERIFY(!SqlQueryStore::loadSource(QStringLiteral("SELECT 1"), query, error));
+    QVERIFY(query.isEmpty());
+    QVERIFY(error.contains(QStringLiteral("file"), Qt::CaseInsensitive));
 }
 
 QTEST_MAIN(SqlQueryStoreTests)

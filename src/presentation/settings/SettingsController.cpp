@@ -12,6 +12,7 @@ QStringList SettingsController::availableScanExtensions() const {
 }
 QStringList SettingsController::selectedScanExtensions() const { return draft_.scanExtensions; }
 bool SettingsController::scanRunning() const { return scanRunning_; }
+bool SettingsController::synchronizationRunning() const { return synchronizationRunning_; }
 qsizetype SettingsController::scanCandidateCount() const { return scanCandidateCount_; }
 QString SettingsController::scanStatusMessage() const { return scanStatusMessage_; }
 QString SettingsController::scanErrorMessage() const { return scanErrorMessage_; }
@@ -106,6 +107,34 @@ void SettingsController::ScanNow() {
     emit scanChanged();
 }
 
+void SettingsController::SynchronizeNow() {
+    if (synchronizationRunning_) return;
+    emit synchronizationRequested();
+}
+
+void SettingsController::notifySynchronizationStarted() {
+    synchronizationRunning_ = true;
+    statusMessage_ = tr("Sincronizando dados em segundo plano...");
+    errorMessage_.clear();
+    emit synchronizationChanged();
+    emit changed();
+}
+
+void SettingsController::notifySynchronizationCompleted() {
+    synchronizationRunning_ = false;
+    statusMessage_ = tr("Sincronização concluída.");
+    emit synchronizationChanged();
+    emit changed();
+}
+
+void SettingsController::notifySynchronizationFailed(const QString &error) {
+    synchronizationRunning_ = false;
+    errorMessage_ = error;
+    statusMessage_.clear();
+    emit synchronizationChanged();
+    emit changed();
+}
+
 namespace {
 QVariantMap option(const QString &key, const QString &label) {
     return {{QStringLiteral("key"), key}, {QStringLiteral("label"), label}};
@@ -129,8 +158,7 @@ SettingsController::SettingsController(IUserPreferencesRepository *repository,
       cardStatusPresentationKey_(CardStatusPresentationKey(initial.cardStatusPresentation)),
       languageKey_(NormalizeLanguageKey(initial.languageKey)),
       appliedLanguageKey_(NormalizeLanguageKey(initial.languageKey)),
-      preferredTitleKey_(NormalizePreferredTitleKey(initial.preferredTitleKey)),
-      appliedPreferredTitleKey_(NormalizePreferredTitleKey(initial.preferredTitleKey)) {
+      preferredTitleKey_(NormalizePreferredTitleKey(initial.preferredTitleKey)) {
     qRegisterMetaType<UserPreferences>();
     scanStatusMessage_ = tr("Nenhuma varredura iniciada.");
     refreshValidation();
@@ -189,9 +217,8 @@ QVariantList SettingsController::preferredTitleOptions() const {
 }
 
 QString SettingsController::restartRequiredMessage() const {
-    return languageKey_ == appliedLanguageKey_ && preferredTitleKey_ == appliedPreferredTitleKey_
-        ? QString{}
-        : tr("Reinicie o aplicativo para aplicar as preferências de aparência selecionadas.");
+    return languageKey_ == appliedLanguageKey_ ? QString{}
+                                              : tr("Reinicie o aplicativo para aplicar o idioma selecionado.");
 }
 
 void SettingsController::SetScoreScale(const double minimum, const double maximum,

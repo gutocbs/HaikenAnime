@@ -14,6 +14,10 @@ public:
     /** Reads the complete SQL statement and reports filesystem errors through error. */
     [[nodiscard]] bool load(QString &query, QString &error) const;
 
+    /** Loads a SQL query from a Qt resource or filesystem path. */
+    [[nodiscard]] static bool loadSource(const QString &source, QString &query, QString &error,
+                                         AsyncLogger *logger = nullptr);
+
 private:
     QString filePath_;
     AsyncLogger *logger_ = nullptr;

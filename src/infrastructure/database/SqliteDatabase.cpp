@@ -1,6 +1,7 @@
 #include "SqliteDatabase.h"
 
 #include <QDir>
+#include <QFile>
 #include <QFileInfo>
 #include <QSqlError>
 #include <QSqlQuery>
@@ -10,6 +11,26 @@
 #include "../logging/AsyncLogger.h"
 
 #include <utility>
+
+namespace {
+bool ExecuteMigrationScript(QSqlQuery &query, const QString &path, QString &error) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        error = file.errorString();
+        return false;
+    }
+    const auto statements = QString::fromUtf8(file.readAll()).split(';', Qt::SkipEmptyParts);
+    for (const auto &statement : statements) {
+        const auto sql = statement.trimmed();
+        if (sql.isEmpty()) continue;
+        if (!query.exec(sql)) {
+            error = query.lastError().text();
+            return false;
+        }
+    }
+    return true;
+}
+}
 
 SqliteDatabase::SqliteDatabase(QString databasePath)
     : connectionName_(QStringLiteral("haikenanime-%1").arg(QUuid::createUuid().toString(QUuid::WithoutBraces))),
@@ -73,6 +94,13 @@ bool SqliteDatabase::migrate() {
     }
 
     QSqlQuery query(database_);
+    const bool schemaCreated = ExecuteMigrationScript(
+        query, QStringLiteral(":/sqlite/migrations/001-create-initial-schema.sql"), lastError_);
+    const bool mediaCreated = schemaCreated;
+    const bool pendingChangesCreated = mediaCreated;
+    const bool coverCacheCreated = pendingChangesCreated;
+    const bool userPreferencesCreated = coverCacheCreated;
+/*
     const bool schemaCreated = query.exec(QStringLiteral(
         "CREATE TABLE IF NOT EXISTS schema_version ("
         "version INTEGER PRIMARY KEY"
@@ -150,6 +178,7 @@ bool SqliteDatabase::migrate() {
         "preferred_title_key TEXT NOT NULL DEFAULT 'romaji',"
         "include_adult_content INTEGER NOT NULL DEFAULT 0 CHECK (include_adult_content IN (0, 1)),"
         "automatic_local_file_recognition INTEGER NOT NULL DEFAULT 1 CHECK (automatic_local_file_recognition IN (0, 1)))"));
+*/
     bool sourceRemovalColumnExists = false;
     bool userListStatusColumnExists = false;
     bool coverMediumColumnExists = false;

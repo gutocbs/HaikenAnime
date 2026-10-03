@@ -68,6 +68,7 @@ private slots:
     void settingsModeUsesNarrowMinimumWidth();
     void scanExtensionGridReachesAllBreakpointsAndPreservesInteractions();
     void browseControlsShowConfiguredLabelsAfterInitialization();
+    void homeRestoresListFilterSelectionAfterReturningFromSettings();
     void mediaCardAndSettingsUseControllerPreparedCardPresentation();
     void previewCardsUseControllerPreparedMetadataInBothGrids();
     void compactDetailsUseSeparatePreviewMetadata();
@@ -77,6 +78,7 @@ private slots:
     void preferredTitleSelectionUsesBackendOptions();
     void seasonalCatalogRequiresExplicitFiltersAndHasResponsiveContent();
     void secondaryScreenNavigationMatchesLibraryHeaderPlacement();
+    void settingsHeaderReservesMessageSpaceAfterSaveAction();
     void seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated();
     void mainKeepsSeasonalCatalogAsSeparateNavigation();
 
@@ -249,6 +251,23 @@ void QmlStructureTests::browseControlsShowConfiguredLabelsAfterInitialization() 
     QVERIFY(!source.contains(QStringLiteral("currentIndex: 0")));
 }
 
+void QmlStructureTests::homeRestoresListFilterSelectionAfterReturningFromSettings() {
+    const QString homeSource = qmlSource(QStringLiteral("Home.qml"));
+    const QString controlsSource = qmlSource(QStringLiteral("BrowseControls.qml"));
+    QVERIFY(!homeSource.isEmpty());
+    QVERIFY(!controlsSource.isEmpty());
+
+    QVERIFY2(controlsSource.contains(QStringLiteral("function synchronizeWithController()")),
+             "Browse controls must expose an explicit synchronization point for restored views.");
+    QVERIFY2(controlsSource.contains(QStringLiteral(
+                 "listFilter.currentIndex = listFilter.indexOfValue(controls.controller.activeListFilter)")),
+             "The list selector must restore the active filter owned by the controller.");
+    QVERIFY2(homeSource.contains(QStringLiteral("previewBrowseControls.synchronizeWithController()")),
+             "The preview filter must be synchronized when Home becomes visible again.");
+    QVERIFY2(homeSource.contains(QStringLiteral("completeBrowseControls.synchronizeWithController()")),
+             "The complete-library filter must be synchronized when Home becomes visible again.");
+}
+
 void QmlStructureTests::mediaCardAndSettingsUseControllerPreparedCardPresentation() {
     const QString cardSource = qmlSource(QStringLiteral("MediaCard.qml"));
     const QString settingsSource = qmlSource(QStringLiteral("SettingsScreen.qml"));
@@ -363,6 +382,11 @@ void QmlStructureTests::preferredTitleSelectionUsesBackendOptions() {
     QVERIFY(settingsSource.contains(QStringLiteral("controller.includeAdultContent")));
     QVERIFY(settingsSource.contains(QStringLiteral("controller.SetIncludeAdultContent")));
     QVERIFY(settingsSource.contains(QStringLiteral("INCLUIR CONTEÚDO ADULTO")));
+
+    QFile mainFile(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/main.cpp"));
+    QVERIFY2(mainFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(mainFile.errorString()));
+    const QString mainSource = QString::fromUtf8(mainFile.readAll());
+    QVERIFY(mainSource.contains(QStringLiteral("homeController.ConfigurePreferredTitle(preferences.preferredTitleKey);")));
 }
 
 void QmlStructureTests::coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads() {
@@ -487,12 +511,73 @@ void QmlStructureTests::secondaryScreenNavigationMatchesLibraryHeaderPlacement()
     QVERIFY(homeTitleBlock.contains(QStringLiteral("enabled: false")));
     QVERIFY(homeTitleBlock.contains(QStringLiteral("focus: false")));
     QVERIFY(homeTitleBlock.contains(QStringLiteral("Layout.preferredHeight: implicitHeight")));
+
+    const qsizetype previewGridStart = homeSource.indexOf(QStringLiteral("id: mediaGrid"));
+    const qsizetype previewGridEnd = homeSource.indexOf(QStringLiteral("StatePanel {"), previewGridStart);
+    QVERIFY(previewGridStart >= 0);
+    QVERIFY(previewGridEnd > previewGridStart);
+    const QString previewGridBlock = homeSource.mid(previewGridStart, previewGridEnd - previewGridStart);
+    QVERIFY(previewGridBlock.contains(QStringLiteral("readonly property int previewRows: 3")));
+    QVERIFY(previewGridBlock.contains(QStringLiteral("cellHeight: Math.floor(height / previewRows)")));
+    QVERIFY(previewGridBlock.contains(QStringLiteral("height: mediaGrid.cellHeight - 12")));
+    QVERIFY(!previewGridBlock.contains(QStringLiteral("cellHeight: 154")));
+
+    QVERIFY(homeSource.contains(QStringLiteral("id: libraryPreviewPanel")));
+    const qsizetype browseControlsStart = homeSource.indexOf(QStringLiteral("BrowseControls {"),
+                                                              previewGridEnd);
+    const qsizetype watchButtonStart = homeSource.indexOf(QStringLiteral("id: watchNextButton"),
+                                                          browseControlsStart);
+    QVERIFY(browseControlsStart >= 0);
+    QVERIFY(watchButtonStart > browseControlsStart);
+    const QString bottomControlsBlock = homeSource.mid(browseControlsStart,
+                                                       watchButtonStart - browseControlsStart);
+    QVERIFY(bottomControlsBlock.contains(
+        QStringLiteral("Layout.preferredWidth: libraryPreviewPanel.width - 16")));
+    QVERIFY(bottomControlsBlock.contains(QStringLiteral("Layout.maximumWidth: libraryPreviewPanel.width - 16")));
+    QVERIFY(!bottomControlsBlock.contains(QStringLiteral("id: bottomControlsSpacer")));
+    const QString watchButtonBlock = homeSource.mid(watchButtonStart,
+                                                    homeSource.indexOf(QStringLiteral("Rectangle {"), watchButtonStart)
+                                                    - watchButtonStart);
+    QVERIFY(watchButtonBlock.contains(QStringLiteral("Layout.leftMargin: 8")));
+
     QVERIFY(settingsSource.contains(QStringLiteral("Layout.preferredHeight: 82")));
     QVERIFY(seasonalSource.contains(QStringLiteral("Layout.preferredHeight: 82")));
     QVERIFY(settingsSource.contains(QStringLiteral("id: settingsHeaderNavigation")));
     QVERIFY(seasonalSource.contains(QStringLiteral("id: seasonalHeaderNavigation")));
     QVERIFY(!settingsSource.contains(QStringLiteral("Layout.preferredWidth: 240")));
     QVERIFY(!seasonalSource.contains(QStringLiteral("Layout.preferredWidth: 240")));
+}
+
+void QmlStructureTests::settingsHeaderReservesMessageSpaceAfterSaveAction() {
+    const QString source = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    QVERIFY(!source.isEmpty());
+
+    const qsizetype saveAction = source.indexOf(QStringLiteral("text: qsTr(\"Salvar alterações\")"));
+    const qsizetype messageArea = source.indexOf(QStringLiteral("id: settingsHeaderMessageArea"));
+    QVERIFY(saveAction >= 0);
+    QVERIFY(source.contains(QStringLiteral("id: settingsHeaderActions")));
+    QVERIFY(messageArea < saveAction);
+    QVERIFY(source.contains(QStringLiteral("Layout.preferredHeight: 36")));
+    QVERIFY(source.contains(QStringLiteral("id: settingsSaveButton")));
+    QVERIFY(source.contains(QStringLiteral("Layout.alignment: Qt.AlignLeft")));
+    QVERIFY(source.contains(QStringLiteral("id: settingsHeaderActions")));
+    const qsizetype headerActions = source.indexOf(QStringLiteral("id: settingsHeaderActions"));
+    const qsizetype messageAreaEnd = source.indexOf(QStringLiteral("id: settingsHeaderMessageArea"), headerActions);
+    const QString actionsBeforeMessage = source.mid(headerActions, messageAreaEnd - headerActions);
+    QVERIFY(!actionsBeforeMessage.contains(QStringLiteral("Layout.leftMargin")));
+    QVERIFY(!actionsBeforeMessage.contains(QStringLiteral("Layout.rightMargin")));
+    const qsizetype saveButton = source.indexOf(QStringLiteral("id: settingsSaveButton"));
+    const QString saveButtonBlock = source.mid(saveButton,
+                                               source.indexOf(QStringLiteral("text: qsTr(\"Salvar alterações\")"), saveButton)
+                                               - saveButton);
+    QVERIFY(!saveButtonBlock.contains(QStringLiteral("Layout.leftMargin")));
+    QVERIFY(source.contains(QStringLiteral("Basic.Button {\n                    id: settingsSaveButton")));
+    QVERIFY(source.contains(QStringLiteral("background: Rectangle")));
+    const qsizetype headerTitle = source.indexOf(QStringLiteral("id: settingsHeaderTitle"));
+    const QString headerTitleBlock = source.mid(headerTitle, headerActions - headerTitle);
+    QVERIFY(headerTitleBlock.contains(QStringLiteral("Layout.preferredWidth: 258")));
+    QVERIFY(headerTitleBlock.contains(QStringLiteral("Layout.maximumWidth: 258")));
+    QVERIFY(!source.contains(QStringLiteral("As opções disponíveis nesta etapa são salvas localmente e aplicadas imediatamente.")));
 }
 
 void QmlStructureTests::seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated() {

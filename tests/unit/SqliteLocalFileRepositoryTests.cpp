@@ -44,9 +44,7 @@ private:
 };
 
 QString SqliteLocalFileRepositoryTests::statement(const QString &name) {
-    QFile file(QStringLiteral(":/sqlite/queries/%1.sql").arg(name));
-    if (!file.open(QIODevice::ReadOnly)) qFatal("Missing SQL resource: %s", qPrintable(name));
-    return QString::fromUtf8(file.readAll());
+    return QStringLiteral(":/sqlite/queries/%1.sql").arg(name);
 }
 
 QVariant SqliteLocalFileRepositoryTests::scalar(const QString &sql) {
@@ -282,7 +280,7 @@ void SqliteLocalFileRepositoryTests::rejectsInvalidInput() {
 }
 
 void SqliteLocalFileRepositoryTests::reportsStatementAndTransactionErrors() {
-    SqliteLocalFileRepository broken(database_->connection(), QStringLiteral("invalid SQL"), {}, {}, {}, {});
+    SqliteLocalFileRepository broken(database_->connection(), QStringLiteral(":/sqlite/queries/missing.sql"), {}, {}, {}, {});
     qint64 id = 17;
     QVERIFY(!broken.beginScan(QStringLiteral("Q:/"), id, error_));
     QCOMPARE(id, 0);

@@ -783,7 +783,7 @@ void HomeScreenControllerTests::exposesControllerApprovedDeduplicatedMediaLinks(
     media.ExternalLinks = {
         {QStringLiteral("anilist"), QStringLiteral("https://anilist.co/anime/42")},
         {QStringLiteral("Crunchyroll"), QStringLiteral("https://www.crunchyroll.com/series/42")},
-        {QStringLiteral("crunchyroll"), QStringLiteral("https://www.crunchyroll.com/series/42")}
+        {QStringLiteral("crunchyroll"), QStringLiteral("https://www.crunchyroll.com/watch/42/episode-2")}
     };
     reader.result.append(media);
     HomeScreenController controller(reader);

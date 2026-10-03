@@ -38,6 +38,7 @@ class SettingsController final : public QObject {
     Q_PROPERTY(QStringList availableScanExtensions READ availableScanExtensions NOTIFY changed)
     Q_PROPERTY(QStringList selectedScanExtensions READ selectedScanExtensions NOTIFY changed)
     Q_PROPERTY(bool scanRunning READ scanRunning NOTIFY scanChanged)
+    Q_PROPERTY(bool synchronizationRunning READ synchronizationRunning NOTIFY synchronizationChanged)
     Q_PROPERTY(qsizetype scanCandidateCount READ scanCandidateCount NOTIFY scanChanged)
     Q_PROPERTY(QString scanStatusMessage READ scanStatusMessage NOTIFY scanChanged)
     Q_PROPERTY(QString scanErrorMessage READ scanErrorMessage NOTIFY scanChanged)
@@ -71,6 +72,7 @@ public:
     QStringList availableScanExtensions() const;
     QStringList selectedScanExtensions() const;
     bool scanRunning() const;
+    bool synchronizationRunning() const;
     qsizetype scanCandidateCount() const;
     QString scanStatusMessage() const;
     QString scanErrorMessage() const;
@@ -91,9 +93,15 @@ public:
     Q_INVOKABLE void SetLibraryRoot(const QString &root);
     Q_INVOKABLE void SetScanExtensionEnabled(const QString &extension, bool enabled);
     Q_INVOKABLE void ScanNow();
+    Q_INVOKABLE void SynchronizeNow();
+    void notifySynchronizationStarted();
+    void notifySynchronizationCompleted();
+    void notifySynchronizationFailed(const QString &error);
 signals:
     void changed();
     void scanChanged();
+    void synchronizationChanged();
+    void synchronizationRequested();
     void preferencesApplied(UserPreferences preferences);
 private:
     void refreshValidation();
@@ -108,7 +116,6 @@ private:
     QString appliedLanguageKey_;
     bool languageKeyValid_ = true;
     QString preferredTitleKey_;
-    QString appliedPreferredTitleKey_;
     bool preferredTitleKeyValid_ = true;
     bool valid_ = true;
     bool saving_ = false;
@@ -117,6 +124,7 @@ private:
     QPointer<LocalLibraryScanCoordinator> scanCoordinator_;
     bool extensionInputValid_ = true;
     bool scanRunning_ = false;
+    bool synchronizationRunning_ = false;
     qsizetype scanCandidateCount_ = 0;
     QString scanStatusMessage_;
     QString scanErrorMessage_;

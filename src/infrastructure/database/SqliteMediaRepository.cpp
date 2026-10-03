@@ -9,6 +9,7 @@
 #include <QDateTime>
 
 #include "SqliteMediaMapper.h"
+#include "SqlQueryStore.h"
 #include "../logging/AsyncLogger.h"
 
 #include <utility>
@@ -53,13 +54,13 @@ bool SqliteMediaRepository::readAll(QList<Media> &media, QString &error) {
         return false;
     }
 
-    if (readQuery_.isEmpty()) {
-        error = QStringLiteral("SQLite read query is empty.");
+    QString readQuery;
+    if (!SqlQueryStore::loadSource(readQuery_, readQuery, error, logger_)) {
         return false;
     }
 
     QSqlQuery query(database_);
-    if (!query.exec(readQuery_)) {
+    if (!query.exec(readQuery)) {
         error = query.lastError().text();
         if (logger_) logger_->error(LogCategory::Database, error);
         return false;
@@ -78,8 +79,8 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
         error = QStringLiteral("SQLite database is not open.");
         return false;
     }
-    if (upsertQuery_.isEmpty()) {
-        error = QStringLiteral("SQLite upsert query is empty.");
+    QString upsertQuery;
+    if (!SqlQueryStore::loadSource(upsertQuery_, upsertQuery, error, logger_)) {
         return false;
     }
     if (!database_.transaction()) {
@@ -88,7 +89,10 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
     }
 
     QSqlQuery query(database_);
-    query.prepare(upsertQuery_);
+    if (!query.prepare(upsertQuery)) {
+        error = query.lastError().text();
+        return false;
+    }
 
     for (const auto &item : media) {
         query.bindValue(QStringLiteral(":id"), item.Id);
@@ -141,12 +145,12 @@ bool SqliteMediaRepository::updatePersonalListMedia(const Media &media, QString 
         error = QStringLiteral("SQLite database is not open.");
         return false;
     }
-    if (updatePersonalListQuery_.isEmpty()) {
-        error = QStringLiteral("SQLite personal-list update query is empty.");
+    QString updatePersonalListQuery;
+    if (!SqlQueryStore::loadSource(updatePersonalListQuery_, updatePersonalListQuery, error, logger_)) {
         return false;
     }
     QSqlQuery query(database_);
-    if (!query.prepare(updatePersonalListQuery_)) {
+    if (!query.prepare(updatePersonalListQuery)) {
         error = query.lastError().text();
         return false;
     }
@@ -174,8 +178,10 @@ bool SqliteMediaRepository::reconcileAuthoritativeSnapshot(
         error = QStringLiteral("SQLite database is not open.");
         return false;
     }
-    if (readActiveMediaIdsQuery_.isEmpty() || markSourceRemovedQuery_.isEmpty()) {
-        error = QStringLiteral("SQLite snapshot reconciliation query is empty.");
+    QString readActiveMediaIdsQuery;
+    QString markSourceRemovedQuery;
+    if (!SqlQueryStore::loadSource(readActiveMediaIdsQuery_, readActiveMediaIdsQuery, error, logger_)
+        || !SqlQueryStore::loadSource(markSourceRemovedQuery_, markSourceRemovedQuery, error, logger_)) {
         return false;
     }
     if (!database_.transaction()) {
@@ -184,7 +190,7 @@ bool SqliteMediaRepository::reconcileAuthoritativeSnapshot(
     }
 
     QSqlQuery active(database_);
-    if (!active.exec(readActiveMediaIdsQuery_)) {
+    if (!active.exec(readActiveMediaIdsQuery)) {
         error = active.lastError().text();
         database_.rollback();
         return false;
@@ -196,7 +202,11 @@ bool SqliteMediaRepository::reconcileAuthoritativeSnapshot(
     }
 
     QSqlQuery mark(database_);
-    mark.prepare(markSourceRemovedQuery_);
+    if (!mark.prepare(markSourceRemovedQuery)) {
+        error = mark.lastError().text();
+        database_.rollback();
+        return false;
+    }
     const QString removedAt = QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs);
     for (const int mediaId : missingIds) {
         mark.bindValue(QStringLiteral(":source_removed_at"), removedAt);

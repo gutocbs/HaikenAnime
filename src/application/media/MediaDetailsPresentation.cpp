@@ -38,7 +38,7 @@ QVariantList PresentMediaLinks(const Media &media) {
     QVariantList links;
     QSet<QString> seen;
     const auto appendLink = [&links, &seen](const QString &site, const QString &url) {
-        const QString key = site.toCaseFolded() + u'\n' + url;
+        const QString key = site.toCaseFolded();
         if (site.isEmpty() || url.isEmpty() || seen.contains(key)) return;
         seen.insert(key);
         links.append(QVariantMap{{QStringLiteral("site"), site}, {QStringLiteral("url"), url}});

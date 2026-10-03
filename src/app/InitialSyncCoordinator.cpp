@@ -120,26 +120,8 @@ bool InitialSyncCoordinator::performSynchronization(QString &error) const {
         return false;
     }
 
-    QString upsertQuery;
-    QString readQuery;
-    QString readActiveMediaIdsQuery;
-    QString markSourceRemovedQuery;
-    SqlQueryStore upsertStore(upsertQueryPath_);
-    SqlQueryStore readStore(readQueryPath_);
-    SqlQueryStore readActiveMediaIdsStore(readActiveMediaIdsQueryPath_);
-    SqlQueryStore markSourceRemovedStore(markSourceRemovedQueryPath_);
-    upsertStore.setLogger(logger_);
-    readStore.setLogger(logger_);
-    if (!upsertStore.load(upsertQuery, error)
-        || !readStore.load(readQuery, error)
-        || !readActiveMediaIdsStore.load(readActiveMediaIdsQuery, error)
-        || !markSourceRemovedStore.load(markSourceRemovedQuery, error)) {
-        return false;
-    }
-
-    SqliteMediaRepository repository(database.connection(), std::move(upsertQuery),
-                                     std::move(readQuery), std::move(readActiveMediaIdsQuery),
-                                     std::move(markSourceRemovedQuery));
+    SqliteMediaRepository repository(database.connection(), upsertQueryPath_, readQueryPath_,
+                                     readActiveMediaIdsQueryPath_, markSourceRemovedQueryPath_);
     repository.setLogger(logger_);
     RecordedGraphQlAniListDataSource source(QDir::cleanPath(fixturePath_));
     AniListSyncService service(source, repository, &repository, nullptr, syncTimeoutMs_);

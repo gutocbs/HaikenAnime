@@ -70,7 +70,7 @@ private slots:
     void savesBackendProvidedCardStatusPresentation();
     void rejectsInvalidCardStatusPresentation();
     void exposesBackendLanguageOptionsAndRestartNotice();
-    void exposesBackendPreferredTitleOptionsAndRestartNotice();
+    void exposesBackendPreferredTitleOptionsWithoutRestartNotice();
     void savesAdultContentDraftWithoutChangingUnrelatedPreferences();
     void savesAutomaticLocalRecognitionPreference();
     void libraryDraftSavesAndDiscardsAtomically();
@@ -80,6 +80,7 @@ private slots:
     void scanUsesPersistedRequestAndRejectsConcurrentAction();
     void scanSignalsUpdatePresentation();
     void coordinatorReplacementDisconnectsOldSignals();
+    void requestsManualSynchronization();
 };
 
 void SettingsControllerTests::editsSavesAndEmitsCompletePreferences() {
@@ -238,7 +239,7 @@ void SettingsControllerTests::exposesBackendLanguageOptionsAndRestartNotice() {
     QCOMPARE(controller.languageKey(), QStringLiteral("en"));
 }
 
-void SettingsControllerTests::exposesBackendPreferredTitleOptionsAndRestartNotice() {
+void SettingsControllerTests::exposesBackendPreferredTitleOptionsWithoutRestartNotice() {
     FakePreferencesRepository repository;
     SettingsController controller(&repository, {});
 
@@ -248,10 +249,10 @@ void SettingsControllerTests::exposesBackendPreferredTitleOptionsAndRestartNotic
 
     controller.SetPreferredTitle(QStringLiteral("native"));
     QVERIFY(controller.valid());
-    QVERIFY(!controller.restartRequiredMessage().isEmpty());
+    QVERIFY(controller.restartRequiredMessage().isEmpty());
     controller.Save();
     QCOMPARE(repository.stored.preferredTitleKey, QStringLiteral("native"));
-    QVERIFY(!controller.restartRequiredMessage().isEmpty());
+    QVERIFY(controller.restartRequiredMessage().isEmpty());
 
     controller.SetPreferredTitle(QStringLiteral("obsolete"));
     QVERIFY(!controller.valid());
@@ -417,6 +418,15 @@ void SettingsControllerTests::coordinatorReplacementDisconnectsOldSignals() {
     QVERIFY(!controller.scanRunning());
     controller.ScanNow();
     QVERIFY(!controller.scanErrorMessage().isEmpty());
+}
+
+void SettingsControllerTests::requestsManualSynchronization() {
+    SettingsController controller(nullptr, {});
+    QSignalSpy requested(&controller, &SettingsController::synchronizationRequested);
+
+    controller.SynchronizeNow();
+
+    QCOMPARE(requested.count(), 1);
 }
 
 QTEST_MAIN(SettingsControllerTests)

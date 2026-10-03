@@ -76,11 +76,12 @@ Item {
         RowLayout {
             Layout.fillWidth: true
             Layout.preferredHeight: 82
-            spacing: 14
+            spacing: 18
 
             ColumnLayout {
                 id: settingsHeaderTitle
-                Layout.fillWidth: true
+                Layout.preferredWidth: 258
+                Layout.maximumWidth: 258
                 spacing: 2
 
                 Label {
@@ -106,18 +107,57 @@ Item {
                 }
             }
 
-            Label {
-                text: controller.errorMessage.length > 0 ? controller.errorMessage
-                      : controller.statusMessage.length > 0 ? controller.statusMessage
-                      : controller.dirty ? qsTr("Alterações não salvas") : qsTr("Configurações atualizadas")
-                color: controller.errorMessage.length > 0 ? "#b13b43" : muted
-                font.pixelSize: 11
-            }
+            ColumnLayout {
+                id: settingsHeaderActions
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignBottom
+                spacing: 4
 
-            Button {
-                text: qsTr("Salvar alterações")
-                enabled: controller.dirty && controller.valid && !controller.saving
-                onClicked: controller.Save()
+                Rectangle {
+                    id: settingsHeaderMessageArea
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 36
+                    color: controller.errorMessage.length > 0 ? "#fff0f0" : surfaceSoft
+                    border.color: controller.errorMessage.length > 0 ? "#e6a6aa" : line
+                    border.width: 1
+                    radius: 5
+
+                    Label {
+                        anchors.fill: parent
+                        anchors.leftMargin: 10
+                        anchors.rightMargin: 10
+                        verticalAlignment: Text.AlignVCenter
+                        text: controller.errorMessage.length > 0 ? controller.errorMessage
+                              : controller.statusMessage.length > 0 ? controller.statusMessage
+                              : controller.dirty ? qsTr("Alterações não salvas") : qsTr("Configurações atualizadas")
+                        color: controller.errorMessage.length > 0 ? "#b13b43" : muted
+                        font.pixelSize: 11
+                        elide: Text.ElideRight
+                    }
+                }
+
+                Basic.Button {
+                    id: settingsSaveButton
+                    Layout.alignment: Qt.AlignLeft
+                    text: qsTr("Salvar alterações")
+                    enabled: controller.dirty && controller.valid && !controller.saving
+                    onClicked: controller.Save()
+
+                    contentItem: Text {
+                        text: settingsSaveButton.text
+                        color: settingsSaveButton.enabled ? ink : muted
+                        font: settingsSaveButton.font
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                    }
+
+                    background: Rectangle {
+                        radius: 3
+                        color: surface
+                        border.width: settingsSaveButton.activeFocus ? 2 : 1
+                        border.color: settingsSaveButton.activeFocus ? accent : line
+                    }
+                }
             }
         }
 
@@ -200,21 +240,6 @@ Item {
 
                     Item { Layout.fillHeight: true }
 
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 78
-                        color: surfaceSoft
-                        radius: 6
-                        border.color: line
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: 11
-                            spacing: 3
-                            Label { text: qsTr("CONFIGURAÇÃO LOCAL"); color: accent; font.pixelSize: 9; font.weight: Font.DemiBold; font.letterSpacing: 1 }
-                            Label { Layout.fillWidth: true; text: qsTr("As opções disponíveis nesta etapa são salvas localmente e aplicadas imediatamente."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
-                        }
-                    }
                 }
             }
 
@@ -492,6 +517,19 @@ Item {
                         onToggled: controller.SetSynchronizationEnabled(checked)
                     }
                 }
+                RowLayout {
+                    Layout.fillWidth: true
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        Label { text: qsTr("Sincronização manual"); color: ink; font.pixelSize: 12; font.weight: Font.DemiBold }
+                        Label { Layout.fillWidth: true; text: qsTr("Atualize agora os dados da sua lista, sem aguardar o próximo intervalo automático."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
+                    }
+                    Button {
+                        text: controller.synchronizationRunning ? qsTr("Sincronizando…") : qsTr("Sincronizar agora")
+                        enabled: !controller.synchronizationRunning
+                        onClicked: controller.SynchronizeNow()
+                    }
+                }
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
                 GridLayout { Layout.fillWidth: true; columns: 2; columnSpacing: 12; rowSpacing: 6
                     SettingsComboBox {
@@ -622,6 +660,16 @@ Item {
                     delegate: SettingSwitch { required property string modelData; enabled: false; title: modelData; description: qsTr("Disponível em uma etapa futura.") }
                 }
             }
+            SectionCard {
+                Label { text: qsTr("Catálogo sazonal"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
+                SettingSwitch {
+                    Layout.fillWidth: true
+                    title: qsTr("INCLUIR CONTEÚDO ADULTO")
+                    description: qsTr("Permite títulos adultos no catálogo sazonal.")
+                    checked: controller.includeAdultContent
+                    onToggled: controller.SetIncludeAdultContent(checked)
+                }
+            }
         }
     }
 
@@ -700,14 +748,6 @@ Item {
                         textRole: "label"
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.cardStatusPresentationKey)
                         onActivated: controller.SetCardStatusPresentation(model[index].key)
-                    }
-                    SettingSwitch {
-                        Layout.fillWidth: true
-                        Layout.columnSpan: 2
-                        title: qsTr("INCLUIR CONTEÚDO ADULTO")
-                        description: qsTr("Permite títulos adultos no catálogo sazonal.")
-                        checked: controller.includeAdultContent
-                        onToggled: controller.SetIncludeAdultContent(checked)
                     }
                 }
                 Label {

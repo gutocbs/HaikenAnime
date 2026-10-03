@@ -31,3 +31,10 @@ bool SqlQueryStore::load(QString &query, QString &error) const {
     if (logger_) logger_->info(LogCategory::QueryStore, QStringLiteral("Loaded SQL query file: %1").arg(filePath_));
     return true;
 }
+
+bool SqlQueryStore::loadSource(const QString &source, QString &query, QString &error,
+                               AsyncLogger *logger) {
+    SqlQueryStore store(source);
+    store.setLogger(logger);
+    return store.load(query, error);
+}

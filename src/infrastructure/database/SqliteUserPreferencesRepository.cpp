@@ -5,6 +5,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include "../../application/configuration/UserPreferencesValidator.h"
+#include "SqlQueryStore.h"
 
 SqliteUserPreferencesRepository::SqliteUserPreferencesRepository(
     QSqlDatabase database, QString readQuery, QString upsertQuery)
@@ -22,8 +23,10 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
     error.clear();
     warning.clear();
     found = false;
+    QString readQuery;
+    if (!SqlQueryStore::loadSource(readQuery_, readQuery, error)) return false;
     QSqlQuery query(database_);
-    if (!query.exec(readQuery_)) {
+    if (!query.exec(readQuery)) {
         error = query.lastError().text();
         return false;
     }
@@ -91,7 +94,9 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
         return false;
     }
     QSqlQuery query(database_);
-    if (!query.prepare(upsertQuery_)) {
+    QString upsertQuery;
+    if (!SqlQueryStore::loadSource(upsertQuery_, upsertQuery, error)
+        || !query.prepare(upsertQuery)) {
         error = query.lastError().text();
         database_.rollback();
         return false;

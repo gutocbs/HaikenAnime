@@ -20,13 +20,15 @@ public:
 
 class LocalEpisodeReader final : public ILocalEpisodeReader {
 public:
-    LocalEpisodeReader(QSqlDatabase database, QString query);
+    LocalEpisodeReader(QSqlDatabase database, QString nextEpisodeQuery,
+                       QString availableEpisodeCountQuery);
     bool readNextEpisode(int mediaId, int consumedEpisode,
                          LocalEpisode &episode, QString &error) override;
     bool readAvailableEpisodeCount(int mediaId, int &count, QString &error) override;
 private:
     QSqlDatabase database_;
-    QString query_;
+    QString nextEpisodeQuery_;
+    QString availableEpisodeCountQuery_;
 };
 
 #endif

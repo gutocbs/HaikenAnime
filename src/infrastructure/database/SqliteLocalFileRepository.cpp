@@ -4,6 +4,7 @@
 #include <QSqlQuery>
 
 #include "SqliteMediaMapper.h"
+#include "SqlQueryStore.h"
 
 #include <utility>
 
@@ -60,7 +61,11 @@ bool SqliteLocalFileRepository::beginScan(const QString &rootPath, qint64 &scanI
         return false;
     }
     QSqlQuery query(database_);
-    if (!query.prepare(beginQuery_)) {
+    QString beginQuery;
+    if (!SqlQueryStore::loadSource(beginQuery_, beginQuery, error)) {
+        return false;
+    }
+    if (!query.prepare(beginQuery)) {
         error = query.lastError().text();
         return false;
     }
@@ -97,7 +102,9 @@ bool SqliteLocalFileRepository::upsertBatch(qint64 scanId, const QList<LocalFile
     Transaction transaction(database_);
     if (!transaction.begin(error)) return false;
     QSqlQuery query(database_);
-    if (!query.prepare(upsertQuery_)) {
+    QString upsertQuery;
+    if (!SqlQueryStore::loadSource(upsertQuery_, upsertQuery, error)
+        || !query.prepare(upsertQuery)) {
         error = query.lastError().text();
         return false;
     }
@@ -123,7 +130,9 @@ bool SqliteLocalFileRepository::completeScan(qint64 scanId, qsizetype observedCo
     Transaction transaction(database_);
     if (!transaction.begin(error)) return false;
     QSqlQuery unavailable(database_);
-    if (!unavailable.prepare(markUnavailableQuery_)) {
+    QString markUnavailableQuery;
+    if (!SqlQueryStore::loadSource(markUnavailableQuery_, markUnavailableQuery, error)
+        || !unavailable.prepare(markUnavailableQuery)) {
         error = unavailable.lastError().text();
         return false;
     }
@@ -133,7 +142,9 @@ bool SqliteLocalFileRepository::completeScan(qint64 scanId, qsizetype observedCo
         return false;
     }
     QSqlQuery complete(database_);
-    if (!complete.prepare(completeQuery_)) {
+    QString completeQuery;
+    if (!SqlQueryStore::loadSource(completeQuery_, completeQuery, error)
+        || !complete.prepare(completeQuery)) {
         error = complete.lastError().text();
         return false;
     }
@@ -154,7 +165,9 @@ bool SqliteLocalFileRepository::failScan(qint64 scanId, LibraryScanStatus status
         return false;
     }
     QSqlQuery query(database_);
-    if (!query.prepare(failQuery_)) {
+    QString failQuery;
+    if (!SqlQueryStore::loadSource(failQuery_, failQuery, error)
+        || !query.prepare(failQuery)) {
         error = query.lastError().text();
         return false;
     }
@@ -171,9 +184,10 @@ bool SqliteLocalFileRepository::readPendingRecognition(const QString &rootPath,
                                                        QList<LocalFileRecognitionRecord> &records,
                                                        QString &error) {
     records.clear(); error.clear();
-    if (readPendingQuery_.isEmpty()) { error = QStringLiteral("Recognition query is not configured."); return false; }
+    QString readPendingQuery;
+    if (!SqlQueryStore::loadSource(readPendingQuery_, readPendingQuery, error)) return false;
     QSqlQuery query(database_);
-    if (!query.prepare(readPendingQuery_)) { error = query.lastError().text(); return false; }
+    if (!query.prepare(readPendingQuery)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":root_path"), rootPath);
     if (!query.exec()) { error = query.lastError().text(); return false; }
     while (query.next()) {
@@ -194,9 +208,10 @@ bool SqliteLocalFileRepository::readPendingRecognition(const QString &rootPath,
 
 bool SqliteLocalFileRepository::readRecognitionCatalog(QList<Media> &media, QString &error) {
     media.clear(); error.clear();
-    if (readCatalogQuery_.isEmpty()) { error = QStringLiteral("Catalog query is not configured."); return false; }
+    QString readCatalogQuery;
+    if (!SqlQueryStore::loadSource(readCatalogQuery_, readCatalogQuery, error)) return false;
     QSqlQuery query(database_);
-    if (!query.prepare(readCatalogQuery_) || !query.exec()) { error = query.lastError().text(); return false; }
+    if (!query.prepare(readCatalogQuery) || !query.exec()) { error = query.lastError().text(); return false; }
     while (query.next()) media.append(SqliteMediaMapper::Map(query));
     return true;
 }
@@ -204,12 +219,13 @@ bool SqliteLocalFileRepository::readRecognitionCatalog(QList<Media> &media, QStr
 bool SqliteLocalFileRepository::saveRecognitionBatch(const QList<LocalFileRecognitionRecord> &records,
                                                      QString &error) {
     error.clear();
-    if (saveRecognitionQuery_.isEmpty()) { error = QStringLiteral("Recognition save query is not configured."); return false; }
+    QString saveRecognitionQuery;
+    if (!SqlQueryStore::loadSource(saveRecognitionQuery_, saveRecognitionQuery, error)) return false;
     if (records.isEmpty()) return true;
     Transaction transaction(database_);
     if (!transaction.begin(error)) return false;
     QSqlQuery query(database_);
-    if (!query.prepare(saveRecognitionQuery_)) { error = query.lastError().text(); return false; }
+    if (!query.prepare(saveRecognitionQuery)) { error = query.lastError().text(); return false; }
     for (const auto &record : records) {
         query.bindValue(QStringLiteral(":id"), record.id);
         query.bindValue(QStringLiteral(":recognition_state"), record.recognitionState);

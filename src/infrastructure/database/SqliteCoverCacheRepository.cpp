@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QSqlError>
 #include <QSqlQuery>
+#include "SqlQueryStore.h"
 
 #include <utility>
 
@@ -17,8 +18,10 @@ SqliteCoverCacheRepository::SqliteCoverCacheRepository(QSqlDatabase database, QS
 bool SqliteCoverCacheRepository::ReadAll(QHash<int, CoverCacheEntry> &entries, QString &error) {
     entries.clear();
     error.clear();
+    QString readQuery;
+    if (!SqlQueryStore::loadSource(readQuery_, readQuery, error)) return false;
     QSqlQuery query(database_);
-    if (!query.exec(readQuery_)) {
+    if (!query.exec(readQuery)) {
         error = query.lastError().text();
         return false;
     }
@@ -54,7 +57,9 @@ bool SqliteCoverCacheRepository::Upsert(const CoverCacheEntry &entry, QString &e
         return false;
     }
     QSqlQuery query(database_);
-    if (!query.prepare(upsertQuery_)) {
+    QString upsertQuery;
+    if (!SqlQueryStore::loadSource(upsertQuery_, upsertQuery, error)
+        || !query.prepare(upsertQuery)) {
         error = query.lastError().text();
         return false;
     }
@@ -78,7 +83,9 @@ bool SqliteCoverCacheRepository::Upsert(const CoverCacheEntry &entry, QString &e
 bool SqliteCoverCacheRepository::Remove(const int mediaId, QString &error) {
     error.clear();
     QSqlQuery query(database_);
-    if (!query.prepare(deleteQuery_)) {
+    QString deleteQuery;
+    if (!SqlQueryStore::loadSource(deleteQuery_, deleteQuery, error)
+        || !query.prepare(deleteQuery)) {
         error = query.lastError().text();
         return false;
     }
@@ -92,8 +99,10 @@ bool SqliteCoverCacheRepository::Remove(const int mediaId, QString &error) {
 
 bool SqliteCoverCacheRepository::Clear(QString &error) {
     error.clear();
+    QString clearQuery;
+    if (!SqlQueryStore::loadSource(clearQuery_, clearQuery, error)) return false;
     QSqlQuery query(database_);
-    if (!query.exec(clearQuery_)) {
+    if (!query.exec(clearQuery)) {
         error = query.lastError().text();
         return false;
     }

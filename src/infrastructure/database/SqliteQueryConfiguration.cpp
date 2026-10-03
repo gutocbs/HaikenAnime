@@ -31,6 +31,7 @@ bool SqliteQueryConfiguration::load(QString &error, const QString &configuration
     readCatalogMediaForRecognitionPath.clear();
     saveLocalFileRecognitionPath.clear();
     readNextLocalEpisodePath.clear();
+    readAvailableEpisodeCountPath.clear();
     error.clear();
     QFile file(configurationPath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -73,6 +74,7 @@ bool SqliteQueryConfiguration::load(QString &error, const QString &configuration
     readCatalogMediaForRecognitionPath = queries.value(QStringLiteral("readCatalogMediaForRecognition")).toString();
     saveLocalFileRecognitionPath = queries.value(QStringLiteral("saveLocalFileRecognition")).toString();
     readNextLocalEpisodePath = queries.value(QStringLiteral("readNextLocalEpisode")).toString();
+    readAvailableEpisodeCountPath = queries.value(QStringLiteral("readAvailableEpisodeCount")).toString();
     if (upsertMediaPath.isEmpty() || updatePersonalListMediaPath.isEmpty() || readMediaPath.isEmpty() || readActiveMediaIdsPath.isEmpty()
         || markMediaSourceRemovedPath.isEmpty() || enqueuePendingChangePath.isEmpty()
         || readPendingChangesPath.isEmpty() || updatePendingChangePath.isEmpty()
@@ -83,7 +85,7 @@ bool SqliteQueryConfiguration::load(QString &error, const QString &configuration
         || completeLibraryScanPath.isEmpty() || failLibraryScanPath.isEmpty()
         || markLocalFilesUnavailablePath.isEmpty() || readPendingLocalFilesPath.isEmpty()
         || readCatalogMediaForRecognitionPath.isEmpty() || saveLocalFileRecognitionPath.isEmpty()
-        || readNextLocalEpisodePath.isEmpty()) {
+        || readNextLocalEpisodePath.isEmpty() || readAvailableEpisodeCountPath.isEmpty()) {
         error = QStringLiteral("SQLite query configuration is incomplete.");
         if (logger) logger->error(LogCategory::QueryConfiguration, error);
         return false;

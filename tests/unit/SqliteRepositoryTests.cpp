@@ -7,64 +7,14 @@
 #include "../../src/infrastructure/database/SqlitePendingChangeRepository.h"
 
 namespace {
-const auto UpsertMedia = QStringLiteral(
-    "INSERT INTO media (id, name, english_name, original_name, alternative_names, "
-    "total_chapters, average_score, cover_url, cover_medium_url, cover_large_url, "
-    "cover_extra_large_url, synopsis, type, status, user_list_status, local_path, "
-    "season, season_year, next_airing_episode, next_airing_at, anilist_url, external_links) "
-    "VALUES (:id, :name, :english_name, :original_name, :alternative_names, "
-    ":total_chapters, :average_score, :cover_url, :cover_medium_url, :cover_large_url, "
-    ":cover_extra_large_url, :synopsis, :type, :status, :user_list_status, :local_path, "
-    ":season, :season_year, :next_airing_episode, :next_airing_at, :anilist_url, :external_links) "
-    "ON CONFLICT(id) DO UPDATE SET "
-    "name = excluded.name, english_name = excluded.english_name, original_name = excluded.original_name, "
-    "alternative_names = excluded.alternative_names, total_chapters = excluded.total_chapters, "
-    "average_score = excluded.average_score, cover_url = excluded.cover_url, "
-    "cover_medium_url = excluded.cover_medium_url, cover_large_url = excluded.cover_large_url, "
-    "cover_extra_large_url = excluded.cover_extra_large_url, synopsis = excluded.synopsis, "
-    "type = excluded.type, status = excluded.status, season = excluded.season, "
-    "season_year = excluded.season_year, next_airing_episode = excluded.next_airing_episode, "
-    "next_airing_at = excluded.next_airing_at, anilist_url = excluded.anilist_url, "
-    "external_links = excluded.external_links, "
-    "user_list_status = CASE WHEN excluded.user_list_status = -1 "
-    "THEN media.user_list_status ELSE excluded.user_list_status END, "
-    "local_path = CASE WHEN excluded.local_path = '' THEN media.local_path ELSE excluded.local_path END, "
-    "source_removed_at = NULL");
-
-const auto ReadMedia = QStringLiteral(
-    "SELECT id, name, english_name, original_name, alternative_names, total_chapters, "
-    "consumed_chapters, next_chapter, average_score, personal_score, local_path, cover_url, cover_medium_url, cover_large_url, cover_extra_large_url, synopsis, "
-    "type, status, user_list_status, season, season_year, next_airing_episode, next_airing_at, anilist_url, external_links "
-    "FROM media WHERE source_removed_at IS NULL ORDER BY id");
-
-const auto ReadActiveMediaIds = QStringLiteral(
-    "SELECT id FROM media WHERE source_removed_at IS NULL ORDER BY id");
-
-const auto MarkSourceRemoved = QStringLiteral(
-    "UPDATE media SET source_removed_at = :source_removed_at "
-    "WHERE id = :id AND source_removed_at IS NULL");
-
-const auto UpdatePersonalListMedia = QStringLiteral(
-    "UPDATE media SET consumed_chapters = :consumed_chapters, personal_score = :personal_score, "
-    "user_list_status = :user_list_status, local_path = :local_path, "
-    "alternative_names = :alternative_names, source_removed_at = NULL WHERE id = :id");
-
-const auto EnqueueChange = QStringLiteral(
-    "INSERT INTO anilist_pending_changes "
-    "(media_id, field, previous_value, new_value, created_at, local_updated_at, "
-    "remote_observed_at, remote_version, attempts, status, last_error) VALUES "
-    "(:media_id, :field, :previous_value, :new_value, :created_at, :local_updated_at, "
-    ":remote_observed_at, :remote_version, :attempts, :status, :last_error)");
-
-const auto ReadChanges = QStringLiteral(
-    "SELECT id, media_id, field, previous_value, new_value, created_at, local_updated_at, "
-    "remote_observed_at, remote_version, attempts, status, last_error "
-    "FROM anilist_pending_changes WHERE media_id = :media_id AND status IN (0, 1, 3, 4) "
-    "ORDER BY id");
-
-const auto UpdateChange = QStringLiteral(
-    "UPDATE anilist_pending_changes SET status = :status, attempts = :attempts, "
-    "last_error = :last_error WHERE id = :id AND status IN (0, 1, 3, 4)");
+const auto UpsertMedia = QStringLiteral(":/sqlite/queries/upsert-media.sql");
+const auto ReadMedia = QStringLiteral(":/sqlite/queries/read-media.sql");
+const auto ReadActiveMediaIds = QStringLiteral(":/sqlite/queries/read-active-media-ids.sql");
+const auto MarkSourceRemoved = QStringLiteral(":/sqlite/queries/mark-media-source-removed.sql");
+const auto UpdatePersonalListMedia = QStringLiteral(":/sqlite/queries/update-personal-list-media.sql");
+const auto EnqueueChange = QStringLiteral(":/sqlite/queries/enqueue-pending-change.sql");
+const auto ReadChanges = QStringLiteral(":/sqlite/queries/read-pending-changes.sql");
+const auto UpdateChange = QStringLiteral(":/sqlite/queries/update-pending-change.sql");
 
 bool insertMedia(QSqlDatabase database, int mediaId) {
     QSqlQuery query(database);

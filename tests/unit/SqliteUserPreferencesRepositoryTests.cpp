@@ -24,10 +24,8 @@ private slots:
 };
 
 static SqliteUserPreferencesRepository Repository(SqliteDatabase &database) {
-    QFile read(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/resources/sqlite/queries/read-user-preferences.sql"));
-    QFile write(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/resources/sqlite/queries/upsert-user-preferences.sql"));
-    if (!read.open(QIODevice::ReadOnly) || !write.open(QIODevice::ReadOnly)) qFatal("Cannot load preference SQL");
-    return {database.connection(), QString::fromUtf8(read.readAll()), QString::fromUtf8(write.readAll())};
+    return {database.connection(), QStringLiteral(":/sqlite/queries/read-user-preferences.sql"),
+            QStringLiteral(":/sqlite/queries/upsert-user-preferences.sql")};
 }
 
 void SqliteUserPreferencesRepositoryTests::scannerPreferencesSurviveReopen() {

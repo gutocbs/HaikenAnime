@@ -101,14 +101,11 @@ void composeLibraryScanner(ApplicationContext &context, const SqliteQueryConfigu
          configuration.completeLibraryScanPath, configuration.failLibraryScanPath,
          configuration.markLocalFilesUnavailablePath, configuration.readPendingLocalFilesPath,
          configuration.readCatalogMediaForRecognitionPath, configuration.saveLocalFileRecognitionPath}) {
-        QString query;
         if (path.isEmpty()) {
             scannerError = QStringLiteral("Local library scan query configuration is incomplete.");
             break;
         }
-        SqlQueryStore store(path);
-        if (!store.load(query, scannerError)) break;
-        queries.append(query);
+        queries.append(path);
     }
     if (!scannerError.isEmpty()) context.logger->warning(LogCategory::QueryConfiguration, scannerError);
     const auto databasePath = context.database->databasePath();
@@ -133,14 +130,11 @@ void composeLibraryRecognition(ApplicationContext &context,
          configuration.completeLibraryScanPath, configuration.failLibraryScanPath,
          configuration.markLocalFilesUnavailablePath, configuration.readPendingLocalFilesPath,
          configuration.readCatalogMediaForRecognitionPath, configuration.saveLocalFileRecognitionPath}) {
-        QString query;
         if (path.isEmpty()) {
             recognitionError = QStringLiteral("Local library recognition query configuration is incomplete.");
             break;
         }
-        SqlQueryStore store(path);
-        if (!store.load(query, recognitionError)) break;
-        queries.append(query);
+        queries.append(path);
     }
     if (!recognitionError.isEmpty()) {
         context.logger->warning(LogCategory::QueryConfiguration, recognitionError);
@@ -169,22 +163,18 @@ void composeLibraryRecognition(ApplicationContext &context,
 
 void composeLocalEpisodeServices(ApplicationContext &context,
                                  const SqliteQueryConfiguration &configuration) {
-    QString query;
     QString error;
-    if (configuration.readNextLocalEpisodePath.isEmpty()) {
+    if (configuration.readNextLocalEpisodePath.isEmpty()
+        || configuration.readAvailableEpisodeCountPath.isEmpty()) {
         error = QStringLiteral("Local episode query configuration is incomplete.");
-    } else {
-        SqlQueryStore store(configuration.readNextLocalEpisodePath);
-        if (!store.load(query, error)) {
-            query.clear();
-        }
     }
     if (!error.isEmpty()) {
         context.logger->warning(LogCategory::QueryConfiguration, error);
         return;
     }
-    context.localEpisodeReader = std::make_unique<LocalEpisodeReader>(context.database->connection(),
-                                                                        std::move(query));
+    context.localEpisodeReader = std::make_unique<LocalEpisodeReader>(
+        context.database->connection(), configuration.readNextLocalEpisodePath,
+        configuration.readAvailableEpisodeCountPath);
     context.localFileOpener = std::make_unique<QtLocalFileOpener>();
 }
 }
@@ -228,14 +218,6 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         return context;
     }
 
-    QString upsertQuery;
-    QString updatePersonalListQuery;
-    QString readQuery;
-    QString readActiveMediaIdsQuery;
-    QString markSourceRemovedQuery;
-    QString enqueuePendingQuery;
-    QString readPendingQuery;
-    QString updatePendingQuery;
     QString queryError;
     SqliteQueryConfiguration queryConfiguration;
     queryConfiguration.setLogger(context.logger.get());
@@ -247,60 +229,25 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         context.database.reset();
         return context;
     }
-    SqlQueryStore upsertStore(queryConfiguration.upsertMediaPath);
-    SqlQueryStore updatePersonalListStore(queryConfiguration.updatePersonalListMediaPath);
-    SqlQueryStore readStore(queryConfiguration.readMediaPath);
-    SqlQueryStore readActiveMediaIdsStore(queryConfiguration.readActiveMediaIdsPath);
-    SqlQueryStore markSourceRemovedStore(queryConfiguration.markMediaSourceRemovedPath);
-    upsertStore.setLogger(context.logger.get());
-    readStore.setLogger(context.logger.get());
-    if (!upsertStore.load(upsertQuery, queryError)
-        || !updatePersonalListStore.load(updatePersonalListQuery, queryError)
-        || !readStore.load(readQuery, queryError)
-        || !readActiveMediaIdsStore.load(readActiveMediaIdsQuery, queryError)
-        || !markSourceRemovedStore.load(markSourceRemovedQuery, queryError)) {
-        context.logger->error(LogCategory::QueryStore, queryError);
-        context.initializationError = initializationFailure(
-            QStringLiteral("loading the configured media queries"), queryError);
-        context.database.reset();
-        return context;
-    }
-
-    SqlQueryStore enqueueStore(queryConfiguration.enqueuePendingChangePath);
-    SqlQueryStore readPendingStore(queryConfiguration.readPendingChangesPath);
-    SqlQueryStore updatePendingStore(queryConfiguration.updatePendingChangePath);
-    if (!enqueueStore.load(enqueuePendingQuery, queryError)
-        || !readPendingStore.load(readPendingQuery, queryError)
-        || !updatePendingStore.load(updatePendingQuery, queryError)) {
-        context.initializationError = initializationFailure(
-            QStringLiteral("loading the pending-change queries"), queryError);
-        context.database.reset();
-        return context;
-    }
-
     auto mediaRepository = std::make_unique<SqliteMediaRepository>(
-        context.database->connection(), std::move(upsertQuery), std::move(readQuery),
-        std::move(readActiveMediaIdsQuery), std::move(markSourceRemovedQuery),
-        std::move(updatePersonalListQuery));
+        context.database->connection(), queryConfiguration.upsertMediaPath,
+        queryConfiguration.readMediaPath, queryConfiguration.readActiveMediaIdsPath,
+        queryConfiguration.markMediaSourceRemovedPath,
+        queryConfiguration.updatePersonalListMediaPath);
     mediaRepository->setLogger(context.logger.get());
     context.mediaRepository = std::move(mediaRepository);
     context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(
-        context.database->connection(), std::move(enqueuePendingQuery),
-        std::move(readPendingQuery), std::move(updatePendingQuery));
+        context.database->connection(), queryConfiguration.enqueuePendingChangePath,
+        queryConfiguration.readPendingChangesPath, queryConfiguration.updatePendingChangePath);
 
     composeLibraryScanner(context, queryConfiguration);
     composeLibraryRecognition(context, queryConfiguration);
     composeLocalEpisodeServices(context, queryConfiguration);
 
-    QString readPreferencesQuery;
-    QString upsertPreferencesQuery;
-    SqlQueryStore readPreferencesStore(queryConfiguration.readUserPreferencesPath);
-    SqlQueryStore upsertPreferencesStore(queryConfiguration.upsertUserPreferencesPath);
-    if (readPreferencesStore.load(readPreferencesQuery, queryError)
-        && upsertPreferencesStore.load(upsertPreferencesQuery, queryError)) {
+    {
         auto preferencesRepository = std::make_unique<SqliteUserPreferencesRepository>(
-            context.database->connection(), std::move(readPreferencesQuery),
-            std::move(upsertPreferencesQuery));
+            context.database->connection(), queryConfiguration.readUserPreferencesPath,
+            queryConfiguration.upsertUserPreferencesPath);
         bool found = false;
         QString preferencesError;
         QString preferencesWarning;
@@ -318,26 +265,12 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
             context.logger->warning(LogCategory::Configuration, preferencesWarning);
         }
         context.userPreferencesRepository = std::move(preferencesRepository);
-    } else {
-        context.userPreferences = settings.userPreferences;
-        context.logger->warning(LogCategory::Configuration, queryError);
     }
 
-    QString readCoverQuery, upsertCoverQuery, deleteCoverQuery, clearCoverQuery;
-    SqlQueryStore readCoverStore(queryConfiguration.readCoverCachePath);
-    SqlQueryStore upsertCoverStore(queryConfiguration.upsertCoverCachePath);
-    SqlQueryStore deleteCoverStore(queryConfiguration.deleteCoverCachePath);
-    SqlQueryStore clearCoverStore(queryConfiguration.clearCoverCachePath);
-    if (!readCoverStore.load(readCoverQuery, queryError)
-        || !upsertCoverStore.load(upsertCoverQuery, queryError)
-        || !deleteCoverStore.load(deleteCoverQuery, queryError)
-        || !clearCoverStore.load(clearCoverQuery, queryError)) {
-        context.initializationError = initializationFailure(QStringLiteral("loading the cover-cache queries"), queryError);
-        return context;
-    }
     context.coverCacheRepository = std::make_unique<SqliteCoverCacheRepository>(
-        context.database->connection(), std::move(readCoverQuery), std::move(upsertCoverQuery),
-        std::move(deleteCoverQuery), std::move(clearCoverQuery));
+        context.database->connection(), queryConfiguration.readCoverCachePath,
+        queryConfiguration.upsertCoverCachePath, queryConfiguration.deleteCoverCachePath,
+        queryConfiguration.clearCoverCachePath);
     const QString cacheRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)).filePath("covers");
     const QString temporaryRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation)).filePath("HaikenAnime/covers");
     int removedTemporaryFiles = 0;

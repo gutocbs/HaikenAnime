@@ -171,6 +171,7 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqliteCoverCacheRepository.h
         src/infrastructure/database/SqliteCoverCacheRepository.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
         src/domain/library/LocalFileRecord.h
         src/application/library/ILocalFileRepository.h
         src/application/library/LocalLibraryScanTypes.h
@@ -269,6 +270,9 @@ set_source_files_properties(
 set_source_files_properties(
         resources/sqlite/queries/upsert-user-preferences.sql
         PROPERTIES QT_RESOURCE_ALIAS "upsert-user-preferences.sql")
+set_source_files_properties(
+        resources/sqlite/migrations/001-create-initial-schema.sql
+        PROPERTIES QT_RESOURCE_ALIAS "001-create-initial-schema.sql")
 set(LIBRARY_SCAN_SQL_RESOURCES
         resources/sqlite/queries/begin-library-scan.sql
         resources/sqlite/queries/upsert-local-file.sql
@@ -279,6 +283,7 @@ set(LIBRARY_SCAN_SQL_RESOURCES
         resources/sqlite/queries/read-catalog-media-for-recognition.sql
         resources/sqlite/queries/save-local-file-recognition.sql
         resources/sqlite/queries/read-next-local-episode.sql
+        resources/sqlite/queries/read-available-episode-count.sql
 )
 foreach (QUERY_FILE IN LISTS LIBRARY_SCAN_SQL_RESOURCES)
     get_filename_component(QUERY_ALIAS "${QUERY_FILE}" NAME)
@@ -317,6 +322,11 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         resources/sqlite/queries/clear-cover-cache.sql
         resources/sqlite/queries/read-user-preferences.sql
         resources/sqlite/queries/upsert-user-preferences.sql
+)
+
+qt_add_resources(HaikenAnime sqlite_migration_resource_bundle
+        PREFIX "/sqlite/migrations"
+        FILES resources/sqlite/migrations/001-create-initial-schema.sql
 )
 
 qt_add_resources(HaikenAnime application_config_resource
@@ -424,10 +434,15 @@ add_executable(SqliteUserPreferencesRepositoryTests
         tests/unit/SqliteUserPreferencesRepositoryTests.cpp
         src/infrastructure/database/SqliteDatabase.cpp
         src/infrastructure/database/SqliteUserPreferencesRepository.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
         src/application/configuration/UserPreferencesValidator.cpp
         src/application/media/MediaTitleResolver.cpp
         src/infrastructure/logging/AsyncLogger.cpp
 )
+qt_add_resources(SqliteUserPreferencesRepositoryTests user_preferences_query_resources
+        PREFIX "/sqlite/queries"
+        FILES resources/sqlite/queries/read-user-preferences.sql
+              resources/sqlite/queries/upsert-user-preferences.sql)
 target_link_libraries(SqliteUserPreferencesRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
 target_compile_definitions(SqliteUserPreferencesRepositoryTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 add_test(NAME SqliteUserPreferencesRepositoryTests COMMAND SqliteUserPreferencesRepositoryTests)
@@ -442,9 +457,21 @@ add_executable(SqliteRepositoryTests
         src/infrastructure/database/SqliteMediaRepository.cpp
         src/infrastructure/database/SqlitePendingChangeRepository.h
         src/infrastructure/database/SqlitePendingChangeRepository.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/logging/AsyncLogger.h
         src/infrastructure/logging/AsyncLogger.cpp
 )
+
+qt_add_resources(SqliteRepositoryTests repository_query_resources
+        PREFIX "/sqlite/queries"
+        FILES resources/sqlite/queries/upsert-media.sql
+              resources/sqlite/queries/read-media.sql
+              resources/sqlite/queries/read-active-media-ids.sql
+              resources/sqlite/queries/mark-media-source-removed.sql
+              resources/sqlite/queries/update-personal-list-media.sql
+              resources/sqlite/queries/enqueue-pending-change.sql
+              resources/sqlite/queries/read-pending-changes.sql
+              resources/sqlite/queries/update-pending-change.sql)
 
 target_link_libraries(SqliteRepositoryTests
         PRIVATE
@@ -461,9 +488,17 @@ add_executable(SqliteCoverCacheRepositoryTests
         src/infrastructure/database/SqliteDatabase.cpp
         src/infrastructure/database/SqliteCoverCacheRepository.h
         src/infrastructure/database/SqliteCoverCacheRepository.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/logging/AsyncLogger.h
         src/infrastructure/logging/AsyncLogger.cpp
 )
+
+qt_add_resources(SqliteCoverCacheRepositoryTests cover_cache_query_resources
+        PREFIX "/sqlite/queries"
+        FILES resources/sqlite/queries/read-cover-cache.sql
+              resources/sqlite/queries/upsert-cover-cache.sql
+              resources/sqlite/queries/delete-cover-cache.sql
+              resources/sqlite/queries/clear-cover-cache.sql)
 
 target_link_libraries(SqliteCoverCacheRepositoryTests
         PRIVATE
@@ -477,6 +512,7 @@ add_test(NAME SqliteCoverCacheRepositoryTests COMMAND SqliteCoverCacheRepository
 add_executable(SqliteLocalFileRepositoryTests
         tests/unit/SqliteLocalFileRepositoryTests.cpp
         src/infrastructure/database/SqliteLocalFileRepository.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqliteDatabase.cpp
         src/infrastructure/logging/AsyncLogger.cpp
@@ -1042,6 +1078,10 @@ add_executable(LocalLibraryScanCompositionTests
         lib/anitomy/tokenizer.cpp
 )
 file(GLOB COMPOSITION_SQL_RESOURCES CONFIGURE_DEPENDS resources/sqlite/queries/*.sql)
+foreach (QUERY_FILE IN LISTS COMPOSITION_SQL_RESOURCES)
+    get_filename_component(QUERY_ALIAS "${QUERY_FILE}" NAME)
+    set_source_files_properties("${QUERY_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${QUERY_ALIAS}")
+endforeach ()
 qt_add_resources(LocalLibraryScanCompositionTests composition_sql_resources PREFIX "/sqlite/queries"
         FILES resources/sqlite/sqlite-queries.json ${COMPOSITION_SQL_RESOURCES})
 qt_add_resources(LocalLibraryScanCompositionTests composition_config_resources PREFIX "/config" FILES Settings.json)
@@ -1069,6 +1109,25 @@ add_test(NAME LocalLibraryRecognitionCompositionTests COMMAND LocalLibraryRecogn
 
 # Unit tests are separate executables and do not receive the deployment step
 # used by the application target. Make Qt runtime DLLs available to CTest.
+function(add_sqlite_migration_test_resources target)
+    qt_add_resources(${target} sqlite_migration_test_resources
+            PREFIX "/sqlite/migrations"
+            FILES resources/sqlite/migrations/001-create-initial-schema.sql)
+endfunction()
+
+foreach (SQLITE_MIGRATION_TEST_TARGET IN ITEMS
+        SqliteDatabaseTests
+        SqliteUserPreferencesRepositoryTests
+        SqliteRepositoryTests
+        SqliteCoverCacheRepositoryTests
+        SqliteLocalFileRepositoryTests
+        LocalEpisodeReaderTests
+        InitialSyncCoordinatorTests
+        LocalLibraryScanCompositionTests
+        LocalLibraryRecognitionCompositionTests)
+    add_sqlite_migration_test_resources(${SQLITE_MIGRATION_TEST_TARGET})
+endforeach ()
+
 set(HAIKENANIME_TESTS
         MediaDomainTests
         MediaTitleResolverTests

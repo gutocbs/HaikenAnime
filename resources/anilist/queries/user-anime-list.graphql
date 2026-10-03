@@ -5,7 +5,6 @@ query UserAnimeList($userName: String!, $page: Int, $perPage: Int) {
     chunk: $page
     perChunk: $perPage
   ) {
-    hasNextChunk
     lists {
       name
       entries {

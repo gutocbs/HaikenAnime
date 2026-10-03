@@ -7,19 +7,10 @@
 #include "../../src/infrastructure/database/SqliteDatabase.h"
 
 namespace {
-const auto ReadSql = QStringLiteral(
-    "SELECT media_id, remote_url, quality, relative_path, mime_type, byte_size, "
-    "etag, last_modified, validated_at FROM cover_cache");
-const auto UpsertSql = QStringLiteral(
-    "INSERT INTO cover_cache (media_id, remote_url, quality, relative_path, mime_type, "
-    "byte_size, etag, last_modified, validated_at) VALUES (:media_id, :remote_url, "
-    ":quality, :relative_path, :mime_type, :byte_size, :etag, :last_modified, "
-    ":validated_at) ON CONFLICT(media_id) DO UPDATE SET remote_url=excluded.remote_url, "
-    "quality=excluded.quality, relative_path=excluded.relative_path, "
-    "mime_type=excluded.mime_type, byte_size=excluded.byte_size, etag=excluded.etag, "
-    "last_modified=excluded.last_modified, validated_at=excluded.validated_at");
-const auto DeleteSql = QStringLiteral("DELETE FROM cover_cache WHERE media_id = :media_id");
-const auto ClearSql = QStringLiteral("DELETE FROM cover_cache");
+const auto ReadSql = QStringLiteral(":/sqlite/queries/read-cover-cache.sql");
+const auto UpsertSql = QStringLiteral(":/sqlite/queries/upsert-cover-cache.sql");
+const auto DeleteSql = QStringLiteral(":/sqlite/queries/delete-cover-cache.sql");
+const auto ClearSql = QStringLiteral(":/sqlite/queries/clear-cover-cache.sql");
 
 void InsertMedia(QSqlDatabase database, const int id) {
     QSqlQuery query(database);

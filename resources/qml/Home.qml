@@ -9,7 +9,11 @@ Item {
     signal openSettingsRequested()
     signal openSeasonalCatalogRequested()
 
-    onVisibleChanged: if (visible) mediaGrid.reportWindow()
+    onVisibleChanged: if (visible) {
+        previewBrowseControls.synchronizeWithController()
+        completeBrowseControls.synchronizeWithController()
+        mediaGrid.reportWindow()
+    }
 
     property var controller: homeController
 
@@ -142,6 +146,7 @@ Item {
             spacing: 18
 
             Rectangle {
+                id: libraryPreviewPanel
                 Layout.fillWidth: true
                 Layout.minimumWidth: 680
                 Layout.horizontalStretchFactor: 3
@@ -238,14 +243,15 @@ Item {
                         Layout.fillHeight: true
                         clip: true
                         readonly property int columns: width >= 760 ? 3 : 2
+                        readonly property int previewRows: 3
                         cellWidth: width / columns
-                        cellHeight: 154
+                        cellHeight: Math.floor(height / previewRows)
                         cacheBuffer: height
                         visible: controller.filteredMediaCount > 0
                         model: controller.mediaModel
                         delegate: MediaCard {
                             width: mediaGrid.cellWidth - 12
-                            height: 142
+                            height: mediaGrid.cellHeight - 12
                             mediaId: model.mediaId
                             coverSource: model.coverSource
                             title: model.title
@@ -534,7 +540,9 @@ Item {
                     spacing: 10
 
                     BrowseControls {
-                        Layout.fillWidth: true
+                        id: previewBrowseControls
+                        Layout.preferredWidth: libraryPreviewPanel.width - 16
+                        Layout.maximumWidth: libraryPreviewPanel.width - 16
                         controller: home.controller
                         ink: home.ink
                         muted: home.muted
@@ -545,6 +553,7 @@ Item {
 
                     Basic.Button {
                         id: watchNextButton
+                        Layout.leftMargin: 8
                         Layout.preferredWidth: 104
                         Layout.preferredHeight: 44
                         text: qsTr("Assistir")
@@ -730,6 +739,7 @@ Item {
                 }
 
                 BrowseControls {
+                    id: completeBrowseControls
                     Layout.fillWidth: true
                     controller: home.controller
                     ink: home.ink

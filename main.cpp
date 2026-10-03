@@ -108,6 +108,14 @@ int main(int argc, char *argv[]) {
                          &homeController, &HomeScreenController::notifySynchronizationCompleted);
         QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::failed,
                          &homeController, &HomeScreenController::notifySynchronizationFailed);
+        QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::started,
+                         &settingsController, &SettingsController::notifySynchronizationStarted);
+        QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::completed,
+                         &settingsController, &SettingsController::notifySynchronizationCompleted);
+        QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::failed,
+                         &settingsController, &SettingsController::notifySynchronizationFailed);
+        QObject::connect(&settingsController, &SettingsController::synchronizationRequested,
+                         context.initialSync.get(), &InitialSyncCoordinator::start);
         if (context.userPreferences.synchronizationEnabled) context.initialSync->start();
     }
 
@@ -119,6 +127,7 @@ int main(int argc, char *argv[]) {
                                            preferences.scoreStep);
         homeController.ConfigureCoverQuality(preferences.coverQuality);
         homeController.ConfigureCardStatusPresentation(preferences.cardStatusPresentation);
+        homeController.ConfigurePreferredTitle(preferences.preferredTitleKey);
         seasonalCatalogController.ConfigureCoverQuality(preferences.coverQuality);
         seasonalCatalogController.ConfigurePreferredTitle(preferences.preferredTitleKey);
         seasonalCatalogController.ConfigureIncludeAdultContent(preferences.includeAdultContent);

@@ -14,6 +14,13 @@ RowLayout {
     property color accent: "#315d91"
     spacing: 8
 
+    function synchronizeWithController() {
+        listFilter.currentIndex = listFilter.indexOfValue(controller.activeListFilter)
+        sortOrder.currentIndex = sortOrder.indexOfValue(controller.activeSort)
+        if (searchField.text !== controller.searchQuery)
+            searchField.text = controller.searchQuery
+    }
+
     component BrowseComboBox: Basic.ComboBox {
         id: combo
         property string caption
@@ -143,8 +150,7 @@ RowLayout {
     Connections {
         target: controls.controller
         function onBrowseCriteriaChanged() {
-            if (searchField.text !== controls.controller.searchQuery)
-                searchField.text = controls.controller.searchQuery
+            controls.synchronizeWithController()
         }
     }
 }

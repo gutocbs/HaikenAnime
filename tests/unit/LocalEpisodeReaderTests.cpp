@@ -44,11 +44,9 @@ void seedFile(QSqlDatabase database, int id, int mediaId, int episode, QString p
 }
 
 LocalEpisodeReader reader(QSqlDatabase database) {
-    return LocalEpisodeReader(database, QStringLiteral(
-        "SELECT media_id, episode, root_path || relative_path AS path FROM local_files "
-        "WHERE media_id = :media_id AND available = 1 AND media_kind = 'anime' "
-        "AND recognition_state = 'associated' AND typeof(episode) = 'integer' "
-        "AND episode > :consumed_episode ORDER BY episode, normalized_relative_path LIMIT 1"));
+    return LocalEpisodeReader(database,
+        QStringLiteral(":/sqlite/queries/read-next-local-episode.sql"),
+        QStringLiteral(":/sqlite/queries/read-available-episode-count.sql"));
 }
 }
 

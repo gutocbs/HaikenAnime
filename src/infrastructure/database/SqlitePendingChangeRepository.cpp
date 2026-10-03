@@ -8,6 +8,7 @@
 #include <cmath>
 #include <limits>
 #include <utility>
+#include "SqlQueryStore.h"
 
 namespace {
 QString EncodeValue(const AniListFieldValue &value) {
@@ -57,8 +58,10 @@ SqlitePendingChangeRepository::SqlitePendingChangeRepository(
 
 bool SqlitePendingChangeRepository::enqueue(const AniListPendingChange &change, QString &error) {
     error.clear();
+    QString enqueueQuery;
+    if (!SqlQueryStore::loadSource(enqueueQuery_, enqueueQuery, error)) return false;
     QSqlQuery query(database_);
-    query.prepare(enqueueQuery_);
+    if (!query.prepare(enqueueQuery)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":media_id"), change.mediaId);
     query.bindValue(QStringLiteral(":field"), static_cast<int>(change.field));
     query.bindValue(QStringLiteral(":previous_value"), EncodeValue(change.previousValue));
@@ -85,8 +88,10 @@ bool SqlitePendingChangeRepository::getPending(int mediaId, QList<AniListPending
                                                QString &error) {
     changes.clear();
     error.clear();
+    QString pendingQuery;
+    if (!SqlQueryStore::loadSource(pendingQuery_, pendingQuery, error)) return false;
     QSqlQuery query(database_);
-    query.prepare(pendingQuery_);
+    if (!query.prepare(pendingQuery)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":media_id"), mediaId);
     if (!query.exec()) {
         error = query.lastError().text();
@@ -121,8 +126,10 @@ bool SqlitePendingChangeRepository::getPending(int mediaId, QList<AniListPending
 
 bool SqlitePendingChangeRepository::updateStatus(const AniListPendingChange &change, QString &error) {
     error.clear();
+    QString updateStatusQuery;
+    if (!SqlQueryStore::loadSource(updateStatusQuery_, updateStatusQuery, error)) return false;
     QSqlQuery query(database_);
-    query.prepare(updateStatusQuery_);
+    if (!query.prepare(updateStatusQuery)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":id"), change.id);
     query.bindValue(QStringLiteral(":status"), static_cast<int>(change.status));
     query.bindValue(QStringLiteral(":attempts"), change.attempts);

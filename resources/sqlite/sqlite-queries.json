@@ -22,6 +22,7 @@
     "readPendingLocalFiles": ":/sqlite/queries/read-pending-local-files.sql",
     "readCatalogMediaForRecognition": ":/sqlite/queries/read-catalog-media-for-recognition.sql",
     "saveLocalFileRecognition": ":/sqlite/queries/save-local-file-recognition.sql",
-    "readNextLocalEpisode": ":/sqlite/queries/read-next-local-episode.sql"
+    "readNextLocalEpisode": ":/sqlite/queries/read-next-local-episode.sql",
+    "readAvailableEpisodeCount": ":/sqlite/queries/read-available-episode-count.sql"
   }
 }
