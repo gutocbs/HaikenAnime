@@ -1,0 +1,1 @@
+ALTER TABLE media ADD COLUMN external_links TEXT NOT NULL DEFAULT '[]';

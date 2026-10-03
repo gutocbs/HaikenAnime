@@ -1,0 +1,1 @@
+DROP TABLE local_files_legacy_recognition_state;

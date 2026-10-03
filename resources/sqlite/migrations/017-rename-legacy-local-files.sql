@@ -1,0 +1,1 @@
+ALTER TABLE local_files RENAME TO local_files_legacy_recognition_state;

@@ -1,0 +1,1 @@
+ALTER TABLE media ADD COLUMN local_path TEXT NOT NULL DEFAULT '';

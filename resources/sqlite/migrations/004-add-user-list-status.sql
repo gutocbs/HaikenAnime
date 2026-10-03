@@ -1,0 +1,1 @@
+ALTER TABLE media ADD COLUMN user_list_status INTEGER NOT NULL DEFAULT -1;

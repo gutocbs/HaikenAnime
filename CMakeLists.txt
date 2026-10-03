@@ -270,9 +270,11 @@ set_source_files_properties(
 set_source_files_properties(
         resources/sqlite/queries/upsert-user-preferences.sql
         PROPERTIES QT_RESOURCE_ALIAS "upsert-user-preferences.sql")
-set_source_files_properties(
-        resources/sqlite/migrations/001-create-initial-schema.sql
-        PROPERTIES QT_RESOURCE_ALIAS "001-create-initial-schema.sql")
+file(GLOB SQLITE_MIGRATION_RESOURCES CONFIGURE_DEPENDS resources/sqlite/migrations/*.sql)
+foreach (MIGRATION_FILE IN LISTS SQLITE_MIGRATION_RESOURCES)
+    get_filename_component(MIGRATION_ALIAS "${MIGRATION_FILE}" NAME)
+    set_source_files_properties("${MIGRATION_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${MIGRATION_ALIAS}")
+endforeach ()
 set(LIBRARY_SCAN_SQL_RESOURCES
         resources/sqlite/queries/begin-library-scan.sql
         resources/sqlite/queries/upsert-local-file.sql
@@ -326,7 +328,7 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
 
 qt_add_resources(HaikenAnime sqlite_migration_resource_bundle
         PREFIX "/sqlite/migrations"
-        FILES resources/sqlite/migrations/001-create-initial-schema.sql
+        FILES ${SQLITE_MIGRATION_RESOURCES}
 )
 
 qt_add_resources(HaikenAnime application_config_resource
@@ -800,9 +802,16 @@ add_executable(LocalEpisodeReaderTests
         tests/unit/LocalEpisodeReaderTests.cpp
         src/application/library/LocalEpisodeReader.cpp
         src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/logging/AsyncLogger.cpp
 )
 target_link_libraries(LocalEpisodeReaderTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
+qt_add_resources(LocalEpisodeReaderTests local_episode_reader_query_resources
+        PREFIX "/sqlite/queries"
+        FILES
+        resources/sqlite/queries/read-next-local-episode.sql
+        resources/sqlite/queries/read-available-episode-count.sql
+)
 add_test(NAME LocalEpisodeReaderTests COMMAND LocalEpisodeReaderTests)
 
 add_executable(QtLocalFileOpenerTests
@@ -1112,7 +1121,7 @@ add_test(NAME LocalLibraryRecognitionCompositionTests COMMAND LocalLibraryRecogn
 function(add_sqlite_migration_test_resources target)
     qt_add_resources(${target} sqlite_migration_test_resources
             PREFIX "/sqlite/migrations"
-            FILES resources/sqlite/migrations/001-create-initial-schema.sql)
+            FILES ${SQLITE_MIGRATION_RESOURCES})
 endfunction()
 
 foreach (SQLITE_MIGRATION_TEST_TARGET IN ITEMS
@@ -1154,6 +1163,9 @@ set(HAIKENANIME_TESTS
         AniListAuthManagerTests
         AniListFlowTests
         AniListGraphQlParsingTests
+        AniListGraphQlUserListParserTests
+        LocalEpisodeReaderTests
+        QtLocalFileOpenerTests
         GraphQlQueryStoreTests
         SeasonalCatalogTests
         SeasonalCatalogControllerTests
@@ -1170,12 +1182,13 @@ set(HAIKENANIME_TESTS
         LocalLibraryScanCompositionTests
         LocalLibraryRecognitionCompositionTests
 )
+get_filename_component(MINGW_RUNTIME_DIRECTORY "${CMAKE_CXX_COMPILER}" DIRECTORY)
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
-        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;$ENV{PATH}"
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;${MINGW_RUNTIME_DIRECTORY};$ENV{PATH}"
         TIMEOUT 30
 )
 set_tests_properties(QmlStructureTests PROPERTIES
-        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;$ENV{PATH};QT_QUICK_BACKEND=software"
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;${MINGW_RUNTIME_DIRECTORY};$ENV{PATH};QT_QUICK_BACKEND=software"
 )
 endif ()
 

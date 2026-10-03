@@ -1,5 +1,7 @@
 SELECT media_id, episode,
-       rtrim(root_path, '/\\') || '/' || ltrim(relative_path, '/\\') AS path
+       rtrim(root_path, '/\\')
+           || CASE WHEN instr(root_path, '\') > 0 THEN '\' ELSE '/' END
+           || ltrim(relative_path, '/\\') AS path
 FROM local_files
 WHERE media_id = :media_id
   AND available = 1
