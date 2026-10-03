@@ -499,7 +499,8 @@ void QmlStructureTests::seasonalCatalogRequiresExplicitFiltersAndHasResponsiveCo
         > errorRetryButton);
     QVERIFY(source.contains(QStringLiteral("visible: controller.state === \"loading\" && controller.hasResults")));
     QVERIFY(!source.contains(QStringLiteral("Carregar próxima página")));
-    QVERIFY(source.contains(QStringLiteral("columns: width >= 860 ? 3 : width >= 560 ? 2 : 1")));
+    QVERIFY(source.contains(QStringLiteral("columnCount: width >= 860 ? 3 : width >= 560 ? 2 : 1")));
+    QVERIFY(source.contains(QStringLiteral("cellWidth: width / columnCount")));
     QVERIFY(source.contains(QStringLiteral("Flow {")));
     QVERIFY(source.contains(QStringLiteral("width >= 560")));
     QVERIFY(source.contains(QStringLiteral("width: filterLayout.width >= 560 ? 150 : filterLayout.width")));
@@ -529,6 +530,7 @@ void QmlStructureTests::seasonalCatalogPublishesCardsOnlyAfterResultsAreReady() 
     QVERIFY(seasonalSource.contains(QStringLiteral("controller.state === \"populated\"")));
     QVERIFY(seasonalSource.contains(QStringLiteral("controller.state === \"loading\"")));
     QVERIFY(seasonalSource.contains(QStringLiteral("model: cardsReady ? controller.mediaModel : null")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("onWidthChanged: if (cardsReady) forceLayout()")));
     QVERIFY(cardSource.contains(QStringLiteral("asynchronous: true")));
     QVERIFY(cardSource.contains(QStringLiteral("source: card.coverSource")));
 }

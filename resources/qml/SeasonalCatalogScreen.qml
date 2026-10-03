@@ -273,10 +273,12 @@ Item {
                     readonly property bool cardsReady: controller.state === "populated"
                                                      || (controller.state === "loading"
                                                          && controller.hasResults)
-                    readonly property int columns: width >= 860 ? 3 : width >= 560 ? 2 : 1
-                    cellWidth: width / columns
+                    readonly property int columnCount: width >= 860 ? 3 : width >= 560 ? 2 : 1
+                    cellWidth: width / columnCount
                     cellHeight: 154
                     model: cardsReady ? controller.mediaModel : null
+
+                    onWidthChanged: if (cardsReady) forceLayout()
 
                     function requestNextPageIfNearEnd() {
                         if (!controller.canLoadNextPage) return
@@ -289,7 +291,7 @@ Item {
                     onHeightChanged: requestNextPageIfNearEnd()
                     onVisibleChanged: requestNextPageIfNearEnd()
                     delegate: MediaCard {
-                        width: resultsGrid.cellWidth - 12
+                        width: Math.max(0, resultsGrid.cellWidth - 12)
                         height: 142
                         mediaId: model.mediaId
                         title: model.title
