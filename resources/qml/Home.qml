@@ -34,6 +34,17 @@ Item {
         return edit && edit[key] !== undefined ? edit[key] : fallback
     }
 
+    function clearBrowseControlFocus() {
+        previewBrowseControls.clearControlFocus()
+        completeBrowseControls.clearControlFocus()
+        home.forceActiveFocus()
+    }
+
+    TapHandler {
+        gesturePolicy: TapHandler.DragThreshold
+        onTapped: home.clearBrowseControlFocus()
+    }
+
     function applyPreviewEdit(mediaId, progress, statusKey, score, path, alternativeNames) {
         const next = Object.assign({}, previewEdits)
         const cardMetadata = controller.PreviewCardMetadata(progress, statusKey, score)
@@ -692,7 +703,7 @@ Item {
         dim: false
         focus: true
         padding: 0
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        closePolicy: Popup.CloseOnEscape
         onOpened: completeGrid.reportWindow()
         onClosed: mediaGrid.reportWindow()
 

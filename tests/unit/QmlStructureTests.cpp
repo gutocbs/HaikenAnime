@@ -73,6 +73,8 @@ private slots:
     void previewCardsUseControllerPreparedMetadataInBothGrids();
     void compactDetailsUseSeparatePreviewMetadata();
     void compactDetailsAreReadOnlyAndSelectable();
+    void browseControlsClearFocusWithoutResettingCriteria();
+    void completeLibraryStaysOpenOutsideExplicitCloseAction();
     void coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads();
     void languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml();
     void preferredTitleSelectionUsesBackendOptions();
@@ -365,6 +367,36 @@ void QmlStructureTests::compactDetailsAreReadOnlyAndSelectable() {
     QVERIFY(details.contains(QStringLiteral("id: selectedSynopsisOverflowIndicator")));
     QVERIFY(details.contains(QStringLiteral("visible: selectedSynopsisText.contentHeight > selectedSynopsisText.height")));
     QVERIFY(details.contains(QStringLiteral("text: \"…\"")));
+}
+
+void QmlStructureTests::browseControlsClearFocusWithoutResettingCriteria() {
+    const QString controlsSource = qmlSource(QStringLiteral("BrowseControls.qml"));
+    const QString homeSource = qmlSource(QStringLiteral("Home.qml"));
+    QVERIFY(!controlsSource.isEmpty());
+    QVERIFY(!homeSource.isEmpty());
+    QVERIFY2(controlsSource.contains(QStringLiteral("function clearControlFocus()")),
+             "Browse controls must expose a focus-only reset action.");
+    QVERIFY2(controlsSource.contains(QStringLiteral("controls.forceActiveFocus()")),
+             "Clearing control focus must not reset controller criteria.");
+    QVERIFY2(homeSource.contains(QStringLiteral("home.clearBrowseControlFocus()")),
+             "Home must clear browse focus from an outside click without clearing criteria.");
+    QVERIFY(!homeSource.contains(QStringLiteral("ClearBrowseCriteria()"))
+            || homeSource.indexOf(QStringLiteral("home.clearBrowseControlFocus()"))
+                < homeSource.indexOf(QStringLiteral("ClearBrowseCriteria()")));
+}
+
+void QmlStructureTests::completeLibraryStaysOpenOutsideExplicitCloseAction() {
+    const QString source = qmlSource(QStringLiteral("Home.qml"));
+    QVERIFY(!source.isEmpty());
+    const qsizetype popupStart = source.indexOf(QStringLiteral("id: completeLibrary"));
+    QVERIFY(popupStart >= 0);
+    const qsizetype popupEnd = source.indexOf(QStringLiteral("onClosed: mediaGrid.reportWindow()"), popupStart);
+    QVERIFY(popupEnd > popupStart);
+    const QString popupHeader = source.mid(popupStart, popupEnd - popupStart);
+    QVERIFY2(popupHeader.contains(QStringLiteral("closePolicy: Popup.CloseOnEscape")),
+             "The complete library must not close from outside clicks.");
+    QVERIFY2(source.contains(QStringLiteral("onClicked: completeLibrary.close()")),
+             "The complete library must retain an explicit close action.");
 }
 
 void QmlStructureTests::languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml() {

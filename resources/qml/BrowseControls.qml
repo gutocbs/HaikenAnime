@@ -14,6 +14,10 @@ RowLayout {
     property color accent: "#315d91"
     spacing: 8
 
+    function clearControlFocus() {
+        controls.forceActiveFocus()
+    }
+
     function synchronizeWithController() {
         listFilter.currentIndex = listFilter.indexOfValue(controls.controller.activeListFilter)
         sortOrder.currentIndex = sortOrder.indexOfValue(controls.controller.activeSort)
