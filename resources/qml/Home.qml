@@ -34,6 +34,17 @@ Item {
         return edit && edit[key] !== undefined ? edit[key] : fallback
     }
 
+    function clearBrowseControlFocus() {
+        previewBrowseControls.clearControlFocus()
+        completeBrowseControls.clearControlFocus()
+        home.forceActiveFocus()
+    }
+
+    TapHandler {
+        gesturePolicy: TapHandler.DragThreshold
+        onTapped: home.clearBrowseControlFocus()
+    }
+
     function applyPreviewEdit(mediaId, progress, statusKey, score, path, alternativeNames) {
         const next = Object.assign({}, previewEdits)
         const cardMetadata = controller.PreviewCardMetadata(progress, statusKey, score)
@@ -692,7 +703,7 @@ Item {
         dim: false
         focus: true
         padding: 0
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        closePolicy: Popup.CloseOnEscape
         onOpened: completeGrid.reportWindow()
         onClosed: mediaGrid.reportWindow()
 
@@ -766,12 +777,13 @@ Item {
                 delegate: MediaCard {
                     width: completeGrid.cellWidth - 12
                     height: 142
+                    compactMetadata: true
                     mediaId: model.mediaId
                     coverSource: model.coverSource
                     title: model.title
-                    status: home.previewValue(model.mediaId, "cardStatusText", model.statusLabel)
-                    progress: home.previewValue(model.mediaId, "cardProgressText", model.progress)
-                    score: home.previewValue(model.mediaId, "cardScoreText", model.score)
+                    status: home.previewValue(model.mediaId, "detailStatusText", model.statusLabel)
+                    progress: home.previewValue(model.mediaId, "detailProgressText", model.progress)
+                    score: home.previewValue(model.mediaId, "detailScoreText", model.score)
                     selected: controller.selectedMediaId === model.mediaId
                     onActivated: function(mediaId) {
                         controller.SelectMedia(mediaId)

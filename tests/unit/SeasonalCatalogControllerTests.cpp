@@ -105,6 +105,7 @@ private slots:
     void exposesBackendOwnedStableFilterOptionsWithoutDefaults();
     void exposesResultsSelectionAndPagingCommands();
     void exposesExplicitAniListScoreLabel();
+    void seasonalMediaModelPublishesCompleteRowsAndRefreshesCoverRole();
     void retainsResultsAndSuppressesDuplicateLoadsWhileAppending();
     void adultPolicyChangeReloadsActiveFiltersWithoutMixingPriorResults();
     void exposesHomeCompatibleDetailsPresentation();
@@ -181,6 +182,30 @@ void SeasonalCatalogControllerTests::exposesExplicitAniListScoreLabel() {
     QCOMPARE(controller.mediaModel()->data(controller.mediaModel()->index(0, 0),
                                            SeasonalCatalogMediaModel::ScoreRole),
              QStringLiteral("Nota AniList: 72"));
+}
+
+void SeasonalCatalogControllerTests::seasonalMediaModelPublishesCompleteRowsAndRefreshesCoverRole() {
+    SeasonalCatalogMediaModel model;
+    Media item = media(7, QStringLiteral("Seasonal title"));
+    item.ConsumedChapters = 4;
+    item.AverageScore = 81;
+    item.CoverMediumUrl = QStringLiteral("https://example.test/7-medium.jpg");
+    item.CoverLargeUrl = QStringLiteral("https://example.test/7-large.jpg");
+
+    model.setMedia({item});
+    const QModelIndex index = model.index(0, 0);
+    QVERIFY(index.isValid());
+    QCOMPARE(model.data(index, SeasonalCatalogMediaModel::TitleRole), QStringLiteral("Seasonal title"));
+    QCOMPARE(model.data(index, SeasonalCatalogMediaModel::ProgressRole), QStringLiteral("Primavera de 2026"));
+    QCOMPARE(model.data(index, SeasonalCatalogMediaModel::ScoreRole), QStringLiteral("Nota AniList: 81"));
+    QCOMPARE(model.data(index, SeasonalCatalogMediaModel::CoverSourceRole),
+             QStringLiteral("https://example.test/7-medium.jpg"));
+
+    QSignalSpy coverUpdated(&model, &QAbstractItemModel::dataChanged);
+    model.configurePresentation(CoverQuality::Large, DefaultPreferredTitleKey());
+    QCOMPARE(coverUpdated.size(), 1);
+    QCOMPARE(model.data(index, SeasonalCatalogMediaModel::CoverSourceRole),
+             QStringLiteral("https://example.test/7-large.jpg"));
 }
 
 void SeasonalCatalogControllerTests::retainsResultsAndSuppressesDuplicateLoadsWhileAppending() {

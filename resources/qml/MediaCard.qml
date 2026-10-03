@@ -9,6 +9,7 @@ Rectangle {
     property string status: ""
     property string progress: ""
     property string score: ""
+    property bool compactMetadata: false
     property bool muted: false
     property bool selected: false
     property int mediaId: 0
@@ -82,6 +83,7 @@ Rectangle {
 
                 Label {
                     Layout.fillWidth: true
+                    visible: !card.compactMetadata
                     text: card.progress
                     color: "#68758a"
                     font.pixelSize: 11
@@ -96,6 +98,7 @@ Rectangle {
 
                 Label {
                     Layout.fillWidth: true
+                    visible: !card.compactMetadata
                     text: card.score
                     color: "#68758a"
                     font.pixelSize: 11

@@ -73,10 +73,13 @@ private slots:
     void previewCardsUseControllerPreparedMetadataInBothGrids();
     void compactDetailsUseSeparatePreviewMetadata();
     void compactDetailsAreReadOnlyAndSelectable();
+    void browseControlsClearFocusWithoutResettingCriteria();
+    void completeLibraryStaysOpenOutsideExplicitCloseAction();
     void coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads();
     void languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml();
     void preferredTitleSelectionUsesBackendOptions();
     void seasonalCatalogRequiresExplicitFiltersAndHasResponsiveContent();
+    void seasonalCatalogPublishesCardsOnlyAfterResultsAreReady();
     void secondaryScreenNavigationMatchesLibraryHeaderPlacement();
     void settingsHeaderReservesMessageSpaceAfterSaveAction();
     void seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated();
@@ -298,9 +301,9 @@ void QmlStructureTests::previewCardsUseControllerPreparedMetadataInBothGrids() {
     QVERIFY(!source.contains(QStringLiteral("function statusLabel(")));
     QVERIFY(!source.contains(QStringLiteral("progress + \"/\"")));
     QVERIFY(!source.contains(QStringLiteral("score === 0 ? \"—\"")));
-    QCOMPARE(source.count(QStringLiteral("status: home.previewValue(model.mediaId, \"cardStatusText\", model.statusLabel)")), 2);
-    QCOMPARE(source.count(QStringLiteral("progress: home.previewValue(model.mediaId, \"cardProgressText\", model.progress)")), 2);
-    QCOMPARE(source.count(QStringLiteral("score: home.previewValue(model.mediaId, \"cardScoreText\", model.score)")), 2);
+    QCOMPARE(source.count(QStringLiteral("status: home.previewValue(model.mediaId, \"cardStatusText\", model.statusLabel)")), 1);
+    QCOMPARE(source.count(QStringLiteral("progress: home.previewValue(model.mediaId, \"cardProgressText\", model.progress)")), 1);
+    QCOMPARE(source.count(QStringLiteral("score: home.previewValue(model.mediaId, \"cardScoreText\", model.score)")), 1);
 }
 
 void QmlStructureTests::compactDetailsUseSeparatePreviewMetadata() {
@@ -321,6 +324,14 @@ void QmlStructureTests::compactDetailsUseSeparatePreviewMetadata() {
         "home.previewValue(controller.selectedMediaId, \"detailProgressText\",")));
     QVERIFY(source.contains(QStringLiteral(
         "home.previewValue(controller.selectedMediaId, \"detailScoreText\",")));
+    QVERIFY2(source.contains(QStringLiteral("compactMetadata: true")),
+             "The complete-library cards must explicitly use compact metadata presentation.");
+    QVERIFY2(source.contains(QStringLiteral(
+                 "progress: home.previewValue(model.mediaId, \"detailProgressText\", model.progress)")),
+             "Complete-library cards must receive the compact progress value without its label.");
+    QVERIFY2(source.contains(QStringLiteral(
+                 "score: home.previewValue(model.mediaId, \"detailScoreText\", model.score)")),
+             "Complete-library cards must receive the compact score value without its label.");
 }
 
 void QmlStructureTests::compactDetailsAreReadOnlyAndSelectable() {
@@ -357,6 +368,36 @@ void QmlStructureTests::compactDetailsAreReadOnlyAndSelectable() {
     QVERIFY(details.contains(QStringLiteral("id: selectedSynopsisOverflowIndicator")));
     QVERIFY(details.contains(QStringLiteral("visible: selectedSynopsisText.contentHeight > selectedSynopsisText.height")));
     QVERIFY(details.contains(QStringLiteral("text: \"…\"")));
+}
+
+void QmlStructureTests::browseControlsClearFocusWithoutResettingCriteria() {
+    const QString controlsSource = qmlSource(QStringLiteral("BrowseControls.qml"));
+    const QString homeSource = qmlSource(QStringLiteral("Home.qml"));
+    QVERIFY(!controlsSource.isEmpty());
+    QVERIFY(!homeSource.isEmpty());
+    QVERIFY2(controlsSource.contains(QStringLiteral("function clearControlFocus()")),
+             "Browse controls must expose a focus-only reset action.");
+    QVERIFY2(controlsSource.contains(QStringLiteral("controls.forceActiveFocus()")),
+             "Clearing control focus must not reset controller criteria.");
+    QVERIFY2(homeSource.contains(QStringLiteral("home.clearBrowseControlFocus()")),
+             "Home must clear browse focus from an outside click without clearing criteria.");
+    QVERIFY(!homeSource.contains(QStringLiteral("ClearBrowseCriteria()"))
+            || homeSource.indexOf(QStringLiteral("home.clearBrowseControlFocus()"))
+                < homeSource.indexOf(QStringLiteral("ClearBrowseCriteria()")));
+}
+
+void QmlStructureTests::completeLibraryStaysOpenOutsideExplicitCloseAction() {
+    const QString source = qmlSource(QStringLiteral("Home.qml"));
+    QVERIFY(!source.isEmpty());
+    const qsizetype popupStart = source.indexOf(QStringLiteral("id: completeLibrary"));
+    QVERIFY(popupStart >= 0);
+    const qsizetype popupEnd = source.indexOf(QStringLiteral("onClosed: mediaGrid.reportWindow()"), popupStart);
+    QVERIFY(popupEnd > popupStart);
+    const QString popupHeader = source.mid(popupStart, popupEnd - popupStart);
+    QVERIFY2(popupHeader.contains(QStringLiteral("closePolicy: Popup.CloseOnEscape")),
+             "The complete library must not close from outside clicks.");
+    QVERIFY2(source.contains(QStringLiteral("onClicked: completeLibrary.close()")),
+             "The complete library must retain an explicit close action.");
 }
 
 void QmlStructureTests::languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml() {
@@ -477,6 +518,19 @@ void QmlStructureTests::seasonalCatalogRequiresExplicitFiltersAndHasResponsiveCo
     QVERIFY(detailsSource.contains(QStringLiteral("source: controller.selectedCoverSource")));
     QVERIFY(detailsSource.contains(QStringLiteral("id: externalLinksGrid")));
     QVERIFY(detailsSource.contains(QStringLiteral("columns: width >= 340 ? 2 : 1")));
+}
+
+void QmlStructureTests::seasonalCatalogPublishesCardsOnlyAfterResultsAreReady() {
+    const QString seasonalSource = qmlSource(QStringLiteral("SeasonalCatalogScreen.qml"));
+    const QString cardSource = qmlSource(QStringLiteral("MediaCard.qml"));
+    QVERIFY(!seasonalSource.isEmpty());
+    QVERIFY(!cardSource.isEmpty());
+    QVERIFY(seasonalSource.contains(QStringLiteral("readonly property bool cardsReady:")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("controller.state === \"populated\"")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("controller.state === \"loading\"")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("model: cardsReady ? controller.mediaModel : null")));
+    QVERIFY(cardSource.contains(QStringLiteral("asynchronous: true")));
+    QVERIFY(cardSource.contains(QStringLiteral("source: card.coverSource")));
 }
 
 void QmlStructureTests::secondaryScreenNavigationMatchesLibraryHeaderPlacement() {

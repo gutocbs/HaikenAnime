@@ -55,8 +55,10 @@ QString mediaProgress(const Media &media) {
 }
 
 QString cardProgress(const Media &media) {
-    if (media.TotalChapters <= 0) return QStringLiteral("Progresso —");
-    return QStringLiteral("Progresso %1/%2").arg(media.ConsumedChapters).arg(media.TotalChapters);
+    if (media.TotalChapters <= 0)
+        return QCoreApplication::translate("HomeMediaModel", "Progresso —");
+    return QCoreApplication::translate("HomeMediaModel", "Progresso %1/%2")
+        .arg(media.ConsumedChapters).arg(media.TotalChapters);
 }
 
 QString personalScore(const Media &media) {
@@ -64,8 +66,9 @@ QString personalScore(const Media &media) {
 }
 
 QString cardScore(const Media &media, const double scoreMaximum) {
-    if (media.PersonalScore <= 0) return QStringLiteral("Nota —");
-    return QStringLiteral("Nota %1/%2")
+    if (media.PersonalScore <= 0)
+        return QCoreApplication::translate("HomeMediaModel", "Nota —");
+    return QCoreApplication::translate("HomeMediaModel", "Nota %1/%2")
         .arg(media.PersonalScore)
         .arg(QString::number(scoreMaximum, 'g', 15));
 }
@@ -613,11 +616,13 @@ QVariantMap HomeScreenController::PreviewCardMetadata(const int progress,
                                                        const double score) const {
     if (!hasSelection_) return {};
     const auto progressLabel = selectedMedia_.TotalChapters <= 0
-        ? QStringLiteral("Progresso —")
-        : QStringLiteral("Progresso %1/%2").arg(progress).arg(selectedMedia_.TotalChapters);
+        ? QCoreApplication::translate("HomeMediaModel", "Progresso —")
+        : QCoreApplication::translate("HomeMediaModel", "Progresso %1/%2")
+              .arg(progress).arg(selectedMedia_.TotalChapters);
     const auto scoreLabel = score <= 0.0
-        ? QStringLiteral("Nota —")
-        : QStringLiteral("Nota %1/%2").arg(QString::number(score, 'g', 15))
+        ? QCoreApplication::translate("HomeMediaModel", "Nota —")
+        : QCoreApplication::translate("HomeMediaModel", "Nota %1/%2")
+              .arg(QString::number(score, 'g', 15))
               .arg(QString::number(scoreMaximum_, 'g', 15));
     return {{QStringLiteral("status"), cardStatusLabel(selectedMedia_, cardStatusPresentation_,
                                                          userListStatusFromKey(listStatusKey))},

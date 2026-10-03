@@ -134,12 +134,15 @@ void SqliteRepositoryTests::extendedMetadataUpsertPreservesUserEditedFields() {
 
     QSqlQuery localEdit(database.connection());
     QVERIFY(localEdit.exec(QStringLiteral(
-        "UPDATE media SET consumed_chapters = 6, next_chapter = 7, personal_score = 91 "
+        "UPDATE media SET consumed_chapters = 6, next_chapter = 7, personal_score = 91, "
+        "user_list_status = 4, local_path = 'D:\\Local\\media.mkv' "
         "WHERE id = 79")));
 
     Media refreshed;
     refreshed.Id = 79;
     refreshed.Name = QStringLiteral("After refresh");
+    refreshed.ConsumedChapters = 28;
+    refreshed.PersonalScore = 10;
     refreshed.Season = QStringLiteral("SPRING");
     refreshed.SeasonYear = 2026;
     refreshed.NextAiringEpisode = 8;
@@ -154,9 +157,11 @@ void SqliteRepositoryTests::extendedMetadataUpsertPreservesUserEditedFields() {
     QVERIFY2(repository.readAll(actual, error), qPrintable(error));
     QCOMPARE(actual.size(), 1);
     QCOMPARE(actual.first().Name, QStringLiteral("After refresh"));
-    QCOMPARE(actual.first().ConsumedChapters, 6);
+    QCOMPARE(actual.first().ConsumedChapters, 28);
     QCOMPARE(actual.first().NextChapter, 7);
-    QCOMPARE(actual.first().PersonalScore, 91);
+    QCOMPARE(actual.first().PersonalScore, 10);
+    QCOMPARE(actual.first().ListStatus, UserListStatus::Completed);
+    QCOMPARE(actual.first().LocalPath, QStringLiteral("D:\\Local\\media.mkv"));
     QCOMPARE(actual.first().Season, QStringLiteral("SPRING"));
     QCOMPARE(actual.first().SeasonYear, std::optional<int>(2026));
     QCOMPARE(actual.first().NextAiringEpisode, std::optional<int>(8));
@@ -262,6 +267,8 @@ void SqliteRepositoryTests::removedMediaIsHiddenAndUpsertReactivatesItPreserving
     Media returning;
     returning.Id = 7;
     returning.Name = QStringLiteral("Returned");
+    returning.ConsumedChapters = 12;
+    returning.PersonalScore = 90;
     returning.CoverUrl = QStringLiteral("https://example.test/new.jpg");
     QVERIFY(repository.upsert({returning}, error));
     QVERIFY(repository.readAll(active, error));
