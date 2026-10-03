@@ -74,7 +74,8 @@ void CoverFileStoreTests::rejectsInvalidImagesAndPreservesExistingFile()
     for (int index : {1, 2}) {
         QFile file(invalidPaths[index]);
         QVERIFY(file.open(QIODevice::WriteOnly));
-        file.write(index == 1 ? "<html>error</html>" : QByteArray("\x89PNG\r\n", 6));
+        file.write(index == 1 ? QByteArrayLiteral("<html>error</html>")
+                              : QByteArray("\x89PNG\r\n", 6));
     }
     const auto oversized = directory.path() + "/oversized.png";
     QFile oversizedFile(oversized);
