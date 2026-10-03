@@ -25,6 +25,10 @@ struct SqliteQueryConfiguration final {
     QString completeLibraryScanPath;
     QString failLibraryScanPath;
     QString markLocalFilesUnavailablePath;
+    QString readPendingLocalFilesPath;
+    QString readCatalogMediaForRecognitionPath;
+    QString saveLocalFileRecognitionPath;
+    QString readNextLocalEpisodePath;
 
     [[nodiscard]] bool load(QString &error,
                             const QString &configurationPath = QStringLiteral(":/sqlite/queries/sqlite-queries.json"));

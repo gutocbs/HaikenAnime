@@ -10,6 +10,7 @@
 #include <thread>
 
 #include "../../src/app/InitialSyncCoordinator.h"
+#include "../../src/domain/media/UserListStatus.h"
 #include "../../src/infrastructure/database/SqliteDatabase.h"
 
 namespace {
@@ -42,6 +43,7 @@ private slots:
     void configuresAutomaticSynchronizationAtRuntime();
     void disablingDuringActiveSynchronizationPreventsRestart();
     void synchronizesRealGraphQlFixtureIntoDatabase();
+    void synchronizesRecordedUserListIntoDatabase();
 };
 
 void InitialSyncCoordinatorTests::configuresAutomaticSynchronizationAtRuntime() {
@@ -267,7 +269,7 @@ void InitialSyncCoordinatorTests::synchronizesRealGraphQlFixtureIntoDatabase() {
     QSqlQuery mediaQuery(database.connection());
     QVERIFY(mediaQuery.exec(QStringLiteral("SELECT name, cover_url FROM media WHERE id = 1")));
     QVERIFY(mediaQuery.next());
-    QCOMPARE(mediaQuery.value(0).toString(), QStringLiteral("Cowboy Bebop"));
+    QCOMPARE(mediaQuery.value(0).toString(), QStringLiteral("[CBM] Monster 1-74 Complete (Dual Audio) [DVDRip-480p-8bit]"));
     QCOMPARE(mediaQuery.value(1).toString(),
              QStringLiteral("https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx1-GCsPm7waJ4kS.png"));
 
@@ -282,6 +284,37 @@ void InitialSyncCoordinatorTests::synchronizesRealGraphQlFixtureIntoDatabase() {
     QVERIFY(cover.exec(QStringLiteral("SELECT COUNT(*) FROM cover_cache WHERE media_id = 30002")));
     QVERIFY(cover.next());
     QCOMPARE(cover.value(0).toInt(), 1);
+}
+
+void InitialSyncCoordinatorTests::synchronizesRecordedUserListIntoDatabase() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const auto sourceRoot = QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR);
+    const auto databasePath = directory.filePath(QStringLiteral("library.sqlite"));
+    InitialSyncCoordinator coordinator(
+        databasePath,
+        QDir(sourceRoot).filePath(QStringLiteral("tests/fixtures/graphql/userlist-response.json")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/upsert-media.sql")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/read-media.sql")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/read-active-media-ids.sql")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/mark-media-source-removed.sql")),
+        60000, 60000);
+    QSignalSpy completedSpy(&coordinator, &InitialSyncCoordinator::completed);
+    QSignalSpy failedSpy(&coordinator, &InitialSyncCoordinator::failed);
+    coordinator.start();
+    QVERIFY2(completedSpy.wait(5000), failedSpy.isEmpty()
+        ? "Recorded user-list synchronization did not complete."
+        : qPrintable(failedSpy.first().first().toString()));
+    coordinator.shutdown();
+
+    SqliteDatabase database(databasePath);
+    QVERIFY2(database.open(), qPrintable(database.lastError()));
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("SELECT consumed_chapters, personal_score, user_list_status FROM media WHERE id = 21366")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 22);
+    QCOMPARE(query.value(1).toInt(), 9);
+    QCOMPARE(query.value(2).toInt(), static_cast<int>(UserListStatus::Completed));
 }
 
 QTEST_MAIN(InitialSyncCoordinatorTests)

@@ -5,6 +5,7 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QStandardPaths>
+#include <QSet>
 #include <QUuid>
 #include "../logging/AsyncLogger.h"
 
@@ -224,7 +225,11 @@ bool SqliteDatabase::migrate() {
         "available INTEGER NOT NULL DEFAULT 1 CHECK (available IN (0, 1)),"
         "last_seen_scan_id INTEGER NOT NULL REFERENCES library_scans(id),"
         "recognition_state TEXT NOT NULL DEFAULT 'unprocessed' "
-        "CHECK (recognition_state IN ('unprocessed', 'recognized', 'unrecognized', 'associated')),"
+        "CHECK (recognition_state IN ('unprocessed', 'recognized', 'unrecognized', 'ambiguous', 'associated', 'unsupported')) ,"
+        "extracted_title TEXT NOT NULL DEFAULT '',"
+        "media_kind TEXT NOT NULL DEFAULT 'anime',"
+        "season INTEGER, episode INTEGER, media_id INTEGER REFERENCES media(id),"
+        "recognition_diagnostic TEXT NOT NULL DEFAULT '', recognized_at TEXT,"
         "UNIQUE(root_path, normalized_relative_path))"));
     const bool inventoryVersionInserted = localFilesCreated && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (7)"));
@@ -322,7 +327,27 @@ bool SqliteDatabase::migrate() {
         || query.exec(QStringLiteral("ALTER TABLE media ADD COLUMN local_path TEXT NOT NULL DEFAULT ''")));
     const bool localPathVersionInserted = localPathReady && query.exec(QStringLiteral(
         "INSERT OR IGNORE INTO schema_version (version) VALUES (15)"));
-    const bool versionQueried = localPathVersionInserted && query.exec(QStringLiteral(
+    bool recognitionFieldsReady = false;
+    if (localPathVersionInserted && query.exec(QStringLiteral("PRAGMA table_info(local_files)"))) {
+        QSet<QString> columns;
+        while (query.next()) columns.insert(query.value(1).toString());
+        const auto addColumn = [&query, &columns](const QString &name, const QString &definition) {
+            if (columns.contains(name)) return true;
+            if (!query.exec(QStringLiteral("ALTER TABLE local_files ADD COLUMN ") + definition)) return false;
+            columns.insert(name);
+            return true;
+        };
+        recognitionFieldsReady = addColumn(QStringLiteral("extracted_title"), QStringLiteral("extracted_title TEXT NOT NULL DEFAULT ''"))
+            && addColumn(QStringLiteral("media_kind"), QStringLiteral("media_kind TEXT NOT NULL DEFAULT 'anime'"))
+            && addColumn(QStringLiteral("season"), QStringLiteral("season INTEGER"))
+            && addColumn(QStringLiteral("episode"), QStringLiteral("episode INTEGER"))
+            && addColumn(QStringLiteral("media_id"), QStringLiteral("media_id INTEGER"))
+            && addColumn(QStringLiteral("recognition_diagnostic"), QStringLiteral("recognition_diagnostic TEXT NOT NULL DEFAULT ''"))
+            && addColumn(QStringLiteral("recognized_at"), QStringLiteral("recognized_at TEXT"));
+    }
+    const bool recognitionVersionInserted = recognitionFieldsReady && query.exec(QStringLiteral(
+        "INSERT OR IGNORE INTO schema_version (version) VALUES (16)"));
+    const bool versionQueried = recognitionVersionInserted && query.exec(QStringLiteral(
         "SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 1), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 2), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 3), "
@@ -337,13 +362,14 @@ bool SqliteDatabase::migrate() {
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 12), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 13), "
         "EXISTS(SELECT 1 FROM schema_version WHERE version = 14), "
-        "EXISTS(SELECT 1 FROM schema_version WHERE version = 15)"));
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 15), "
+        "EXISTS(SELECT 1 FROM schema_version WHERE version = 16)"));
     const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool()
         && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
         && query.value(4).toBool() && query.value(5).toBool() && query.value(6).toBool()
         && query.value(7).toBool() && query.value(8).toBool() && query.value(9).toBool()
         && query.value(10).toBool() && query.value(11).toBool() && query.value(12).toBool()
-        && query.value(13).toBool() && query.value(14).toBool();
+        && query.value(13).toBool() && query.value(14).toBool() && query.value(15).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();

@@ -202,8 +202,18 @@ A new top-level screen presents the AniList seasonal catalog without adding cont
 - The controller owns query state, paging, deduplication, retry, and presentation-ready records.
 - QML exposes loading, populated, empty, and error states with an explicit retry action.
 - Repeated page requests and stale responses from a previous year/season selection are ignored.
-- Catalog cards reuse the preferred-title and cover-resolution rules where applicable, but catalog browsing does not automatically add media to the user's list.
+- Catalog cards reuse the preferred-title and cover-resolution rules where applicable. Catalog browsing does not automatically add media to the user's list.
 - Selecting a catalog result opens the same full-details presentation contract, populated from catalog data.
+- The full-details presentation for seasonal results keeps metadata on the left, shows the selected cover on the right, and presents approved external links in a responsive grid. The compact Home details contract remains unchanged.
+- Additional seasonal pages load through infinite scroll. While a page is in flight, the list shows a loading indicator instead of a next-page button; the end of the catalog removes the indicator without issuing further requests.
+- Seasonal requests honor the persisted adult-content preference. When adult content is disabled, adult results are excluded before presentation; when enabled, they may be shown.
+- Seasonal catalog requests use a cache keyed by year, season, adult-content policy, and page. A cached page is reused without a network request while valid, and rapid changes to the selected filters are rate-limited/coalesced so obsolete requests do not flood the public AniList API.
+- `SeasonalCatalogCachePolicy` is loaded from `Settings.json`; missing, invalid, or incomplete policy values use safe built-in defaults. Cache TTL, maximum entries, and request-rate interval are configuration data rather than hardcoded product choices.
+- Cache hits, throttled requests, and stale-cache fallback are observable through the existing non-fatal loading/error states. Cache invalidation must never mix results from different year/season/adult-policy keys.
+- When the selected catalog media is not present in any user list, the details view exposes an explicit "Add to my list" flow with the backend-provided personal-list/status options.
+- A catalog media item must receive exactly one user-list/status value before it can be saved locally. The save action is disabled while no list is selected, and saving creates the local user-list entry without duplicating an existing media record.
+- When the media already belongs to a user list, the add flow is replaced by the existing edit behavior and the current personal status is shown.
+- The add/edit flow reuses the existing details editor where possible; catalog-specific behavior is limited to detecting list membership, requiring a status for first save, and reflecting the newly added entry in subsequent views.
 
 The seasonal screen does not start an automatic query at application startup and does not silently choose a default year or season. This preserves the explicit two-filter requirement and prevents unexpectedly large requests.
 
@@ -251,5 +261,7 @@ Additional acceptance checks include:
 - Runtime language switching without restart.
 - User-configurable card layouts beyond the single status-source preference.
 - Seasonal-catalog sorting and filtering beyond the required year and season.
-- Adding catalog entries to the user's AniList list.
+- Synchronizing catalog additions back to AniList's remote list; Task 12 only creates/updates the local user-list entry.
+- Runtime changes to the adult-content preference without the existing restart/settings application flow.
+- An unbounded offline catalog archive or a cache that bypasses the configured request-rate policy.
 - Offline seasonal-catalog caching policy.

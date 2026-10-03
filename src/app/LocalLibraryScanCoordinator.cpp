@@ -53,7 +53,7 @@ void LocalLibraryScanCoordinator::execute(const LocalLibraryScanRequest &request
     QString error;
     qsizetype candidateFiles = 0;
     qsizetype skippedFiles = 0;
-    bool succeeded = false;
+    bool scanSucceeded = false;
     // Resource scope ends before queuing the terminal signal. Factory products
     // are both constructed and destroyed on this worker, including connections.
     {
@@ -102,14 +102,14 @@ void LocalLibraryScanCoordinator::execute(const LocalLibraryScanRequest &request
 
             const bool interrupted = result.interrupted || stopRequested_.load();
             if (result.complete && !interrupted && batchError.isEmpty()) {
-                succeeded = repository->completeScan(scanId, candidateFiles, error);
-                if (!succeeded && error.isEmpty()) error = QStringLiteral("Cannot complete local library scan.");
+                scanSucceeded = repository->completeScan(scanId, candidateFiles, error);
+                if (!scanSucceeded && error.isEmpty()) error = QStringLiteral("Cannot complete local library scan.");
             } else {
                 error = !batchError.isEmpty() ? batchError : result.diagnostic;
                 if (error.isEmpty()) error = interrupted ? QStringLiteral("Local library scan interrupted.")
                                                        : QStringLiteral("Local library scan incomplete.");
             }
-            if (!succeeded) {
+            if (!scanSucceeded) {
                 QString recordingError;
                 if (!repository->failScan(scanId, interrupted ? LibraryScanStatus::Interrupted : LibraryScanStatus::Failed,
                                           candidateFiles, error, recordingError)) {
@@ -120,7 +120,7 @@ void LocalLibraryScanCoordinator::execute(const LocalLibraryScanRequest &request
         }
     }
     if (logger_) {
-        const auto outcome = succeeded ? (candidateFiles == 0 ? QStringLiteral("zero-results")
+        const auto outcome = scanSucceeded ? (candidateFiles == 0 ? QStringLiteral("zero-results")
                                                                : QStringLiteral("succeeded"))
                                        : (stopRequested_.load() ? QStringLiteral("interrupted")
                                                                 : QStringLiteral("failed"));
@@ -128,18 +128,22 @@ void LocalLibraryScanCoordinator::execute(const LocalLibraryScanRequest &request
                                  .arg(outcome)
                                  .arg(elapsed.elapsed())
                                  .arg(candidateFiles)
-                                 .arg(succeeded ? QString() : QStringLiteral(", error=%1").arg(error))
+                                 .arg(scanSucceeded ? QString() : QStringLiteral(", error=%1").arg(error))
                                  .arg(skippedFiles);
-        if (succeeded && candidateFiles > 0) logger_->info(LogCategory::LocalLibrary, message);
-        else if (succeeded || stopRequested_.load()) logger_->warning(LogCategory::LocalLibrary, message);
+        if (scanSucceeded && candidateFiles > 0) logger_->info(LogCategory::LocalLibrary, message);
+        else if (scanSucceeded || stopRequested_.load()) logger_->warning(LogCategory::LocalLibrary, message);
         else logger_->error(LogCategory::LocalLibrary, message);
     }
-    QMetaObject::invokeMethod(this, [this, succeeded, candidateFiles, error = std::move(error)] {
+    QMetaObject::invokeMethod(this, [this, scanSucceeded, rootPath = request.rootPath,
+                                     candidateFiles, error = std::move(error)] {
         // Join before accepting another start, even if the queued callback runs
         // just before QThread has finished unwinding its worker function.
         releaseThread();
         executionActive_ = false;
-        if (succeeded) emit completed(candidateFiles);
+        if (scanSucceeded) {
+            emit completed(candidateFiles);
+            emit succeeded(rootPath, candidateFiles);
+        }
         else emit failed(error);
     }, Qt::QueuedConnection);
 }

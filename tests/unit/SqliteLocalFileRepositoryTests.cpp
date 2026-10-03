@@ -32,6 +32,8 @@ private slots:
     void reportsStatementAndTransactionErrors();
     void rejectsIgnoredScanInsert();
     void rollsBackWhenCommitFails();
+    void readsRecognitionQueueInPriorityOrder();
+    void savesRecognitionBatch();
 private:
     QVariant scalar(const QString &sql);
     QString statement(const QString &name);
@@ -61,7 +63,10 @@ void SqliteLocalFileRepositoryTests::init() {
     repository_ = std::make_unique<SqliteLocalFileRepository>(database_->connection(),
         statement(QStringLiteral("begin-library-scan")), statement(QStringLiteral("upsert-local-file")),
         statement(QStringLiteral("complete-library-scan")), statement(QStringLiteral("fail-library-scan")),
-        statement(QStringLiteral("mark-local-files-unavailable")));
+        statement(QStringLiteral("mark-local-files-unavailable")),
+        statement(QStringLiteral("read-pending-local-files")),
+        statement(QStringLiteral("read-catalog-media-for-recognition")),
+        statement(QStringLiteral("save-local-file-recognition")));
     error_.clear();
 }
 
@@ -100,10 +105,56 @@ void SqliteLocalFileRepositoryTests::upsertsMultipleBatchesAndPreservesDistinctP
     QCOMPARE(scalar(QStringLiteral("SELECT id FROM local_files WHERE normalized_relative_path = 'show/episode.mkv'")).toLongLong(), originalId);
     QCOMPARE(scalar(QStringLiteral("SELECT relative_path FROM local_files WHERE id = %1").arg(originalId)).toString(), QStringLiteral("SHOW/EPISODE.mkv"));
     QCOMPARE(scalar(QStringLiteral("SELECT size_bytes FROM local_files WHERE id = %1").arg(originalId)).toLongLong(), 4321);
-    QCOMPARE(scalar(QStringLiteral("SELECT recognition_state FROM local_files WHERE id = %1").arg(originalId)).toString(), QStringLiteral("associated"));
+    QCOMPARE(scalar(QStringLiteral("SELECT recognition_state FROM local_files WHERE id = %1").arg(originalId)).toString(), QStringLiteral("unprocessed"));
     QCOMPARE(scalar(QStringLiteral("SELECT modified_at FROM local_files WHERE id = %1").arg(originalId)).toString(), QStringLiteral("2026-09-26T12:00:00.123Z"));
     QCOMPARE(scalar(QStringLiteral("SELECT file_name FROM local_files WHERE id = %1").arg(originalId)).toString(), QStringLiteral("EPISODE.mkv"));
     QVERIFY(repository_->upsertBatch(id, {}, error_));
+}
+
+void SqliteLocalFileRepositoryTests::readsRecognitionQueueInPriorityOrder() {
+    qint64 scanId = 0;
+    QVERIFY(repository_->beginScan(QStringLiteral("Q:/"), scanId, error_));
+    QVERIFY(repository_->upsertBatch(scanId, {Observation(QStringLiteral("zeta.mkv")),
+                                               Observation(QStringLiteral("alpha.mkv")),
+                                               Observation(QStringLiteral("beta.mkv"))}, error_));
+    QVERIFY(repository_->completeScan(scanId, 3, error_));
+    QSqlQuery query(database_->connection());
+    QVERIFY(query.exec(QStringLiteral("UPDATE local_files SET recognition_state = CASE file_name "
+                                     "WHEN 'zeta.mkv' THEN 'unrecognized' "
+                                     "WHEN 'alpha.mkv' THEN 'unprocessed' ELSE 'ambiguous' END")));
+
+    QList<LocalFileRecognitionRecord> records;
+    QVERIFY2(repository_->readPendingRecognition(QStringLiteral("Q:/"), records, error_), qPrintable(error_));
+    QCOMPARE(records.size(), 3);
+    QCOMPARE(records.at(0).normalizedRelativePath, QStringLiteral("alpha.mkv"));
+    QCOMPARE(records.at(1).normalizedRelativePath, QStringLiteral("beta.mkv"));
+    QCOMPARE(records.at(2).normalizedRelativePath, QStringLiteral("zeta.mkv"));
+}
+
+void SqliteLocalFileRepositoryTests::savesRecognitionBatch() {
+    qint64 scanId = 0;
+    QVERIFY(repository_->beginScan(QStringLiteral("Q:/"), scanId, error_));
+    QVERIFY(repository_->upsertBatch(scanId, {Observation(QStringLiteral("episode.mkv"))}, error_));
+    QVERIFY(repository_->completeScan(scanId, 1, error_));
+    const auto id = scalar(QStringLiteral("SELECT id FROM local_files")).toLongLong();
+    QSqlQuery media(database_->connection());
+    QVERIFY(media.exec(QStringLiteral(
+        "INSERT INTO media (id, name, alternative_names, type, status) "
+        "VALUES (42, 'Example', '[]', 0, 0)")));
+    LocalFileRecognitionRecord record;
+    record.id = id;
+    record.recognitionState = QStringLiteral("associated");
+    record.extractedTitle = QStringLiteral("Example");
+    record.mediaKind = QStringLiteral("anime");
+    record.season = 1;
+    record.episode = 3;
+    record.mediaId = 42;
+    record.diagnostic = QStringLiteral("matched");
+    QVERIFY2(repository_->saveRecognitionBatch({record}, error_), qPrintable(error_));
+    QCOMPARE(scalar(QStringLiteral("SELECT recognition_state FROM local_files")).toString(), QStringLiteral("associated"));
+    QCOMPARE(scalar(QStringLiteral("SELECT extracted_title FROM local_files")).toString(), QStringLiteral("Example"));
+    QCOMPARE(scalar(QStringLiteral("SELECT episode FROM local_files")).toInt(), 3);
+    QCOMPARE(scalar(QStringLiteral("SELECT media_id FROM local_files")).toLongLong(), 42);
 }
 
 void SqliteLocalFileRepositoryTests::completesAndReconcilesOnlyItsRoot() {

@@ -14,6 +14,7 @@
 #include "../infrastructure/covers/CoverTemporaryStore.h"
 #include "../infrastructure/covers/QtCoverDownloader.h"
 #include "../infrastructure/library/LocalLibraryScanner.h"
+#include "../infrastructure/library/QtLocalFileOpener.h"
 #include "../infrastructure/library/QtDirectoryEnumerator.h"
 #include "../infrastructure/database/SqliteLocalFileRepository.h"
 #include "../infrastructure/anilist/HttpFactory.h"
@@ -50,7 +51,10 @@ class OwnedLocalFileRepository final : public ILocalFileRepository {
 public:
     OwnedLocalFileRepository(std::unique_ptr<SqliteDatabase> database, const QStringList &queries)
         : database_(std::move(database)), repository_(database_->connection(),
-          queries[0], queries[1], queries[2], queries[3], queries[4]) {}
+          queries[0], queries[1], queries[2], queries[3], queries[4],
+          queries.size() > 5 ? queries[5] : QString{},
+          queries.size() > 6 ? queries[6] : QString{},
+          queries.size() > 7 ? queries[7] : QString{}) {}
     bool beginScan(const QString &root, qint64 &id, QString &error) override {
         return repository_.beginScan(root, id, error);
     }
@@ -63,6 +67,16 @@ public:
     bool failScan(qint64 id, LibraryScanStatus status, qsizetype count,
                   const QString &diagnostic, QString &error) override {
         return repository_.failScan(id, status, count, diagnostic, error);
+    }
+    bool readPendingRecognition(const QString &root, QList<LocalFileRecognitionRecord> &records,
+                               QString &error) override {
+        return repository_.readPendingRecognition(root, records, error);
+    }
+    bool readRecognitionCatalog(QList<Media> &media, QString &error) override {
+        return repository_.readRecognitionCatalog(media, error);
+    }
+    bool saveRecognitionBatch(const QList<LocalFileRecognitionRecord> &records, QString &error) override {
+        return repository_.saveRecognitionBatch(records, error);
     }
 private:
     std::unique_ptr<SqliteDatabase> database_;
@@ -85,7 +99,8 @@ void composeLibraryScanner(ApplicationContext &context, const SqliteQueryConfigu
     QString scannerError;
     for (const auto &path : {configuration.beginLibraryScanPath, configuration.upsertLocalFilePath,
          configuration.completeLibraryScanPath, configuration.failLibraryScanPath,
-         configuration.markLocalFilesUnavailablePath}) {
+         configuration.markLocalFilesUnavailablePath, configuration.readPendingLocalFilesPath,
+         configuration.readCatalogMediaForRecognitionPath, configuration.saveLocalFileRecognitionPath}) {
         QString query;
         if (path.isEmpty()) {
             scannerError = QStringLiteral("Local library scan query configuration is incomplete.");
@@ -108,6 +123,69 @@ void composeLibraryScanner(ApplicationContext &context, const SqliteQueryConfigu
             return std::make_unique<OwnedLocalFileRepository>(std::move(database), queries);
         });
     context.localLibraryScan->setLogger(context.logger.get());
+}
+
+void composeLibraryRecognition(ApplicationContext &context,
+                               const SqliteQueryConfiguration &configuration) {
+    QStringList queries;
+    QString recognitionError;
+    for (const auto &path : {configuration.beginLibraryScanPath, configuration.upsertLocalFilePath,
+         configuration.completeLibraryScanPath, configuration.failLibraryScanPath,
+         configuration.markLocalFilesUnavailablePath, configuration.readPendingLocalFilesPath,
+         configuration.readCatalogMediaForRecognitionPath, configuration.saveLocalFileRecognitionPath}) {
+        QString query;
+        if (path.isEmpty()) {
+            recognitionError = QStringLiteral("Local library recognition query configuration is incomplete.");
+            break;
+        }
+        SqlQueryStore store(path);
+        if (!store.load(query, recognitionError)) break;
+        queries.append(query);
+    }
+    if (!recognitionError.isEmpty()) {
+        context.logger->warning(LogCategory::QueryConfiguration, recognitionError);
+    }
+    const auto databasePath = context.database->databasePath();
+    context.localLibraryRecognition = std::make_unique<LocalLibraryRecognitionCoordinator>(
+        [databasePath, queries, recognitionError](QString &error) -> std::unique_ptr<ILocalFileRepository> {
+            if (!recognitionError.isEmpty()) {
+                error = recognitionError;
+                return {};
+            }
+            auto database = std::make_unique<SqliteDatabase>(databasePath);
+            if (!database->open()) {
+                error = database->lastError();
+                return {};
+            }
+            return std::make_unique<OwnedLocalFileRepository>(std::move(database), queries);
+        });
+    context.localLibraryRecognition->setLogger(context.logger.get());
+    QObject::connect(context.localLibraryScan.get(), &LocalLibraryScanCoordinator::succeeded,
+                     context.localLibraryRecognition.get(),
+                     [recognition = context.localLibraryRecognition.get()](const QString &rootPath, qsizetype) {
+                         recognition->start(rootPath);
+                     });
+}
+
+void composeLocalEpisodeServices(ApplicationContext &context,
+                                 const SqliteQueryConfiguration &configuration) {
+    QString query;
+    QString error;
+    if (configuration.readNextLocalEpisodePath.isEmpty()) {
+        error = QStringLiteral("Local episode query configuration is incomplete.");
+    } else {
+        SqlQueryStore store(configuration.readNextLocalEpisodePath);
+        if (!store.load(query, error)) {
+            query.clear();
+        }
+    }
+    if (!error.isEmpty()) {
+        context.logger->warning(LogCategory::QueryConfiguration, error);
+        return;
+    }
+    context.localEpisodeReader = std::make_unique<LocalEpisodeReader>(context.database->connection(),
+                                                                        std::move(query));
+    context.localFileOpener = std::make_unique<QtLocalFileOpener>();
 }
 }
 
@@ -211,6 +289,8 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         std::move(readPendingQuery), std::move(updatePendingQuery));
 
     composeLibraryScanner(context, queryConfiguration);
+    composeLibraryRecognition(context, queryConfiguration);
+    composeLocalEpisodeServices(context, queryConfiguration);
 
     QString readPreferencesQuery;
     QString upsertPreferencesQuery;
@@ -276,7 +356,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     context.coverQuality = settings.covers.quality;
     context.initialSync = std::make_unique<InitialSyncCoordinator>(
         context.database->databasePath(),
-        QStringLiteral(":/fixtures/graphql/page-response.json"),
+        QStringLiteral(":/fixtures/graphql/userlist-response.json"),
         queryConfiguration.upsertMediaPath, queryConfiguration.readMediaPath,
         queryConfiguration.readActiveMediaIdsPath,
         queryConfiguration.markMediaSourceRemovedPath,

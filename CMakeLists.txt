@@ -48,6 +48,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/app/InitialSyncCoordinator.cpp
         src/app/LocalLibraryScanCoordinator.h
         src/app/LocalLibraryScanCoordinator.cpp
+        src/app/LocalLibraryRecognitionCoordinator.h
+        src/app/LocalLibraryRecognitionCoordinator.cpp
         src/app/SeasonalCatalogCoordinator.h
         src/app/SeasonalCatalogCoordinator.cpp
         src/app/TranslationLoader.h
@@ -60,6 +62,26 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/media/MediaTitleResolver.cpp
         src/application/media/MediaDetailsPresentation.h
         src/application/media/MediaDetailsPresentation.cpp
+        src/application/library/LocalFileRecognitionTypes.h
+        src/application/library/ILocalFileRecognizer.h
+        src/application/library/LocalMediaResolver.h
+        src/application/library/LocalMediaResolver.cpp
+        src/application/library/ILocalFileOpener.h
+        src/application/library/LocalEpisodeReader.h
+        src/application/library/LocalEpisodeReader.cpp
+        src/infrastructure/library/AnitomyLocalFileRecognizer.h
+        src/infrastructure/library/AnitomyLocalFileRecognizer.cpp
+        src/infrastructure/library/QtLocalFileOpener.h
+        src/infrastructure/library/QtLocalFileOpener.cpp
+        lib/anitomy/anitomy.cpp
+        lib/anitomy/element.cpp
+        lib/anitomy/keyword.cpp
+        lib/anitomy/parser.cpp
+        lib/anitomy/parser_helper.cpp
+        lib/anitomy/parser_number.cpp
+        lib/anitomy/string.cpp
+        lib/anitomy/token.cpp
+        lib/anitomy/tokenizer.cpp
         src/application/media/SeasonalPersonalListService.h
         src/application/media/SeasonalPersonalListService.cpp
         src/application/catalog/SeasonalCatalogTypes.h
@@ -74,6 +96,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
         src/infrastructure/anilist/AniListGraphQlPageParser.h
         src/infrastructure/anilist/AniListGraphQlPageParser.cpp
+        src/infrastructure/anilist/AniListGraphQlUserListParser.h
+        src/infrastructure/anilist/AniListGraphQlUserListParser.cpp
         src/infrastructure/anilist/AniListMediaDto.h
         src/domain/anilist/AniListField.h
         src/domain/anilist/AniListFieldValue.h
@@ -251,6 +275,10 @@ set(LIBRARY_SCAN_SQL_RESOURCES
         resources/sqlite/queries/complete-library-scan.sql
         resources/sqlite/queries/fail-library-scan.sql
         resources/sqlite/queries/mark-local-files-unavailable.sql
+        resources/sqlite/queries/read-pending-local-files.sql
+        resources/sqlite/queries/read-catalog-media-for-recognition.sql
+        resources/sqlite/queries/save-local-file-recognition.sql
+        resources/sqlite/queries/read-next-local-episode.sql
 )
 foreach (QUERY_FILE IN LISTS LIBRARY_SCAN_SQL_RESOURCES)
     get_filename_component(QUERY_ALIAS "${QUERY_FILE}" NAME)
@@ -266,6 +294,9 @@ set_source_files_properties(
 set_source_files_properties(
         tests/fixtures/graphql/page-response.json
         PROPERTIES QT_RESOURCE_ALIAS "graphql/page-response.json")
+set_source_files_properties(
+        tests/fixtures/graphql/userlist-response.json
+        PROPERTIES QT_RESOURCE_ALIAS "graphql/userlist-response.json")
 
 qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
@@ -299,6 +330,7 @@ qt_add_resources(HaikenAnime fixture_resource_bundle
         FILES
         tests/fixtures/media-library.json
         tests/fixtures/graphql/page-response.json
+        tests/fixtures/graphql/userlist-response.json
 )
 
 set_source_files_properties(
@@ -445,6 +477,7 @@ add_test(NAME SqliteCoverCacheRepositoryTests COMMAND SqliteCoverCacheRepository
 add_executable(SqliteLocalFileRepositoryTests
         tests/unit/SqliteLocalFileRepositoryTests.cpp
         src/infrastructure/database/SqliteLocalFileRepository.cpp
+        src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqliteDatabase.cpp
         src/infrastructure/logging/AsyncLogger.cpp
 )
@@ -460,6 +493,34 @@ add_executable(LocalLibraryScannerTests tests/unit/LocalLibraryScannerTests.cpp
         src/infrastructure/library/QtDirectoryEnumerator.cpp)
 target_link_libraries(LocalLibraryScannerTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME LocalLibraryScannerTests COMMAND LocalLibraryScannerTests)
+
+add_executable(AnitomyLocalFileRecognizerTests
+        tests/unit/AnitomyLocalFileRecognizerTests.cpp
+        src/application/library/LocalFileRecognitionTypes.h
+        src/application/library/ILocalFileRecognizer.h
+        src/infrastructure/library/AnitomyLocalFileRecognizer.h
+        src/infrastructure/library/AnitomyLocalFileRecognizer.cpp
+        lib/anitomy/anitomy.cpp
+        lib/anitomy/element.cpp
+        lib/anitomy/keyword.cpp
+        lib/anitomy/parser.cpp
+        lib/anitomy/parser_helper.cpp
+        lib/anitomy/parser_number.cpp
+        lib/anitomy/string.cpp
+        lib/anitomy/token.cpp
+        lib/anitomy/tokenizer.cpp)
+target_include_directories(AnitomyLocalFileRecognizerTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(AnitomyLocalFileRecognizerTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME AnitomyLocalFileRecognizerTests COMMAND AnitomyLocalFileRecognizerTests)
+
+add_executable(LocalMediaResolverTests
+        tests/unit/LocalMediaResolverTests.cpp
+        src/application/library/LocalFileRecognitionTypes.h
+        src/application/library/LocalMediaResolver.h
+        src/application/library/LocalMediaResolver.cpp)
+target_include_directories(LocalMediaResolverTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(LocalMediaResolverTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME LocalMediaResolverTests COMMAND LocalMediaResolverTests)
 
 add_executable(SqlQueryStoreTests
         tests/unit/SqlQueryStoreTests.cpp
@@ -668,6 +729,8 @@ add_executable(AniListGraphQlParsingTests
         src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
         src/infrastructure/anilist/AniListGraphQlPageParser.h
         src/infrastructure/anilist/AniListGraphQlPageParser.cpp
+        src/infrastructure/anilist/AniListGraphQlUserListParser.h
+        src/infrastructure/anilist/AniListGraphQlUserListParser.cpp
         src/infrastructure/anilist/AniListMediaMapper.h
         src/infrastructure/anilist/AniListMediaMapper.cpp
 )
@@ -685,6 +748,33 @@ target_compile_definitions(AniListGraphQlParsingTests
 )
 
 add_test(NAME AniListGraphQlParsingTests COMMAND AniListGraphQlParsingTests)
+
+add_executable(AniListGraphQlUserListParserTests
+        tests/unit/AniListGraphQlUserListParserTests.cpp
+        src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
+        src/infrastructure/anilist/AniListGraphQlUserListParser.cpp
+        src/infrastructure/anilist/AniListMediaMapper.cpp
+)
+target_link_libraries(AniListGraphQlUserListParserTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+target_compile_definitions(AniListGraphQlUserListParserTests PRIVATE
+        HAIKENANIME_USERLIST_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/userlist-response.json")
+add_test(NAME AniListGraphQlUserListParserTests COMMAND AniListGraphQlUserListParserTests)
+
+add_executable(LocalEpisodeReaderTests
+        tests/unit/LocalEpisodeReaderTests.cpp
+        src/application/library/LocalEpisodeReader.cpp
+        src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+target_link_libraries(LocalEpisodeReaderTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
+add_test(NAME LocalEpisodeReaderTests COMMAND LocalEpisodeReaderTests)
+
+add_executable(QtLocalFileOpenerTests
+        tests/unit/QtLocalFileOpenerTests.cpp
+        src/infrastructure/library/QtLocalFileOpener.cpp
+)
+target_link_libraries(QtLocalFileOpenerTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+add_test(NAME QtLocalFileOpenerTests COMMAND QtLocalFileOpenerTests)
 
 add_executable(GraphQlQueryStoreTests
         tests/unit/GraphQlQueryStoreTests.cpp
@@ -842,6 +932,7 @@ add_executable(HomeScreenControllerTests
 target_link_libraries(HomeScreenControllerTests
         PRIVATE
         Qt6::Core
+        Qt6::Sql
         Qt6::Test
 )
 target_compile_definitions(HomeScreenControllerTests PRIVATE
@@ -892,6 +983,8 @@ add_executable(InitialSyncCoordinatorTests
         src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
         src/infrastructure/anilist/AniListGraphQlPageParser.h
         src/infrastructure/anilist/AniListGraphQlPageParser.cpp
+        src/infrastructure/anilist/AniListGraphQlUserListParser.h
+        src/infrastructure/anilist/AniListGraphQlUserListParser.cpp
         src/infrastructure/anilist/AniListMediaMapper.h
         src/infrastructure/anilist/AniListMediaMapper.cpp
         src/application/anilist/AniListSyncService.h
@@ -935,13 +1028,44 @@ add_test(NAME LocalLibraryScanCoordinatorTests COMMAND LocalLibraryScanCoordinat
 
 get_target_property(COMPOSITION_SOURCES HaikenAnime SOURCES)
 list(FILTER COMPOSITION_SOURCES INCLUDE REGEX "^src/")
-add_executable(LocalLibraryScanCompositionTests tests/unit/LocalLibraryScanCompositionTests.cpp ${COMPOSITION_SOURCES})
+add_executable(LocalLibraryScanCompositionTests
+        tests/unit/LocalLibraryScanCompositionTests.cpp
+        ${COMPOSITION_SOURCES}
+        lib/anitomy/anitomy.cpp
+        lib/anitomy/element.cpp
+        lib/anitomy/keyword.cpp
+        lib/anitomy/parser.cpp
+        lib/anitomy/parser_helper.cpp
+        lib/anitomy/parser_number.cpp
+        lib/anitomy/string.cpp
+        lib/anitomy/token.cpp
+        lib/anitomy/tokenizer.cpp
+)
 file(GLOB COMPOSITION_SQL_RESOURCES CONFIGURE_DEPENDS resources/sqlite/queries/*.sql)
 qt_add_resources(LocalLibraryScanCompositionTests composition_sql_resources PREFIX "/sqlite/queries"
         FILES resources/sqlite/sqlite-queries.json ${COMPOSITION_SQL_RESOURCES})
 qt_add_resources(LocalLibraryScanCompositionTests composition_config_resources PREFIX "/config" FILES Settings.json)
 target_link_libraries(LocalLibraryScanCompositionTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Sql Qt6::Test)
 add_test(NAME LocalLibraryScanCompositionTests COMMAND LocalLibraryScanCompositionTests)
+
+add_executable(LocalLibraryRecognitionCompositionTests
+        tests/unit/LocalLibraryRecognitionCompositionTests.cpp
+        ${COMPOSITION_SOURCES}
+        lib/anitomy/anitomy.cpp
+        lib/anitomy/element.cpp
+        lib/anitomy/keyword.cpp
+        lib/anitomy/parser.cpp
+        lib/anitomy/parser_helper.cpp
+        lib/anitomy/parser_number.cpp
+        lib/anitomy/string.cpp
+        lib/anitomy/token.cpp
+        lib/anitomy/tokenizer.cpp
+)
+qt_add_resources(LocalLibraryRecognitionCompositionTests recognition_composition_sql_resources PREFIX "/sqlite/queries"
+        FILES resources/sqlite/sqlite-queries.json ${COMPOSITION_SQL_RESOURCES})
+qt_add_resources(LocalLibraryRecognitionCompositionTests recognition_composition_config_resources PREFIX "/config" FILES Settings.json)
+target_link_libraries(LocalLibraryRecognitionCompositionTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Sql Qt6::Test)
+add_test(NAME LocalLibraryRecognitionCompositionTests COMMAND LocalLibraryRecognitionCompositionTests)
 
 # Unit tests are separate executables and do not receive the deployment step
 # used by the application target. Make Qt runtime DLLs available to CTest.
@@ -954,6 +1078,8 @@ set(HAIKENANIME_TESTS
         SqliteCoverCacheRepositoryTests
         SqliteLocalFileRepositoryTests
         LocalLibraryScannerTests
+        AnitomyLocalFileRecognizerTests
+        LocalMediaResolverTests
         SqlQueryStoreTests
         SqliteQueryConfigurationTests
         FileSecretStoreTests
@@ -983,6 +1109,7 @@ set(HAIKENANIME_TESTS
         InitialSyncCoordinatorTests
         LocalLibraryScanCoordinatorTests
         LocalLibraryScanCompositionTests
+        LocalLibraryRecognitionCompositionTests
 )
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;$ENV{PATH}"

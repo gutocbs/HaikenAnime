@@ -2,6 +2,7 @@
 
 #include "AniListGraphQlPageParser.h"
 #include "AniListGraphQlResponseParser.h"
+#include "AniListGraphQlUserListParser.h"
 
 #include <QFile>
 
@@ -31,9 +32,12 @@ bool RecordedGraphQlAniListDataSource::fetchPage(const MediaSyncFilter &filter,
         error = response.errors.first().message;
         return false;
     }
-    if (!AniListGraphQlPageParser::parse(response.data, result, error)) {
-        return false;
-    }
+    if (response.data.value(QStringLiteral("MediaListCollection")).isObject()) {
+        if (!AniListGraphQlUserListParser::parse(response.data, result.media, error)) return false;
+        result.currentPage = 1;
+        result.totalPages = 1;
+        result.hasNextPage = false;
+    } else if (!AniListGraphQlPageParser::parse(response.data, result, error)) return false;
     if (result.currentPage != qMax(1, filter.startingPage)) {
         error = QStringLiteral("Recorded AniList response contains page %1 while page %2 was requested.")
                     .arg(result.currentPage)

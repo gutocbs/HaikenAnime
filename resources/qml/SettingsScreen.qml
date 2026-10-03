@@ -75,19 +75,11 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 58
+            Layout.preferredHeight: 82
             spacing: 14
 
-            Button {
-                text: qsTr("‹  Biblioteca")
-                flat: true
-                font.pixelSize: 13
-                onClicked: settingsScreen.requestBack()
-            }
-
-            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 28; color: line }
-
             ColumnLayout {
+                id: settingsHeaderTitle
                 Layout.fillWidth: true
                 spacing: 2
 
@@ -103,6 +95,14 @@ Item {
                     color: ink
                     font.pixelSize: 25
                     font.weight: Font.Bold
+                }
+
+                Button {
+                    id: settingsHeaderNavigation
+                    text: qsTr("‹  Biblioteca")
+                    flat: true
+                    font.pixelSize: 13
+                    onClicked: settingsScreen.requestBack()
                 }
             }
 

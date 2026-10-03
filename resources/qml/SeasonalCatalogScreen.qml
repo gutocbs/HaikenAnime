@@ -22,6 +22,22 @@ Item {
         return -1
     }
 
+    function updateContentIndex() {
+        const nextIndex = controller.state === "loading"
+                ? (controller.hasResults ? 4 : 0)
+                : controller.state === "empty" ? 1
+                : controller.state === "error" ? 2
+                : controller.state === "populated" ? 4 : 3
+        if (catalogContent.currentIndex !== nextIndex) catalogContent.currentIndex = nextIndex
+    }
+
+    Connections {
+        target: controller
+        function onStateChanged() { seasonalCatalog.updateContentIndex() }
+    }
+
+    Component.onCompleted: updateContentIndex()
+
     Rectangle { anchors.fill: parent; color: "#eef2f7" }
 
     ColumnLayout {
@@ -31,20 +47,16 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
+            Layout.preferredHeight: 82
             spacing: 14
 
-            Button {
-                text: qsTr("Voltar")
-                flat: true
-                onClicked: seasonalCatalog.backRequested()
-            }
-
             ColumnLayout {
+                id: seasonalHeaderTitle
                 Layout.fillWidth: true
                 spacing: 2
 
                 Label {
-                    text: qsTr("CATÁLOGO")
+                    text: qsTr("HAIKEN ANIME")
                     color: accent
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
@@ -52,10 +64,18 @@ Item {
                 }
 
                 Label {
-                    text: qsTr("Temporada")
+                    text: qsTr("Catálogo sazonal")
                     color: ink
                     font.pixelSize: 25
                     font.weight: Font.Bold
+                }
+
+                Button {
+                    id: seasonalHeaderNavigation
+                    text: qsTr("‹  Biblioteca")
+                    flat: true
+                    font.pixelSize: 13
+                    onClicked: seasonalCatalog.backRequested()
                 }
             }
         }
@@ -121,13 +141,9 @@ Item {
             radius: 8
 
             StackLayout {
+                id: catalogContent
                 anchors.fill: parent
                 anchors.margins: 18
-                currentIndex: controller.state === "loading"
-                              ? (controller.hasResults ? 4 : 0)
-                              : controller.state === "empty" ? 1
-                              : controller.state === "error" ? 2
-                              : controller.state === "populated" ? 4 : 3
 
                 Item {
                     Layout.fillWidth: true

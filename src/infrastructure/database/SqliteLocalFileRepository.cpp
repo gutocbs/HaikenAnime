@@ -3,6 +3,8 @@
 #include <QSqlError>
 #include <QSqlQuery>
 
+#include "SqliteMediaMapper.h"
+
 #include <utility>
 
 namespace {
@@ -42,10 +44,13 @@ bool ExecuteSingleRow(QSqlQuery &query, QString &error) {
 }
 
 SqliteLocalFileRepository::SqliteLocalFileRepository(QSqlDatabase database, QString beginQuery,
-    QString upsertQuery, QString completeQuery, QString failQuery, QString markUnavailableQuery)
+    QString upsertQuery, QString completeQuery, QString failQuery, QString markUnavailableQuery,
+    QString readPendingQuery, QString readCatalogQuery, QString saveRecognitionQuery)
     : database_(std::move(database)), beginQuery_(std::move(beginQuery)),
       upsertQuery_(std::move(upsertQuery)), completeQuery_(std::move(completeQuery)),
-      failQuery_(std::move(failQuery)), markUnavailableQuery_(std::move(markUnavailableQuery)) {}
+      failQuery_(std::move(failQuery)), markUnavailableQuery_(std::move(markUnavailableQuery)),
+      readPendingQuery_(std::move(readPendingQuery)), readCatalogQuery_(std::move(readCatalogQuery)),
+      saveRecognitionQuery_(std::move(saveRecognitionQuery)) {}
 
 bool SqliteLocalFileRepository::beginScan(const QString &rootPath, qint64 &scanId, QString &error) {
     scanId = 0;
@@ -160,4 +165,62 @@ bool SqliteLocalFileRepository::failScan(qint64 scanId, LibraryScanStatus status
     query.bindValue(QStringLiteral(":finished_at"), QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs));
     query.bindValue(QStringLiteral(":diagnostic"), savedDiagnostic);
     return ExecuteSingleRow(query, error);
+}
+
+bool SqliteLocalFileRepository::readPendingRecognition(const QString &rootPath,
+                                                       QList<LocalFileRecognitionRecord> &records,
+                                                       QString &error) {
+    records.clear(); error.clear();
+    if (readPendingQuery_.isEmpty()) { error = QStringLiteral("Recognition query is not configured."); return false; }
+    QSqlQuery query(database_);
+    if (!query.prepare(readPendingQuery_)) { error = query.lastError().text(); return false; }
+    query.bindValue(QStringLiteral(":root_path"), rootPath);
+    if (!query.exec()) { error = query.lastError().text(); return false; }
+    while (query.next()) {
+        LocalFileRecognitionRecord record;
+        record.id = query.value(0).toLongLong(); record.rootPath = query.value(1).toString();
+        record.relativePath = query.value(2).toString(); record.normalizedRelativePath = query.value(3).toString();
+        record.fileName = query.value(4).toString(); record.sizeBytes = query.value(5).toLongLong();
+        record.modifiedAt = QDateTime::fromString(query.value(6).toString(), Qt::ISODateWithMs);
+        record.available = query.value(7).toBool(); record.recognitionState = query.value(8).toString();
+        record.extractedTitle = query.value(9).toString(); record.mediaKind = query.value(10).toString();
+        if (!query.value(11).isNull()) record.season = query.value(11).toInt();
+        if (!query.value(12).isNull()) record.episode = query.value(12).toInt();
+        if (!query.value(13).isNull()) record.mediaId = query.value(13).toInt();
+        record.diagnostic = query.value(14).toString(); records.append(std::move(record));
+    }
+    return true;
+}
+
+bool SqliteLocalFileRepository::readRecognitionCatalog(QList<Media> &media, QString &error) {
+    media.clear(); error.clear();
+    if (readCatalogQuery_.isEmpty()) { error = QStringLiteral("Catalog query is not configured."); return false; }
+    QSqlQuery query(database_);
+    if (!query.prepare(readCatalogQuery_) || !query.exec()) { error = query.lastError().text(); return false; }
+    while (query.next()) media.append(SqliteMediaMapper::Map(query));
+    return true;
+}
+
+bool SqliteLocalFileRepository::saveRecognitionBatch(const QList<LocalFileRecognitionRecord> &records,
+                                                     QString &error) {
+    error.clear();
+    if (saveRecognitionQuery_.isEmpty()) { error = QStringLiteral("Recognition save query is not configured."); return false; }
+    if (records.isEmpty()) return true;
+    Transaction transaction(database_);
+    if (!transaction.begin(error)) return false;
+    QSqlQuery query(database_);
+    if (!query.prepare(saveRecognitionQuery_)) { error = query.lastError().text(); return false; }
+    for (const auto &record : records) {
+        query.bindValue(QStringLiteral(":id"), record.id);
+        query.bindValue(QStringLiteral(":recognition_state"), record.recognitionState);
+        query.bindValue(QStringLiteral(":extracted_title"), record.extractedTitle);
+        query.bindValue(QStringLiteral(":media_kind"), record.mediaKind);
+        query.bindValue(QStringLiteral(":season"), record.season ? QVariant(*record.season) : QVariant());
+        query.bindValue(QStringLiteral(":episode"), record.episode ? QVariant(*record.episode) : QVariant());
+        query.bindValue(QStringLiteral(":media_id"), record.mediaId ? QVariant(*record.mediaId) : QVariant());
+        query.bindValue(QStringLiteral(":diagnostic"), record.diagnostic);
+        query.bindValue(QStringLiteral(":recognized_at"), QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs));
+        if (!ExecuteSingleRow(query, error)) return false;
+    }
+    return transaction.commit(error);
 }

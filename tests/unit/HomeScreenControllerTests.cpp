@@ -3,6 +3,8 @@
 #include <QtTest>
 
 #include "../../src/presentation/home/HomeScreenController.h"
+#include "../../src/application/library/ILocalFileOpener.h"
+#include "../../src/application/library/LocalEpisodeReader.h"
 
 class FakeMediaReader final : public IMediaReader {
 public:
@@ -15,6 +17,25 @@ public:
         return failure.isEmpty();
     }
 
+};
+
+class FakeLocalEpisodeReader final : public ILocalEpisodeReader {
+public:
+    bool readNextEpisode(int mediaId, int consumedEpisode, LocalEpisode &episode, QString &error) override {
+        requestedMediaId = mediaId; requestedConsumedEpisode = consumedEpisode; error = failure;
+        episode = result; return failure.isEmpty() && result.episode > 0;
+    }
+    LocalEpisode result;
+    QString failure;
+    int requestedMediaId = 0;
+    int requestedConsumedEpisode = -1;
+};
+
+class FakeLocalFileOpener final : public ILocalFileOpener {
+public:
+    bool open(const QString &path, QString &error) override { openedPath = path; error = failure; return failure.isEmpty(); }
+    QString failure;
+    QString openedPath;
 };
 
 class InertCoverDownloader final : public ICoverDownloader {
@@ -81,6 +102,9 @@ private slots:
     void selectedCoverFallsBackWhenCachedFileIsMissing();
     void updatesOnlyOneCoverRowAndPreservesOldCoverOnFailure();
     void coverQualityChangesFutureRequestsWithoutClearingDisplayedCover();
+    void exposesAndOpensNextLocalEpisodeForSelectedAnime();
+    void reportsLocalEpisodeLookupAndOpenFailures();
+    void refreshesNextLocalEpisodeAfterRecognitionCompletes();
 
 private:
     static QString qmlSource(const QString &name);
@@ -799,6 +823,16 @@ void HomeScreenControllerTests::fullMediaDetailsPanelProvidesSafeInteractiveDeta
     QVERIFY(panelSource.contains(QStringLiteral("model: controller.selectedMediaLinks")));
     QVERIFY(panelSource.contains(QStringLiteral("id: externalLinkButton")));
     QVERIFY(panelSource.contains(QStringLiteral("Qt.openUrlExternally(modelData.url)")));
+    QVERIFY(homeSource.contains(QStringLiteral("id: watchNextButton")));
+    QVERIFY(homeSource.contains(QStringLiteral("text: qsTr(\"Assistir\")")));
+    QVERIFY(homeSource.contains(QStringLiteral("enabled: controller.canWatch")));
+    QVERIFY(homeSource.contains(QStringLiteral("controller.WatchNext()")));
+    QVERIFY(homeSource.contains(QStringLiteral("controller.localLibraryStatusMessage")));
+    QVERIFY(homeSource.contains(QStringLiteral("BIBLIOTECA LOCAL")));
+    QVERIFY(!panelSource.contains(QStringLiteral("watchNextButton")));
+    QVERIFY(!panelSource.contains(QStringLiteral("controller.WatchNext()")));
+    QVERIFY(!panelSource.contains(QStringLiteral("nextLocalEpisodePath")));
+    QVERIFY(!panelSource.contains(QStringLiteral("read-next-local-episode.sql")));
     QCOMPARE(panelSource.count(QStringLiteral("panel.close()")), 1);
 
     const qsizetype synopsisStart = panelSource.indexOf(QStringLiteral("id: fullSynopsisText"));
@@ -872,6 +906,63 @@ void HomeScreenControllerTests::updatesOnlyOneCoverRowAndPreservesOldCoverOnFail
     model.UpdateCover(42, {}, CoverState::Missing);
     QCOMPARE(model.data(index, HomeMediaModel::CoverSourceRole).toString(),
              QStringLiteral("qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg"));
+}
+
+void HomeScreenControllerTests::exposesAndOpensNextLocalEpisodeForSelectedAnime() {
+    FakeMediaReader reader;
+    Media media; media.Id = 42; media.Name = QStringLiteral("Example"); media.Type = MediaType::Anime;
+    media.ConsumedChapters = 2; reader.result = {media};
+    FakeLocalEpisodeReader episodes;
+    episodes.result = {42, 3, QStringLiteral("Q:/Animes/Example/03.mkv")};
+    FakeLocalFileOpener opener;
+    HomeScreenController controller(reader);
+    controller.SetLocalEpisodeServices(&episodes, &opener);
+    controller.reload(); controller.SelectMedia(42);
+    QVERIFY(controller.canWatch());
+    QCOMPARE(controller.nextLocalEpisode(), 3);
+    QCOMPARE(episodes.requestedMediaId, 42);
+    QCOMPARE(episodes.requestedConsumedEpisode, 2);
+    controller.WatchNext();
+    QCOMPARE(opener.openedPath, QStringLiteral("Q:/Animes/Example/03.mkv"));
+}
+
+void HomeScreenControllerTests::reportsLocalEpisodeLookupAndOpenFailures() {
+    FakeMediaReader reader;
+    Media media; media.Id = 42; media.Name = QStringLiteral("Example"); media.Type = MediaType::Anime;
+    reader.result = {media};
+    FakeLocalEpisodeReader episodes; episodes.failure = QStringLiteral("Lookup failed");
+    FakeLocalFileOpener opener;
+    HomeScreenController controller(reader);
+    controller.SetLocalEpisodeServices(&episodes, &opener);
+    controller.reload(); controller.SelectMedia(42);
+    QVERIFY(!controller.canWatch());
+    QCOMPARE(controller.localLibraryErrorMessage(), QStringLiteral("Lookup failed"));
+
+    episodes.failure.clear();
+    episodes.result = {42, 1, QStringLiteral("Q:/Animes/Example/01.mkv")};
+    opener.failure = QStringLiteral("Open failed");
+    controller.SelectMedia(42);
+    controller.WatchNext();
+    QCOMPARE(controller.localLibraryErrorMessage(), QStringLiteral("Open failed"));
+}
+
+void HomeScreenControllerTests::refreshesNextLocalEpisodeAfterRecognitionCompletes() {
+    FakeMediaReader reader;
+    Media media; media.Id = 42; media.Name = QStringLiteral("Example"); media.Type = MediaType::Anime;
+    reader.result = {media};
+    FakeLocalEpisodeReader episodes;
+    FakeLocalFileOpener opener;
+    HomeScreenController controller(reader);
+    controller.SetLocalEpisodeServices(&episodes, &opener);
+    controller.reload(); controller.SelectMedia(42);
+    QVERIFY(!controller.canWatch());
+    QCOMPARE(controller.localLibraryStatusMessage(), QStringLiteral("Nenhum episódio disponível."));
+
+    episodes.result = {42, 1, QStringLiteral("Q:/Animes/Example/01.mkv")};
+    controller.RefreshLocalEpisode();
+
+    QVERIFY(controller.canWatch());
+    QCOMPARE(controller.nextLocalEpisode(), 1);
 }
 
 QTEST_MAIN(HomeScreenControllerTests)

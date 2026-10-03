@@ -13,4 +13,36 @@ ON CONFLICT(root_path, normalized_relative_path) DO UPDATE SET
     size_bytes = excluded.size_bytes,
     modified_at = excluded.modified_at,
     available = 1,
-    last_seen_scan_id = excluded.last_seen_scan_id;
+    last_seen_scan_id = excluded.last_seen_scan_id,
+    recognition_state = CASE WHEN local_files.file_name <> excluded.file_name
+                                   OR local_files.size_bytes <> excluded.size_bytes
+                                   OR local_files.modified_at <> excluded.modified_at
+                              THEN 'unprocessed' ELSE local_files.recognition_state END,
+    extracted_title = CASE WHEN local_files.file_name <> excluded.file_name
+                                OR local_files.size_bytes <> excluded.size_bytes
+                                OR local_files.modified_at <> excluded.modified_at
+                           THEN '' ELSE local_files.extracted_title END,
+    media_kind = CASE WHEN local_files.file_name <> excluded.file_name
+                           OR local_files.size_bytes <> excluded.size_bytes
+                           OR local_files.modified_at <> excluded.modified_at
+                      THEN 'anime' ELSE local_files.media_kind END,
+    season = CASE WHEN local_files.file_name <> excluded.file_name
+                       OR local_files.size_bytes <> excluded.size_bytes
+                       OR local_files.modified_at <> excluded.modified_at
+                  THEN NULL ELSE local_files.season END,
+    episode = CASE WHEN local_files.file_name <> excluded.file_name
+                        OR local_files.size_bytes <> excluded.size_bytes
+                        OR local_files.modified_at <> excluded.modified_at
+                   THEN NULL ELSE local_files.episode END,
+    media_id = CASE WHEN local_files.file_name <> excluded.file_name
+                         OR local_files.size_bytes <> excluded.size_bytes
+                         OR local_files.modified_at <> excluded.modified_at
+                    THEN NULL ELSE local_files.media_id END,
+    recognition_diagnostic = CASE WHEN local_files.file_name <> excluded.file_name
+                                       OR local_files.size_bytes <> excluded.size_bytes
+                                       OR local_files.modified_at <> excluded.modified_at
+                                  THEN '' ELSE local_files.recognition_diagnostic END,
+    recognized_at = CASE WHEN local_files.file_name <> excluded.file_name
+                              OR local_files.size_bytes <> excluded.size_bytes
+                              OR local_files.modified_at <> excluded.modified_at
+                         THEN NULL ELSE local_files.recognized_at END;

@@ -32,6 +32,7 @@ signals:
     void started(QString rootPath);
     void progressChanged(qsizetype candidateFiles);
     void completed(qsizetype candidateFiles);
+    void succeeded(QString rootPath, qsizetype candidateFiles);
     void failed(QString error);
 private:
     void execute(const LocalLibraryScanRequest &request);

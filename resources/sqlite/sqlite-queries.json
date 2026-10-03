@@ -18,6 +18,10 @@
     "upsertLocalFile": ":/sqlite/queries/upsert-local-file.sql",
     "completeLibraryScan": ":/sqlite/queries/complete-library-scan.sql",
     "failLibraryScan": ":/sqlite/queries/fail-library-scan.sql",
-    "markLocalFilesUnavailable": ":/sqlite/queries/mark-local-files-unavailable.sql"
+    "markLocalFilesUnavailable": ":/sqlite/queries/mark-local-files-unavailable.sql",
+    "readPendingLocalFiles": ":/sqlite/queries/read-pending-local-files.sql",
+    "readCatalogMediaForRecognition": ":/sqlite/queries/read-catalog-media-for-recognition.sql",
+    "saveLocalFileRecognition": ":/sqlite/queries/save-local-file-recognition.sql",
+    "readNextLocalEpisode": ":/sqlite/queries/read-next-local-episode.sql"
   }
 }

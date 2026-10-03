@@ -98,7 +98,9 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
         query.bindValue(QStringLiteral(":alternative_names"),
                         QString::fromUtf8(QJsonDocument::fromVariant(item.AlternativeNames).toJson()));
         query.bindValue(QStringLiteral(":total_chapters"), item.TotalChapters);
+        query.bindValue(QStringLiteral(":consumed_chapters"), item.ConsumedChapters);
         query.bindValue(QStringLiteral(":average_score"), item.AverageScore);
+        query.bindValue(QStringLiteral(":personal_score"), item.PersonalScore);
         query.bindValue(QStringLiteral(":cover_url"), item.CoverUrl);
         query.bindValue(QStringLiteral(":cover_medium_url"), item.CoverMediumUrl);
         query.bindValue(QStringLiteral(":cover_large_url"), item.CoverLargeUrl);

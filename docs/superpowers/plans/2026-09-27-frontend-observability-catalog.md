@@ -341,22 +341,39 @@
 - Create: `resources/qml/SeasonalCatalogScreen.qml`
 - Create: focused coordinator/data-source/controller tests
 - Modify: `ApplicationComposition.*`, `Main.qml`, CMake, GraphQL fixtures
+- Modify: existing local-media repository/application boundary needed to add a catalog media item to exactly one user list
+- Modify: existing details editor/controller contract needed to require a list/status before first local save
+- Create: focused tests for catalog list membership, required status before save, idempotent add, and reuse of existing edit behavior
 
 **Interfaces:**
 - `SeasonalCatalogRequest { int year; QString seasonKey; int page; int perPage; }`.
 - `ISeasonalCatalogDataSource::Fetch(const SeasonalCatalogRequest &, MediaPage &, QString &error)`.
 - Controller properties for available years/seasons, selected keys, state, results, page information, and error text.
 - Controller invokables `SetYear(int)`, `SetSeason(QString)`, `LoadNextPage()`, `Retry()`, and `SelectMedia(int)`.
+- Controller exposes whether the selected catalog media is already in a user list, backend-provided personal-list/status options, and a save gate requiring exactly one selected status for a new local entry.
+- Adding a catalog result is idempotent: an existing media record is updated/reused rather than duplicated, and the new local entry becomes visible to the normal home/list views.
 
 - [ ] **Step 1: Add failing request-gate tests** proving zero calls for no filters or one filter, and exactly one page-one call when both become valid.
 - [ ] **Step 2: Add failing pagination/concurrency tests** for all-catalog results, duplicate IDs, stale responses, retry, empty page, and load-next-page bounds.
 - [ ] **Step 3: Add failing GraphQL tests** for explicit year/season variables and external query loading.
 - [ ] **Step 4: Implement the dedicated data source and coordinator** without reusing the user-list synchronization filter contract.
 - [ ] **Step 5: Implement the controller and screen** with backend-provided selectors and idle/loading/populated/empty/error states.
-- [ ] **Step 6: Wire top-level navigation and reuse preferred-title, cover, and full-details presentation** without automatically adding catalog results to the user's list.
-- [ ] **Step 7: Validate no startup request, filter changes, stale-response rejection, paging, retry, and wide/narrow layouts**.
-- [ ] **Step 8: Run all focused tests, full build, full CTest, and a monitored AniList smoke; commit** with `feat: add seasonal AniList catalog`.
+- [ ] **Step 6: Wire top-level navigation and reuse preferred-title, cover, and full-details presentation**. For media absent from user lists, expose the explicit add-to-list flow and require one personal status before saving; for existing entries, reuse the normal edit behavior.
+- [ ] **Step 7: Add failing add-flow tests** for absent membership, status-required save blocking, successful idempotent add, existing-entry edit reuse, and reflection in normal home/list views.
+- [ ] **Step 8: Validate no startup request, filter changes, stale-response rejection, paging, retry, add-flow rules, and wide/narrow layouts**.
+- [ ] **Step 9: Run all focused tests, full build, full CTest, and a monitored AniList smoke; commit** with `feat: add seasonal AniList catalog`.
 - [ ] **Review gate:** stop and obtain final acceptance.
+
+### Task 12 follow-up: Seasonal presentation and catalog loading refinements
+
+These refinements are part of Task 12 and must be completed before the personal-list add flow is considered finished.
+
+- [ ] **Refinement A: Refine the seasonal full-details presentation** — keep metadata on the left, show the selected cover on the right, and render approved links in a responsive grid without changing the compact Home details contract.
+- [ ] **Refinement B: Replace page controls with infinite scroll** — request the next page near the end of the result view, show a loading indicator while it is in flight, stop cleanly at the final page, and preserve stale-response/duplicate protections.
+- [ ] **Refinement C: Add adult-content preference and filtering** — persist the setting through the existing configuration path, expose it in Settings, pass it into seasonal requests, and ensure disabled adult results never reach the seasonal presentation while enabled results remain eligible.
+- [ ] **Refinement D: Add focused tests** for the visual structure, infinite-scroll trigger/loading/end states, preference persistence, request propagation, and adult-result filtering.
+- [ ] **Refinement E: Center seasonal loading/empty/error messaging** — center the initial loading, no-results, and AniList-error states within the available seasonal results viewport, while keeping the retry action visible and preserving the existing error details.
+- [ ] **Refinement F: Cache and rate-limit seasonal requests** — cache pages by year/season/adult policy/page, reuse valid cached data, coalesce rapid filter changes, enforce a bounded public-API request rate, and prevent stale cache entries from replacing results for another selection.
 
 ### Task 13: Whole-program regression and release evidence
 

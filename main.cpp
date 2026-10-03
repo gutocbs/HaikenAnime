@@ -38,6 +38,9 @@ int main(int argc, char *argv[]) {
         if (context.localLibraryScan) {
             context.localLibraryScan->shutdown();
         }
+        if (context.localLibraryRecognition) {
+            context.localLibraryRecognition->shutdown();
+        }
         if (context.initialSync) {
             context.initialSync->shutdown();
         }
@@ -50,6 +53,7 @@ int main(int argc, char *argv[]) {
     });
     HomeScreenController homeController(context.mediaRepository.get(), context.coverCoordinator.get(),
                                         context.userPreferences.coverQuality, context.initializationError);
+    homeController.SetLocalEpisodeServices(context.localEpisodeReader.get(), context.localFileOpener.get());
     SeasonalPersonalListService personalLists(context.mediaRepository.get(), context.mediaRepository.get(),
                                               context.mediaRepository.get());
     SeasonalCatalogController seasonalCatalogController(context.seasonalCatalogCoordinator.get(),
@@ -79,6 +83,18 @@ int main(int argc, char *argv[]) {
         }
     });
     homeController.reload();
+    if (context.localLibraryRecognition) {
+        QObject::connect(context.localLibraryRecognition.get(),
+                         &LocalLibraryRecognitionCoordinator::batchPersisted,
+                         &homeController,
+                         &HomeScreenController::RefreshLocalEpisode);
+        QObject::connect(context.localLibraryRecognition.get(),
+                         &LocalLibraryRecognitionCoordinator::completed,
+                         &homeController,
+                         [&homeController](qsizetype, qsizetype, qsizetype, qsizetype) {
+                             homeController.RefreshLocalEpisode();
+                         });
+    }
     QObject::connect(&seasonalCatalogController, &SeasonalCatalogController::personalListSaved,
                      &homeController, &HomeScreenController::reload);
 

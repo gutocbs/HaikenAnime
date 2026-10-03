@@ -76,6 +76,7 @@ private slots:
     void languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml();
     void preferredTitleSelectionUsesBackendOptions();
     void seasonalCatalogRequiresExplicitFiltersAndHasResponsiveContent();
+    void secondaryScreenNavigationMatchesLibraryHeaderPlacement();
     void seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated();
     void mainKeepsSeasonalCatalogAsSeparateNavigation();
 
@@ -450,6 +451,48 @@ void QmlStructureTests::seasonalCatalogRequiresExplicitFiltersAndHasResponsiveCo
     QVERIFY(detailsSource.contains(QStringLiteral("source: controller.selectedCoverSource")));
     QVERIFY(detailsSource.contains(QStringLiteral("id: externalLinksGrid")));
     QVERIFY(detailsSource.contains(QStringLiteral("columns: width >= 340 ? 2 : 1")));
+}
+
+void QmlStructureTests::secondaryScreenNavigationMatchesLibraryHeaderPlacement() {
+    const QString homeSource = qmlSource(QStringLiteral("Home.qml"));
+    const QString settingsSource = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    const QString seasonalSource = qmlSource(QStringLiteral("SeasonalCatalogScreen.qml"));
+    QVERIFY(!homeSource.isEmpty());
+    QVERIFY(!settingsSource.isEmpty());
+    QVERIFY(!seasonalSource.isEmpty());
+    QVERIFY(!homeSource.contains(QStringLiteral("text: qsTr(\"BIBLIOTECA\")")));
+
+    const qsizetype settingsTitle = settingsSource.indexOf(QStringLiteral("text: qsTr(\"Preferências\")"));
+    const qsizetype settingsBack = settingsSource.indexOf(QStringLiteral("text: qsTr(\"‹  Biblioteca\")"));
+    const qsizetype settingsStatus = settingsSource.indexOf(QStringLiteral("text: controller.errorMessage"));
+    QVERIFY(settingsTitle >= 0);
+    QVERIFY(settingsBack > settingsTitle);
+    QVERIFY(settingsStatus > settingsBack);
+
+    const qsizetype seasonalTitle = seasonalSource.indexOf(QStringLiteral("text: qsTr(\"Catálogo sazonal\")"));
+    const qsizetype seasonalBack = seasonalSource.indexOf(QStringLiteral("text: qsTr(\"‹  Biblioteca\")"));
+    QVERIFY(seasonalTitle >= 0);
+    QVERIFY(seasonalBack > seasonalTitle);
+
+    QVERIFY(settingsSource.contains(QStringLiteral("id: settingsHeaderTitle")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("id: seasonalHeaderTitle")));
+    QVERIFY(homeSource.contains(QStringLiteral("Layout.preferredHeight: 82")));
+    const qsizetype homeHeaderTitle = homeSource.indexOf(QStringLiteral("id: homeHeaderTitle"));
+    const qsizetype homeHeaderMenu = homeSource.indexOf(QStringLiteral("text: qsTr(\"Catálogo sazonal\")"));
+    QVERIFY(homeHeaderTitle >= 0);
+    QVERIFY(homeHeaderMenu > homeHeaderTitle);
+    const QString homeTitleBlock = homeSource.mid(homeHeaderTitle, homeHeaderMenu - homeHeaderTitle);
+    QVERIFY(homeTitleBlock.contains(QStringLiteral("id: homeHeaderNavigationSpacer")));
+    QVERIFY(homeTitleBlock.contains(QStringLiteral("opacity: 0")));
+    QVERIFY(homeTitleBlock.contains(QStringLiteral("enabled: false")));
+    QVERIFY(homeTitleBlock.contains(QStringLiteral("focus: false")));
+    QVERIFY(homeTitleBlock.contains(QStringLiteral("Layout.preferredHeight: implicitHeight")));
+    QVERIFY(settingsSource.contains(QStringLiteral("Layout.preferredHeight: 82")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("Layout.preferredHeight: 82")));
+    QVERIFY(settingsSource.contains(QStringLiteral("id: settingsHeaderNavigation")));
+    QVERIFY(seasonalSource.contains(QStringLiteral("id: seasonalHeaderNavigation")));
+    QVERIFY(!settingsSource.contains(QStringLiteral("Layout.preferredWidth: 240")));
+    QVERIFY(!seasonalSource.contains(QStringLiteral("Layout.preferredWidth: 240")));
 }
 
 void QmlStructureTests::seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated() {

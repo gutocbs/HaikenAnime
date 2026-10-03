@@ -11,6 +11,9 @@
 #include "../../application/configuration/CardStatusPresentation.h"
 #include "../../application/media/MediaTitleResolver.h"
 
+class ILocalEpisodeReader;
+class ILocalFileOpener;
+
 class HomeMediaModel final : public QAbstractListModel {
     Q_OBJECT
 
@@ -85,6 +88,10 @@ class HomeScreenController final : public QObject {
     Q_PROPERTY(double selectedScoreValue READ selectedScoreValue NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedListStatusKey READ selectedListStatusKey NOTIFY selectionChanged)
     Q_PROPERTY(QStringList selectedAlternativeNames READ selectedAlternativeNames NOTIFY selectionChanged)
+    Q_PROPERTY(bool canWatch READ canWatch NOTIFY selectionChanged)
+    Q_PROPERTY(int nextLocalEpisode READ nextLocalEpisode NOTIFY selectionChanged)
+    Q_PROPERTY(QString localLibraryStatusMessage READ localLibraryStatusMessage NOTIFY selectionChanged)
+    Q_PROPERTY(QString localLibraryErrorMessage READ localLibraryErrorMessage NOTIFY selectionChanged)
     Q_PROPERTY(double scoreMinimum READ scoreMinimum NOTIFY editingOptionsChanged)
     Q_PROPERTY(double scoreMaximum READ scoreMaximum NOTIFY editingOptionsChanged)
     Q_PROPERTY(double scoreStep READ scoreStep NOTIFY editingOptionsChanged)
@@ -130,6 +137,10 @@ public:
     double selectedScoreValue() const;
     QString selectedListStatusKey() const;
     QStringList selectedAlternativeNames() const;
+    bool canWatch() const;
+    int nextLocalEpisode() const;
+    QString localLibraryStatusMessage() const;
+    QString localLibraryErrorMessage() const;
     double scoreMinimum() const;
     double scoreMaximum() const;
     double scoreStep() const;
@@ -141,6 +152,8 @@ public:
     void ConfigureCoverQuality(CoverQuality quality);
     void ConfigureCardStatusPresentation(CardStatusPresentation presentation);
     void ConfigurePreferredTitle(QString key);
+    void SetLocalEpisodeServices(ILocalEpisodeReader *episodeReader, ILocalFileOpener *fileOpener);
+    void RefreshLocalEpisode();
 
     void reload();
     void notifySynchronizationCompleted();
@@ -153,6 +166,7 @@ public:
     Q_INVOKABLE void SetSearchQuery(const QString &query);
     Q_INVOKABLE void ClearBrowseCriteria();
     Q_INVOKABLE void SelectMedia(int mediaId);
+    Q_INVOKABLE void WatchNext();
     Q_INVOKABLE QVariantMap PreviewCardMetadata(int progress, const QString &listStatusKey,
                                                 double score) const;
     Q_INVOKABLE QVariantMap PreviewCompactDetailMetadata(int progress,
@@ -181,6 +195,7 @@ private:
     void setStatusMessage(QString message);
     void rebuildMediaModels();
     void clearSelection();
+    void refreshNextLocalEpisode();
 
     IMediaReader *reader_ = nullptr;
     HomeMediaModel model_;
@@ -203,6 +218,12 @@ private:
     bool usesDefaultBrowseOptions_ = true;
     Media selectedMedia_;
     bool hasSelection_ = false;
+    ILocalEpisodeReader *episodeReader_ = nullptr;
+    ILocalFileOpener *fileOpener_ = nullptr;
+    int nextLocalEpisode_ = 0;
+    QString nextLocalEpisodePath_;
+    QString localLibraryStatusMessage_;
+    QString localLibraryErrorMessage_;
     QString selectedCoverSource_ = QStringLiteral("qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg");
     double scoreMinimum_ = 0.0;
     double scoreMaximum_ = 10.0;

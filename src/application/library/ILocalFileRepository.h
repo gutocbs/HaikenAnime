@@ -3,6 +3,7 @@
 
 #include <QList>
 #include "../../domain/library/LocalFileRecord.h"
+#include "../../domain/media/Media.h"
 
 class ILocalFileRepository {
 public:
@@ -18,6 +19,15 @@ public:
     // Accepts only Failed or Interrupted; does not reconcile unavailable files.
     virtual bool failScan(qint64 scanId, LibraryScanStatus status, qsizetype observedCount,
                           const QString &diagnostic, QString &error) = 0;
+    virtual bool readPendingRecognition(const QString &, QList<LocalFileRecognitionRecord> &, QString &error) {
+        error = QStringLiteral("Local recognition is not supported by this repository."); return false;
+    }
+    virtual bool readRecognitionCatalog(QList<Media> &, QString &error) {
+        error = QStringLiteral("Local recognition is not supported by this repository."); return false;
+    }
+    virtual bool saveRecognitionBatch(const QList<LocalFileRecognitionRecord> &, QString &error) {
+        error = QStringLiteral("Local recognition is not supported by this repository."); return false;
+    }
 };
 
 #endif

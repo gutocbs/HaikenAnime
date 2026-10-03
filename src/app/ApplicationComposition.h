@@ -7,9 +7,12 @@
 
 #include "../application/media/IMediaRepository.h"
 #include "../application/anilist/IPendingChangeRepository.h"
+#include "../application/library/ILocalFileOpener.h"
+#include "../application/library/LocalEpisodeReader.h"
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "InitialSyncCoordinator.h"
 #include "LocalLibraryScanCoordinator.h"
+#include "LocalLibraryRecognitionCoordinator.h"
 #include "../infrastructure/logging/AsyncLogger.h"
 #include "../application/covers/CoverDownloadCoordinator.h"
 #include "../application/configuration/IUserPreferencesRepository.h"
@@ -38,9 +41,12 @@ struct ApplicationContext final {
     std::unique_ptr<GraphQlQueryStore> seasonalQueryStore;
     std::unique_ptr<GraphQlSeasonalCatalogDataSource> seasonalCatalogDataSource;
     std::unique_ptr<SeasonalCatalogCoordinator> seasonalCatalogCoordinator;
+    std::unique_ptr<ILocalEpisodeReader> localEpisodeReader;
+    std::unique_ptr<ILocalFileOpener> localFileOpener;
     QString initializationError;
     bool startupLibraryScanScheduled = false;
-    // Declared last so destruction joins the worker before other dependencies.
+    // Declared last so destruction joins worker threads before other dependencies.
+    std::unique_ptr<LocalLibraryRecognitionCoordinator> localLibraryRecognition;
     std::unique_ptr<LocalLibraryScanCoordinator> localLibraryScan;
 
     [[nodiscard]] bool isReady() const {

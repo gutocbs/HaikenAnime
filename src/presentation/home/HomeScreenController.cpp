@@ -1,5 +1,7 @@
 #include "HomeScreenController.h"
 #include "../../application/covers/CoverSourceResolver.h"
+#include "../../application/library/ILocalFileOpener.h"
+#include "../../application/library/LocalEpisodeReader.h"
 #include "../../application/media/MediaDetailsPresentation.h"
 
 #include <QCoreApplication>
@@ -398,6 +400,12 @@ QString HomeScreenController::selectedListStatusKey() const {
 QStringList HomeScreenController::selectedAlternativeNames() const {
     return hasSelection_ ? selectedMedia_.AlternativeNames : QStringList{};
 }
+bool HomeScreenController::canWatch() const {
+    return nextLocalEpisode_ > 0 && !nextLocalEpisodePath_.isEmpty() && fileOpener_ != nullptr;
+}
+int HomeScreenController::nextLocalEpisode() const { return nextLocalEpisode_; }
+QString HomeScreenController::localLibraryStatusMessage() const { return localLibraryStatusMessage_; }
+QString HomeScreenController::localLibraryErrorMessage() const { return localLibraryErrorMessage_; }
 double HomeScreenController::scoreMinimum() const { return scoreMinimum_; }
 double HomeScreenController::scoreMaximum() const { return scoreMaximum_; }
 double HomeScreenController::scoreStep() const { return scoreStep_; }
@@ -435,6 +443,20 @@ void HomeScreenController::ConfigurePreferredTitle(QString key) {
     fullModel_.ConfigurePreferredTitle(preferredTitleKey_);
     rebuildMediaModels();
     if (hasSelection_) emit selectionChanged();
+}
+
+void HomeScreenController::SetLocalEpisodeServices(ILocalEpisodeReader *episodeReader,
+                                                    ILocalFileOpener *fileOpener) {
+    episodeReader_ = episodeReader;
+    fileOpener_ = fileOpener;
+    refreshNextLocalEpisode();
+    emit selectionChanged();
+}
+
+void HomeScreenController::RefreshLocalEpisode() {
+    if (!hasSelection_) return;
+    refreshNextLocalEpisode();
+    emit selectionChanged();
 }
 
 void HomeScreenController::ConfigureBrowseOptions(QVariantList mediaTypeOptions,
@@ -555,6 +577,22 @@ void HomeScreenController::SelectMedia(const int mediaId) {
             selectedCoverSource_ = fullModel_.data(fullModel_.index(row), HomeMediaModel::CoverSourceRole).toString();
             break;
         }
+    }
+    refreshNextLocalEpisode();
+    emit selectionChanged();
+}
+
+void HomeScreenController::WatchNext() {
+    if (!canWatch()) return;
+
+    QString error;
+    if (fileOpener_->open(nextLocalEpisodePath_, error)) {
+        localLibraryErrorMessage_.clear();
+        localLibraryStatusMessage_ = QStringLiteral("Abrindo episódio %1.").arg(nextLocalEpisode_);
+    } else {
+        localLibraryStatusMessage_.clear();
+        localLibraryErrorMessage_ = error.isEmpty()
+            ? QStringLiteral("Não foi possível abrir o episódio local.") : error;
     }
     emit selectionChanged();
 }
@@ -739,7 +777,30 @@ void HomeScreenController::clearSelection() {
     hasSelection_ = false;
     selectedMedia_ = {};
     selectedCoverSource_ = CoverPlaceholder;
+    refreshNextLocalEpisode();
     emit selectionChanged();
+}
+
+void HomeScreenController::refreshNextLocalEpisode() {
+    nextLocalEpisode_ = 0;
+    nextLocalEpisodePath_.clear();
+    localLibraryStatusMessage_.clear();
+    localLibraryErrorMessage_.clear();
+    if (!hasSelection_ || selectedMedia_.Type != MediaType::Anime || episodeReader_ == nullptr) return;
+
+    LocalEpisode episode;
+    QString error;
+    if (!episodeReader_->readNextEpisode(selectedMedia_.Id, selectedMedia_.ConsumedChapters, episode, error)) {
+        if (error.isEmpty()) {
+            localLibraryStatusMessage_ = QStringLiteral("Nenhum episódio disponível.");
+        } else {
+            localLibraryErrorMessage_ = error;
+        }
+        return;
+    }
+    nextLocalEpisode_ = episode.episode;
+    nextLocalEpisodePath_ = episode.path;
+    localLibraryStatusMessage_ = QStringLiteral("Episódio %1 disponível localmente.").arg(nextLocalEpisode_);
 }
 
 void HomeScreenController::setStatusMessage(QString message) {

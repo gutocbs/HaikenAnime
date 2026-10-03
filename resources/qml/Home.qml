@@ -20,6 +20,9 @@ Item {
     readonly property color accent: "#315d91"
     readonly property color accentSoft: "#e2ebf6"
     property var previewEdits: ({})
+    readonly property bool hasLocalLibraryMessage: controller.hasSelection
+                                                  && (controller.localLibraryStatusMessage.length > 0
+                                                      || controller.localLibraryErrorMessage.length > 0)
 
     function previewValue(mediaId, key, fallback) {
         const edit = previewEdits[mediaId]
@@ -70,10 +73,11 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
-            Layout.preferredHeight: 58
+            Layout.preferredHeight: 82
             spacing: 18
 
             ColumnLayout {
+                id: homeHeaderTitle
                 Layout.fillWidth: true
                 spacing: 2
 
@@ -91,14 +95,15 @@ Item {
                     font.pixelSize: 25
                     font.weight: Font.Bold
                 }
-            }
 
-            Label {
-                text: qsTr("BIBLIOTECA")
-                color: accent
-                font.pixelSize: 12
-                font.weight: Font.DemiBold
-                Layout.alignment: Qt.AlignVCenter
+                Button {
+                    id: homeHeaderNavigationSpacer
+                    text: qsTr("‹  Biblioteca")
+                    opacity: 0
+                    enabled: false
+                    focus: false
+                    Layout.preferredHeight: implicitHeight
+                }
             }
 
             Button {
@@ -535,6 +540,35 @@ Item {
                         accent: home.accent
                     }
 
+                    Button {
+                        id: watchNextButton
+                        Layout.preferredWidth: 104
+                        Layout.preferredHeight: 44
+                        text: qsTr("Assistir")
+                        enabled: controller.canWatch
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        Accessible.name: qsTr("Assistir próximo episódio disponível")
+                        onClicked: controller.WatchNext()
+
+                        contentItem: Text {
+                            text: watchNextButton.text
+                            color: watchNextButton.enabled ? "#ffffff" : muted
+                            font: watchNextButton.font
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        background: Rectangle {
+                            radius: 5
+                            color: watchNextButton.enabled ? accent : surface
+                            border.width: watchNextButton.activeFocus ? 2 : 1
+                            border.color: watchNextButton.enabled
+                                          ? accent
+                                          : (watchNextButton.activeFocus ? accent : line)
+                        }
+                    }
+
                     Rectangle {
                         Layout.preferredWidth: 1
                         Layout.preferredHeight: 28
@@ -546,8 +580,11 @@ Item {
                         spacing: 1
 
                         Label {
-                            text: controller.state === "error" ? qsTr("ERRO") : qsTr("SINCRONIZAÇÃO")
-                            color: controller.state === "error" ? "#b13b43" : accent
+                            text: controller.state === "error" ? qsTr("ERRO")
+                                  : home.hasLocalLibraryMessage ? qsTr("BIBLIOTECA LOCAL")
+                                  : qsTr("SINCRONIZAÇÃO")
+                            color: controller.state === "error" || controller.localLibraryErrorMessage.length > 0
+                                   ? "#b13b43" : accent
                             font.pixelSize: 10
                             font.weight: Font.DemiBold
                             font.letterSpacing: 1.0
@@ -555,14 +592,19 @@ Item {
 
                         Label {
                             Layout.fillWidth: true
-                            text: controller.state === "loading"
-                                  ? (controller.synchronizationProgressKnown
-                                     ? qsTr("Atualizando · %1%").arg(controller.synchronizationProgress)
-                                     : qsTr("Atualizando biblioteca"))
-                                  : controller.state === "error"
-                                    ? qsTr("Verifique os detalhes")
-                                    : qsTr("Sincronização automática")
-                            color: controller.state === "error" ? "#b13b43" : ink
+                            text: controller.state === "error"
+                                  ? qsTr("Verifique os detalhes")
+                                  : home.hasLocalLibraryMessage
+                                    ? (controller.localLibraryErrorMessage.length > 0
+                                       ? controller.localLibraryErrorMessage
+                                       : controller.localLibraryStatusMessage)
+                                    : controller.state === "loading"
+                                      ? (controller.synchronizationProgressKnown
+                                         ? qsTr("Atualizando · %1%").arg(controller.synchronizationProgress)
+                                         : qsTr("Atualizando biblioteca"))
+                                      : qsTr("Sincronização automática")
+                            color: controller.state === "error" || controller.localLibraryErrorMessage.length > 0
+                                   ? "#b13b43" : ink
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
                             elide: Text.ElideRight
