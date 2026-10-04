@@ -80,9 +80,11 @@ private slots:
     void recordedFixtureCachesOnlyTheAffectedPartitionAndQueryIdentity();
     void recordedFixtureCacheSeparatesUsersAfterFilterMutation();
     void recordedUserListMarksAnUnfilteredFirstPageAuthoritativeBeforeTheTerminalPage();
+    void recordedUserListRejectsMissingPaginationMetadata();
     void recordedSourceSelectsTheResponseShapeForTheRequestedPartition();
     void graphQlAdapterPostsPartitionVariablesAndParsesCatalogPage();
     void graphQlAdapterRequiresAndPostsAUserNameForUserListRefresh();
+    void graphQlAdapterRejectsNonBooleanUserListPaginationMetadata();
 };
 
 void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
@@ -473,6 +475,25 @@ void AniListGraphQlParsingTests::recordedUserListMarksAnUnfilteredFirstPageAutho
     QVERIFY(result.isCompleteAuthoritativeSnapshot);
 }
 
+void AniListGraphQlParsingTests::recordedUserListRejectsMissingPaginationMetadata() {
+    QTemporaryFile malformedFixture;
+    QVERIFY(malformedFixture.open());
+    auto payload = fixture(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE));
+    QVERIFY(payload.contains("\"hasNextChunk\": false,"));
+    payload.replace("\"hasNextChunk\": false,", "");
+    QVERIFY(malformedFixture.write(payload) == payload.size());
+    malformedFixture.flush();
+    RecordedGraphQlAniListDataSource source(malformedFixture.fileName());
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.username = QStringLiteral("fixture-user");
+    AniListDataSourceResult result;
+    QString error;
+
+    QVERIFY(!source.fetchPage(request, result, error));
+    QVERIFY(error.contains(QStringLiteral("hasNextChunk")));
+    QVERIFY(!result.isCompleteAuthoritativeSnapshot);
+}
+
 void AniListGraphQlParsingTests::recordedSourceSelectsTheResponseShapeForTheRequestedPartition() {
     QString error;
     AniListDataSourceResult result;
@@ -544,6 +565,26 @@ void AniListGraphQlParsingTests::graphQlAdapterRequiresAndPostsAUserNameForUserL
     QCOMPARE(variables.value(QStringLiteral("userName")).toString(), QStringLiteral("fixture-user"));
     QVERIFY(!variables.value(QStringLiteral("includeCatalog")).toBool());
     QVERIFY(variables.value(QStringLiteral("includeUserList")).toBool());
+}
+
+void AniListGraphQlParsingTests::graphQlAdapterRejectsNonBooleanUserListPaginationMetadata() {
+    auto payload = fixture(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE));
+    QVERIFY(payload.contains("\"hasNextChunk\": false"));
+    payload.replace("\"hasNextChunk\": false", "\"hasNextChunk\": \"false\"");
+    LocalGraphQlServer server;
+    QVERIFY2(server.start(payload), "Local GraphQL server did not start.");
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient client(networkManager, nullptr, server.endpoint(), 1000);
+    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/media-page.graphql"));
+    GraphQlAniListDataSource source(client, store);
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.username = QStringLiteral("fixture-user");
+    AniListDataSourceResult result;
+    QString error;
+
+    QVERIFY(!source.fetchPage(request, result, error));
+    QVERIFY(error.contains(QStringLiteral("hasNextChunk")));
+    QVERIFY(!result.isCompleteAuthoritativeSnapshot);
 }
 
 QTEST_MAIN(AniListGraphQlParsingTests)

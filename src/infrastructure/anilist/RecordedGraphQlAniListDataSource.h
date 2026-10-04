@@ -75,10 +75,15 @@ inline bool RecordedGraphQlAniListDataSource::fetchPage(const AniListDataSourceR
     }
     if (request.filter.partition == SyncPartition::UserList) {
         if (response.data.value(QStringLiteral("MediaListCollection")).isObject()) {
+            const auto collection = response.data.value(QStringLiteral("MediaListCollection")).toObject();
+            const auto hasNextChunk = collection.value(QStringLiteral("hasNextChunk"));
+            if (!hasNextChunk.isBool()) {
+                error = QStringLiteral("AniList MediaListCollection contains invalid hasNextChunk pagination metadata.");
+                return false;
+            }
             if (!AniListGraphQlUserListParser::parse(response.data, result.page.media, error)) return false;
             result.page.currentPage = qMax(1, request.filter.startingPage);
-            result.page.hasNextPage = response.data.value(QStringLiteral("MediaListCollection")).toObject()
-                                          .value(QStringLiteral("hasNextChunk")).toBool();
+            result.page.hasNextPage = hasNextChunk.toBool();
             result.page.totalPages = result.page.hasNextPage ? result.page.currentPage + 1 : result.page.currentPage;
         } else if (response.data.value(QStringLiteral("Page")).isObject()) {
             if (!AniListGraphQlPageParser::parse(response.data, result.page, error)) return false;

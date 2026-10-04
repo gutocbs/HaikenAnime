@@ -68,9 +68,14 @@ bool GraphQlAniListDataSource::fetchPage(const AniListDataSourceRequest &request
             error = QStringLiteral("AniList user-list response does not contain MediaListCollection.");
             return false;
         }
+        const auto hasNextChunk = collection.toObject().value(QStringLiteral("hasNextChunk"));
+        if (!hasNextChunk.isBool()) {
+            error = QStringLiteral("AniList MediaListCollection contains invalid hasNextChunk pagination metadata.");
+            return false;
+        }
         if (!AniListGraphQlUserListParser::parse(response.data, result.page.media, error)) return false;
         result.page.currentPage = qMax(1, request.filter.startingPage);
-        result.page.hasNextPage = collection.toObject().value(QStringLiteral("hasNextChunk")).toBool();
+        result.page.hasNextPage = hasNextChunk.toBool();
         result.page.totalPages = result.page.hasNextPage ? result.page.currentPage + 1 : result.page.currentPage;
         result.isCompleteAuthoritativeSnapshot = request.filter.startingPage == 1
             && request.filter.type.isEmpty() && request.filter.status.isEmpty()
