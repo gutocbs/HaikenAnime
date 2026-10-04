@@ -501,6 +501,8 @@ void QmlStructureTests::seasonalCatalogRequiresExplicitFiltersAndHasResponsiveCo
     QVERIFY(!source.contains(QStringLiteral("Carregar próxima página")));
     QVERIFY(source.contains(QStringLiteral("columnCount: width >= 860 ? 3 : width >= 560 ? 2 : 1")));
     QVERIFY(source.contains(QStringLiteral("cellWidth: width / columnCount")));
+    QVERIFY(source.contains(QStringLiteral("cellHeight * columnCount")));
+    QVERIFY(!source.contains(QStringLiteral("cellHeight * columns")));
     QVERIFY(source.contains(QStringLiteral("Flow {")));
     QVERIFY(source.contains(QStringLiteral("width >= 560")));
     QVERIFY(source.contains(QStringLiteral("width: filterLayout.width >= 560 ? 150 : filterLayout.width")));

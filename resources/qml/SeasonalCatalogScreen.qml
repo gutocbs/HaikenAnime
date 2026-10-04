@@ -283,7 +283,7 @@ Item {
                     function requestNextPageIfNearEnd() {
                         if (!controller.canLoadNextPage) return
                         const remainingContent = contentHeight - (contentY + height)
-                        if (remainingContent <= cellHeight * columns) controller.LoadNextPage()
+                        if (remainingContent <= cellHeight * columnCount) controller.LoadNextPage()
                     }
 
                     onContentYChanged: requestNextPageIfNearEnd()
