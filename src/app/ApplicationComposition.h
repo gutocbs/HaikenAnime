@@ -11,8 +11,7 @@
 #include "../application/library/LocalEpisodeReader.h"
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "InitialSyncCoordinator.h"
-#include "AdaptiveSyncCoordinator.h"
-#include "ApplicationSyncTaskExecutor.h"
+#include "AdaptiveSyncRuntime.h"
 #include "LocalLibraryScanCoordinator.h"
 #include "LocalLibraryRecognitionCoordinator.h"
 #include "../infrastructure/logging/AsyncLogger.h"
@@ -23,7 +22,6 @@
 #include "../infrastructure/anilist/GraphQlQueryStore.h"
 #include "../infrastructure/anilist/GraphQlSeasonalCatalogDataSource.h"
 #include "SeasonalCatalogCoordinator.h"
-#include "../infrastructure/database/SqliteSyncTaskStateRepository.h"
 
 
 struct ApplicationContext final {
@@ -32,9 +30,7 @@ struct ApplicationContext final {
     std::unique_ptr<IMediaRepository> mediaRepository;
     std::unique_ptr<IPendingChangeRepository> pendingChangeRepository;
     std::unique_ptr<InitialSyncCoordinator> initialSync;
-    std::unique_ptr<SqliteSyncTaskStateRepository> syncTaskStateRepository;
-    std::unique_ptr<ApplicationSyncTaskExecutor> syncTaskExecutor;
-    std::unique_ptr<AdaptiveSyncCoordinator> adaptiveSync;
+    std::unique_ptr<AdaptiveSyncRuntime> adaptiveSync;
     std::unique_ptr<ICoverCacheRepository> coverCacheRepository;
     std::unique_ptr<ICoverFileStore> coverFileStore;
     std::unique_ptr<ICoverDownloader> coverDownloader;

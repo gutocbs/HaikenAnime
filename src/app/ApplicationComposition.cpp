@@ -1,7 +1,6 @@
 #include "ApplicationComposition.h"
 
 #include "InitialSyncCoordinator.h"
-#include "AdaptiveSyncCoordinator.h"
 #include "ApplicationSyncTaskExecutor.h"
 
 #include "../infrastructure/database/SqlQueryStore.h"
@@ -19,6 +18,7 @@
 #include "../infrastructure/library/QtLocalFileOpener.h"
 #include "../infrastructure/library/QtDirectoryEnumerator.h"
 #include "../infrastructure/database/SqliteLocalFileRepository.h"
+#include "../infrastructure/database/SqliteSyncTaskStateRepository.h"
 #include "../infrastructure/anilist/HttpFactory.h"
 #include <QStandardPaths>
 #include <QDir>
@@ -83,6 +83,20 @@ public:
 private:
     std::unique_ptr<SqliteDatabase> database_;
     SqliteLocalFileRepository repository_;
+};
+
+class OwnedSyncTaskStateRepository final : public ISyncTaskStateRepository {
+public:
+    OwnedSyncTaskStateRepository(std::unique_ptr<SqliteDatabase> database, QString readQuery,
+                                 QString upsertQuery, QString deleteQuery)
+        : database_(std::move(database)), repository_(database_->connection(), std::move(readQuery),
+          std::move(upsertQuery), std::move(deleteQuery)) {}
+    bool ReadAll(QList<SyncTaskState> &states, QString &error) override { return repository_.ReadAll(states, error); }
+    bool Upsert(const SyncTaskState &state, QString &error) override { return repository_.Upsert(state, error); }
+    bool Remove(const SyncPartition &partition, QString &error) override { return repository_.Remove(partition, error); }
+private:
+    std::unique_ptr<SqliteDatabase> database_;
+    SqliteSyncTaskStateRepository repository_;
 };
 
 bool hasExistingQueries(const SqliteQueryConfiguration &queries) {
@@ -297,19 +311,31 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         queryConfiguration.markMediaSourceRemovedPath,
         settings.syncTimeoutMs, settings.syncIntervalMs);
     context.initialSync->setLogger(context.logger.get());
-    context.syncTaskStateRepository = std::make_unique<SqliteSyncTaskStateRepository>(
-        context.database->connection(), queryConfiguration.readSyncTaskStatesPath,
-        queryConfiguration.upsertSyncTaskStatePath, queryConfiguration.deleteSyncTaskStatePath);
-    context.syncTaskExecutor = std::make_unique<ApplicationSyncTaskExecutor>(
-        context.database->databasePath(), QStringLiteral(":/fixtures/graphql/userlist-response.json"),
-        queryConfiguration.upsertMediaPath, queryConfiguration.readMediaPath,
-        queryConfiguration.readActiveMediaIdsPath, queryConfiguration.markMediaSourceRemovedPath,
-        queryConfiguration.readSyncTaskStatesPath, queryConfiguration.upsertSyncTaskStatePath,
-        queryConfiguration.deleteSyncTaskStatePath, settings.syncTimeoutMs);
-    context.adaptiveSync = std::make_unique<AdaptiveSyncCoordinator>(
-        *context.syncTaskStateRepository, *context.syncTaskExecutor, AdaptiveSyncCoordinator::Clock{},
-        settings.syncTaskPolicies);
-    context.adaptiveSync->Start();
+    const auto synchronizationDatabasePath = context.database->databasePath();
+    const auto readTaskStatesQueryPath = queryConfiguration.readSyncTaskStatesPath;
+    const auto upsertTaskStateQueryPath = queryConfiguration.upsertSyncTaskStatePath;
+    const auto deleteTaskStateQueryPath = queryConfiguration.deleteSyncTaskStatePath;
+    context.adaptiveSync = std::make_unique<AdaptiveSyncRuntime>(
+        [synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath,
+         deleteTaskStateQueryPath](QString &error) -> std::unique_ptr<ISyncTaskStateRepository> {
+            auto database = std::make_unique<SqliteDatabase>(synchronizationDatabasePath);
+            if (!database->open() || !database->migrate()) {
+                error = database->lastError();
+                return {};
+            }
+            return std::make_unique<OwnedSyncTaskStateRepository>(std::move(database), readTaskStatesQueryPath,
+                                                                   upsertTaskStateQueryPath, deleteTaskStateQueryPath);
+        },
+        [synchronizationDatabasePath, fixturePath = QStringLiteral(":/fixtures/graphql/userlist-response.json"),
+         upsertMediaPath = queryConfiguration.upsertMediaPath, readMediaPath = queryConfiguration.readMediaPath,
+         readActiveMediaIdsPath = queryConfiguration.readActiveMediaIdsPath,
+         markSourceRemovedPath = queryConfiguration.markMediaSourceRemovedPath, readTaskStatesQueryPath,
+         upsertTaskStateQueryPath, deleteTaskStateQueryPath, timeoutMs = settings.syncTimeoutMs] {
+            return std::make_unique<ApplicationSyncTaskExecutor>(
+                synchronizationDatabasePath, fixturePath, upsertMediaPath, readMediaPath, readActiveMediaIdsPath,
+                markSourceRemovedPath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
+                timeoutMs);
+        }, settings.syncTaskPolicies);
     context.seasonalNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
     context.seasonalGraphQlClient = std::make_unique<AniListGraphQlClient>(
         *context.seasonalNetworkManager);

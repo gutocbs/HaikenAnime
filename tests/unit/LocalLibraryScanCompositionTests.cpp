@@ -340,8 +340,6 @@ void LocalLibraryScanCompositionTests::composesAdaptiveSynchronizationWithTheLeg
 
     QVERIFY2(context.isReady(), qPrintable(context.initializationError));
     QVERIFY(context.initialSync);
-    QVERIFY(context.syncTaskStateRepository);
-    QVERIFY(context.syncTaskExecutor);
     QVERIFY(context.adaptiveSync);
 }
 
