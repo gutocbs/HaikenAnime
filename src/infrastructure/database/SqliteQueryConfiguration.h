@@ -19,6 +19,9 @@ struct SqliteQueryConfiguration final {
     QString clearCoverCachePath;
     QString readUserPreferencesPath;
     QString upsertUserPreferencesPath;
+    QString readSyncTaskStatesPath;
+    QString upsertSyncTaskStatePath;
+    QString deleteSyncTaskStatePath;
 
     QString beginLibraryScanPath;
     QString upsertLocalFilePath;

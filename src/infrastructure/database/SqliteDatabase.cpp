@@ -309,15 +309,22 @@ bool SqliteDatabase::migrate() {
             query, QStringLiteral(":/sqlite/migrations/018-add-automatic-local-file-recognition-preference.sql"), lastError_));
     const bool automaticRecognitionVersionInserted = automaticRecognitionReady
         && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/018-mark-automatic-local-file-recognition-applied.sql"), lastError_);
+    const bool syncTaskStateReady = automaticRecognitionVersionInserted && ExecuteMigrationScript(
+        query, QStringLiteral(":/sqlite/migrations/019-create-sync-task-state.sql"), lastError_);
+    const bool syncTaskStateVersionInserted = syncTaskStateReady && ExecuteMigrationScript(
+        query, QStringLiteral(":/sqlite/migrations/019-mark-sync-task-state-applied.sql"), lastError_);
     const bool versionQueried = automaticRecognitionVersionInserted && ExecuteMigrationScript(
         query, QStringLiteral(":/sqlite/migrations/000-inspect-applied-schema-versions.sql"), lastError_);
-    const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool()
+    const bool legacyVersionsRecorded = versionQueried && query.next() && query.value(0).toBool()
         && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
         && query.value(4).toBool() && query.value(5).toBool() && query.value(6).toBool()
         && query.value(7).toBool() && query.value(8).toBool() && query.value(9).toBool()
         && query.value(10).toBool() && query.value(11).toBool() && query.value(12).toBool()
         && query.value(13).toBool() && query.value(14).toBool() && query.value(15).toBool()
         && query.value(16).toBool() && query.value(17).toBool();
+    const bool versionRecorded = syncTaskStateVersionInserted && legacyVersionsRecorded
+        && query.exec(QStringLiteral("SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 19)"))
+        && query.next() && query.value(0).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();

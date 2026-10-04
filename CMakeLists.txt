@@ -153,6 +153,7 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/anilist/AniListMergeService.h
         src/application/anilist/AniListMergeService.cpp
         src/application/anilist/IPendingChangeRepository.h
+        src/application/scheduling/ISyncTaskStateRepository.h
         src/application/anilist/IAniListUpdateClient.h
         src/infrastructure/anilist/AniListUpdateClient.h
         src/infrastructure/anilist/AniListUpdateClient.cpp
@@ -185,6 +186,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqliteLocalFileRepository.cpp
         src/infrastructure/database/SqliteUserPreferencesRepository.h
         src/infrastructure/database/SqliteUserPreferencesRepository.cpp
+        src/infrastructure/database/SqliteSyncTaskStateRepository.h
+        src/infrastructure/database/SqliteSyncTaskStateRepository.cpp
         src/infrastructure/database/SqlQueryStore.h
         src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/database/SqliteQueryConfiguration.h
@@ -270,6 +273,15 @@ set_source_files_properties(
 set_source_files_properties(
         resources/sqlite/queries/upsert-user-preferences.sql
         PROPERTIES QT_RESOURCE_ALIAS "upsert-user-preferences.sql")
+set_source_files_properties(
+        resources/sqlite/queries/read-sync-task-states.sql
+        PROPERTIES QT_RESOURCE_ALIAS "read-sync-task-states.sql")
+set_source_files_properties(
+        resources/sqlite/queries/upsert-sync-task-state.sql
+        PROPERTIES QT_RESOURCE_ALIAS "upsert-sync-task-state.sql")
+set_source_files_properties(
+        resources/sqlite/queries/delete-sync-task-state.sql
+        PROPERTIES QT_RESOURCE_ALIAS "delete-sync-task-state.sql")
 file(GLOB SQLITE_MIGRATION_RESOURCES CONFIGURE_DEPENDS resources/sqlite/migrations/*.sql)
 foreach (MIGRATION_FILE IN LISTS SQLITE_MIGRATION_RESOURCES)
     get_filename_component(MIGRATION_ALIAS "${MIGRATION_FILE}" NAME)
@@ -324,6 +336,9 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         resources/sqlite/queries/clear-cover-cache.sql
         resources/sqlite/queries/read-user-preferences.sql
         resources/sqlite/queries/upsert-user-preferences.sql
+        resources/sqlite/queries/read-sync-task-states.sql
+        resources/sqlite/queries/upsert-sync-task-state.sql
+        resources/sqlite/queries/delete-sync-task-state.sql
 )
 
 qt_add_resources(HaikenAnime sqlite_migration_resource_bundle
@@ -510,6 +525,24 @@ target_link_libraries(SqliteCoverCacheRepositoryTests
 )
 
 add_test(NAME SqliteCoverCacheRepositoryTests COMMAND SqliteCoverCacheRepositoryTests)
+
+add_executable(SqliteSyncTaskStateRepositoryTests
+        tests/unit/SqliteSyncTaskStateRepositoryTests.cpp
+        src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/database/SqliteSyncTaskStateRepository.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+qt_add_resources(SqliteSyncTaskStateRepositoryTests sync_task_state_resources
+        PREFIX "/sqlite/queries"
+        FILES resources/sqlite/queries/read-sync-task-states.sql
+              resources/sqlite/queries/upsert-sync-task-state.sql
+              resources/sqlite/queries/delete-sync-task-state.sql)
+qt_add_resources(SqliteSyncTaskStateRepositoryTests sync_task_state_migration_resources
+        PREFIX "/sqlite/migrations"
+        FILES ${SQLITE_MIGRATION_RESOURCES})
+target_link_libraries(SqliteSyncTaskStateRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
+add_test(NAME SqliteSyncTaskStateRepositoryTests COMMAND SqliteSyncTaskStateRepositoryTests)
 
 add_executable(SqliteLocalFileRepositoryTests
         tests/unit/SqliteLocalFileRepositoryTests.cpp
@@ -1138,6 +1171,7 @@ foreach (SQLITE_MIGRATION_TEST_TARGET IN ITEMS
         SqliteUserPreferencesRepositoryTests
         SqliteRepositoryTests
         SqliteCoverCacheRepositoryTests
+        SqliteSyncTaskStateRepositoryTests
         SqliteLocalFileRepositoryTests
         LocalEpisodeReaderTests
         InitialSyncCoordinatorTests
@@ -1153,6 +1187,7 @@ set(HAIKENANIME_TESTS
         SqliteUserPreferencesRepositoryTests
         SqliteRepositoryTests
         SqliteCoverCacheRepositoryTests
+        SqliteSyncTaskStateRepositoryTests
         SqliteLocalFileRepositoryTests
         LocalLibraryScannerTests
         AnitomyLocalFileRecognizerTests
@@ -1194,11 +1229,11 @@ set(HAIKENANIME_TESTS
 )
 get_filename_component(MINGW_RUNTIME_DIRECTORY "${CMAKE_CXX_COMPILER}" DIRECTORY)
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
-        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;${MINGW_RUNTIME_DIRECTORY};$ENV{PATH}"
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}"
         TIMEOUT 30
 )
 set_tests_properties(QmlStructureTests PROPERTIES
-        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;${MINGW_RUNTIME_DIRECTORY};$ENV{PATH};QT_QUICK_BACKEND=software"
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}\\;QT_QUICK_BACKEND=software"
 )
 endif ()
 
