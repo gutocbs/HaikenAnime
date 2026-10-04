@@ -13,6 +13,7 @@
 enum class SyncTaskKind { UserList, PendingChange, ActiveCatalog, InactiveCatalog, CompletedCatalog, Cover, DerivedMetadata };
 enum class SyncPartition { UserList, PendingChanges, ActiveCatalog, InactiveCatalog, CompletedCatalog, Covers, DerivedMetadata };
 enum class CacheValidity { Unknown, Fresh, Stale, Expired };
+enum class SyncTaskStatus { Idle, Running, RetryScheduled, Failed, Succeeded };
 
 inline QString ToString(SyncTaskKind value) {
     switch (value) {
@@ -59,13 +60,39 @@ inline QString ToString(CacheValidity value) {
     return {};
 }
 
+inline QString ToString(SyncTaskStatus value) {
+    switch (value) {
+    case SyncTaskStatus::Idle: return QStringLiteral("idle");
+    case SyncTaskStatus::Running: return QStringLiteral("running");
+    case SyncTaskStatus::RetryScheduled: return QStringLiteral("retry-scheduled");
+    case SyncTaskStatus::Failed: return QStringLiteral("failed");
+    case SyncTaskStatus::Succeeded: return QStringLiteral("succeeded");
+    }
+    return {};
+}
+
+inline std::optional<SyncTaskStatus> SyncTaskStatusFromString(const QString &value) {
+    for (const auto status : {SyncTaskStatus::Idle, SyncTaskStatus::Running, SyncTaskStatus::RetryScheduled,
+                              SyncTaskStatus::Failed, SyncTaskStatus::Succeeded}) {
+        if (ToString(status) == value) return status;
+    }
+    return std::nullopt;
+}
+
 struct SyncTaskState final {
     SyncTaskKind kind = SyncTaskKind::UserList;
     SyncPartition partition = SyncPartition::UserList;
+    SyncTaskStatus status = SyncTaskStatus::Idle;
     CacheValidity cacheValidity = CacheValidity::Unknown;
     std::optional<QDateTime> lastSucceededAt;
     std::optional<QDateTime> lastAttemptedAt;
+    std::optional<QDateTime> nextRunAt;
     AniListSyncErrorCategory lastErrorCategory = AniListSyncErrorCategory::None;
+    QString safeErrorDetail;
+    std::optional<int> confirmedPage;
+    std::optional<QString> confirmedCursor;
+    int priority = 0;
+    qint64 generation = 0;
     int consecutiveFailures = 0;
     int consecutiveImmediateRetries = 0;
 };
