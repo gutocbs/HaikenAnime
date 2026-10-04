@@ -4,8 +4,8 @@
 #include <QDateTime>
 #include <QString>
 
-#include <array>
 #include <chrono>
+#include <map>
 #include <optional>
 
 #include "../anilist/AniListSyncErrorCategory.h"
@@ -85,5 +85,50 @@ struct SyncScheduleDecision final {
     QDateTime nextRunAt;
     CacheValidity cacheValidity = CacheValidity::Unknown;
 };
+
+inline SyncSchedulePolicy DefaultSyncSchedulePolicy(SyncTaskKind kind) {
+    SyncSchedulePolicy policy;
+    switch (kind) {
+    case SyncTaskKind::UserList:
+        policy.normalInterval = std::chrono::hours(1);
+        policy.staleProtectionTtl = std::chrono::hours(24);
+        break;
+    case SyncTaskKind::PendingChange:
+        policy.normalInterval = std::chrono::minutes(1);
+        policy.staleProtectionTtl = std::chrono::hours(1);
+        break;
+    case SyncTaskKind::ActiveCatalog:
+        policy.normalInterval = std::chrono::minutes(30);
+        policy.staleProtectionTtl = std::chrono::hours(6);
+        break;
+    case SyncTaskKind::InactiveCatalog:
+        policy.normalInterval = std::chrono::hours(12);
+        policy.staleProtectionTtl = std::chrono::hours(24 * 7);
+        break;
+    case SyncTaskKind::CompletedCatalog:
+        policy.normalInterval = std::chrono::hours(24);
+        policy.staleProtectionTtl = std::chrono::hours(24 * 14);
+        break;
+    case SyncTaskKind::Cover:
+        policy.normalInterval = std::chrono::hours(6);
+        policy.staleProtectionTtl = std::chrono::hours(48);
+        break;
+    case SyncTaskKind::DerivedMetadata:
+        policy.normalInterval = std::chrono::hours(2);
+        policy.staleProtectionTtl = std::chrono::hours(12);
+        break;
+    }
+    return policy;
+}
+
+inline std::map<SyncTaskKind, SyncSchedulePolicy> DefaultSyncTaskPolicies() {
+    return {{SyncTaskKind::UserList, DefaultSyncSchedulePolicy(SyncTaskKind::UserList)},
+            {SyncTaskKind::PendingChange, DefaultSyncSchedulePolicy(SyncTaskKind::PendingChange)},
+            {SyncTaskKind::ActiveCatalog, DefaultSyncSchedulePolicy(SyncTaskKind::ActiveCatalog)},
+            {SyncTaskKind::InactiveCatalog, DefaultSyncSchedulePolicy(SyncTaskKind::InactiveCatalog)},
+            {SyncTaskKind::CompletedCatalog, DefaultSyncSchedulePolicy(SyncTaskKind::CompletedCatalog)},
+            {SyncTaskKind::Cover, DefaultSyncSchedulePolicy(SyncTaskKind::Cover)},
+            {SyncTaskKind::DerivedMetadata, DefaultSyncSchedulePolicy(SyncTaskKind::DerivedMetadata)}};
+}
 
 #endif // HAIKENANIME_SYNCTASKTYPES_H

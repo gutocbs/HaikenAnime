@@ -26,6 +26,7 @@ private slots:
     void readsPackagedScannerDefaults();
     void readsSyncTaskPolicies();
     void usesSyncTaskPolicyDefaultsWhenSettingsAreOmitted();
+    void usesDistinctSyncTaskPolicyDefaultsWhenSettingsAreOmitted();
     void rejectsNegativeSyncTaskPolicyDurations();
 };
 
@@ -372,7 +373,27 @@ void JsonSettingsReaderTests::usesSyncTaskPolicyDefaultsWhenSettingsAreOmitted()
 
     QVERIFY2(reader.read(settings, error), qPrintable(error));
     QCOMPARE(settings.syncTaskPolicies.at(SyncTaskKind::ActiveCatalog).normalInterval,
-             SyncSchedulePolicy{}.normalInterval);
+             DefaultSyncSchedulePolicy(SyncTaskKind::ActiveCatalog).normalInterval);
+}
+
+void JsonSettingsReaderTests::usesDistinctSyncTaskPolicyDefaultsWhenSettingsAreOmitted() {
+    QTemporaryDir temporaryDirectory;
+    const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co","mediaQueryFile":"query.graphql"},"http":{"timeoutMs":5000}})");
+    file.close();
+    JsonSettingsReader reader(path);
+    Settings settings;
+    QString error;
+
+    QVERIFY2(reader.read(settings, error), qPrintable(error));
+    QVERIFY(settings.syncTaskPolicies.at(SyncTaskKind::UserList).normalInterval
+            != settings.syncTaskPolicies.at(SyncTaskKind::PendingChange).normalInterval);
+    QVERIFY(settings.syncTaskPolicies.at(SyncTaskKind::UserList).staleProtectionTtl
+            != settings.syncTaskPolicies.at(SyncTaskKind::PendingChange).staleProtectionTtl);
+    QVERIFY(settings.syncTaskPolicies.at(SyncTaskKind::ActiveCatalog).normalInterval
+            != settings.syncTaskPolicies.at(SyncTaskKind::InactiveCatalog).normalInterval);
 }
 
 void JsonSettingsReaderTests::rejectsNegativeSyncTaskPolicyDurations() {

@@ -81,7 +81,8 @@ bool readSyncTaskPolicies(const QJsonObject &sync, Settings &settings) {
                             policy.maximumConsecutiveImmediateRetries)
             || policy.jitterRatio < 0.0 || policy.jitterRatio > 1.0
             || policy.maximumConsecutiveImmediateRetries < 0
-            || policy.maximumRetryDelay < policy.initialRetryDelay) return false;
+            || policy.maximumRetryDelay < policy.initialRetryDelay
+            || policy.staleProtectionTtl < policy.normalInterval) return false;
     }
     return true;
 }

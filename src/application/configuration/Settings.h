@@ -8,8 +8,6 @@
 #include "../catalog/SeasonalCatalogTypes.h"
 #include "../scheduling/SyncTaskTypes.h"
 
-#include <map>
-
 /** Groups application settings without exposing their file format to consumers. */
 struct Settings {
     AniListSettings aniList;
@@ -19,11 +17,7 @@ struct Settings {
     SeasonalCatalogCachePolicy seasonalCatalogCachePolicy;
     int syncTimeoutMs = 60000;
     int syncIntervalMs = 3600000;
-    std::map<SyncTaskKind, SyncSchedulePolicy> syncTaskPolicies{
-        {SyncTaskKind::UserList, {}}, {SyncTaskKind::PendingChange, {}},
-        {SyncTaskKind::ActiveCatalog, {}}, {SyncTaskKind::InactiveCatalog, {}},
-        {SyncTaskKind::CompletedCatalog, {}}, {SyncTaskKind::Cover, {}},
-        {SyncTaskKind::DerivedMetadata, {}}};
+    std::map<SyncTaskKind, SyncSchedulePolicy> syncTaskPolicies = DefaultSyncTaskPolicies();
     int logRetentionDays = 7;
 };
 
