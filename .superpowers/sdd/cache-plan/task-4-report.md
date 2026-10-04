@@ -179,3 +179,19 @@ No diff diagnostics were produced.
 - The focused lifecycle regression has not compiled or run because of the unchanged MinGW/AutoMoc environment failure.
 - The application sources compile, but the full target remains unlinked because `SyncTaskPolicy.cpp` is absent from the existing application target source list; this round did not expand scope into that unrelated build-graph correction.
 - The five-second fallback intentionally retains the runtime until process exit. This is a shutdown-only safety tradeoff: bounded close without unsafe thread termination or destruction of live worker state.
+
+## Fix round 5: unified bounded exit ownership and application link
+
+The application now routes QML object-creation failure and last-window close through the same five-second shutdown request. The request exits once the adaptive worker thread has finished; at the deadline it retains a still-live runtime for process exit. The `aboutToQuit` handler applies the same retain-or-stop ownership rule to direct `app.quit()` or `exit()` paths that bypass the request. `AdaptiveSyncRuntime::isStopped()` now requires both terminal state and a finished worker thread, so application-context destruction cannot enter its unbounded destructor wait while that thread is live.
+
+Added `src/application/scheduling/SyncTaskPolicy.cpp` to the main `HaikenAnime` target, resolving the missing-symbol link failure from round 4. No build directories or unrelated files were removed.
+
+### Fix round 5 validation
+
+```text
+git diff --check
+cmake --build cmake-build-validation --target HaikenAnime --parallel 1
+cmake --build cmake-build-validation --target AdaptiveSyncRuntimeTests --parallel 1
+```
+
+`git diff --check` produced no diagnostics before report finalization. The `HaikenAnime` target compiled the changed `main.cpp`, `AdaptiveSyncRuntime.cpp`, and `SyncTaskPolicy.cpp`, then linked successfully (exit code 0). The focused `AdaptiveSyncRuntimeTests` build remains blocked before test-source compilation: AutoMoc's MinGW `g++.exe -dM -E` predefines subprocess returned code 1 with empty output. No new runtime test executable or test result is claimed for this round. The lifecycle paths are compile-verified but not runtime-verified.

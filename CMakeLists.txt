@@ -161,6 +161,7 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/anilist/IPendingChangeRepository.h
         src/application/scheduling/ISyncTaskStateRepository.h
         src/application/scheduling/ISyncTaskExecutor.h
+        src/application/scheduling/SyncTaskPolicy.cpp
         src/application/anilist/IAniListUpdateClient.h
         src/infrastructure/anilist/AniListUpdateClient.h
         src/infrastructure/anilist/AniListUpdateClient.cpp

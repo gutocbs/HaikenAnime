@@ -51,6 +51,9 @@ int main(int argc, char *argv[]) {
     QObject::connect(&app, &QCoreApplication::aboutToQuit, [&context]() {
         if (context.adaptiveSync) {
             context.adaptiveSync->shutdown();
+            if (!context.adaptiveSync->isStopped()) {
+                RetainAdaptiveSyncRuntimeForProcessExit(std::move(context.adaptiveSync));
+            }
         }
         if (context.localLibraryScan) {
             context.localLibraryScan->shutdown();
@@ -170,34 +173,42 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty(QStringLiteral("settingsController"), &settingsController);
     engine.rootContext()->setContextProperty(QStringLiteral("seasonalCatalogController"), &seasonalCatalogController);
 
-    QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
-                     &app, []() { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
-    engine.loadFromModule("HaikenAnime", "Main");
-    if (!engine.rootObjects().isEmpty()) scheduleStartupLibraryScan(context, &settingsController);
-
     bool shutdownRequested = false;
-    QObject::connect(&app, &QGuiApplication::lastWindowClosed, &app,
-                     [&app, &context, &shutdownRequested] {
-        if (shutdownRequested) return;
-        shutdownRequested = true;
+    int exitCode = 0;
+    QTimer shutdownPoll;
+    shutdownPoll.setInterval(10);
+    QObject::connect(&shutdownPoll, &QTimer::timeout, &app, [&] {
         if (!context.adaptiveSync || context.adaptiveSync->isStopped()) {
-            app.quit();
+            shutdownPoll.stop();
+            app.exit(exitCode);
+        }
+    });
+    const auto requestShutdown = [&](int code) {
+        if (shutdownRequested) {
+            if (code != 0) exitCode = code;
             return;
         }
-        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::Stopped,
-                         &app, [&app] { app.quit(); }, Qt::SingleShotConnection);
-        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,
-                         &app, [&app](const QString &) { app.quit(); }, Qt::SingleShotConnection);
+        shutdownRequested = true;
+        exitCode = code;
+        if (!context.adaptiveSync || context.adaptiveSync->isStopped()) {
+            app.exit(exitCode);
+            return;
+        }
         context.adaptiveSync->shutdown();
-        QTimer::singleShot(AdaptiveSyncShutdownTimeoutMs, &app, [&app, &context] {
-            if (!context.adaptiveSync || context.adaptiveSync->isStopped()) {
-                app.quit();
-                return;
+        shutdownPoll.start();
+        QTimer::singleShot(AdaptiveSyncShutdownTimeoutMs, &app, [&] {
+            if (context.adaptiveSync && !context.adaptiveSync->isStopped()) {
+                RetainAdaptiveSyncRuntimeForProcessExit(std::move(context.adaptiveSync));
             }
-            RetainAdaptiveSyncRuntimeForProcessExit(std::move(context.adaptiveSync));
-            app.quit();
+            app.exit(exitCode);
         });
-    });
+    };
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
+                     &app, [&requestShutdown] { requestShutdown(-1); }, Qt::QueuedConnection);
+    QObject::connect(&app, &QGuiApplication::lastWindowClosed, &app,
+                     [&requestShutdown] { requestShutdown(0); });
+    engine.loadFromModule("HaikenAnime", "Main");
+    if (!engine.rootObjects().isEmpty()) scheduleStartupLibraryScan(context, &settingsController);
 
     return app.exec();
 }

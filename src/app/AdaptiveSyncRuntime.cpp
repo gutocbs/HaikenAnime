@@ -46,7 +46,7 @@ bool AdaptiveSyncRuntime::isReady() const {
 
 bool AdaptiveSyncRuntime::isStopped() const {
     QMutexLocker lock(&stateMutex_);
-    return state_ == State::Stopped || state_ == State::Failed;
+    return (state_ == State::Stopped || state_ == State::Failed) && !thread_.isRunning();
 }
 
 QString AdaptiveSyncRuntime::initializationError() const {
