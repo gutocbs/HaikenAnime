@@ -813,6 +813,8 @@ add_test(NAME AniListFlowTests COMMAND AniListFlowTests)
 
 add_executable(AniListGraphQlParsingTests
         tests/unit/AniListGraphQlParsingTests.cpp
+        src/infrastructure/anilist/AniListGraphQlClient.h
+        src/infrastructure/anilist/AniListGraphQlClient.cpp
         src/infrastructure/anilist/AniListGraphQlResponseParser.h
         src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
         src/infrastructure/anilist/AniListGraphQlPageParser.h
@@ -821,18 +823,32 @@ add_executable(AniListGraphQlParsingTests
         src/infrastructure/anilist/AniListGraphQlUserListParser.cpp
         src/infrastructure/anilist/AniListMediaMapper.h
         src/infrastructure/anilist/AniListMediaMapper.cpp
+        src/infrastructure/anilist/GraphQlAniListDataSource.h
+        src/infrastructure/anilist/GraphQlAniListDataSource.cpp
+        src/infrastructure/anilist/GraphQlQueryStore.h
+        src/infrastructure/anilist/GraphQlQueryStore.cpp
 )
 
 target_link_libraries(AniListGraphQlParsingTests
         PRIVATE
         Qt6::Core
         Qt6::Gui
+        Qt6::Network
         Qt6::Test
 )
 
 target_compile_definitions(AniListGraphQlParsingTests
         PRIVATE
         HAIKENANIME_GRAPHQL_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/page-response.json"
+        HAIKENANIME_GRAPHQL_USERLIST_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/userlist-response.json"
+)
+
+set_source_files_properties(
+        resources/anilist/queries/media-page.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "media-page.graphql")
+qt_add_resources(AniListGraphQlParsingTests anilist_partition_query_resource_bundle
+        PREFIX "/anilist/queries"
+        FILES resources/anilist/queries/media-page.graphql
 )
 
 add_test(NAME AniListGraphQlParsingTests COMMAND AniListGraphQlParsingTests)

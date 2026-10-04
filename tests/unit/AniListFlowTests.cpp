@@ -113,7 +113,7 @@ private slots:
     void successfulSynchronizationClearsPreviousError();
     void rejectsInvalidPaginationBeforeReading();
     void rejectsDataSourceThatDoesNotReturnRequestedPage();
-    void completePageOneSynchronizationReconcilesUniqueObservedIds();
+    void legacyDataSourceDoesNotReconcileUnseenMedia();
     void filteredSynchronizationDoesNotReconcile();
     void synchronizationStartingAfterPageOneDoesNotReconcile();
     void replayAfterCheckpointFailureIsIdempotentAndReconcilesOnlyAfterACompleteRun();
@@ -228,7 +228,7 @@ void AniListFlowTests::rejectsDataSourceThatDoesNotReturnRequestedPage() {
     QVERIFY(error.contains(QStringLiteral("page 1")));
 }
 
-void AniListFlowTests::completePageOneSynchronizationReconcilesUniqueObservedIds() {
+void AniListFlowTests::legacyDataSourceDoesNotReconcileUnseenMedia() {
     FileAniListDataSource source(QDir::cleanPath(fixturePath()));
     CollectingWriter writer;
     RecordingSnapshotReconciler reconciler;
@@ -238,8 +238,7 @@ void AniListFlowTests::completePageOneSynchronizationReconcilesUniqueObservedIds
     QString error;
 
     QVERIFY2(service.synchronize(filter, error), qPrintable(error));
-    QCOMPARE(reconciler.calls, 1);
-    QVERIFY(reconciler.observedIds.contains(154587));
+    QCOMPARE(reconciler.calls, 0);
 }
 
 void AniListFlowTests::filteredSynchronizationDoesNotReconcile() {
@@ -339,7 +338,7 @@ void AniListFlowTests::partitionRequestsUseExplicitCatalogVariables() {
 
     QCOMPARE(userList.queryIdentity, QStringLiteral("user-list:v1"));
     QVERIFY(userList.queryIdentity != active.queryIdentity);
-    QCOMPARE(userList.variables.value(QStringLiteral("type")).toString(), QStringLiteral("ANIME"));
+    QVERIFY(userList.variables.value(QStringLiteral("type")).isNull());
     QVERIFY(userList.variables.value(QStringLiteral("status")).isNull());
     QVERIFY(userList.variables.value(QStringLiteral("list")).isNull());
 

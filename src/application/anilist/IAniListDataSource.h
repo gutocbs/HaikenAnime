@@ -16,10 +16,12 @@ struct AniListDataSourceRequest final {
     [[nodiscard]] static AniListDataSourceRequest ForPartition(const SyncPartition partition) {
         AniListDataSourceRequest request;
         request.filter.partition = partition;
-        request.filter.type = QStringLiteral("ANIME");
         request.queryIdentity = partition == SyncPartition::UserList
             ? QStringLiteral("user-list:v1") : QStringLiteral("catalog:v1");
-        request.variables.insert(QStringLiteral("type"), request.filter.type);
+        if (partition != SyncPartition::UserList) request.filter.type = QStringLiteral("ANIME");
+        request.variables.insert(QStringLiteral("type"), request.filter.type.isEmpty()
+                                                        ? QJsonValue(QJsonValue::Null)
+                                                        : QJsonValue(request.filter.type));
         request.variables.insert(QStringLiteral("status"), QJsonValue(QJsonValue::Null));
         request.variables.insert(QStringLiteral("list"), QJsonValue(QJsonValue::Null));
         request.setPage(request.filter.startingPage);

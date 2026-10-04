@@ -63,12 +63,26 @@ inline bool RecordedGraphQlAniListDataSource::fetchPage(const AniListDataSourceR
         error = response.errors.first().message;
         return false;
     }
-    if (response.data.value(QStringLiteral("MediaListCollection")).isObject()) {
-        if (!AniListGraphQlUserListParser::parse(response.data, result.page.media, error)) return false;
-        result.page.currentPage = 1;
-        result.page.totalPages = 1;
-        result.page.hasNextPage = false;
-    } else if (!AniListGraphQlPageParser::parse(response.data, result.page, error)) return false;
+    if (request.filter.partition == SyncPartition::UserList) {
+        if (response.data.value(QStringLiteral("MediaListCollection")).isObject()) {
+            if (!AniListGraphQlUserListParser::parse(response.data, result.page.media, error)) return false;
+            result.page.currentPage = qMax(1, request.filter.startingPage);
+            result.page.hasNextPage = response.data.value(QStringLiteral("MediaListCollection")).toObject()
+                                          .value(QStringLiteral("hasNextChunk")).toBool();
+            result.page.totalPages = result.page.hasNextPage ? result.page.currentPage + 1 : result.page.currentPage;
+        } else if (response.data.value(QStringLiteral("Page")).isObject()) {
+            if (!AniListGraphQlPageParser::parse(response.data, result.page, error)) return false;
+        } else {
+            error = QStringLiteral("Recorded AniList user-list response contains neither MediaListCollection nor Page.");
+            return false;
+        }
+    } else {
+        if (!response.data.value(QStringLiteral("Page")).isObject()) {
+            error = QStringLiteral("Recorded AniList catalog response does not contain Page.");
+            return false;
+        }
+        if (!AniListGraphQlPageParser::parse(response.data, result.page, error)) return false;
+    }
     if (result.page.currentPage != qMax(1, request.filter.startingPage)) {
         error = QStringLiteral("Recorded AniList response contains page %1 while page %2 was requested.")
                     .arg(result.page.currentPage)
@@ -78,7 +92,8 @@ inline bool RecordedGraphQlAniListDataSource::fetchPage(const AniListDataSourceR
 
     result.completedPartition = request.filter.partition;
     result.isCompleteAuthoritativeSnapshot = request.filter.partition == SyncPartition::UserList
-        && request.filter.startingPage == 1 && !result.page.hasNextPage;
+        && request.filter.startingPage == 1 && request.filter.type.isEmpty()
+        && request.filter.status.isEmpty() && request.filter.list.isEmpty() && !result.page.hasNextPage;
     cachedResults_.insert(key, result);
     return true;
 }

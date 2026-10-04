@@ -1,5 +1,5 @@
-query UserAnimeList($userName: String!, $page: Int, $perPage: Int, $type: MediaType, $status: MediaStatus, $list: MediaListStatus) {
-  Page(page: $page, perPage: $perPage) {
+query AniListPartition($userName: String, $page: Int, $perPage: Int, $type: MediaType, $status: MediaStatus, $list: MediaListStatus, $includeCatalog: Boolean!, $includeUserList: Boolean!) {
+  Page(page: $page, perPage: $perPage) @include(if: $includeCatalog) {
     pageInfo { currentPage lastPage hasNextPage }
     media(type: $type, status: $status) {
       status
@@ -33,7 +33,7 @@ query UserAnimeList($userName: String!, $page: Int, $perPage: Int, $type: MediaT
     status: $list
     chunk: $page
     perChunk: $perPage
-  ) {
+  ) @include(if: $includeUserList) {
     hasNextChunk
     lists {
       name

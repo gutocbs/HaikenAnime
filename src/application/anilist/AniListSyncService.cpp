@@ -67,9 +67,7 @@ bool AniListSyncService::synchronize(const AniListDataSourceRequest &request, QS
         }
         if (aniListDataSource_ == nullptr) {
             sourceResult.completedPartition = pageRequest.filter.partition;
-            sourceResult.isCompleteAuthoritativeSnapshot = pageRequest.filter.partition == SyncPartition::UserList
-                && request.filter.startingPage == 1 && request.filter.type.isEmpty()
-                && request.filter.status.isEmpty() && request.filter.list.isEmpty();
+            sourceResult.isCompleteAuthoritativeSnapshot = false;
         }
         const MediaPage &page = sourceResult.page;
         if (isCancelled && isCancelled()) {
