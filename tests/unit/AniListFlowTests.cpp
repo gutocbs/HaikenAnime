@@ -101,6 +101,24 @@ public:
     QList<AniListDataSourceRequest> requests;
 };
 
+class PagedPartitionResultDataSource final : public IAniListDataSource {
+public:
+    bool fetchPage(const AniListDataSourceRequest &request, AniListDataSourceResult &result,
+                   QString &error) override {
+        requests.append(request);
+        if (!resultsByPage.contains(request.filter.startingPage)) {
+            error = QStringLiteral("No result configured for page %1.").arg(request.filter.startingPage);
+            return false;
+        }
+        result = resultsByPage.value(request.filter.startingPage);
+        error.clear();
+        return true;
+    }
+
+    QMap<int, AniListDataSourceResult> resultsByPage;
+    QList<AniListDataSourceRequest> requests;
+};
+
 class AniListFlowTests : public QObject {
     Q_OBJECT
 
@@ -121,6 +139,8 @@ private slots:
     void cancellationAfterFetchPreventsPagePersistence();
     void partitionRequestsUseExplicitCatalogVariables();
     void partialPartitionDoesNotReconcileUnseenMedia();
+    void reconcilesFullMultiPageUserListAtTerminalPage();
+    void partialUserListRunDoesNotReconcileAtTerminalPage();
 };
 
 static QString fixturePath() {
@@ -369,6 +389,49 @@ void AniListFlowTests::partialPartitionDoesNotReconcileUnseenMedia() {
     QVERIFY2(service.synchronize(request, error), qPrintable(error));
     QCOMPARE(source.requests.size(), 1);
     QCOMPARE(source.requests.first().filter.partition, SyncPartition::ActiveCatalog);
+    QCOMPARE(reconciler.calls, 0);
+}
+
+void AniListFlowTests::reconcilesFullMultiPageUserListAtTerminalPage() {
+    PagedPartitionResultDataSource source;
+    source.resultsByPage[1].completedPartition = SyncPartition::UserList;
+    source.resultsByPage[1].isCompleteAuthoritativeSnapshot = true;
+    source.resultsByPage[1].page.currentPage = 1;
+    source.resultsByPage[1].page.hasNextPage = true;
+    source.resultsByPage[1].page.media.append(Media { .Id = 101 });
+    source.resultsByPage[2].completedPartition = SyncPartition::UserList;
+    source.resultsByPage[2].page.currentPage = 2;
+    source.resultsByPage[2].page.media.append(Media { .Id = 202 });
+    CollectingWriter writer;
+    RecordingSnapshotReconciler reconciler;
+    AniListSyncService service(source, writer, &reconciler);
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.username = QStringLiteral("fixture-user");
+    QString error;
+
+    QVERIFY2(service.synchronize(request, error), qPrintable(error));
+    QCOMPARE(source.requests.size(), 2);
+    QCOMPARE(source.requests.at(0).filter.startingPage, 1);
+    QCOMPARE(source.requests.at(1).filter.startingPage, 2);
+    QCOMPARE(reconciler.calls, 1);
+    QCOMPARE(reconciler.observedIds, QSet<int>({101, 202}));
+}
+
+void AniListFlowTests::partialUserListRunDoesNotReconcileAtTerminalPage() {
+    PagedPartitionResultDataSource source;
+    source.resultsByPage[2].completedPartition = SyncPartition::UserList;
+    source.resultsByPage[2].isCompleteAuthoritativeSnapshot = true;
+    source.resultsByPage[2].page.currentPage = 2;
+    source.resultsByPage[2].page.media.append(Media { .Id = 202 });
+    CollectingWriter writer;
+    RecordingSnapshotReconciler reconciler;
+    AniListSyncService service(source, writer, &reconciler);
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.username = QStringLiteral("fixture-user");
+    request.setPage(2);
+    QString error;
+
+    QVERIFY2(service.synchronize(request, error), qPrintable(error));
     QCOMPARE(reconciler.calls, 0);
 }
 

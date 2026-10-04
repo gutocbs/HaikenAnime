@@ -10,6 +10,7 @@
 #include <QFile>
 #include <QHash>
 #include <QJsonDocument>
+#include <QJsonObject>
 
 #include <utility>
 
@@ -34,8 +35,17 @@ inline RecordedGraphQlAniListDataSource::RecordedGraphQlAniListDataSource(QStrin
 }
 
 inline QString RecordedGraphQlAniListDataSource::cacheKey(const AniListDataSourceRequest &request) const {
-    return request.queryIdentity + QLatin1Char('|') + ToString(request.filter.partition)
-        + QLatin1Char('|') + QString::fromUtf8(QJsonDocument(request.variables).toJson(QJsonDocument::Compact));
+    QJsonObject identity;
+    identity.insert(QStringLiteral("queryIdentity"), request.queryIdentity);
+    identity.insert(QStringLiteral("partition"), ToString(request.filter.partition));
+    identity.insert(QStringLiteral("username"), request.filter.username);
+    identity.insert(QStringLiteral("type"), request.filter.type);
+    identity.insert(QStringLiteral("status"), request.filter.status);
+    identity.insert(QStringLiteral("list"), request.filter.list);
+    identity.insert(QStringLiteral("startingPage"), qMax(1, request.filter.startingPage));
+    identity.insert(QStringLiteral("perPage"), qMax(1, request.filter.perPage));
+    identity.insert(QStringLiteral("variables"), request.variables);
+    return QString::fromUtf8(QJsonDocument(identity).toJson(QJsonDocument::Compact));
 }
 
 inline bool RecordedGraphQlAniListDataSource::fetchPage(const AniListDataSourceRequest &request,
@@ -93,7 +103,7 @@ inline bool RecordedGraphQlAniListDataSource::fetchPage(const AniListDataSourceR
     result.completedPartition = request.filter.partition;
     result.isCompleteAuthoritativeSnapshot = request.filter.partition == SyncPartition::UserList
         && request.filter.startingPage == 1 && request.filter.type.isEmpty()
-        && request.filter.status.isEmpty() && request.filter.list.isEmpty() && !result.page.hasNextPage;
+        && request.filter.status.isEmpty() && request.filter.list.isEmpty();
     cachedResults_.insert(key, result);
     return true;
 }

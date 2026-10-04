@@ -4,6 +4,7 @@
 #include <QNetworkAccessManager>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QTemporaryFile>
 
 #include <limits>
 
@@ -77,6 +78,8 @@ private slots:
     void canonicalizesAndDeduplicatesExternalLinks();
     void recordedLibraryFixtureIsComplete();
     void recordedFixtureCachesOnlyTheAffectedPartitionAndQueryIdentity();
+    void recordedFixtureCacheSeparatesUsersAfterFilterMutation();
+    void recordedUserListMarksAnUnfilteredFirstPageAuthoritativeBeforeTheTerminalPage();
     void recordedSourceSelectsTheResponseShapeForTheRequestedPartition();
     void graphQlAdapterPostsPartitionVariablesAndParsesCatalogPage();
     void graphQlAdapterRequiresAndPostsAUserNameForUserListRefresh();
@@ -424,6 +427,49 @@ void AniListGraphQlParsingTests::recordedFixtureCachesOnlyTheAffectedPartitionAn
     userList.filter.username = QStringLiteral("fixture-user");
     QVERIFY2(userListSource.fetchPage(userList, result, error), qPrintable(error));
     QCOMPARE(result.completedPartition, SyncPartition::UserList);
+    QVERIFY(result.isCompleteAuthoritativeSnapshot);
+}
+
+void AniListGraphQlParsingTests::recordedFixtureCacheSeparatesUsersAfterFilterMutation() {
+    RecordedGraphQlAniListDataSource source(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE));
+    auto firstUser = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    firstUser.filter.username = QStringLiteral("first-user");
+    auto secondUser = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    secondUser.filter.username = QStringLiteral("second-user");
+    AniListDataSourceResult result;
+    QString error;
+
+    QVERIFY2(source.fetchPage(firstUser, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 1);
+    QVERIFY2(source.fetchPage(secondUser, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 2);
+    QVERIFY2(source.fetchPage(firstUser, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 2);
+    QVERIFY2(source.fetchPage(secondUser, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 2);
+
+    secondUser.filter.list = QStringLiteral("CURRENT");
+    QVERIFY2(source.fetchPage(secondUser, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 3);
+    QVERIFY(!result.isCompleteAuthoritativeSnapshot);
+}
+
+void AniListGraphQlParsingTests::recordedUserListMarksAnUnfilteredFirstPageAuthoritativeBeforeTheTerminalPage() {
+    QTemporaryFile multiPageFixture;
+    QVERIFY(multiPageFixture.open());
+    auto payload = fixture(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE));
+    QVERIFY(payload.contains("\"hasNextChunk\": false"));
+    payload.replace("\"hasNextChunk\": false", "\"hasNextChunk\": true");
+    QVERIFY(multiPageFixture.write(payload) == payload.size());
+    multiPageFixture.flush();
+    RecordedGraphQlAniListDataSource source(multiPageFixture.fileName());
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.username = QStringLiteral("fixture-user");
+    AniListDataSourceResult result;
+    QString error;
+
+    QVERIFY2(source.fetchPage(request, result, error), qPrintable(error));
+    QVERIFY(result.page.hasNextPage);
     QVERIFY(result.isCompleteAuthoritativeSnapshot);
 }
 

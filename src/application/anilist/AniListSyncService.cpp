@@ -102,7 +102,8 @@ bool AniListSyncService::synchronize(const AniListDataSourceRequest &request, QS
             }
         }
 
-        receivedCompleteAuthoritativeSnapshot = sourceResult.isCompleteAuthoritativeSnapshot;
+        receivedCompleteAuthoritativeSnapshot = receivedCompleteAuthoritativeSnapshot
+            || sourceResult.isCompleteAuthoritativeSnapshot;
 
         if (HasTimedOut(timer, timeoutMs_)) {
             error = QStringLiteral("AniList synchronization timed out.");

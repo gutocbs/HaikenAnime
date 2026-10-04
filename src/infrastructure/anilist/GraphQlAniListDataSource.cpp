@@ -74,7 +74,7 @@ bool GraphQlAniListDataSource::fetchPage(const AniListDataSourceRequest &request
         result.page.totalPages = result.page.hasNextPage ? result.page.currentPage + 1 : result.page.currentPage;
         result.isCompleteAuthoritativeSnapshot = request.filter.startingPage == 1
             && request.filter.type.isEmpty() && request.filter.status.isEmpty()
-            && request.filter.list.isEmpty() && !result.page.hasNextPage;
+            && request.filter.list.isEmpty();
         return true;
     }
 
