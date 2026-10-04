@@ -1,8 +1,11 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <QTimer>
 
+#include <memory>
 #include <utility>
+#include <vector>
 
 #include "src/app/ApplicationComposition.h"
 #include "src/app/TranslationLoader.h"
@@ -10,6 +13,16 @@
 #include "src/presentation/seasonal/SeasonalCatalogController.h"
 #include "src/presentation/settings/SettingsController.h"
 #include "src/application/media/SeasonalPersonalListService.h"
+
+namespace {
+constexpr int AdaptiveSyncShutdownTimeoutMs = 5'000;
+
+void RetainAdaptiveSyncRuntimeForProcessExit(std::unique_ptr<AdaptiveSyncRuntime> runtime) {
+    // Intentionally outlive application teardown: destroying a timed-out runtime would release live worker state.
+    static auto *retainedRuntimes = new std::vector<std::unique_ptr<AdaptiveSyncRuntime>>;
+    retainedRuntimes->push_back(std::move(runtime));
+}
+}
 
 bool persistHomeSortPreference(ApplicationContext &context, const QString &key, QString &error) {
     error.clear();
@@ -176,6 +189,14 @@ int main(int argc, char *argv[]) {
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,
                          &app, [&app](const QString &) { app.quit(); }, Qt::SingleShotConnection);
         context.adaptiveSync->shutdown();
+        QTimer::singleShot(AdaptiveSyncShutdownTimeoutMs, &app, [&app, &context] {
+            if (!context.adaptiveSync || context.adaptiveSync->isStopped()) {
+                app.quit();
+                return;
+            }
+            RetainAdaptiveSyncRuntimeForProcessExit(std::move(context.adaptiveSync));
+            app.quit();
+        });
     });
 
     return app.exec();

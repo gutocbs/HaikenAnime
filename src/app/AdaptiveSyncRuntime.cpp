@@ -6,8 +6,6 @@
 #include <utility>
 
 namespace {
-constexpr unsigned long ShutdownWaitMs = 5'000;
-
 QString SafeError(const QString &error, const QString &fallback) {
     return error.isEmpty() ? fallback : error;
 }
@@ -26,7 +24,7 @@ AdaptiveSyncRuntime::AdaptiveSyncRuntime(RepositoryFactory repositoryFactory, Ex
 
 AdaptiveSyncRuntime::~AdaptiveSyncRuntime() {
     shutdown();
-    if (thread_.isRunning()) thread_.wait(ShutdownWaitMs);
+    if (thread_.isRunning()) thread_.wait();
 }
 
 void AdaptiveSyncRuntime::shutdown() {

@@ -4,7 +4,9 @@
 #include <QtTest>
 
 #include <atomic>
+#include <chrono>
 #include <memory>
+#include <thread>
 
 #include "../../src/app/AdaptiveSyncRuntime.h"
 
@@ -58,6 +60,7 @@ private slots:
     void constructorQueuesInitializationWithoutBlockingCaller();
     void exposesRepositoryInitializationFailure();
     void defersWorkerDestructionUntilCoordinatorStops();
+    void destructorRetainsWorkerOwnershipPastLegacyTimeout();
 };
 
 void AdaptiveSyncRuntimeTests::constructorQueuesInitializationWithoutBlockingCaller() {
@@ -114,6 +117,30 @@ void AdaptiveSyncRuntimeTests::defersWorkerDestructionUntilCoordinatorStops() {
     QVERIFY(!runtime.isStopped());
     executorState->shutdownAcknowledgement();
     QTRY_VERIFY(runtime.isStopped());
+}
+
+void AdaptiveSyncRuntimeTests::destructorRetainsWorkerOwnershipPastLegacyTimeout() {
+    const auto executorState = std::make_shared<ExecutorState>();
+    auto runtime = std::make_unique<AdaptiveSyncRuntime>(
+        readyRepository,
+        [executorState] { return std::make_unique<FakeTaskExecutor>(executorState); },
+        std::map<SyncTaskKind, SyncSchedulePolicy>{});
+    QTRY_VERIFY(runtime->isReady());
+
+    runtime->shutdown();
+    QTRY_VERIFY(executorState->shutdownRequested.load());
+
+    std::thread acknowledgeAfterLegacyTimeout([executorState] {
+        std::this_thread::sleep_for(std::chrono::milliseconds(5'100));
+        executorState->shutdownAcknowledgement();
+    });
+    QElapsedTimer elapsed;
+    elapsed.start();
+    runtime.reset();
+    acknowledgeAfterLegacyTimeout.join();
+
+    QVERIFY2(elapsed.elapsed() >= 5'000,
+             "Runtime destruction released worker ownership before shutdown acknowledgement.");
 }
 
 QTEST_GUILESS_MAIN(AdaptiveSyncRuntimeTests)
