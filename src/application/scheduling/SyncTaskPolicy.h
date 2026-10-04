@@ -4,6 +4,7 @@
 #include "SyncTaskTypes.h"
 
 enum class SyncTaskTrigger { Scheduled, ManualRun, LocalChange, CompletedToActive };
+enum class SyncTaskPromotion { None, LocalChange, CompletedToActive };
 
 struct SyncTaskPolicyRequest final {
     SyncTaskTrigger trigger = SyncTaskTrigger::Scheduled;
@@ -15,7 +16,7 @@ struct SyncTaskPolicyDecision final {
     SyncScheduleDecision schedule;
     SyncTaskState proposedState;
     bool resetFailureState = false;
-    bool promoted = false;
+    SyncTaskPromotion promotion = SyncTaskPromotion::None;
 };
 
 class SyncTaskPolicy final {

@@ -1,21 +1,30 @@
 #include "SyncTaskPolicy.h"
 
 #include <algorithm>
-#include <cmath>
 #include <limits>
 
 namespace {
+constexpr auto maximumFutureDelay = std::chrono::hours(24 * 366 * 100);
+
 std::chrono::milliseconds nonNegativeDuration(const std::chrono::milliseconds duration) {
     return std::max(duration, std::chrono::milliseconds::zero());
 }
 
+std::chrono::milliseconds boundedFutureDuration(const std::chrono::milliseconds duration) {
+    return std::min(nonNegativeDuration(duration),
+                    std::chrono::duration_cast<std::chrono::milliseconds>(maximumFutureDelay));
+}
+
+QDateTime clampedFutureTime(QDateTime anchor, const std::chrono::milliseconds duration) {
+    return anchor.addMSecs(boundedFutureDuration(duration).count());
+}
+
 QDateTime clampedDueTime(QDateTime anchor, const std::chrono::milliseconds duration, const QDateTime now) {
-    const auto delay = nonNegativeDuration(duration);
+    const auto delay = boundedFutureDuration(duration);
     if (!anchor.isValid() || anchor > now) anchor = now;
-    const auto latest = now.addMSecs(delay.count());
     const auto due = anchor.addMSecs(delay.count());
-    if (!due.isValid() || !latest.isValid() || due < now) return now;
-    return std::min(due, latest);
+    if (!due.isValid() || due < now) return now;
+    return due;
 }
 
 std::chrono::milliseconds retryDelay(const SyncTaskState &state, const SyncSchedulePolicy &policy) {
@@ -32,13 +41,33 @@ CacheValidity cacheValidity(const SyncTaskState &state, const SyncSchedulePolicy
                             const QDateTime now) {
     if (!state.lastSucceededAt.has_value() || !state.lastSucceededAt->isValid()) return state.cacheValidity;
     const auto succeededAt = state.lastSucceededAt->toUTC();
-    if (succeededAt.addMSecs(nonNegativeDuration(policy.normalInterval).count()) >= now) {
+    if (clampedFutureTime(succeededAt, policy.normalInterval) > now) {
         return CacheValidity::Fresh;
     }
-    if (succeededAt.addMSecs(nonNegativeDuration(policy.staleProtectionTtl).count()) >= now) {
+    if (clampedFutureTime(succeededAt, policy.staleProtectionTtl) > now) {
         return CacheValidity::Stale;
     }
     return CacheValidity::Expired;
+}
+
+qint64 saturatingAdd(const qint64 value, const qint64 offset) {
+    if (offset > 0 && value > std::numeric_limits<qint64>::max() - offset) {
+        return std::numeric_limits<qint64>::max();
+    }
+    if (offset < 0 && value < std::numeric_limits<qint64>::min() - offset) {
+        return std::numeric_limits<qint64>::min();
+    }
+    return value + offset;
+}
+
+qint64 boundedJitter(const qint64 duration, const double jitterRatio) {
+    if (duration <= 0 || jitterRatio <= 0.0) return 0;
+    if (jitterRatio >= 1.0) return duration;
+    const auto maximum = static_cast<long double>(duration) * static_cast<long double>(jitterRatio);
+    if (maximum >= static_cast<long double>(std::numeric_limits<qint64>::max())) {
+        return std::numeric_limits<qint64>::max();
+    }
+    return static_cast<qint64>(maximum);
 }
 
 std::chrono::milliseconds withInjectedJitter(const std::chrono::milliseconds duration,
@@ -46,10 +75,9 @@ std::chrono::milliseconds withInjectedJitter(const std::chrono::milliseconds dur
                                              const double jitterRatio) {
     const auto safeDuration = nonNegativeDuration(duration);
     const auto safeRatio = std::clamp(jitterRatio, 0.0, 1.0);
-    const auto maximumJitter = static_cast<qint64>(std::llround(safeDuration.count() * safeRatio));
+    const auto maximumJitter = boundedJitter(safeDuration.count(), safeRatio);
     const auto jitter = std::clamp(requestedJitter.count(), -maximumJitter, maximumJitter);
-    if (jitter < 0 && safeDuration.count() < -jitter) return std::chrono::milliseconds::zero();
-    return safeDuration + std::chrono::milliseconds(jitter);
+    return std::chrono::milliseconds(std::max<qint64>(saturatingAdd(safeDuration.count(), jitter), 0));
 }
 
 SyncScheduleDecision immediateDecision(const QDateTime now, const CacheValidity cacheValidity) {
@@ -77,6 +105,7 @@ SyncTaskPolicyDecision SyncTaskPolicy::Decide(const SyncTaskState &state, const 
     decision.proposedState = state;
     decision.schedule.cacheValidity = cacheValidity(state, policy, now);
     decision.proposedState.cacheValidity = decision.schedule.cacheValidity;
+    decision.proposedState.priority = PriorityFor(decision.proposedState.partition);
 
     if (state.status == SyncTaskStatus::Succeeded) {
         decision.resetFailureState = state.lastErrorCategory != AniListSyncErrorCategory::None
@@ -92,20 +121,21 @@ SyncTaskPolicyDecision SyncTaskPolicy::Decide(const SyncTaskState &state, const 
         decision.proposedState.kind = SyncTaskKind::ActiveCatalog;
         decision.proposedState.partition = SyncPartition::ActiveCatalog;
         decision.proposedState.priority = PriorityFor(SyncPartition::ActiveCatalog);
-        decision.promoted = true;
-        decision.schedule = immediateDecision(now, decision.schedule.cacheValidity);
-        return decision;
+        decision.promotion = SyncTaskPromotion::CompletedToActive;
     }
 
-    if (request.trigger == SyncTaskTrigger::ManualRun || request.trigger == SyncTaskTrigger::LocalChange) {
-        decision.proposedState.priority = PriorityFor(decision.proposedState.partition);
-        decision.promoted = request.trigger == SyncTaskTrigger::LocalChange;
-        decision.schedule = immediateDecision(now, decision.schedule.cacheValidity);
-        return decision;
+    if (request.trigger == SyncTaskTrigger::LocalChange) {
+        decision.promotion = SyncTaskPromotion::LocalChange;
     }
 
     if (request.retryAfter.has_value() && request.retryAfter->isValid() && *request.retryAfter > now) {
         decision.schedule.nextRunAt = request.retryAfter->toUTC();
+        return decision;
+    }
+
+    if (request.trigger == SyncTaskTrigger::ManualRun || request.trigger == SyncTaskTrigger::LocalChange
+        || request.trigger == SyncTaskTrigger::CompletedToActive) {
+        decision.schedule = immediateDecision(now, decision.schedule.cacheValidity);
         return decision;
     }
 
