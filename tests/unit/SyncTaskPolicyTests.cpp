@@ -14,10 +14,17 @@ private slots:
     void defersFreshCacheUntilItsNormalInterval();
     void honorsRetryAfterWithoutApplyingJitter();
     void marksAgedFreshCacheAsStaleOrExpired();
-    void appliesDeterministicJitterToNormalIntervals();
+    void appliesInjectedJitterToNormalIntervals();
     void limitsConsecutiveImmediateRetries();
     void schedulesRetryableFailuresWithBoundedExponentialBackoff();
     void schedulesNonRetryableFailuresAfterCooldown();
+    void prioritizesWatchingAndReadingOverInactiveAndCompletedCatalogs();
+    void proposesFailureResetAfterSuccess();
+    void runsManualRequestsImmediately();
+    void promotesLocalChangesForImmediateSynchronization();
+    void promotesCompletedCatalogToActiveCatalog();
+    void clampsBackwardClockJumpsToANewCadenceFromNow();
+    void runsExpiredWorkAfterAForwardClockJump();
 };
 
 void SyncTaskPolicyTests::providesStablePersistedNamesForEveryTaskKind() {
@@ -120,7 +127,7 @@ void SyncTaskPolicyTests::marksAgedFreshCacheAsStaleOrExpired() {
     QCOMPARE(expired.cacheValidity, CacheValidity::Expired);
 }
 
-void SyncTaskPolicyTests::appliesDeterministicJitterToNormalIntervals() {
+void SyncTaskPolicyTests::appliesInjectedJitterToNormalIntervals() {
     SyncTaskState state;
     state.kind = SyncTaskKind::UserList;
     state.cacheValidity = CacheValidity::Fresh;
@@ -131,10 +138,11 @@ void SyncTaskPolicyTests::appliesDeterministicJitterToNormalIntervals() {
     policy.staleProtectionTtl = std::chrono::hours(1);
     policy.jitterRatio = 0.5;
 
-    const auto decision = SyncTaskPolicy::Evaluate(state, policy, succeededAt, std::nullopt);
+    const auto decision = SyncTaskPolicy::Decide(
+        state, policy, succeededAt, {.jitter = std::chrono::milliseconds(500)});
 
-    QVERIFY(!decision.shouldRunNow);
-    QCOMPARE(decision.nextRunAt, succeededAt.addMSecs(8500));
+    QVERIFY(!decision.schedule.shouldRunNow);
+    QCOMPARE(decision.schedule.nextRunAt, succeededAt.addMSecs(8500));
 }
 
 void SyncTaskPolicyTests::limitsConsecutiveImmediateRetries() {
@@ -185,6 +193,111 @@ void SyncTaskPolicyTests::schedulesNonRetryableFailuresAfterCooldown() {
 
     QVERIFY(!decision.shouldRunNow);
     QCOMPARE(decision.nextRunAt, now.addSecs(60 * 60));
+}
+
+void SyncTaskPolicyTests::prioritizesWatchingAndReadingOverInactiveAndCompletedCatalogs() {
+    QVERIFY(SyncTaskPolicy::PriorityFor(SyncPartition::ActiveCatalog)
+            > SyncTaskPolicy::PriorityFor(SyncPartition::InactiveCatalog));
+    QVERIFY(SyncTaskPolicy::PriorityFor(SyncPartition::ActiveCatalog)
+            > SyncTaskPolicy::PriorityFor(SyncPartition::CompletedCatalog));
+}
+
+void SyncTaskPolicyTests::proposesFailureResetAfterSuccess() {
+    SyncTaskState state;
+    state.status = SyncTaskStatus::Succeeded;
+    state.lastErrorCategory = AniListSyncErrorCategory::Network;
+    state.safeErrorDetail = QStringLiteral("temporary failure");
+    state.consecutiveFailures = 3;
+    state.consecutiveImmediateRetries = 2;
+    const auto now = QDateTime::fromMSecsSinceEpoch(6'000'000, QTimeZone::UTC);
+
+    const auto decision = SyncTaskPolicy::Decide(state, SyncSchedulePolicy{}, now, {});
+
+    QVERIFY(decision.resetFailureState);
+    QCOMPARE(decision.proposedState.lastErrorCategory, AniListSyncErrorCategory::None);
+    QCOMPARE(decision.proposedState.safeErrorDetail, QString());
+    QCOMPARE(decision.proposedState.consecutiveFailures, 0);
+    QCOMPARE(decision.proposedState.consecutiveImmediateRetries, 0);
+    QVERIFY(decision.schedule.shouldRunNow);
+    QCOMPARE(decision.schedule.nextRunAt, now);
+}
+
+void SyncTaskPolicyTests::runsManualRequestsImmediately() {
+    SyncTaskState state;
+    state.kind = SyncTaskKind::Cover;
+    state.lastErrorCategory = AniListSyncErrorCategory::Authorization;
+    const auto now = QDateTime::fromMSecsSinceEpoch(7'000'000, QTimeZone::UTC);
+
+    const auto decision = SyncTaskPolicy::Decide(
+        state, SyncSchedulePolicy{}, now, {.trigger = SyncTaskTrigger::ManualRun});
+
+    QVERIFY(decision.schedule.shouldRunNow);
+    QCOMPARE(decision.schedule.nextRunAt, now);
+}
+
+void SyncTaskPolicyTests::promotesLocalChangesForImmediateSynchronization() {
+    SyncTaskState state;
+    state.kind = SyncTaskKind::PendingChange;
+    state.partition = SyncPartition::PendingChanges;
+    state.priority = 1;
+    const auto now = QDateTime::fromMSecsSinceEpoch(8'000'000, QTimeZone::UTC);
+
+    const auto decision = SyncTaskPolicy::Decide(
+        state, SyncSchedulePolicy{}, now, {.trigger = SyncTaskTrigger::LocalChange});
+
+    QVERIFY(decision.schedule.shouldRunNow);
+    QCOMPARE(decision.schedule.nextRunAt, now);
+    QVERIFY(decision.promoted);
+    QCOMPARE(decision.proposedState.priority, SyncTaskPolicy::PriorityFor(SyncPartition::PendingChanges));
+}
+
+void SyncTaskPolicyTests::promotesCompletedCatalogToActiveCatalog() {
+    SyncTaskState state;
+    state.kind = SyncTaskKind::CompletedCatalog;
+    state.partition = SyncPartition::CompletedCatalog;
+    state.priority = SyncTaskPolicy::PriorityFor(SyncPartition::CompletedCatalog);
+    const auto now = QDateTime::fromMSecsSinceEpoch(9'000'000, QTimeZone::UTC);
+
+    const auto decision = SyncTaskPolicy::Decide(
+        state, SyncSchedulePolicy{}, now, {.trigger = SyncTaskTrigger::CompletedToActive});
+
+    QVERIFY(decision.schedule.shouldRunNow);
+    QVERIFY(decision.promoted);
+    QCOMPARE(decision.proposedState.kind, SyncTaskKind::ActiveCatalog);
+    QCOMPARE(decision.proposedState.partition, SyncPartition::ActiveCatalog);
+    QCOMPARE(decision.proposedState.priority, SyncTaskPolicy::PriorityFor(SyncPartition::ActiveCatalog));
+}
+
+void SyncTaskPolicyTests::clampsBackwardClockJumpsToANewCadenceFromNow() {
+    SyncTaskState state;
+    state.kind = SyncTaskKind::UserList;
+    state.cacheValidity = CacheValidity::Fresh;
+    const auto now = QDateTime::fromMSecsSinceEpoch(10'000'000, QTimeZone::UTC);
+    state.lastSucceededAt = now.addSecs(60 * 60);
+    SyncSchedulePolicy policy;
+    policy.normalInterval = std::chrono::minutes(30);
+
+    const auto decision = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+
+    QVERIFY(!decision.shouldRunNow);
+    QCOMPARE(decision.nextRunAt, now.addSecs(30 * 60));
+}
+
+void SyncTaskPolicyTests::runsExpiredWorkAfterAForwardClockJump() {
+    SyncTaskState state;
+    state.kind = SyncTaskKind::UserList;
+    state.cacheValidity = CacheValidity::Fresh;
+    const auto now = QDateTime::fromMSecsSinceEpoch(11'000'000, QTimeZone::UTC);
+    state.lastSucceededAt = now.addSecs(-3 * 60 * 60);
+    SyncSchedulePolicy policy;
+    policy.normalInterval = std::chrono::hours(1);
+    policy.staleProtectionTtl = std::chrono::hours(2);
+
+    const auto decision = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+
+    QVERIFY(decision.shouldRunNow);
+    QCOMPARE(decision.nextRunAt, now);
+    QCOMPARE(decision.cacheValidity, CacheValidity::Expired);
 }
 
 QTEST_MAIN(SyncTaskPolicyTests)
