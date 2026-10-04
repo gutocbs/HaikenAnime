@@ -32,6 +32,26 @@ public:
     }
 };
 
+class CancellationAfterFetchDataSource final : public IMediaDataSource {
+public:
+    explicit CancellationAfterFetchDataSource(bool &cancelled) : cancelled_(cancelled) {}
+
+    bool fetchPage(const MediaSyncFilter &, MediaPage &page, QString &error) override {
+        error.clear();
+        page = {};
+        page.currentPage = 1;
+        page.hasNextPage = false;
+        Media media;
+        media.Id = 7;
+        page.media.append(media);
+        cancelled_ = true;
+        return true;
+    }
+
+private:
+    bool &cancelled_;
+};
+
 class RecordingSnapshotReconciler final : public IMediaSnapshotReconciler {
 public:
     bool reconcileAuthoritativeSnapshot(const QSet<int> &ids, int &removedCount,
@@ -83,6 +103,7 @@ private slots:
     void synchronizationStartingAfterPageOneDoesNotReconcile();
     void replayAfterCheckpointFailureIsIdempotentAndReconcilesOnlyAfterACompleteRun();
     void doesNotAdvanceCheckpointWhenPagePersistenceFails();
+    void cancellationAfterFetchPreventsPagePersistence();
 };
 
 static QString fixturePath() {
@@ -279,6 +300,18 @@ void AniListFlowTests::doesNotAdvanceCheckpointWhenPagePersistenceFails() {
         return true;
     }));
     QCOMPARE(checkpointCalls, 0);
+}
+
+void AniListFlowTests::cancellationAfterFetchPreventsPagePersistence() {
+    bool cancelled = false;
+    CancellationAfterFetchDataSource source(cancelled);
+    CollectingWriter writer;
+    AniListSyncService service(source, writer);
+    QString error;
+
+    QVERIFY(!service.synchronize({}, error, {}, [&cancelled] { return cancelled; }));
+    QCOMPARE(service.lastErrorCategory(), AniListSyncErrorCategory::Cancelled);
+    QCOMPARE(writer.batches.size(), 0);
 }
 
 QTEST_MAIN(AniListFlowTests)

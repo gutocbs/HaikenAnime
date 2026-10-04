@@ -51,8 +51,12 @@ struct ApplicationContext final {
     std::unique_ptr<LocalLibraryRecognitionCoordinator> localLibraryRecognition;
     std::unique_ptr<LocalLibraryScanCoordinator> localLibraryScan;
 
+    [[nodiscard]] QString schedulingInitializationError() const {
+        return adaptiveSync ? adaptiveSync->initializationError() : QString{};
+    }
     [[nodiscard]] bool isReady() const {
-        return mediaRepository != nullptr && initializationError.isEmpty();
+        return mediaRepository != nullptr && initializationError.isEmpty()
+            && schedulingInitializationError().isEmpty();
     }
 };
 

@@ -25,7 +25,7 @@ public:
                                      QObject *parent = nullptr);
     ~AdaptiveSyncCoordinator() override;
 
-    void Start();
+    [[nodiscard]] bool Start();
     void Stop();
     void RequestNow(SyncPartition partition);
     void NotifyLocalChange(SyncPartition partition);

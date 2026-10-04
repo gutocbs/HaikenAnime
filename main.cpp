@@ -27,6 +27,7 @@ bool persistHomeSortPreference(ApplicationContext &context, const QString &key, 
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
+    app.setQuitOnLastWindowClosed(false);
 
     auto context = createApplicationContext();
     QString translationError;
@@ -35,6 +36,9 @@ int main(int argc, char *argv[]) {
         context.logger->warning(LogCategory::Configuration, translationError);
     }
     QObject::connect(&app, &QCoreApplication::aboutToQuit, [&context]() {
+        if (context.adaptiveSync) {
+            context.adaptiveSync->shutdown();
+        }
         if (context.localLibraryScan) {
             context.localLibraryScan->shutdown();
         }
@@ -73,6 +77,14 @@ int main(int argc, char *argv[]) {
     SettingsController settingsController(context.userPreferencesRepository.get(),
                                           context.userPreferences);
     settingsController.SetScanCoordinator(context.localLibraryScan.get());
+    if (context.adaptiveSync) {
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,
+                         &homeController, &HomeScreenController::notifySynchronizationFailed);
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,
+                         &settingsController, &SettingsController::notifySynchronizationFailed);
+        const auto schedulingError = context.schedulingInitializationError();
+        if (!schedulingError.isEmpty()) homeController.notifySynchronizationFailed(schedulingError);
+    }
     QObject::connect(&homeController, &HomeScreenController::sortPreferenceChanged,
                      [&context, &settingsController](const QString &key) {
         QString error;
@@ -149,6 +161,22 @@ int main(int argc, char *argv[]) {
                      &app, []() { QCoreApplication::exit(-1); }, Qt::QueuedConnection);
     engine.loadFromModule("HaikenAnime", "Main");
     if (!engine.rootObjects().isEmpty()) scheduleStartupLibraryScan(context, &settingsController);
+
+    bool shutdownRequested = false;
+    QObject::connect(&app, &QGuiApplication::lastWindowClosed, &app,
+                     [&app, &context, &shutdownRequested] {
+        if (shutdownRequested) return;
+        shutdownRequested = true;
+        if (!context.adaptiveSync || context.adaptiveSync->isStopped()) {
+            app.quit();
+            return;
+        }
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::Stopped,
+                         &app, [&app] { app.quit(); }, Qt::SingleShotConnection);
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,
+                         &app, [&app](const QString &) { app.quit(); }, Qt::SingleShotConnection);
+        context.adaptiveSync->shutdown();
+    });
 
     return app.exec();
 }

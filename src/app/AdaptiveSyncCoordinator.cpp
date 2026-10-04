@@ -27,19 +27,20 @@ AdaptiveSyncCoordinator::~AdaptiveSyncCoordinator() {
     Stop();
 }
 
-void AdaptiveSyncCoordinator::Start() {
-    if (stopped_ || started_) return;
+bool AdaptiveSyncCoordinator::Start() {
+    if (stopped_ || started_) return false;
 
     QList<SyncTaskState> persistedStates;
     QString error;
     if (!stateRepository_.ReadAll(persistedStates, error)) {
         emit SchedulingFailed(SafeError(error, QStringLiteral("Unable to load synchronization task state.")));
-        return;
+        return false;
     }
 
     for (const auto &state : persistedStates) states_[state.partition] = state;
     started_ = true;
     ProcessDueTasks();
+    return true;
 }
 
 void AdaptiveSyncCoordinator::Stop() {

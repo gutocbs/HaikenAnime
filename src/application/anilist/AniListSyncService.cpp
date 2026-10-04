@@ -44,6 +44,11 @@ bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &err
             lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
             return false;
         }
+        if (isCancelled && isCancelled()) {
+            error = QStringLiteral("AniList synchronization cancelled.");
+            lastErrorCategory_ = AniListSyncErrorCategory::Cancelled;
+            return false;
+        }
 
         if (page.currentPage != pageFilter.startingPage) {
             error = QStringLiteral("AniList data source returned page %1 while page %2 was requested.")

@@ -1120,6 +1120,19 @@ add_executable(AdaptiveSyncCoordinatorTests
 target_link_libraries(AdaptiveSyncCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME AdaptiveSyncCoordinatorTests COMMAND AdaptiveSyncCoordinatorTests)
 
+add_executable(AdaptiveSyncRuntimeTests
+        tests/unit/AdaptiveSyncRuntimeTests.cpp
+        src/app/AdaptiveSyncRuntime.h
+        src/app/AdaptiveSyncRuntime.cpp
+        src/app/AdaptiveSyncCoordinator.h
+        src/app/AdaptiveSyncCoordinator.cpp
+        src/application/scheduling/ISyncTaskExecutor.h
+        src/application/scheduling/SyncTaskPolicy.h
+        src/application/scheduling/SyncTaskPolicy.cpp
+)
+target_link_libraries(AdaptiveSyncRuntimeTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME AdaptiveSyncRuntimeTests COMMAND AdaptiveSyncRuntimeTests)
+
 add_executable(LocalLibraryScanCoordinatorTests
         tests/unit/LocalLibraryScanCoordinatorTests.cpp
         src/app/LocalLibraryScanCoordinator.h
@@ -1243,6 +1256,7 @@ set(HAIKENANIME_TESTS
         QmlStructureTests
         InitialSyncCoordinatorTests
         AdaptiveSyncCoordinatorTests
+        AdaptiveSyncRuntimeTests
         LocalLibraryScanCoordinatorTests
         LocalLibraryScanCompositionTests
         LocalLibraryRecognitionCompositionTests
