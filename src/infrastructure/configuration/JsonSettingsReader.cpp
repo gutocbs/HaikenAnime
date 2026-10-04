@@ -44,6 +44,48 @@ bool readDouble(const QJsonObject &object, const QString &key, const double defa
     return true;
 }
 
+bool readNonNegativeDuration(const QJsonObject &object, const QString &key,
+                             std::chrono::milliseconds defaultValue,
+                             std::chrono::milliseconds &result) {
+    result = defaultValue;
+    const auto value = object.value(key);
+    if (value.isUndefined()) return true;
+    if (!value.isDouble()) return false;
+    const auto number = value.toDouble();
+    if (std::trunc(number) != number || number < 0
+        || number > static_cast<double>(std::numeric_limits<qint64>::max())) return false;
+    result = std::chrono::milliseconds(static_cast<qint64>(number));
+    return true;
+}
+
+bool readSyncTaskPolicies(const QJsonObject &sync, Settings &settings) {
+    const auto policiesValue = sync.value(QStringLiteral("policies"));
+    if (policiesValue.isUndefined()) return true;
+    if (!policiesValue.isObject()) return false;
+    const auto policies = policiesValue.toObject();
+    for (const auto kind : {SyncTaskKind::UserList, SyncTaskKind::PendingChange, SyncTaskKind::ActiveCatalog,
+                            SyncTaskKind::InactiveCatalog, SyncTaskKind::CompletedCatalog, SyncTaskKind::Cover,
+                            SyncTaskKind::DerivedMetadata}) {
+        const auto value = policies.value(ToString(kind));
+        if (value.isUndefined()) continue;
+        if (!value.isObject()) return false;
+        auto &policy = settings.syncTaskPolicies.at(kind);
+        const auto object = value.toObject();
+        if (!readNonNegativeDuration(object, QStringLiteral("normalIntervalMs"), policy.normalInterval, policy.normalInterval)
+            || !readNonNegativeDuration(object, QStringLiteral("staleProtectionTtlMs"), policy.staleProtectionTtl, policy.staleProtectionTtl)
+            || !readNonNegativeDuration(object, QStringLiteral("initialRetryDelayMs"), policy.initialRetryDelay, policy.initialRetryDelay)
+            || !readNonNegativeDuration(object, QStringLiteral("maximumRetryDelayMs"), policy.maximumRetryDelay, policy.maximumRetryDelay)
+            || !readNonNegativeDuration(object, QStringLiteral("cooldownMs"), policy.cooldown, policy.cooldown)
+            || !readDouble(object, QStringLiteral("jitterRatio"), policy.jitterRatio, policy.jitterRatio)
+            || !readInteger(object, QStringLiteral("maximumConsecutiveImmediateRetries"), policy.maximumConsecutiveImmediateRetries,
+                            policy.maximumConsecutiveImmediateRetries)
+            || policy.jitterRatio < 0.0 || policy.jitterRatio > 1.0
+            || policy.maximumConsecutiveImmediateRetries < 0
+            || policy.maximumRetryDelay < policy.initialRetryDelay) return false;
+    }
+    return true;
+}
+
 void readPositivePolicyInteger(const QJsonObject &object, const QString &key, const qint64 defaultValue,
                                qint64 &result) {
     result = defaultValue;
@@ -121,6 +163,10 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
     const auto syncPreferences = syncPreferencesValue.toObject();
     const auto libraryPreferences = libraryPreferencesValue.toObject();
     const auto libraryRoot = libraryPreferences.value(QStringLiteral("root"));
+    if (!readSyncTaskPolicies(sync, settings)) {
+        error = QStringLiteral("Settings.json contains invalid synchronization task policy settings.");
+        return false;
+    }
     if (!libraryRoot.isUndefined()) {
         if (!libraryRoot.isString()) {
             error = QStringLiteral("Settings.json library root must be a string.");

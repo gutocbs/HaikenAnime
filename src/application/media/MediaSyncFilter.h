@@ -3,8 +3,11 @@
 
 #include <QString>
 
+#include "../scheduling/SyncTaskTypes.h"
+
 /** Selects and paginates media requested from an application data source. */
 struct MediaSyncFilter {
+    SyncPartition partition = SyncPartition::UserList;
     QString username;
     QString type;
     QString status;

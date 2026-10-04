@@ -631,6 +631,15 @@ target_compile_definitions(JsonSettingsReaderTests PRIVATE
         HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(SyncTaskPolicyTests
+        tests/unit/SyncTaskPolicyTests.cpp
+        src/application/scheduling/SyncTaskPolicy.h
+        src/application/scheduling/SyncTaskPolicy.cpp
+        src/application/scheduling/SyncTaskTypes.h
+)
+target_link_libraries(SyncTaskPolicyTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME SyncTaskPolicyTests COMMAND SyncTaskPolicyTests)
+
 add_executable(UserPreferencesValidatorTests
         tests/unit/UserPreferencesValidatorTests.cpp
         src/application/configuration/UserPreferencesValidator.cpp
@@ -1152,6 +1161,7 @@ set(HAIKENANIME_TESTS
         SqliteQueryConfigurationTests
         FileSecretStoreTests
         JsonSettingsReaderTests
+        SyncTaskPolicyTests
         UserPreferencesValidatorTests
         TranslationLoaderTests
         CoverSettingsTests
