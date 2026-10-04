@@ -6,6 +6,7 @@
 #include "../media/IMediaSnapshotReconciler.h"
 #include "../media/MediaPage.h"
 #include "../media/MediaSyncFilter.h"
+#include "IAniListDataSource.h"
 #include "AniListSyncErrorCategory.h"
 
 #include <functional>
@@ -21,7 +22,16 @@ public:
                        IMediaSnapshotReconciler *snapshotReconciler = nullptr,
                        AniListPendingChangeProcessor *pendingProcessor = nullptr,
                        int timeoutMs = 0)
-        : dataSource_(dataSource), mediaWriter_(mediaWriter),
+        : dataSource_(&dataSource), mediaWriter_(mediaWriter),
+          snapshotReconciler_(snapshotReconciler), pendingProcessor_(pendingProcessor),
+          timeoutMs_(timeoutMs) {
+    }
+
+    AniListSyncService(IAniListDataSource &dataSource, IMediaWriter &mediaWriter,
+                       IMediaSnapshotReconciler *snapshotReconciler = nullptr,
+                       AniListPendingChangeProcessor *pendingProcessor = nullptr,
+                       int timeoutMs = 0)
+        : aniListDataSource_(&dataSource), mediaWriter_(mediaWriter),
           snapshotReconciler_(snapshotReconciler), pendingProcessor_(pendingProcessor),
           timeoutMs_(timeoutMs) {
     }
@@ -30,10 +40,14 @@ public:
     [[nodiscard]] bool synchronize(const MediaSyncFilter &filter, QString &error,
                                    const CheckpointCommitter &commitCheckpoint = {},
                                    const CancellationProbe &isCancelled = {});
+    [[nodiscard]] bool synchronize(const AniListDataSourceRequest &request, QString &error,
+                                   const CheckpointCommitter &commitCheckpoint = {},
+                                   const CancellationProbe &isCancelled = {});
     [[nodiscard]] AniListSyncErrorCategory lastErrorCategory() const { return lastErrorCategory_; }
 
 private:
-    IMediaDataSource &dataSource_;
+    IMediaDataSource *dataSource_ = nullptr;
+    IAniListDataSource *aniListDataSource_ = nullptr;
     IMediaWriter &mediaWriter_;
     IMediaSnapshotReconciler *snapshotReconciler_;
     AniListPendingChangeProcessor *pendingProcessor_;

@@ -1,7 +1,36 @@
-query UserAnimeList($userName: String!, $page: Int, $perPage: Int) {
+query UserAnimeList($userName: String!, $page: Int, $perPage: Int, $type: MediaType, $status: MediaStatus, $list: MediaListStatus) {
+  Page(page: $page, perPage: $perPage) {
+    pageInfo { currentPage lastPage hasNextPage }
+    media(type: $type, status: $status) {
+      status
+      id
+      type
+      format
+      title {
+        romaji
+        english
+        native
+      }
+      synonyms
+      episodes
+      season
+      seasonYear
+      coverImage { large }
+      description
+      averageScore
+      startDate { year month day }
+      chapters
+      volumes
+      nextAiringEpisode { airingAt episode }
+      siteUrl
+      streamingEpisodes { site url }
+      externalLinks { site url }
+    }
+  }
   MediaListCollection(
     userName: $userName
-    type: ANIME
+    type: $type
+    status: $list
     chunk: $page
     perChunk: $perPage
   ) {

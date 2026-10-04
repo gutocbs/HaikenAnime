@@ -3,6 +3,7 @@
 
 #include <QMap>
 
+#include "../../src/application/anilist/IAniListDataSource.h"
 #include "../../src/application/anilist/AniListSyncService.h"
 #include "../../src/application/media/MediaSyncFilter.h"
 #include "../../src/application/media/MediaPage.h"
@@ -86,6 +87,20 @@ public:
     bool succeeds = true;
 };
 
+class PartitionResultDataSource final : public IAniListDataSource {
+public:
+    bool fetchPage(const AniListDataSourceRequest &request, AniListDataSourceResult &result,
+                   QString &error) override {
+        requests.append(request);
+        result = nextResult;
+        error.clear();
+        return true;
+    }
+
+    AniListDataSourceResult nextResult;
+    QList<AniListDataSourceRequest> requests;
+};
+
 class AniListFlowTests : public QObject {
     Q_OBJECT
 
@@ -104,6 +119,8 @@ private slots:
     void replayAfterCheckpointFailureIsIdempotentAndReconcilesOnlyAfterACompleteRun();
     void doesNotAdvanceCheckpointWhenPagePersistenceFails();
     void cancellationAfterFetchPreventsPagePersistence();
+    void partitionRequestsUseExplicitCatalogVariables();
+    void partialPartitionDoesNotReconcileUnseenMedia();
 };
 
 static QString fixturePath() {
@@ -312,6 +329,48 @@ void AniListFlowTests::cancellationAfterFetchPreventsPagePersistence() {
     QVERIFY(!service.synchronize({}, error, {}, [&cancelled] { return cancelled; }));
     QCOMPARE(service.lastErrorCategory(), AniListSyncErrorCategory::Cancelled);
     QCOMPARE(writer.batches.size(), 0);
+}
+
+void AniListFlowTests::partitionRequestsUseExplicitCatalogVariables() {
+    const auto userList = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    const auto active = AniListDataSourceRequest::ForPartition(SyncPartition::ActiveCatalog);
+    const auto inactive = AniListDataSourceRequest::ForPartition(SyncPartition::InactiveCatalog);
+    const auto completed = AniListDataSourceRequest::ForPartition(SyncPartition::CompletedCatalog);
+
+    QCOMPARE(userList.queryIdentity, QStringLiteral("user-list:v1"));
+    QVERIFY(userList.queryIdentity != active.queryIdentity);
+    QCOMPARE(userList.variables.value(QStringLiteral("type")).toString(), QStringLiteral("ANIME"));
+    QVERIFY(userList.variables.value(QStringLiteral("status")).isNull());
+    QVERIFY(userList.variables.value(QStringLiteral("list")).isNull());
+
+    QCOMPARE(active.queryIdentity, QStringLiteral("catalog:v1"));
+    QCOMPARE(active.variables.value(QStringLiteral("type")).toString(), QStringLiteral("ANIME"));
+    QCOMPARE(active.variables.value(QStringLiteral("status")).toString(), QStringLiteral("RELEASING"));
+    QCOMPARE(inactive.variables.value(QStringLiteral("status")).toString(), QStringLiteral("NOT_YET_RELEASED"));
+    QCOMPARE(completed.variables.value(QStringLiteral("status")).toString(), QStringLiteral("FINISHED"));
+    QVERIFY(active.variables.value(QStringLiteral("list")).isNull());
+    QVERIFY(inactive.variables.value(QStringLiteral("list")).isNull());
+    QVERIFY(completed.variables.value(QStringLiteral("list")).isNull());
+}
+
+void AniListFlowTests::partialPartitionDoesNotReconcileUnseenMedia() {
+    PartitionResultDataSource source;
+    source.nextResult.completedPartition = SyncPartition::ActiveCatalog;
+    source.nextResult.isCompleteAuthoritativeSnapshot = false;
+    source.nextResult.page.currentPage = 1;
+    Media media;
+    media.Id = 154587;
+    source.nextResult.page.media.append(media);
+    CollectingWriter writer;
+    RecordingSnapshotReconciler reconciler;
+    AniListSyncService service(source, writer, &reconciler);
+    const auto request = AniListDataSourceRequest::ForPartition(SyncPartition::ActiveCatalog);
+    QString error;
+
+    QVERIFY2(service.synchronize(request, error), qPrintable(error));
+    QCOMPARE(source.requests.size(), 1);
+    QCOMPARE(source.requests.first().filter.partition, SyncPartition::ActiveCatalog);
+    QCOMPARE(reconciler.calls, 0);
 }
 
 QTEST_MAIN(AniListFlowTests)

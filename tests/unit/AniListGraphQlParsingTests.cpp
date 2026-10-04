@@ -6,6 +6,7 @@
 #include "../../src/infrastructure/anilist/AniListGraphQlPageParser.h"
 #include "../../src/infrastructure/anilist/AniListGraphQlResponseParser.h"
 #include "../../src/infrastructure/anilist/AniListMediaMapper.h"
+#include "../../src/infrastructure/anilist/RecordedGraphQlAniListDataSource.h"
 
 class AniListGraphQlParsingTests final : public QObject {
     Q_OBJECT
@@ -23,6 +24,7 @@ private slots:
     void omitsMalformedNumericExtendedMetadata();
     void canonicalizesAndDeduplicatesExternalLinks();
     void recordedLibraryFixtureIsComplete();
+    void recordedFixtureCachesOnlyTheAffectedPartitionAndQueryIdentity();
 };
 
 void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
@@ -330,6 +332,42 @@ void AniListGraphQlParsingTests::recordedLibraryFixtureIsComplete() {
     QVERIFY(entriesWithSeason > 0);
     QVERIFY(entriesWithNextAiring > 0);
     QVERIFY(entriesWithExternalLinks > 0);
+}
+
+void AniListGraphQlParsingTests::recordedFixtureCachesOnlyTheAffectedPartitionAndQueryIdentity() {
+    RecordedGraphQlAniListDataSource source(QStringLiteral(HAIKENANIME_GRAPHQL_FIXTURE));
+    QString error;
+    AniListDataSourceResult result;
+    auto active = AniListDataSourceRequest::ForPartition(SyncPartition::ActiveCatalog);
+    const auto inactive = AniListDataSourceRequest::ForPartition(SyncPartition::InactiveCatalog);
+
+    QVERIFY2(source.fetchPage(active, result, error), qPrintable(error));
+    QCOMPARE(result.completedPartition, SyncPartition::ActiveCatalog);
+    QVERIFY(!result.isCompleteAuthoritativeSnapshot);
+    QCOMPARE(source.fixtureReadCount(), 1);
+    QCOMPARE(source.externalCallCount(), 0);
+
+    QVERIFY2(source.fetchPage(inactive, result, error), qPrintable(error));
+    QCOMPARE(result.completedPartition, SyncPartition::InactiveCatalog);
+    QCOMPARE(source.fixtureReadCount(), 2);
+    QVERIFY2(source.fetchPage(inactive, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 2);
+
+    active.queryIdentity = QStringLiteral("catalog:v2");
+    QVERIFY2(source.fetchPage(active, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 3);
+    QVERIFY2(source.fetchPage(inactive, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 3);
+
+    active.refresh = true;
+    QVERIFY2(source.fetchPage(active, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 4);
+    QCOMPARE(source.externalCallCount(), 0);
+
+    const auto userList = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    QVERIFY2(source.fetchPage(userList, result, error), qPrintable(error));
+    QCOMPARE(result.completedPartition, SyncPartition::UserList);
+    QVERIFY(result.isCompleteAuthoritativeSnapshot);
 }
 
 QTEST_MAIN(AniListGraphQlParsingTests)

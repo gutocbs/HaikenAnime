@@ -15,16 +15,25 @@ bool HasTimedOut(const QElapsedTimer &timer, const int timeoutMs) {
 bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &error,
                                      const CheckpointCommitter &commitCheckpoint,
                                      const CancellationProbe &isCancelled) {
+    AniListDataSourceRequest request;
+    request.filter = filter;
+    return synchronize(request, error, commitCheckpoint, isCancelled);
+}
+
+bool AniListSyncService::synchronize(const AniListDataSourceRequest &request, QString &error,
+                                     const CheckpointCommitter &commitCheckpoint,
+                                     const CancellationProbe &isCancelled) {
     error.clear();
     lastErrorCategory_ = AniListSyncErrorCategory::None;
     QElapsedTimer timer;
     timer.start();
-    if (filter.startingPage <= 0 || filter.perPage <= 0) {
+    if (request.filter.startingPage <= 0 || request.filter.perPage <= 0) {
         error = QStringLiteral("AniList synchronization pagination must use positive values.");
         lastErrorCategory_ = AniListSyncErrorCategory::InvalidData;
         return false;
     }
-    MediaSyncFilter pageFilter = filter;
+    AniListDataSourceRequest pageRequest = request;
+    bool receivedCompleteAuthoritativeSnapshot = false;
     QList<int> synchronizedMediaIds;
     QSet<int> seenMediaIds;
 
@@ -39,21 +48,40 @@ bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &err
             lastErrorCategory_ = AniListSyncErrorCategory::Timeout;
             return false;
         }
-        MediaPage page;
-        if (!dataSource_.fetchPage(pageFilter, page, error)) {
+        AniListDataSourceResult sourceResult;
+        if (aniListDataSource_ != nullptr) {
+            if (!aniListDataSource_->fetchPage(pageRequest, sourceResult, error)) {
+                lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
+                return false;
+            }
+            if (sourceResult.completedPartition != pageRequest.filter.partition) {
+                error = QStringLiteral("AniList data source completed partition %1 while partition %2 was requested.")
+                            .arg(ToString(sourceResult.completedPartition), ToString(pageRequest.filter.partition));
+                lastErrorCategory_ = AniListSyncErrorCategory::InvalidData;
+                return false;
+            }
+        } else if (dataSource_ == nullptr
+                   || !dataSource_->fetchPage(pageRequest.filter, sourceResult.page, error)) {
             lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
             return false;
         }
+        if (aniListDataSource_ == nullptr) {
+            sourceResult.completedPartition = pageRequest.filter.partition;
+            sourceResult.isCompleteAuthoritativeSnapshot = pageRequest.filter.partition == SyncPartition::UserList
+                && request.filter.startingPage == 1 && request.filter.type.isEmpty()
+                && request.filter.status.isEmpty() && request.filter.list.isEmpty();
+        }
+        const MediaPage &page = sourceResult.page;
         if (isCancelled && isCancelled()) {
             error = QStringLiteral("AniList synchronization cancelled.");
             lastErrorCategory_ = AniListSyncErrorCategory::Cancelled;
             return false;
         }
 
-        if (page.currentPage != pageFilter.startingPage) {
+        if (page.currentPage != pageRequest.filter.startingPage) {
             error = QStringLiteral("AniList data source returned page %1 while page %2 was requested.")
                         .arg(page.currentPage)
-                        .arg(pageFilter.startingPage);
+                        .arg(pageRequest.filter.startingPage);
             lastErrorCategory_ = AniListSyncErrorCategory::InvalidData;
             return false;
         }
@@ -76,6 +104,8 @@ bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &err
             }
         }
 
+        receivedCompleteAuthoritativeSnapshot = sourceResult.isCompleteAuthoritativeSnapshot;
+
         if (HasTimedOut(timer, timeoutMs_)) {
             error = QStringLiteral("AniList synchronization timed out.");
             lastErrorCategory_ = AniListSyncErrorCategory::Timeout;
@@ -86,7 +116,7 @@ bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &err
             break;
         }
 
-        pageFilter.startingPage = page.currentPage + 1;
+        pageRequest.setPage(page.currentPage + 1);
     }
 
     if (pendingProcessor_ != nullptr) {
@@ -107,9 +137,8 @@ bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &err
             }
         }
     }
-    const bool coversCompleteLibrary = filter.type.isEmpty() && filter.status.isEmpty()
-        && filter.list.isEmpty();
-    if (filter.startingPage == 1 && coversCompleteLibrary && snapshotReconciler_ != nullptr) {
+    if (request.filter.startingPage == 1 && receivedCompleteAuthoritativeSnapshot
+        && snapshotReconciler_ != nullptr) {
         int removedCount = 0;
         if (!snapshotReconciler_->reconcileAuthoritativeSnapshot(
                 seenMediaIds, removedCount, error)) {

@@ -23,6 +23,11 @@ bool AniListGraphQlClient::execute(const QString &query, const QJsonObject &vari
     return ExecuteWithAttempt(query, variables, response, error, 0);
 }
 
+bool AniListGraphQlClient::execute(const QString &query, const AniListDataSourceRequest &request,
+                                   AniListGraphQlResponse &response, QString &error) const {
+    return execute(query, request.variables, response, error);
+}
+
 bool AniListGraphQlClient::ExecuteWithAttempt(const QString &query, const QJsonObject &variables,
                                              AniListGraphQlResponse &response, QString &error,
                                              const int attempt) const {
