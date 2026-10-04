@@ -43,18 +43,31 @@ void AdaptiveSyncCoordinator::Start() {
 }
 
 void AdaptiveSyncCoordinator::Stop() {
-    if (stopped_) return;
+    if (stopped_ || stopping_) return;
 
-    stopped_ = true;
+    stopping_ = true;
     wakeUpTimer_->stop();
+    QPointer<AdaptiveSyncCoordinator> coordinator(this);
     for (const auto &[partition, generation] : activeGenerations_) {
-        executor_.Cancel(partition);
         auto state = states_.at(partition);
         state.generation = generation + 1;
         state.status = SyncTaskStatus::Idle;
-        Persist(state);
+        if (!Persist(state)) continue;
+        states_[partition] = state;
+        executor_.Cancel(partition, [coordinator, partition, generation] {
+            if (!coordinator) return;
+            QMetaObject::invokeMethod(coordinator, [coordinator, partition, generation] {
+                if (coordinator) coordinator->AcknowledgeCancellation(partition, generation);
+            }, Qt::QueuedConnection);
+        });
     }
-    activeGenerations_.clear();
+    executor_.Shutdown([coordinator] {
+        if (!coordinator) return;
+        QMetaObject::invokeMethod(coordinator, [coordinator] {
+            if (coordinator) coordinator->AcknowledgeShutdown();
+        }, Qt::QueuedConnection);
+    });
+    FinishStopping();
 }
 
 void AdaptiveSyncCoordinator::RequestNow(const SyncPartition partition) {
@@ -74,10 +87,11 @@ void AdaptiveSyncCoordinator::ProcessDueTasks() {
     for (auto &[partition, state] : states_) {
         if (activeGenerations_.contains(partition)) continue;
         const auto decision = SyncTaskPolicy::Decide(state, PolicyFor(state.kind), now, {});
-        state = decision.proposedState;
-        state.nextRunAt = decision.schedule.nextRunAt;
-        Persist(state);
-        if (decision.schedule.shouldRunNow) due.append(state);
+        auto scheduled = decision.proposedState;
+        scheduled.nextRunAt = decision.schedule.nextRunAt;
+        if (!Persist(scheduled)) continue;
+        state = scheduled;
+        if (decision.schedule.shouldRunNow) due.append(scheduled);
     }
 
     std::sort(due.begin(), due.end(), [](const SyncTaskState &left, const SyncTaskState &right) {
@@ -98,17 +112,29 @@ void AdaptiveSyncCoordinator::Request(const SyncPartition partition, const SyncT
     auto state = decision.proposedState;
     state.nextRunAt = decision.schedule.nextRunAt;
     if (state.partition != partition) {
+        const auto existing = states_.find(state.partition);
+        if (existing != states_.end()) {
+            QString error;
+            if (!stateRepository_.Remove(partition, error)) {
+                emit SchedulingFailed(SafeError(error, QStringLiteral("Unable to retire promoted synchronization task state.")));
+                return;
+            }
+            states_.erase(iterator);
+            ScheduleWakeUp();
+            return;
+        }
         QString error;
         if (!stateRepository_.Remove(partition, error)) {
             emit SchedulingFailed(SafeError(error, QStringLiteral("Unable to promote synchronization task state.")));
             return;
         }
+        if (!Persist(state)) return;
         states_.erase(iterator);
         states_[state.partition] = state;
     } else {
+        if (!Persist(state)) return;
         iterator->second = state;
     }
-    Persist(state);
     if (decision.schedule.shouldRunNow && !activeGenerations_.contains(state.partition)) StartTask(state);
     ScheduleWakeUp();
 }
@@ -119,8 +145,8 @@ void AdaptiveSyncCoordinator::StartTask(SyncTaskState state) {
     state.status = SyncTaskStatus::Running;
     state.lastAttemptedAt = Now();
     ++state.generation;
+    if (!Persist(state)) return;
     states_[state.partition] = state;
-    Persist(state);
     activeGenerations_[state.partition] = state.generation;
     emit TaskStarted(state.partition);
 
@@ -137,15 +163,13 @@ void AdaptiveSyncCoordinator::StartTask(SyncTaskState state) {
 
 void AdaptiveSyncCoordinator::CompleteTask(const SyncPartition partition, const qint64 generation,
                                            const SyncTaskExecutionResult result) {
-    if (stopped_) return;
+    if (stopped_ || stopping_) return;
     const auto active = activeGenerations_.find(partition);
     const auto state = states_.find(partition);
     if (active == activeGenerations_.end() || state == states_.end() || active->second != generation
         || state->second.generation != generation) {
         return;
     }
-    activeGenerations_.erase(active);
-
     auto completed = state->second;
     if (result.succeeded) {
         completed.status = SyncTaskStatus::Succeeded;
@@ -165,12 +189,14 @@ void AdaptiveSyncCoordinator::CompleteTask(const SyncPartition partition, const 
         completed.status = SyncTaskStatus::RetryScheduled;
     }
 
-    const auto decision = SyncTaskPolicy::Decide(completed, PolicyFor(completed.kind), Now(), {});
+    const auto decision = SyncTaskPolicy::Decide(completed, PolicyFor(completed.kind), Now(),
+                                                  {.retryAfter = result.retryAfter});
     completed = decision.proposedState;
     completed.nextRunAt = decision.schedule.nextRunAt;
     if (!result.succeeded && decision.schedule.shouldRunNow) ++completed.consecutiveImmediateRetries;
+    if (!Persist(completed)) return;
+    activeGenerations_.erase(active);
     states_[partition] = completed;
-    Persist(completed);
     if (result.succeeded) {
         emit TaskCompleted(partition);
     } else {
@@ -195,11 +221,29 @@ void AdaptiveSyncCoordinator::ScheduleWakeUp() {
     wakeUpTimer_->start(static_cast<int>(std::min<qint64>(delay, std::numeric_limits<int>::max())));
 }
 
-void AdaptiveSyncCoordinator::Persist(const SyncTaskState &state) {
+bool AdaptiveSyncCoordinator::Persist(const SyncTaskState &state) {
     QString error;
-    if (!stateRepository_.Upsert(state, error)) {
-        emit SchedulingFailed(SafeError(error, QStringLiteral("Unable to persist synchronization task state.")));
-    }
+    if (stateRepository_.Upsert(state, error)) return true;
+    emit SchedulingFailed(SafeError(error, QStringLiteral("Unable to persist synchronization task state.")));
+    return false;
+}
+
+void AdaptiveSyncCoordinator::AcknowledgeCancellation(const SyncPartition partition, const qint64 generation) {
+    const auto active = activeGenerations_.find(partition);
+    if (active != activeGenerations_.end() && active->second == generation) activeGenerations_.erase(active);
+    FinishStopping();
+}
+
+void AdaptiveSyncCoordinator::AcknowledgeShutdown() {
+    shutdownAcknowledged_ = true;
+    FinishStopping();
+}
+
+void AdaptiveSyncCoordinator::FinishStopping() {
+    if (!stopping_ || !shutdownAcknowledged_ || !activeGenerations_.empty()) return;
+    stopped_ = true;
+    stopping_ = false;
+    emit Stopped();
 }
 
 QDateTime AdaptiveSyncCoordinator::Now() const {

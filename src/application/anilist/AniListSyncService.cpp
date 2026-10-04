@@ -13,7 +13,8 @@ bool HasTimedOut(const QElapsedTimer &timer, const int timeoutMs) {
 }
 
 bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &error,
-                                     const CheckpointCommitter &commitCheckpoint) {
+                                     const CheckpointCommitter &commitCheckpoint,
+                                     const CancellationProbe &isCancelled) {
     error.clear();
     lastErrorCategory_ = AniListSyncErrorCategory::None;
     QElapsedTimer timer;
@@ -28,6 +29,11 @@ bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &err
     QSet<int> seenMediaIds;
 
     while (true) {
+        if (isCancelled && isCancelled()) {
+            error = QStringLiteral("AniList synchronization cancelled.");
+            lastErrorCategory_ = AniListSyncErrorCategory::Cancelled;
+            return false;
+        }
         if (HasTimedOut(timer, timeoutMs_)) {
             error = QStringLiteral("AniList synchronization timed out.");
             lastErrorCategory_ = AniListSyncErrorCategory::Timeout;
@@ -80,6 +86,11 @@ bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &err
 
     if (pendingProcessor_ != nullptr) {
         for (const int mediaId : synchronizedMediaIds) {
+            if (isCancelled && isCancelled()) {
+                error = QStringLiteral("AniList synchronization cancelled.");
+                lastErrorCategory_ = AniListSyncErrorCategory::Cancelled;
+                return false;
+            }
             if (HasTimedOut(timer, timeoutMs_)) {
                 error = QStringLiteral("AniList synchronization timed out.");
                 lastErrorCategory_ = AniListSyncErrorCategory::Timeout;

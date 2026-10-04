@@ -1,6 +1,8 @@
 #include "ApplicationComposition.h"
 
 #include "InitialSyncCoordinator.h"
+#include "AdaptiveSyncCoordinator.h"
+#include "ApplicationSyncTaskExecutor.h"
 
 #include "../infrastructure/database/SqlQueryStore.h"
 #include "../infrastructure/database/SqliteDatabase.h"
@@ -295,6 +297,19 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         queryConfiguration.markMediaSourceRemovedPath,
         settings.syncTimeoutMs, settings.syncIntervalMs);
     context.initialSync->setLogger(context.logger.get());
+    context.syncTaskStateRepository = std::make_unique<SqliteSyncTaskStateRepository>(
+        context.database->connection(), queryConfiguration.readSyncTaskStatesPath,
+        queryConfiguration.upsertSyncTaskStatePath, queryConfiguration.deleteSyncTaskStatePath);
+    context.syncTaskExecutor = std::make_unique<ApplicationSyncTaskExecutor>(
+        context.database->databasePath(), QStringLiteral(":/fixtures/graphql/userlist-response.json"),
+        queryConfiguration.upsertMediaPath, queryConfiguration.readMediaPath,
+        queryConfiguration.readActiveMediaIdsPath, queryConfiguration.markMediaSourceRemovedPath,
+        queryConfiguration.readSyncTaskStatesPath, queryConfiguration.upsertSyncTaskStatePath,
+        queryConfiguration.deleteSyncTaskStatePath, settings.syncTimeoutMs);
+    context.adaptiveSync = std::make_unique<AdaptiveSyncCoordinator>(
+        *context.syncTaskStateRepository, *context.syncTaskExecutor, AdaptiveSyncCoordinator::Clock{},
+        settings.syncTaskPolicies);
+    context.adaptiveSync->Start();
     context.seasonalNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
     context.seasonalGraphQlClient = std::make_unique<AniListGraphQlClient>(
         *context.seasonalNetworkManager);

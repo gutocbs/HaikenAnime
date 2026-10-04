@@ -15,6 +15,7 @@ class AniListPendingChangeProcessor;
 class AniListSyncService {
 public:
     using CheckpointCommitter = std::function<bool(int confirmedPage, QString &error)>;
+    using CancellationProbe = std::function<bool()>;
     /** Creates a synchronization service from a data source and media repository. */
     AniListSyncService(IMediaDataSource &dataSource, IMediaWriter &mediaWriter,
                        IMediaSnapshotReconciler *snapshotReconciler = nullptr,
@@ -27,7 +28,8 @@ public:
 
     /** Fetches and persists all pages selected by filter, or all available data when empty. */
     [[nodiscard]] bool synchronize(const MediaSyncFilter &filter, QString &error,
-                                   const CheckpointCommitter &commitCheckpoint = {});
+                                   const CheckpointCommitter &commitCheckpoint = {},
+                                   const CancellationProbe &isCancelled = {});
     [[nodiscard]] AniListSyncErrorCategory lastErrorCategory() const { return lastErrorCategory_; }
 
 private:

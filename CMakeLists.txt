@@ -48,6 +48,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/app/InitialSyncCoordinator.cpp
         src/app/AdaptiveSyncCoordinator.h
         src/app/AdaptiveSyncCoordinator.cpp
+        src/app/ApplicationSyncTaskExecutor.h
+        src/app/ApplicationSyncTaskExecutor.cpp
         src/app/LocalLibraryScanCoordinator.h
         src/app/LocalLibraryScanCoordinator.cpp
         src/app/LocalLibraryRecognitionCoordinator.h
