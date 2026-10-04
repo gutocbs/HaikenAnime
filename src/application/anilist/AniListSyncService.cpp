@@ -12,7 +12,8 @@ bool HasTimedOut(const QElapsedTimer &timer, const int timeoutMs) {
 }
 }
 
-bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &error) {
+bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &error,
+                                     const CheckpointCommitter &commitCheckpoint) {
     error.clear();
     lastErrorCategory_ = AniListSyncErrorCategory::None;
     QElapsedTimer timer;
@@ -47,6 +48,12 @@ bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &err
         }
 
         if (!page.media.isEmpty() && !mediaWriter_.upsert(page.media, error)) {
+            lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
+            return false;
+        }
+
+        if (commitCheckpoint && !commitCheckpoint(page.currentPage, error)) {
+            if (error.isEmpty()) error = QStringLiteral("Unable to persist AniList synchronization checkpoint.");
             lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
             return false;
         }

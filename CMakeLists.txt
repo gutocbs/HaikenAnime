@@ -46,6 +46,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/app/ApplicationComposition.cpp
         src/app/InitialSyncCoordinator.h
         src/app/InitialSyncCoordinator.cpp
+        src/app/AdaptiveSyncCoordinator.h
+        src/app/AdaptiveSyncCoordinator.cpp
         src/app/LocalLibraryScanCoordinator.h
         src/app/LocalLibraryScanCoordinator.cpp
         src/app/LocalLibraryRecognitionCoordinator.h
@@ -154,6 +156,7 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/anilist/AniListMergeService.cpp
         src/application/anilist/IPendingChangeRepository.h
         src/application/scheduling/ISyncTaskStateRepository.h
+        src/application/scheduling/ISyncTaskExecutor.h
         src/application/anilist/IAniListUpdateClient.h
         src/infrastructure/anilist/AniListUpdateClient.h
         src/infrastructure/anilist/AniListUpdateClient.cpp
@@ -1102,6 +1105,17 @@ target_compile_definitions(InitialSyncCoordinatorTests PRIVATE
 
 add_test(NAME InitialSyncCoordinatorTests COMMAND InitialSyncCoordinatorTests)
 
+add_executable(AdaptiveSyncCoordinatorTests
+        tests/unit/AdaptiveSyncCoordinatorTests.cpp
+        src/app/AdaptiveSyncCoordinator.h
+        src/app/AdaptiveSyncCoordinator.cpp
+        src/application/scheduling/ISyncTaskExecutor.h
+        src/application/scheduling/SyncTaskPolicy.h
+        src/application/scheduling/SyncTaskPolicy.cpp
+)
+target_link_libraries(AdaptiveSyncCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME AdaptiveSyncCoordinatorTests COMMAND AdaptiveSyncCoordinatorTests)
+
 add_executable(LocalLibraryScanCoordinatorTests
         tests/unit/LocalLibraryScanCoordinatorTests.cpp
         src/app/LocalLibraryScanCoordinator.h
@@ -1175,6 +1189,7 @@ foreach (SQLITE_MIGRATION_TEST_TARGET IN ITEMS
         SqliteLocalFileRepositoryTests
         LocalEpisodeReaderTests
         InitialSyncCoordinatorTests
+        AdaptiveSyncCoordinatorTests
         LocalLibraryScanCompositionTests
         LocalLibraryRecognitionCompositionTests)
     add_sqlite_migration_test_resources(${SQLITE_MIGRATION_TEST_TARGET})
@@ -1223,6 +1238,7 @@ set(HAIKENANIME_TESTS
         SettingsControllerTests
         QmlStructureTests
         InitialSyncCoordinatorTests
+        AdaptiveSyncCoordinatorTests
         LocalLibraryScanCoordinatorTests
         LocalLibraryScanCompositionTests
         LocalLibraryRecognitionCompositionTests

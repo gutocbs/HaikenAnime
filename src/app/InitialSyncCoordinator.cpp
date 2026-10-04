@@ -9,6 +9,7 @@
 
 #include <QDir>
 #include <QMetaObject>
+#include <QPointer>
 #include <QThread>
 #include <QTimer>
 
@@ -80,7 +81,8 @@ void InitialSyncCoordinator::start() {
         executionActive_ = false;
         return;
     }
-    thread_ = QThread::create([this]() {
+    QPointer<InitialSyncCoordinator> coordinator(this);
+    thread_ = QThread::create([this, coordinator]() {
         QString error;
         const bool succeeded = operation_ ? operation_(error) : performSynchronization(error);
         if (!succeeded && error.isEmpty()) {
@@ -89,12 +91,14 @@ void InitialSyncCoordinator::start() {
         if (logger_ && !error.isEmpty()) {
             logger_->error(LogCategory::Sync, error);
         }
-        QMetaObject::invokeMethod(this, [this, error = std::move(error)]() {
-            executionActive_ = false;
-            error.isEmpty() ? emit completed() : emit failed(error);
-            if (!stopping_ && automaticSynchronizationEnabled_
-                && scheduler_ && !scheduler_->isActive()) {
-                scheduler_->start();
+        if (!coordinator) return;
+        QMetaObject::invokeMethod(coordinator, [coordinator, error = std::move(error)]() {
+            if (!coordinator) return;
+            coordinator->executionActive_ = false;
+            error.isEmpty() ? emit coordinator->completed() : emit coordinator->failed(error);
+            if (!coordinator->stopping_ && coordinator->automaticSynchronizationEnabled_
+                && coordinator->scheduler_ && !coordinator->scheduler_->isActive()) {
+                coordinator->scheduler_->start();
             }
         }, Qt::QueuedConnection);
     });

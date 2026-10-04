@@ -1,6 +1,8 @@
 #include <QDir>
 #include <QtTest>
 
+#include <QMap>
+
 #include "../../src/application/anilist/AniListSyncService.h"
 #include "../../src/application/media/MediaSyncFilter.h"
 #include "../../src/application/media/MediaPage.h"
@@ -46,6 +48,24 @@ public:
     bool succeeds = true;
 };
 
+class IdempotentWriter final : public IMediaWriter {
+public:
+    bool upsert(const QList<Media> &media, QString &error) override {
+        ++upsertCalls;
+        if (!succeeds) {
+            error = QStringLiteral("writer persistence failed");
+            return false;
+        }
+        for (const auto &item : media) persistedById.insert(item.Id, item);
+        error.clear();
+        return true;
+    }
+
+    QMap<int, Media> persistedById;
+    int upsertCalls = 0;
+    bool succeeds = true;
+};
+
 class AniListFlowTests : public QObject {
     Q_OBJECT
 
@@ -61,6 +81,8 @@ private slots:
     void completePageOneSynchronizationReconcilesUniqueObservedIds();
     void filteredSynchronizationDoesNotReconcile();
     void synchronizationStartingAfterPageOneDoesNotReconcile();
+    void replayAfterCheckpointFailureIsIdempotentAndReconcilesOnlyAfterACompleteRun();
+    void doesNotAdvanceCheckpointWhenPagePersistenceFails();
 };
 
 static QString fixturePath() {
@@ -209,6 +231,54 @@ void AniListFlowTests::synchronizationStartingAfterPageOneDoesNotReconcile() {
 
     QVERIFY2(service.synchronize(filter, error), qPrintable(error));
     QCOMPARE(reconciler.calls, 0);
+}
+
+void AniListFlowTests::replayAfterCheckpointFailureIsIdempotentAndReconcilesOnlyAfterACompleteRun() {
+    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
+    IdempotentWriter writer;
+    RecordingSnapshotReconciler reconciler;
+    AniListSyncService service(source, writer, &reconciler);
+    MediaSyncFilter filter;
+    filter.perPage = 1;
+    QString error;
+    int failedCheckpointCalls = 0;
+
+    QVERIFY(!service.synchronize(filter, error, [&](const int page, QString &checkpointError) {
+        ++failedCheckpointCalls;
+        if (page == 1) {
+            checkpointError = QStringLiteral("checkpoint persistence interrupted");
+            return false;
+        }
+        return true;
+    }));
+    QCOMPARE(failedCheckpointCalls, 1);
+    QCOMPARE(writer.persistedById.size(), 1);
+    QCOMPARE(reconciler.calls, 0);
+
+    QList<int> confirmedPages;
+    QVERIFY2(service.synchronize(filter, error, [&](const int page, QString &checkpointError) {
+        confirmedPages.append(page);
+        checkpointError.clear();
+        return true;
+    }), qPrintable(error));
+    QCOMPARE(confirmedPages, QList<int>({1, 2}));
+    QCOMPARE(writer.persistedById.size(), 2);
+    QCOMPARE(reconciler.calls, 1);
+}
+
+void AniListFlowTests::doesNotAdvanceCheckpointWhenPagePersistenceFails() {
+    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
+    IdempotentWriter writer;
+    writer.succeeds = false;
+    AniListSyncService service(source, writer);
+    QString error;
+    int checkpointCalls = 0;
+
+    QVERIFY(!service.synchronize({}, error, [&](const int, QString &) {
+        ++checkpointCalls;
+        return true;
+    }));
+    QCOMPARE(checkpointCalls, 0);
 }
 
 QTEST_MAIN(AniListFlowTests)
