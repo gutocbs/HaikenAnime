@@ -131,6 +131,9 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/covers/ICoverDownloader.h
         src/application/covers/CoverDownloadCoordinator.h
         src/application/covers/CoverDownloadCoordinator.cpp
+        src/application/cache/ICacheCleanupParticipant.h
+        src/application/cache/ClearLocalCacheUseCase.h
+        src/application/cache/ClearLocalCacheUseCase.cpp
         src/application/configuration/ISettingsReader.h
         src/application/anilist/ISecretStore.h
         src/application/anilist/IAniListAuthProvider.h
@@ -747,6 +750,16 @@ target_include_directories(CoverDownloadCoordinatorTests PRIVATE ${CMAKE_CURRENT
 target_link_libraries(CoverDownloadCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME CoverDownloadCoordinatorTests COMMAND CoverDownloadCoordinatorTests)
 
+add_executable(ClearLocalCacheUseCaseTests
+        tests/unit/ClearLocalCacheUseCaseTests.cpp
+        src/application/cache/ClearLocalCacheUseCase.cpp
+        src/application/covers/CoverDownloadCoordinator.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+target_include_directories(ClearLocalCacheUseCaseTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(ClearLocalCacheUseCaseTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME ClearLocalCacheUseCaseTests COMMAND ClearLocalCacheUseCaseTests)
+
 add_executable(QtCoverDownloaderTests tests/unit/QtCoverDownloaderTests.cpp
         src/infrastructure/covers/QtCoverDownloader.cpp)
 target_include_directories(QtCoverDownloaderTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -1253,6 +1266,7 @@ set(HAIKENANIME_TESTS
         CoverFileStoreTests
         CoverTemporaryStoreTests
         CoverDownloadCoordinatorTests
+        ClearLocalCacheUseCaseTests
         QtCoverDownloaderTests
         AniListAuthManagerTests
         AniListFlowTests

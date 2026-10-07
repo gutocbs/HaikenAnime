@@ -1,4 +1,5 @@
 #include <QDir>
+#include <QSqlError>
 #include <QSqlQuery>
 #include <QTemporaryDir>
 #include <QtTest>
@@ -43,6 +44,7 @@ private slots:
     void persistsEntryWithoutHttpValidators();
     void rejectsAbsolutePath();
     void cascadesMediaDeletionAndClearsEntries();
+    void clearReportsCountAndPreservesPrimaryData();
 };
 
 void SqliteCoverCacheRepositoryTests::roundTripsAndReplacesEntry() {
@@ -130,9 +132,67 @@ void SqliteCoverCacheRepositoryTests::cascadesMediaDeletionAndClearsEntries() {
     QVERIFY(!entries.contains(42));
     QVERIFY(entries.contains(43));
 
-    QVERIFY(repository.Clear(error));
+    int removedEntries = 0;
+    QVERIFY(repository.Clear(removedEntries, error));
+    QCOMPARE(removedEntries, 1);
     QVERIFY(repository.ReadAll(entries, error));
     QVERIFY(entries.isEmpty());
+}
+
+void SqliteCoverCacheRepositoryTests::clearReportsCountAndPreservesPrimaryData() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    InsertMedia(database.connection(), 42);
+    QSqlQuery setup(database.connection());
+    QVERIFY(setup.exec(QStringLiteral("UPDATE media SET consumed_chapters = 7 WHERE id = 42")));
+    QVERIFY(setup.exec(QStringLiteral(
+        "INSERT INTO anilist_pending_changes "
+        "(media_id, field, previous_value, new_value, created_at, local_updated_at, "
+        "remote_version, status) VALUES (42, 1, 'old', 'new', '2026-10-07T00:00:00Z', "
+        "'2026-10-07T00:00:00Z', '', 0)")));
+    QVERIFY(setup.exec(QStringLiteral(
+        "INSERT INTO user_preferences "
+        "(id, score_minimum, score_maximum, score_step, cover_quality, "
+        "synchronization_enabled, synchronization_interval_ms) "
+        "VALUES (1, 0, 10, 1, 'medium', 1, 60000)")));
+    QVERIFY(setup.exec(QStringLiteral(
+        "INSERT INTO library_scans "
+        "(id, root_path, started_at, status) "
+        "VALUES (1, 'Q:/Library', '2026-10-07T00:00:00Z', 'succeeded')")));
+    QVERIFY(setup.exec(QStringLiteral(
+        "INSERT INTO local_files "
+        "(root_path, relative_path, normalized_relative_path, file_name, extension, "
+        "size_bytes, modified_at, last_seen_scan_id) "
+        "VALUES ('Q:/Library', 'Show/Episode.mkv', 'show/episode.mkv', 'Episode.mkv', "
+        "'.mkv', 123, '2026-10-07T00:00:00Z', 1)")));
+    SqliteCoverCacheRepository repository(database.connection(), ReadSql, UpsertSql,
+                                          DeleteSql, ClearSql);
+    QString error;
+    QVERIFY(repository.Upsert(Entry(42, QStringLiteral("https://img/42.jpg"),
+                                    QStringLiteral("covers/42.jpg")), error));
+
+    int removedEntries = -1;
+    QVERIFY2(repository.Clear(removedEntries, error), qPrintable(error));
+
+    QCOMPARE(removedEntries, 1);
+    QVERIFY(setup.exec(QStringLiteral(
+        "SELECT consumed_chapters FROM media WHERE id = 42")));
+    QVERIFY(setup.next());
+    QCOMPARE(setup.value(0).toInt(), 7);
+    const QStringList preservedTables = {
+        QStringLiteral("anilist_pending_changes"),
+        QStringLiteral("user_preferences"),
+        QStringLiteral("library_scans"),
+        QStringLiteral("local_files")
+    };
+    for (const auto &table : preservedTables) {
+        QVERIFY2(setup.exec(QStringLiteral("SELECT COUNT(*) FROM %1").arg(table)),
+                 qPrintable(setup.lastError().text()));
+        QVERIFY(setup.next());
+        QCOMPARE(setup.value(0).toInt(), 1);
+    }
 }
 
 QTEST_MAIN(SqliteCoverCacheRepositoryTests)

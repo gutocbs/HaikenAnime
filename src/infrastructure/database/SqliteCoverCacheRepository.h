@@ -13,7 +13,7 @@ public:
     bool ReadAll(QHash<int, CoverCacheEntry> &entries, QString &error) override;
     bool Upsert(const CoverCacheEntry &entry, QString &error) override;
     bool Remove(int mediaId, QString &error) override;
-    bool Clear(QString &error) override;
+    bool Clear(int &removedEntries, QString &error) override;
 
 private:
     QSqlDatabase database_;

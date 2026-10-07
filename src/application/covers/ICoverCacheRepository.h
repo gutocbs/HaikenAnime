@@ -12,7 +12,7 @@ public:
     virtual bool ReadAll(QHash<int, CoverCacheEntry> &entries, QString &error) = 0;
     virtual bool Upsert(const CoverCacheEntry &entry, QString &error) = 0;
     virtual bool Remove(int mediaId, QString &error) = 0;
-    virtual bool Clear(QString &error) = 0;
+    virtual bool Clear(int &removedEntries, QString &error) = 0;
 };
 
 #endif // HAIKENANIME_ICOVERCACHEREPOSITORY_H

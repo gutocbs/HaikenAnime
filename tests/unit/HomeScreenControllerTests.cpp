@@ -52,7 +52,9 @@ public:
     bool ReadAll(QHash<int, CoverCacheEntry> &result, QString &) override { result = entries; return true; }
     bool Upsert(const CoverCacheEntry &entry, QString &) override { entries[entry.mediaId] = entry; return true; }
     bool Remove(int mediaId, QString &) override { entries.remove(mediaId); return true; }
-    bool Clear(QString &) override { entries.clear(); return true; }
+    bool Clear(int &removedEntries, QString &error) override {
+        removedEntries = entries.size(); entries.clear(); error.clear(); return true;
+    }
     QHash<int, CoverCacheEntry> entries;
 };
 
@@ -61,7 +63,9 @@ public:
     bool Exists(const QString &path) const override { return path == QStringLiteral("42.jpg"); }
     bool Publish(int, const QString &, const QString &, const QString &, PublishedCover &, QString &) override { return false; }
     bool Remove(const QString &, QString &) override { return true; }
-    bool Clear(QString &) override { return true; }
+    bool Clear(int &removedFiles, QString &error) override {
+        removedFiles = 0; error.clear(); return true;
+    }
     bool RemoveOrphans(const QSet<QString> &, int, int &, QString &) override { return true; }
     QString AbsolutePath(const QString &path) const override { return QStringLiteral("C:/covers/") + path; }
 };

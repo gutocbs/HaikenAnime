@@ -100,19 +100,23 @@ bool CoverFileStore::Remove(const QString &relativePath, QString &error)
     return !QFileInfo::exists(path) || QFile::remove(path) || (error = "Could not remove the cover file.", false);
 }
 
-bool CoverFileStore::Clear(QString &error)
+bool CoverFileStore::Clear(int &removedFiles, QString &error)
 {
+    removedFiles = 0;
     error.clear();
     QDir directory(rootPath_);
     if (!directory.exists()) return true;
     const auto files = directory.entryList(QDir::Files | QDir::NoDotAndDotDot);
+    bool complete = true;
     for (const auto &file : files) {
         if (!directory.remove(file)) {
-            error = "Could not clear every cover file.";
-            return false;
+            complete = false;
+            if (error.isEmpty()) error = "Could not clear every cover file.";
+        } else {
+            ++removedFiles;
         }
     }
-    return true;
+    return complete;
 }
 
 bool CoverFileStore::RemoveOrphans(const QSet<QString> &referencedPaths, int maxFiles,
