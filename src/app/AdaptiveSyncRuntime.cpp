@@ -97,12 +97,14 @@ void AdaptiveSyncRuntime::Initialize(RepositoryFactory repositoryFactory, Execut
         StopOnWorker();
         return;
     }
+    bool startRequested = false;
     {
         QMutexLocker lock(&stateMutex_);
         if (state_ == State::Initializing) state_ = State::Ready;
+        startRequested = startRequested_;
     }
     QMetaObject::invokeMethod(this, [this] { emit Ready(); }, Qt::QueuedConnection);
-    if (startRequested_) StartOnWorker();
+    if (startRequested) StartOnWorker();
 }
 
 void AdaptiveSyncRuntime::StartOnWorker() {

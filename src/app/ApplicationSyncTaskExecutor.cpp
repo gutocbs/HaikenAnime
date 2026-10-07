@@ -1,4 +1,5 @@
 #include "ApplicationSyncTaskExecutor.h"
+#include "SyncTaskRequest.h"
 
 #include "../application/anilist/AniListSyncService.h"
 #include "../infrastructure/anilist/RecordedGraphQlAniListDataSource.h"
@@ -67,10 +68,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                 RecordedGraphQlAniListDataSource source(partition == SyncPartition::UserList
                     ? userListFixturePath_ : catalogFixturePath_);
                 AniListSyncService service(source, mediaRepository, &mediaRepository, nullptr, timeoutMs_);
-                auto request = AniListDataSourceRequest::ForPartition(partition);
-                if (checkpointState.confirmedPage.has_value()) {
-                    request.setPage(*checkpointState.confirmedPage + 1);
-                }
+                const auto request = SyncTaskRequest::ForState(checkpointState);
                 const bool succeeded = service.synchronize(
                     request, error,
                     [&taskRepository, &checkpointState](const int page, QString &checkpointError) {

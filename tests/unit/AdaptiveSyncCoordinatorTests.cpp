@@ -5,6 +5,7 @@
 #include <map>
 
 #include "../../src/app/AdaptiveSyncCoordinator.h"
+#include "../../src/app/SyncTaskRequest.h"
 
 namespace {
 struct FakeClock final {
@@ -122,6 +123,9 @@ private slots:
     void persistsMissingPolicyPartitionsBeforeSchedulingThem();
     void neverStartsTheSamePartitionTwiceWhileItIsRunning();
     void recordsIndependentProgressWhenAnotherPartitionFails();
+    void resumesAnIncompleteTaskFromItsPersistedCheckpoint();
+    void reschedulesSuccessfulWorkAtItsAdaptivePolicyCadence();
+    void turnsPersistedCheckpointIntoTheNextPartitionRequestPage();
     void schedulesRetryAtThePolicyDueTime();
     void promotesManualAndLocalChangeRequests();
     void stopCancelsWorkAndInvalidatesItsGeneration();
@@ -203,6 +207,58 @@ void AdaptiveSyncCoordinatorTests::recordsIndependentProgressWhenAnotherPartitio
     QCOMPARE(completed.confirmedCursor, std::optional<QString>(QStringLiteral("cursor-3")));
 }
 
+void AdaptiveSyncCoordinatorTests::resumesAnIncompleteTaskFromItsPersistedCheckpoint() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    auto interrupted = DueState(SyncTaskKind::UserList, SyncPartition::UserList);
+    interrupted.status = SyncTaskStatus::RetryScheduled;
+    interrupted.confirmedPage = 2;
+    interrupted.confirmedCursor = QStringLiteral("page-2");
+    repository.states = {interrupted};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
+
+    QVERIFY(coordinator.Start());
+
+    const auto resumed = executor.requests.at(SyncPartition::UserList).state;
+    QCOMPARE(resumed.confirmedPage, std::optional<int>(2));
+    QCOMPARE(resumed.confirmedCursor, std::optional<QString>(QStringLiteral("page-2")));
+}
+
+void AdaptiveSyncCoordinatorTests::reschedulesSuccessfulWorkAtItsAdaptivePolicyCadence() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList)};
+    FakeTaskExecutor executor;
+    auto policies = DefaultSyncTaskPolicies();
+    policies[SyncTaskKind::UserList].normalInterval = std::chrono::seconds(5);
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); }, policies);
+
+    QVERIFY(coordinator.Start());
+    executor.Complete(SyncPartition::UserList, {.succeeded = true, .confirmedPage = 2});
+    QTRY_COMPARE(repository.State(SyncPartition::UserList).nextRunAt, clock.CurrentTime().addSecs(5));
+
+    clock.Advance(std::chrono::seconds(5));
+    coordinator.ProcessDueTasks();
+
+    QCOMPARE(executor.started.count(SyncPartition::UserList), 2);
+    QVERIFY(!executor.requests.at(SyncPartition::UserList).state.confirmedPage.has_value());
+}
+
+void AdaptiveSyncCoordinatorTests::turnsPersistedCheckpointIntoTheNextPartitionRequestPage() {
+    SyncTaskState state;
+    state.kind = SyncTaskKind::CompletedCatalog;
+    state.partition = SyncPartition::CompletedCatalog;
+    state.status = SyncTaskStatus::RetryScheduled;
+    state.confirmedPage = 4;
+
+    const auto request = SyncTaskRequest::ForState(state);
+
+    QCOMPARE(request.filter.partition, SyncPartition::CompletedCatalog);
+    QCOMPARE(request.filter.startingPage, 5);
+    QCOMPARE(request.variables.value(QStringLiteral("status")).toString(), QStringLiteral("FINISHED"));
+}
+
 void AdaptiveSyncCoordinatorTests::schedulesRetryAtThePolicyDueTime() {
     FakeClock clock;
     FakeTaskStateRepository repository;
@@ -261,7 +317,7 @@ void AdaptiveSyncCoordinatorTests::stopCancelsWorkAndInvalidatesItsGeneration() 
     coordinator.Start();
     const auto runningGeneration = repository.State(SyncPartition::UserList).generation;
     coordinator.Stop();
-    QCOMPARE(repository.State(SyncPartition::UserList).generation, runningGeneration);
+    QCOMPARE(repository.State(SyncPartition::UserList).generation, runningGeneration + 1);
     executor.AcknowledgeCancellation(SyncPartition::UserList);
     executor.AcknowledgeShutdown();
     QTRY_VERIFY(executor.cancelled.contains(SyncPartition::UserList));
@@ -321,8 +377,8 @@ void AdaptiveSyncCoordinatorTests::retainsExistingActivePartitionDuringCompleted
     coordinator.NotifyLocalChange(SyncPartition::CompletedCatalog);
     executor.Complete(SyncPartition::ActiveCatalog, {.succeeded = true, .confirmedPage = 1});
 
-    QTRY_COMPARE(repository.State(SyncPartition::ActiveCatalog).generation, activeGeneration);
-    QCOMPARE(repository.State(SyncPartition::ActiveCatalog).status, SyncTaskStatus::Succeeded);
+    QTRY_COMPARE(repository.State(SyncPartition::ActiveCatalog).status, SyncTaskStatus::Succeeded);
+    QCOMPARE(repository.State(SyncPartition::ActiveCatalog).generation, activeGeneration);
     QCOMPARE(executor.started.count(SyncPartition::ActiveCatalog), 1);
 }
 

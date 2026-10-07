@@ -64,3 +64,31 @@
 - The application currently uses offline recorded GraphQL resources for the composed background sources, preserving fixture/offline startup. Live AniList transport ownership remains outside this task.
 - Existing unit-test source contains prior `[[nodiscard]]` warnings for ignored `AdaptiveSyncCoordinator::Start()` results. They are pre-existing warning noise, not introduced production compiler errors.
 - The pre-existing `cmake-build-task6` directory reported `ninja: warning: premature end of file; recovering` after interrupted builds. It should not be used as final test evidence; recreate or clean it before the next validation pass.
+
+## Review correction round
+
+### Fixes applied
+
+- `SyncTaskRequest::ForState` is now the single checkpoint-to-AniList request mapping used by `ApplicationSyncTaskExecutor`. It retains the request's partition filter and advances a persisted confirmed page by one.
+- `RecordedGraphQlAniListDataSource` applies the requested catalog status (`RELEASING`, `NOT_YET_RELEASED`, or `FINISHED`) to its recorded catalog result. This preserves offline fixture startup while preventing every catalog partition from consuming the same unfiltered media list.
+- `main.cpp` now funnels QML creation failure, last-window close, and direct `quit()`/`exit()` through `aboutToQuit`. It requests adaptive shutdown, waits up to five seconds for `isStopped()`, and only stops logger/database-dependent services after the runtime is stopped. If the bounded wait expires, `ApplicationContext` retains ownership so its runtime destructor joins the worker before dependent members are destroyed.
+- `AdaptiveSyncRuntime::Initialize` reads `startRequested_` under `stateMutex_`, matching the guarded state transition.
+- Added focused coverage for checkpoint resume/request page selection, adaptive success rescheduling, queued pre-read start, active-executor draining, and active/inactive/completed catalog fixture routing. Existing coordinator assertions were aligned with the established generation-invalidation and queued-completion contracts.
+
+### Validation performed
+
+1. Before the final patch, ran:
+
+   `ctest --test-dir cmake-build-task7 --output-on-failure -R '^(AdaptiveSyncCoordinatorTests|AdaptiveSyncRuntimeTests|AniListGraphQlParsingTests)$'`
+
+   Result: `AniListGraphQlParsingTests` passed in 3.11 seconds and `AdaptiveSyncRuntimeTests` passed in 6.41 seconds. `AdaptiveSyncCoordinatorTests` failed. A subsequent diagnostic run through MinGW GDB identified two stale test assertions: it expected generation invalidation after cancellation acknowledgement even though the coordinator persists it before cancellation, and it asserted `Succeeded` before the queued completion callback was processed. Those assertions were corrected in this round.
+
+2. Started the final focused/application rebuild:
+
+   `cmake --build cmake-build-task7 --target AdaptiveSyncCoordinatorTests AdaptiveSyncRuntimeTests AniListGraphQlParsingTests HaikenAnime --parallel 1`
+
+   It rebuilt the changed `main.cpp`, `AdaptiveSyncRuntime.cpp`, and `ApplicationSyncTaskExecutor.cpp` without a compiler diagnostic in the observed output. The user explicitly stopped this long-running validation before target completion, so no final link or post-fix test run is claimed.
+
+### Remaining blocker
+
+- Final focused test execution and application link are unverified because the requested stop interrupted the rebuild. The inherited build directory also continues to warn `ninja: warning: premature end of file; recovering`; use a clean/reconfigured build directory before relying on a future full validation result.

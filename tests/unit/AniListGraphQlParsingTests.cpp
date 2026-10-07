@@ -82,6 +82,7 @@ private slots:
     void recordedUserListMarksAnUnfilteredFirstPageAuthoritativeBeforeTheTerminalPage();
     void recordedUserListRejectsMissingPaginationMetadata();
     void recordedSourceSelectsTheResponseShapeForTheRequestedPartition();
+    void recordedCatalogSourceRetainsOnlyTheRequestedPartitionStatus();
     void graphQlAdapterPostsPartitionVariablesAndParsesCatalogPage();
     void graphQlAdapterRequiresAndPostsAUserNameForUserListRefresh();
     void graphQlAdapterRejectsNonBooleanUserListPaginationMetadata();
@@ -512,6 +513,34 @@ void AniListGraphQlParsingTests::recordedSourceSelectsTheResponseShapeForTheRequ
     QVERIFY(result.isCompleteAuthoritativeSnapshot);
 
     QCOMPARE(result.page.media.first().Id, 21366);
+}
+
+void AniListGraphQlParsingTests::recordedCatalogSourceRetainsOnlyTheRequestedPartitionStatus() {
+    RecordedGraphQlAniListDataSource source(QStringLiteral(HAIKENANIME_GRAPHQL_FIXTURE));
+    QString error;
+    AniListDataSourceResult activeResult;
+    AniListDataSourceResult inactiveResult;
+    AniListDataSourceResult completedResult;
+
+    QVERIFY2(source.fetchPage(AniListDataSourceRequest::ForPartition(SyncPartition::ActiveCatalog),
+                              activeResult, error), qPrintable(error));
+    QVERIFY2(source.fetchPage(AniListDataSourceRequest::ForPartition(SyncPartition::InactiveCatalog),
+                              inactiveResult, error), qPrintable(error));
+    QVERIFY2(source.fetchPage(AniListDataSourceRequest::ForPartition(SyncPartition::CompletedCatalog),
+                              completedResult, error), qPrintable(error));
+
+    QCOMPARE(activeResult.completedPartition, SyncPartition::ActiveCatalog);
+    QCOMPARE(inactiveResult.completedPartition, SyncPartition::InactiveCatalog);
+    QCOMPARE(completedResult.completedPartition, SyncPartition::CompletedCatalog);
+    QVERIFY(!activeResult.page.media.isEmpty());
+    QVERIFY(inactiveResult.page.media.isEmpty());
+    QVERIFY(!completedResult.page.media.isEmpty());
+    for (const auto &media : activeResult.page.media) {
+        QCOMPARE(media.Status, MediaStatus::Releasing);
+    }
+    for (const auto &media : completedResult.page.media) {
+        QCOMPARE(media.Status, MediaStatus::Released);
+    }
 }
 
 void AniListGraphQlParsingTests::graphQlAdapterPostsPartitionVariablesAndParsesCatalogPage() {

@@ -1,11 +1,12 @@
 #include <QGuiApplication>
+#include <QElapsedTimer>
+#include <QEventLoop>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
-#include <QTimer>
+#include <QThread>
 
 #include <memory>
 #include <utility>
-#include <vector>
 
 #include "src/app/ApplicationComposition.h"
 #include "src/app/TranslationLoader.h"
@@ -15,13 +16,7 @@
 #include "src/application/media/SeasonalPersonalListService.h"
 
 namespace {
-constexpr int AdaptiveSyncShutdownTimeoutMs = 5'000;
-
-void RetainAdaptiveSyncRuntimeForProcessExit(std::unique_ptr<AdaptiveSyncRuntime> runtime) {
-    // Intentionally outlive application teardown: destroying a timed-out runtime would release live worker state.
-    static auto *retainedRuntimes = new std::vector<std::unique_ptr<AdaptiveSyncRuntime>>;
-    retainedRuntimes->push_back(std::move(runtime));
-}
+constexpr qint64 AdaptiveSyncShutdownTimeoutMs = 5'000;
 }
 
 bool persistHomeSortPreference(ApplicationContext &context, const QString &key, QString &error) {
@@ -48,13 +43,10 @@ int main(int argc, char *argv[]) {
         && context.logger) {
         context.logger->warning(LogCategory::Configuration, translationError);
     }
-    QObject::connect(&app, &QCoreApplication::aboutToQuit, [&context]() {
-        if (context.adaptiveSync) {
-            context.adaptiveSync->shutdown();
-            if (!context.adaptiveSync->isStopped()) {
-                RetainAdaptiveSyncRuntimeForProcessExit(std::move(context.adaptiveSync));
-            }
-        }
+    bool servicesShutdown = false;
+    const auto shutdownServices = [&context, &servicesShutdown] {
+        if (servicesShutdown) return;
+        servicesShutdown = true;
         if (context.localLibraryScan) {
             context.localLibraryScan->shutdown();
         }
@@ -70,7 +62,19 @@ int main(int argc, char *argv[]) {
         if (context.logger) {
             context.logger->stop();
         }
-    });
+    };
+    const auto waitForAdaptiveSyncStop = [&context] {
+        if (!context.adaptiveSync || context.adaptiveSync->isStopped()) return true;
+
+        context.adaptiveSync->shutdown();
+        QElapsedTimer elapsed;
+        elapsed.start();
+        while (!context.adaptiveSync->isStopped() && !elapsed.hasExpired(AdaptiveSyncShutdownTimeoutMs)) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+            QThread::msleep(1);
+        }
+        return context.adaptiveSync->isStopped();
+    };
     HomeScreenController homeController(context.mediaRepository.get(), context.coverCoordinator.get(),
                                         context.userPreferences.coverQuality, context.initializationError);
     homeController.SetLocalEpisodeServices(context.localEpisodeReader.get(), context.localFileOpener.get());
@@ -200,36 +204,24 @@ int main(int argc, char *argv[]) {
     engine.rootContext()->setContextProperty(QStringLiteral("settingsController"), &settingsController);
     engine.rootContext()->setContextProperty(QStringLiteral("seasonalCatalogController"), &seasonalCatalogController);
 
-    bool shutdownRequested = false;
     int exitCode = 0;
-    QTimer shutdownPoll;
-    shutdownPoll.setInterval(10);
-    QObject::connect(&shutdownPoll, &QTimer::timeout, &app, [&] {
-        if (!context.adaptiveSync || context.adaptiveSync->isStopped()) {
-            shutdownPoll.stop();
-            app.exit(exitCode);
-        }
-    });
     const auto requestShutdown = [&](int code) {
-        if (shutdownRequested) {
-            if (code != 0) exitCode = code;
-            return;
-        }
-        shutdownRequested = true;
-        exitCode = code;
-        if (!context.adaptiveSync || context.adaptiveSync->isStopped()) {
-            app.exit(exitCode);
-            return;
-        }
-        context.adaptiveSync->shutdown();
-        shutdownPoll.start();
-        QTimer::singleShot(AdaptiveSyncShutdownTimeoutMs, &app, [&] {
-            if (context.adaptiveSync && !context.adaptiveSync->isStopped()) {
-                RetainAdaptiveSyncRuntimeForProcessExit(std::move(context.adaptiveSync));
-            }
-            app.exit(exitCode);
-        });
+        if (code != 0) exitCode = code;
+        app.exit(exitCode);
     };
+    QObject::connect(&app, &QCoreApplication::aboutToQuit, &app, [&] {
+        // This signal is the single exit path for QML failure, window close, and direct quit().
+        // On a timeout, ApplicationContext destruction still owns the runtime and joins its thread;
+        // dependent services intentionally remain alive until that has happened.
+        if (!waitForAdaptiveSyncStop()) {
+            if (context.logger) {
+                context.logger->warning(LogCategory::Sync,
+                                        QStringLiteral("Adaptive synchronization did not stop before shutdown timeout."));
+            }
+            return;
+        }
+        shutdownServices();
+    });
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
                      &app, [&requestShutdown] { requestShutdown(-1); }, Qt::QueuedConnection);
     QObject::connect(&app, &QGuiApplication::lastWindowClosed, &app,

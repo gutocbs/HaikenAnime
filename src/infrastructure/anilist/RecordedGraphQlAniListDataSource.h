@@ -12,7 +12,18 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include <algorithm>
+#include <optional>
 #include <utility>
+
+namespace {
+std::optional<MediaStatus> CatalogStatusFor(const QString &status) {
+    if (status == QStringLiteral("RELEASING")) return MediaStatus::Releasing;
+    if (status == QStringLiteral("NOT_YET_RELEASED")) return MediaStatus::NotReleased;
+    if (status == QStringLiteral("FINISHED")) return MediaStatus::Released;
+    return std::nullopt;
+}
+}
 
 class RecordedGraphQlAniListDataSource final : public IAniListDataSource {
 public:
@@ -97,6 +108,17 @@ inline bool RecordedGraphQlAniListDataSource::fetchPage(const AniListDataSourceR
             return false;
         }
         if (!AniListGraphQlPageParser::parse(response.data, result.page, error)) return false;
+        if (!request.filter.status.isEmpty()) {
+            const auto expectedStatus = CatalogStatusFor(request.filter.status);
+            if (!expectedStatus.has_value()) {
+                error = QStringLiteral("Recorded AniList catalog request has an unsupported status filter.");
+                return false;
+            }
+            result.page.media.erase(std::remove_if(result.page.media.begin(), result.page.media.end(),
+                                                    [expectedStatus](const Media &media) {
+                                                        return media.Status != *expectedStatus;
+                                                    }), result.page.media.end());
+        }
     }
     if (result.page.currentPage != qMax(1, request.filter.startingPage)) {
         error = QStringLiteral("Recorded AniList response contains page %1 while page %2 was requested.")
