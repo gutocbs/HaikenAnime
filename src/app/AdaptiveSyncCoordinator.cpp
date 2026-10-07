@@ -12,13 +12,26 @@ namespace {
 QString SafeError(const QString &error, const QString &fallback) {
     return error.isEmpty() ? fallback : error;
 }
+
+SyncPartition PartitionFor(const SyncTaskKind kind) {
+    switch (kind) {
+    case SyncTaskKind::UserList: return SyncPartition::UserList;
+    case SyncTaskKind::PendingChange: return SyncPartition::PendingChanges;
+    case SyncTaskKind::ActiveCatalog: return SyncPartition::ActiveCatalog;
+    case SyncTaskKind::InactiveCatalog: return SyncPartition::InactiveCatalog;
+    case SyncTaskKind::CompletedCatalog: return SyncPartition::CompletedCatalog;
+    case SyncTaskKind::Cover: return SyncPartition::Covers;
+    case SyncTaskKind::DerivedMetadata: return SyncPartition::DerivedMetadata;
+    }
+    return SyncPartition::UserList;
+}
 }
 
 AdaptiveSyncCoordinator::AdaptiveSyncCoordinator(
     ISyncTaskStateRepository &stateRepository, ISyncTaskExecutor &executor, Clock clock,
-    std::map<SyncTaskKind, SyncSchedulePolicy> policies, QObject *parent)
+    std::map<SyncTaskKind, SyncSchedulePolicy> policies, const bool seedMissingTasks, QObject *parent)
     : QObject(parent), stateRepository_(stateRepository), executor_(executor), clock_(std::move(clock)),
-      policies_(std::move(policies)), wakeUpTimer_(new QTimer(this)) {
+      policies_(std::move(policies)), wakeUpTimer_(new QTimer(this)), seedMissingTasks_(seedMissingTasks) {
     wakeUpTimer_->setSingleShot(true);
     connect(wakeUpTimer_, &QTimer::timeout, this, &AdaptiveSyncCoordinator::ProcessDueTasks);
 }
@@ -38,6 +51,19 @@ bool AdaptiveSyncCoordinator::Start() {
     }
 
     for (const auto &state : persistedStates) states_[state.partition] = state;
+    if (seedMissingTasks_) {
+        for (const auto &[kind, policy] : policies_) {
+            Q_UNUSED(policy);
+            const auto partition = PartitionFor(kind);
+            if (states_.contains(partition)) continue;
+            SyncTaskState state;
+            state.kind = kind;
+            state.partition = partition;
+            state.priority = SyncTaskPolicy::PriorityFor(partition);
+            if (!Persist(state)) return false;
+            states_[partition] = state;
+        }
+    }
     started_ = true;
     ProcessDueTasks();
     return true;
@@ -143,6 +169,10 @@ void AdaptiveSyncCoordinator::Request(const SyncPartition partition, const SyncT
 void AdaptiveSyncCoordinator::StartTask(SyncTaskState state) {
     if (stopped_ || activeGenerations_.contains(state.partition)) return;
 
+    if (state.status == SyncTaskStatus::Succeeded) {
+        state.confirmedPage.reset();
+        state.confirmedCursor.reset();
+    }
     state.status = SyncTaskStatus::Running;
     state.lastAttemptedAt = Now();
     ++state.generation;

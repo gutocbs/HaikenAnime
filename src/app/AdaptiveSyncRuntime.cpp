@@ -44,6 +44,17 @@ bool AdaptiveSyncRuntime::isReady() const {
     return state_ == State::Ready;
 }
 
+void AdaptiveSyncRuntime::start() {
+    QObject *owner = nullptr;
+    {
+        QMutexLocker lock(&stateMutex_);
+        if (state_ == State::Stopped || state_ == State::Failed || stopRequested_ || startRequested_) return;
+        startRequested_ = true;
+        owner = owner_;
+    }
+    if (isReady() && owner) QMetaObject::invokeMethod(owner, [this] { StartOnWorker(); }, Qt::QueuedConnection);
+}
+
 bool AdaptiveSyncRuntime::isStopped() const {
     QMutexLocker lock(&stateMutex_);
     return (state_ == State::Stopped || state_ == State::Failed) && !thread_.isRunning();
@@ -73,19 +84,14 @@ void AdaptiveSyncRuntime::Initialize(RepositoryFactory repositoryFactory, Execut
     }
 
     coordinator_ = std::make_unique<AdaptiveSyncCoordinator>(*repository_, *executor_,
-                                                               AdaptiveSyncCoordinator::Clock{}, std::move(policies));
-    QString schedulingError;
-    const auto schedulingFailure = connect(coordinator_.get(), &AdaptiveSyncCoordinator::SchedulingFailed,
-                                           owner_, [&schedulingError](const QString &error) {
-                                               schedulingError = error;
-                                           });
-    const bool started = coordinator_->Start();
-    disconnect(schedulingFailure);
-    if (!started) {
-        DisposeOnWorker(SafeError(schedulingError, QStringLiteral("Unable to load synchronization task state.")));
-        return;
-    }
+                                                               AdaptiveSyncCoordinator::Clock{}, std::move(policies), true);
     connect(coordinator_.get(), &AdaptiveSyncCoordinator::Stopped, owner_, [this] { DisposeOnWorker(); });
+    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskFailed, owner_,
+            [this](const SyncPartition partition, const QString &error) {
+                QMetaObject::invokeMethod(this, [this, partition, error] {
+                    emit BackgroundTaskFailed(partition, error);
+                }, Qt::QueuedConnection);
+            });
 
     if (isStopRequested()) {
         StopOnWorker();
@@ -96,6 +102,21 @@ void AdaptiveSyncRuntime::Initialize(RepositoryFactory repositoryFactory, Execut
         if (state_ == State::Initializing) state_ = State::Ready;
     }
     QMetaObject::invokeMethod(this, [this] { emit Ready(); }, Qt::QueuedConnection);
+    if (startRequested_) StartOnWorker();
+}
+
+void AdaptiveSyncRuntime::StartOnWorker() {
+    if (isStopRequested() || !coordinator_) return;
+    QString schedulingError;
+    const auto schedulingFailure = connect(coordinator_.get(), &AdaptiveSyncCoordinator::SchedulingFailed,
+                                           owner_, [&schedulingError](const QString &error) {
+                                               schedulingError = error;
+                                           });
+    const bool started = coordinator_->Start();
+    disconnect(schedulingFailure);
+    if (!started && !isStopRequested()) {
+        DisposeOnWorker(SafeError(schedulingError, QStringLiteral("Unable to load synchronization task state.")));
+    }
 }
 
 void AdaptiveSyncRuntime::StopOnWorker() {

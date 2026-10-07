@@ -24,6 +24,7 @@ public:
     AdaptiveSyncRuntime(const AdaptiveSyncRuntime &) = delete;
     AdaptiveSyncRuntime &operator=(const AdaptiveSyncRuntime &) = delete;
 
+    void start();
     void shutdown();
     [[nodiscard]] bool isReady() const;
     [[nodiscard]] bool isStopped() const;
@@ -32,6 +33,7 @@ public:
 signals:
     void Ready();
     void InitializationFailed(const QString &safeError);
+    void BackgroundTaskFailed(SyncPartition partition, const QString &safeError);
     void Stopped();
 
 private:
@@ -39,6 +41,7 @@ private:
 
     void Initialize(RepositoryFactory repositoryFactory, ExecutorFactory executorFactory,
                     std::map<SyncTaskKind, SyncSchedulePolicy> policies);
+    void StartOnWorker();
     void StopOnWorker();
     void DisposeOnWorker(QString initializationFailure = {});
     [[nodiscard]] bool isStopRequested() const;
@@ -52,6 +55,7 @@ private:
     State state_ = State::Initializing;
     QString initializationError_;
     bool stopRequested_ = false;
+    bool startRequested_ = false;
     bool disposalScheduled_ = false;
 };
 

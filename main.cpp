@@ -98,6 +98,24 @@ int main(int argc, char *argv[]) {
                          &homeController, &HomeScreenController::notifySynchronizationFailed);
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,
                          &settingsController, &SettingsController::notifySynchronizationFailed);
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskFailed,
+                         &homeController,
+                         [&homeController](const SyncPartition, const QString &error) {
+                             homeController.notifySynchronizationFailed(error);
+                         });
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskFailed,
+                         &settingsController,
+                         [&settingsController](const SyncPartition, const QString &error) {
+                             settingsController.notifySynchronizationFailed(error);
+                         });
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskFailed,
+                         &app, [&context](const SyncPartition partition, const QString &error) {
+                             if (context.logger) {
+                                 context.logger->warning(LogCategory::Sync,
+                                     QStringLiteral("Background synchronization for %1 failed: %2")
+                                         .arg(ToString(partition), error));
+                             }
+                         });
         const auto schedulingError = context.schedulingInitializationError();
         if (!schedulingError.isEmpty()) homeController.notifySynchronizationFailed(schedulingError);
     }
@@ -128,7 +146,7 @@ int main(int argc, char *argv[]) {
 
     if (context.initialSync) {
         context.initialSync->configureAutomaticSynchronization(
-            context.userPreferences.synchronizationEnabled,
+            false,
             context.userPreferences.synchronizationIntervalMs);
         QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::started,
                          &homeController, &HomeScreenController::notifySynchronizationStarted);
@@ -142,6 +160,15 @@ int main(int argc, char *argv[]) {
                          &settingsController, &SettingsController::notifySynchronizationCompleted);
         QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::failed,
                          &settingsController, &SettingsController::notifySynchronizationFailed);
+        if (context.adaptiveSync) {
+            const auto startBackgroundScheduling = [&context] {
+                if (context.adaptiveSync) context.adaptiveSync->start();
+            };
+            QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::completed,
+                             &app, startBackgroundScheduling);
+            QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::failed,
+                             &app, startBackgroundScheduling);
+        }
         QObject::connect(&settingsController, &SettingsController::synchronizationRequested,
                          context.initialSync.get(), &InitialSyncCoordinator::start);
         if (context.userPreferences.synchronizationEnabled) context.initialSync->start();
@@ -164,7 +191,7 @@ int main(int argc, char *argv[]) {
                                                       preferences.scoreStep);
         if (context.initialSync) {
             context.initialSync->configureAutomaticSynchronization(
-                preferences.synchronizationEnabled, preferences.synchronizationIntervalMs);
+                false, preferences.synchronizationIntervalMs);
         }
     });
 

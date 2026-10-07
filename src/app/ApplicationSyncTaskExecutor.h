@@ -14,7 +14,8 @@ class QThread;
 /** Creates each synchronization task's network and SQLite dependencies on its worker thread. */
 class ApplicationSyncTaskExecutor final : public ISyncTaskExecutor {
 public:
-    ApplicationSyncTaskExecutor(QString databasePath, QString fixturePath, QString upsertQueryPath,
+    ApplicationSyncTaskExecutor(QString databasePath, QString userListFixturePath, QString catalogFixturePath,
+                                QString upsertQueryPath,
                                 QString readQueryPath, QString readActiveMediaIdsQueryPath,
                                 QString markSourceRemovedQueryPath, QString readTaskStatesQueryPath,
                                 QString upsertTaskStateQueryPath, QString deleteTaskStateQueryPath,
@@ -37,7 +38,8 @@ private:
     void NotifyShutdownIfIdle();
 
     QString databasePath_;
-    QString fixturePath_;
+    QString userListFixturePath_;
+    QString catalogFixturePath_;
     QString upsertQueryPath_;
     QString readQueryPath_;
     QString readActiveMediaIdsQueryPath_;

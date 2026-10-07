@@ -119,6 +119,7 @@ class AdaptiveSyncCoordinatorTests final : public QObject {
 
 private slots:
     void selectsDueTasksInPolicyPriorityOrder();
+    void persistsMissingPolicyPartitionsBeforeSchedulingThem();
     void neverStartsTheSamePartitionTwiceWhileItIsRunning();
     void recordsIndependentProgressWhenAnotherPartitionFails();
     void schedulesRetryAtThePolicyDueTime();
@@ -145,6 +146,24 @@ void AdaptiveSyncCoordinatorTests::selectsDueTasksInPolicyPriorityOrder() {
     QCOMPARE(executor.started,
              QList<SyncPartition>({SyncPartition::UserList, SyncPartition::ActiveCatalog,
                                    SyncPartition::Covers}));
+}
+
+void AdaptiveSyncCoordinatorTests::persistsMissingPolicyPartitionsBeforeSchedulingThem() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    FakeTaskExecutor executor;
+    std::map<SyncTaskKind, SyncSchedulePolicy> policies;
+    policies.emplace(SyncTaskKind::UserList, DefaultSyncSchedulePolicy(SyncTaskKind::UserList));
+    policies.emplace(SyncTaskKind::ActiveCatalog, DefaultSyncSchedulePolicy(SyncTaskKind::ActiveCatalog));
+    policies.emplace(SyncTaskKind::CompletedCatalog, DefaultSyncSchedulePolicy(SyncTaskKind::CompletedCatalog));
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); }, policies, true);
+
+    QVERIFY(coordinator.Start());
+
+    QCOMPARE(repository.states.size(), 3);
+    QCOMPARE(executor.started, QList<SyncPartition>({SyncPartition::UserList,
+                                                      SyncPartition::ActiveCatalog,
+                                                      SyncPartition::CompletedCatalog}));
 }
 
 void AdaptiveSyncCoordinatorTests::neverStartsTheSamePartitionTwiceWhileItIsRunning() {

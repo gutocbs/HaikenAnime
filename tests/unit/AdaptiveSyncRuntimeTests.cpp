@@ -13,8 +13,11 @@
 namespace {
 class FakeTaskStateRepository final : public ISyncTaskStateRepository {
 public:
+    explicit FakeTaskStateRepository(QList<SyncTaskState> initialStates = {})
+        : states(std::move(initialStates)) {}
+
     bool ReadAll(QList<SyncTaskState> &states, QString &error) override {
-        states.clear();
+        states = this->states;
         error.clear();
         return true;
     }
@@ -26,10 +29,13 @@ public:
         error.clear();
         return true;
     }
+
+    QList<SyncTaskState> states;
 };
 
 struct ExecutorState final {
     std::atomic_bool shutdownRequested = false;
+    std::atomic_int executionCount = 0;
     ISyncTaskExecutor::ShutdownAcknowledgement shutdownAcknowledgement;
 };
 
@@ -37,7 +43,7 @@ class FakeTaskExecutor final : public ISyncTaskExecutor {
 public:
     explicit FakeTaskExecutor(std::shared_ptr<ExecutorState> state) : state_(std::move(state)) {}
 
-    void Execute(const SyncTaskState &, qint64, Completion) override {}
+    void Execute(const SyncTaskState &, qint64, Completion) override { ++state_->executionCount; }
     void Cancel(SyncPartition, CancellationAcknowledgement acknowledgement) override { acknowledgement(); }
     void Shutdown(ShutdownAcknowledgement acknowledgement) override {
         state_->shutdownAcknowledgement = std::move(acknowledgement);
@@ -52,12 +58,22 @@ std::unique_ptr<ISyncTaskStateRepository> readyRepository(QString &error) {
     error.clear();
     return std::make_unique<FakeTaskStateRepository>();
 }
+
+std::unique_ptr<ISyncTaskStateRepository> dueRepository(QString &error) {
+    error.clear();
+    SyncTaskState state;
+    state.kind = SyncTaskKind::UserList;
+    state.partition = SyncPartition::UserList;
+    state.cacheValidity = CacheValidity::Expired;
+    return std::make_unique<FakeTaskStateRepository>(QList<SyncTaskState>{state});
+}
 }
 
 class AdaptiveSyncRuntimeTests final : public QObject {
     Q_OBJECT
 private slots:
     void constructorQueuesInitializationWithoutBlockingCaller();
+    void startsPersistedWorkOnlyAfterExplicitActivation();
     void exposesRepositoryInitializationFailure();
     void defersWorkerDestructionUntilCoordinatorStops();
     void destructorRetainsWorkerOwnershipPastLegacyTimeout();
@@ -82,6 +98,24 @@ void AdaptiveSyncRuntimeTests::constructorQueuesInitializationWithoutBlockingCal
     initializationGate.release();
     QTRY_COMPARE(ready.count(), 1);
     QVERIFY(runtime.isReady());
+
+    runtime.shutdown();
+    QTRY_VERIFY(executorState->shutdownRequested.load());
+    executorState->shutdownAcknowledgement();
+    QTRY_VERIFY(runtime.isStopped());
+}
+
+void AdaptiveSyncRuntimeTests::startsPersistedWorkOnlyAfterExplicitActivation() {
+    const auto executorState = std::make_shared<ExecutorState>();
+    AdaptiveSyncRuntime runtime(
+        dueRepository,
+        [executorState] { return std::make_unique<FakeTaskExecutor>(executorState); }, {});
+
+    QTRY_VERIFY(runtime.isReady());
+    QCOMPARE(executorState->executionCount.load(), 0);
+
+    runtime.start();
+    QTRY_COMPARE(executorState->executionCount.load(), 1);
 
     runtime.shutdown();
     QTRY_VERIFY(executorState->shutdownRequested.load());

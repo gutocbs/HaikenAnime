@@ -33,6 +33,18 @@ QString initializationFailure(const QString &stage, const QString &detail) {
     return QStringLiteral("Application initialization failed while %1: %2").arg(stage, detail);
 }
 
+std::map<SyncTaskKind, SyncSchedulePolicy> backgroundSynchronizationPolicies(
+    const std::map<SyncTaskKind, SyncSchedulePolicy> &configuredPolicies) {
+    std::map<SyncTaskKind, SyncSchedulePolicy> policies;
+    for (const auto kind : {SyncTaskKind::UserList, SyncTaskKind::ActiveCatalog,
+                            SyncTaskKind::InactiveCatalog, SyncTaskKind::CompletedCatalog}) {
+        const auto configured = configuredPolicies.find(kind);
+        policies.emplace(kind, configured == configuredPolicies.end()
+                                   ? DefaultSyncSchedulePolicy(kind) : configured->second);
+    }
+    return policies;
+}
+
 // Keep borrowed dependencies inside the worker-owned factory products. Member
 // order destroys the scanner/repository before its enumerator/connection owner.
 class OwnedLibraryScanner final : public ILocalLibraryScanner {
@@ -330,16 +342,18 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
             return std::make_unique<OwnedSyncTaskStateRepository>(std::move(database), readTaskStatesQueryPath,
                                                                    upsertTaskStateQueryPath, deleteTaskStateQueryPath);
         },
-        [synchronizationDatabasePath, fixturePath = QStringLiteral(":/fixtures/graphql/userlist-response.json"),
+        [synchronizationDatabasePath, userListFixturePath = QStringLiteral(":/fixtures/graphql/userlist-response.json"),
+         catalogFixturePath = QStringLiteral(":/fixtures/graphql/page-response.json"),
          upsertMediaPath = queryConfiguration.upsertMediaPath, readMediaPath = queryConfiguration.readMediaPath,
          readActiveMediaIdsPath = queryConfiguration.readActiveMediaIdsPath,
          markSourceRemovedPath = queryConfiguration.markMediaSourceRemovedPath, readTaskStatesQueryPath,
          upsertTaskStateQueryPath, deleteTaskStateQueryPath, timeoutMs = settings.syncTimeoutMs] {
             return std::make_unique<ApplicationSyncTaskExecutor>(
-                synchronizationDatabasePath, fixturePath, upsertMediaPath, readMediaPath, readActiveMediaIdsPath,
+                synchronizationDatabasePath, userListFixturePath, catalogFixturePath, upsertMediaPath,
+                readMediaPath, readActiveMediaIdsPath,
                 markSourceRemovedPath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
                 timeoutMs);
-        }, settings.syncTaskPolicies);
+        }, backgroundSynchronizationPolicies(settings.syncTaskPolicies));
     context.seasonalNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
     context.seasonalGraphQlClient = std::make_unique<AniListGraphQlClient>(
         *context.seasonalNetworkManager);

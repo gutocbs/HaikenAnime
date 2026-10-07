@@ -22,6 +22,7 @@ public:
                                      ISyncTaskExecutor &executor,
                                      Clock clock = {},
                                      std::map<SyncTaskKind, SyncSchedulePolicy> policies = DefaultSyncTaskPolicies(),
+                                     bool seedMissingTasks = false,
                                      QObject *parent = nullptr);
     ~AdaptiveSyncCoordinator() override;
 
@@ -63,6 +64,7 @@ private:
     bool stopped_ = false;
     bool stopping_ = false;
     bool shutdownAcknowledged_ = false;
+    bool seedMissingTasks_ = false;
 };
 
 #endif // HAIKENANIME_ADAPTIVESYNCCOORDINATOR_H

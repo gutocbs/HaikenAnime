@@ -11,11 +11,13 @@
 #include <utility>
 
 ApplicationSyncTaskExecutor::ApplicationSyncTaskExecutor(
-    QString databasePath, QString fixturePath, QString upsertQueryPath, QString readQueryPath,
+    QString databasePath, QString userListFixturePath, QString catalogFixturePath, QString upsertQueryPath,
+    QString readQueryPath,
     QString readActiveMediaIdsQueryPath, QString markSourceRemovedQueryPath,
     QString readTaskStatesQueryPath, QString upsertTaskStateQueryPath, QString deleteTaskStateQueryPath,
     const int timeoutMs)
-    : databasePath_(std::move(databasePath)), fixturePath_(std::move(fixturePath)),
+    : databasePath_(std::move(databasePath)), userListFixturePath_(std::move(userListFixturePath)),
+      catalogFixturePath_(std::move(catalogFixturePath)),
       upsertQueryPath_(std::move(upsertQueryPath)), readQueryPath_(std::move(readQueryPath)),
       readActiveMediaIdsQueryPath_(std::move(readActiveMediaIdsQueryPath)),
       markSourceRemovedQueryPath_(std::move(markSourceRemovedQueryPath)),
@@ -52,7 +54,9 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
             if (!database.open() || !database.migrate()) {
                 error = database.lastError();
                 result.errorCategory = AniListSyncErrorCategory::Persistence;
-            } else if (partition != SyncPartition::UserList) {
+            } else if (partition != SyncPartition::UserList && partition != SyncPartition::ActiveCatalog
+                       && partition != SyncPartition::InactiveCatalog
+                       && partition != SyncPartition::CompletedCatalog) {
                 error = QStringLiteral("Synchronization source partition is not configured yet.");
                 result.errorCategory = AniListSyncErrorCategory::InvalidData;
             } else {
@@ -60,12 +64,15 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                                                       readActiveMediaIdsQueryPath_, markSourceRemovedQueryPath_);
                 SqliteSyncTaskStateRepository taskRepository(
                     database.connection(), readTaskStatesQueryPath_, upsertTaskStateQueryPath_, deleteTaskStateQueryPath_);
-                RecordedGraphQlAniListDataSource source(fixturePath_);
+                RecordedGraphQlAniListDataSource source(partition == SyncPartition::UserList
+                    ? userListFixturePath_ : catalogFixturePath_);
                 AniListSyncService service(source, mediaRepository, &mediaRepository, nullptr, timeoutMs_);
-                MediaSyncFilter filter;
-                filter.partition = partition;
+                auto request = AniListDataSourceRequest::ForPartition(partition);
+                if (checkpointState.confirmedPage.has_value()) {
+                    request.setPage(*checkpointState.confirmedPage + 1);
+                }
                 const bool succeeded = service.synchronize(
-                    filter, error,
+                    request, error,
                     [&taskRepository, &checkpointState](const int page, QString &checkpointError) {
                         checkpointState.confirmedPage = page;
                         return taskRepository.Upsert(checkpointState, checkpointError);
