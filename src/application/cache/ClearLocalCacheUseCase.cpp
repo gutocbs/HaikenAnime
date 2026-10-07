@@ -5,8 +5,9 @@
 #include <utility>
 
 ClearLocalCacheUseCase::ClearLocalCacheUseCase(
-    CoverDownloadCoordinator &covers, QList<ICacheCleanupParticipant *> participants)
-    : covers_(covers), participants_(std::move(participants))
+    CoverDownloadCoordinator &covers, const ICoverTemporaryStore &temporaryFiles,
+    QList<ICacheCleanupParticipant *> participants)
+    : covers_(covers), temporaryFiles_(temporaryFiles), participants_(std::move(participants))
 {
 }
 
@@ -21,6 +22,10 @@ bool ClearLocalCacheUseCase::Start(Completion completion)
     result.removedCoverEntries = coverResult.removedEntries;
     for (const auto &failure : coverResult.failures) {
         result.failures.append({failure.component, failure.error});
+    }
+    QString temporaryError;
+    if (!temporaryFiles_.ClearAbandoned(result.removedCoverTemporaryFiles, temporaryError)) {
+        result.failures.append({QStringLiteral("cover-temporary-files"), temporaryError});
     }
 
     const CacheCleanupCancellationProbe isCancelled = [this] {
@@ -40,16 +45,21 @@ bool ClearLocalCacheUseCase::Start(Completion completion)
         }
     }
 
-    result.cancelled = isCancelled();
-    state_.store(ClearLocalCacheState::Idle);
+    auto finalState = ClearLocalCacheState::Running;
+    if (state_.compare_exchange_strong(finalState, ClearLocalCacheState::Idle)) {
+        result.cancelled = false;
+    } else {
+        result.cancelled = finalState == ClearLocalCacheState::CancellationRequested;
+        state_.store(ClearLocalCacheState::Idle);
+    }
     if (completion) completion(std::move(result));
     return true;
 }
 
-void ClearLocalCacheUseCase::Cancel()
+bool ClearLocalCacheUseCase::Cancel()
 {
     auto expected = ClearLocalCacheState::Running;
-    state_.compare_exchange_strong(expected, ClearLocalCacheState::CancellationRequested);
+    return state_.compare_exchange_strong(expected, ClearLocalCacheState::CancellationRequested);
 }
 
 ClearLocalCacheState ClearLocalCacheUseCase::State() const

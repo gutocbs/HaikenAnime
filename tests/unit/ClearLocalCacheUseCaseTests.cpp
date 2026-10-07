@@ -1,6 +1,10 @@
 #include "application/cache/ClearLocalCacheUseCase.h"
 
+#include <QSemaphore>
 #include <QtTest>
+
+#include <atomic>
+#include <thread>
 
 class CleanupFakeDownloader final : public ICoverDownloader {
 public:
@@ -73,6 +77,21 @@ public:
     bool failClear = false;
 };
 
+class CleanupFakeTemporaryStore final : public ICoverTemporaryStore {
+public:
+    bool ClearAbandoned(int &removedFiles, QString &error) const override
+    {
+        ++calls;
+        removedFiles = removed;
+        error = failure;
+        return failure.isEmpty();
+    }
+
+    mutable int calls = 0;
+    int removed = 0;
+    QString failure;
+};
+
 class FakeCleanupParticipant final : public ICacheCleanupParticipant {
 public:
     QString Name() const override { return name; }
@@ -91,6 +110,20 @@ public:
     bool observedCancellation = false;
 };
 
+class BlockingCleanupParticipant final : public ICacheCleanupParticipant {
+public:
+    QString Name() const override { return QStringLiteral("blocking-derived-data"); }
+    CacheCleanupParticipantResult Clear(const CacheCleanupCancellationProbe &) override
+    {
+        entered.release();
+        resume.acquire();
+        return {};
+    }
+
+    QSemaphore entered;
+    QSemaphore resume;
+};
+
 class ClearLocalCacheUseCaseTests final : public QObject {
     Q_OBJECT
 
@@ -99,6 +132,7 @@ private slots:
     void reportsPartialFailuresWithoutClaimingSuccess();
     void repeatedCleanupIsSafeAndReportsZeroAdditionalRemovals();
     void cancellationStopsBeforeTheNextParticipantAndReturnsToIdle();
+    void acceptedExternalCancellationIsReportedByCompletion();
     void rejectsAConcurrentStart();
 };
 
@@ -120,6 +154,8 @@ void ClearLocalCacheUseCaseTests::clearsOnlyCoversAndRegisteredDerivedParticipan
     CleanupFakeFiles files;
     files.files = {QStringLiteral("1.png"), QStringLiteral("2.png")};
     auto covers = MakeCoverCoordinator(downloader, cache, files);
+    CleanupFakeTemporaryStore temporaryFiles;
+    temporaryFiles.removed = 5;
     FakeCleanupParticipant thumbnails;
     thumbnails.name = QStringLiteral("derived-thumbnails");
     thumbnails.result.removedItems = 3;
@@ -129,7 +165,7 @@ void ClearLocalCacheUseCaseTests::clearsOnlyCoversAndRegisteredDerivedParticipan
     FakeCleanupParticipant unregistered;
     unregistered.name = QStringLiteral("primary-library");
     unregistered.result.removedItems = 99;
-    ClearLocalCacheUseCase useCase(covers, {&thumbnails, &indexes});
+    ClearLocalCacheUseCase useCase(covers, temporaryFiles, {&thumbnails, &indexes});
 
     ClearLocalCacheResult result;
     int completions = 0;
@@ -141,12 +177,14 @@ void ClearLocalCacheUseCaseTests::clearsOnlyCoversAndRegisteredDerivedParticipan
     QCOMPARE(completions, 1);
     QVERIFY(result.Succeeded());
     QCOMPARE(result.removedCoverFiles, 2);
+    QCOMPARE(result.removedCoverTemporaryFiles, 5);
     QCOMPARE(result.removedCoverEntries, 2);
     QCOMPARE(result.removedDerivedItems, 7);
     QVERIFY(result.failures.isEmpty());
     QCOMPARE(thumbnails.calls, 1);
     QCOMPARE(indexes.calls, 1);
     QCOMPARE(unregistered.calls, 0);
+    QCOMPARE(temporaryFiles.calls, 1);
 }
 
 void ClearLocalCacheUseCaseTests::reportsPartialFailuresWithoutClaimingSuccess()
@@ -157,21 +195,26 @@ void ClearLocalCacheUseCaseTests::reportsPartialFailuresWithoutClaimingSuccess()
     CleanupFakeFiles files;
     files.files.insert(QStringLiteral("cover.png"));
     auto covers = MakeCoverCoordinator(downloader, cache, files);
+    CleanupFakeTemporaryStore temporaryFiles;
+    temporaryFiles.removed = 1;
+    temporaryFiles.failure = QStringLiteral("temporary cleanup failure");
     FakeCleanupParticipant participant;
     participant.name = QStringLiteral("derived-search-index");
     participant.result = {2, QStringLiteral("index cleanup failure")};
-    ClearLocalCacheUseCase useCase(covers, {&participant});
+    ClearLocalCacheUseCase useCase(covers, temporaryFiles, {&participant});
 
     ClearLocalCacheResult result;
     QVERIFY(useCase.Start([&](ClearLocalCacheResult value) { result = std::move(value); }));
 
     QVERIFY(!result.Succeeded());
     QCOMPARE(result.removedCoverFiles, 1);
+    QCOMPARE(result.removedCoverTemporaryFiles, 1);
     QCOMPARE(result.removedCoverEntries, 0);
     QCOMPARE(result.removedDerivedItems, 2);
-    QCOMPARE(result.failures.size(), 2);
+    QCOMPARE(result.failures.size(), 3);
     QCOMPARE(result.failures.at(0).participant, QStringLiteral("cover-metadata"));
-    QCOMPARE(result.failures.at(1).participant, QStringLiteral("derived-search-index"));
+    QCOMPARE(result.failures.at(1).participant, QStringLiteral("cover-temporary-files"));
+    QCOMPARE(result.failures.at(2).participant, QStringLiteral("derived-search-index"));
 }
 
 void ClearLocalCacheUseCaseTests::repeatedCleanupIsSafeAndReportsZeroAdditionalRemovals()
@@ -182,19 +225,22 @@ void ClearLocalCacheUseCaseTests::repeatedCleanupIsSafeAndReportsZeroAdditionalR
     CleanupFakeFiles files;
     files.files.insert(QStringLiteral("1.png"));
     auto covers = MakeCoverCoordinator(downloader, cache, files);
+    CleanupFakeTemporaryStore temporaryFiles;
+    temporaryFiles.removed = 1;
     FakeCleanupParticipant participant;
     participant.name = QStringLiteral("derived-data");
     participant.result.removedItems = 1;
-    ClearLocalCacheUseCase useCase(covers, {&participant});
+    ClearLocalCacheUseCase useCase(covers, temporaryFiles, {&participant});
 
     ClearLocalCacheResult first;
     QVERIFY(useCase.Start([&](ClearLocalCacheResult value) { first = std::move(value); }));
     participant.result.removedItems = 0;
+    temporaryFiles.removed = 0;
     ClearLocalCacheResult second;
     QVERIFY(useCase.Start([&](ClearLocalCacheResult value) { second = std::move(value); }));
 
     QVERIFY(first.Succeeded());
-    QCOMPARE(first.TotalRemoved(), 3);
+    QCOMPARE(first.TotalRemoved(), 4);
     QVERIFY(second.Succeeded());
     QCOMPARE(second.TotalRemoved(), 0);
     QCOMPARE(participant.calls, 2);
@@ -206,13 +252,14 @@ void ClearLocalCacheUseCaseTests::cancellationStopsBeforeTheNextParticipantAndRe
     CleanupFakeCache cache;
     CleanupFakeFiles files;
     auto covers = MakeCoverCoordinator(downloader, cache, files);
+    CleanupFakeTemporaryStore temporaryFiles;
     FakeCleanupParticipant first;
     first.name = QStringLiteral("first-derived-data");
     first.result.removedItems = 1;
     FakeCleanupParticipant second;
     second.name = QStringLiteral("second-derived-data");
-    ClearLocalCacheUseCase useCase(covers, {&first, &second});
-    first.onClear = [&] { useCase.Cancel(); };
+    ClearLocalCacheUseCase useCase(covers, temporaryFiles, {&first, &second});
+    first.onClear = [&] { QVERIFY(useCase.Cancel()); };
 
     ClearLocalCacheResult result;
     ClearLocalCacheState completionState = ClearLocalCacheState::Running;
@@ -229,15 +276,43 @@ void ClearLocalCacheUseCaseTests::cancellationStopsBeforeTheNextParticipantAndRe
     QCOMPARE(useCase.State(), ClearLocalCacheState::Idle);
 }
 
+void ClearLocalCacheUseCaseTests::acceptedExternalCancellationIsReportedByCompletion()
+{
+    CleanupFakeDownloader downloader;
+    CleanupFakeCache cache;
+    CleanupFakeFiles files;
+    auto covers = MakeCoverCoordinator(downloader, cache, files);
+    CleanupFakeTemporaryStore temporaryFiles;
+    BlockingCleanupParticipant participant;
+    ClearLocalCacheUseCase useCase(covers, temporaryFiles, {&participant});
+    std::atomic_bool cancellationAccepted = false;
+    std::thread canceller([&] {
+        if (participant.entered.tryAcquire(1, 5000)) {
+            cancellationAccepted.store(useCase.Cancel());
+        }
+        participant.resume.release();
+    });
+
+    ClearLocalCacheResult result;
+    QVERIFY(useCase.Start([&](ClearLocalCacheResult value) { result = std::move(value); }));
+    canceller.join();
+
+    QVERIFY(cancellationAccepted.load());
+    QVERIFY(result.cancelled);
+    QVERIFY(!result.Succeeded());
+    QCOMPARE(useCase.State(), ClearLocalCacheState::Idle);
+}
+
 void ClearLocalCacheUseCaseTests::rejectsAConcurrentStart()
 {
     CleanupFakeDownloader downloader;
     CleanupFakeCache cache;
     CleanupFakeFiles files;
     auto covers = MakeCoverCoordinator(downloader, cache, files);
+    CleanupFakeTemporaryStore temporaryFiles;
     FakeCleanupParticipant participant;
     participant.name = QStringLiteral("derived-data");
-    ClearLocalCacheUseCase useCase(covers, {&participant});
+    ClearLocalCacheUseCase useCase(covers, temporaryFiles, {&participant});
     bool nestedStarted = true;
     participant.onClear = [&] { nestedStarted = useCase.Start({}); };
 

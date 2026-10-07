@@ -3,6 +3,8 @@
 
 #include <QString>
 
+#include "../../application/covers/ICoverTemporaryStore.h"
+
 #ifdef HAIKENANIME_COVER_TEMPORARY_STORE_TESTING
 #include <functional>
 #endif
@@ -12,11 +14,11 @@ inline constexpr auto NameTemplate = "cover-XXXXXX.tmp";
 inline constexpr auto NameFilter = "cover-*.tmp";
 }
 
-class CoverTemporaryStore final {
+class CoverTemporaryStore final : public ICoverTemporaryStore {
 public:
     explicit CoverTemporaryStore(QString rootPath);
 
-    bool ClearAbandoned(int &removedFiles, QString &error) const;
+    bool ClearAbandoned(int &removedFiles, QString &error) const override;
 
 private:
     QString rootPath_;

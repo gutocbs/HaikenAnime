@@ -289,9 +289,10 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         queryConfiguration.clearCoverCachePath);
     const QString cacheRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)).filePath("covers");
     const QString temporaryRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation)).filePath("HaikenAnime/covers");
+    context.coverTemporaryStore = std::make_unique<CoverTemporaryStore>(temporaryRoot);
     int removedTemporaryFiles = 0;
     QString temporaryCleanupError;
-    if (!CoverTemporaryStore(temporaryRoot).ClearAbandoned(removedTemporaryFiles, temporaryCleanupError)) {
+    if (!context.coverTemporaryStore->ClearAbandoned(removedTemporaryFiles, temporaryCleanupError)) {
         context.logger->warning(LogCategory::Covers, temporaryCleanupError);
     } else if (removedTemporaryFiles > 0) {
         context.logger->info(LogCategory::Covers,
@@ -302,6 +303,9 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     context.coverCoordinator = std::make_unique<CoverDownloadCoordinator>(
         *context.coverDownloader, *context.coverCacheRepository, *context.coverFileStore, settings.covers);
     context.coverCoordinator->setLogger(context.logger.get());
+    context.clearLocalCache = std::make_unique<ClearLocalCacheUseCase>(
+        *context.coverCoordinator, *context.coverTemporaryStore,
+        QList<ICacheCleanupParticipant *>{});
     context.coverQuality = settings.covers.quality;
     context.initialSync = std::make_unique<InitialSyncCoordinator>(
         context.database->databasePath(),

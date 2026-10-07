@@ -3,6 +3,7 @@
 
 #include "ICacheCleanupParticipant.h"
 #include "../covers/CoverDownloadCoordinator.h"
+#include "../covers/ICoverTemporaryStore.h"
 
 #include <QList>
 #include <QString>
@@ -19,6 +20,7 @@ struct CacheCleanupFailure final {
 
 struct ClearLocalCacheResult final {
     int removedCoverFiles = 0;
+    int removedCoverTemporaryFiles = 0;
     int removedCoverEntries = 0;
     int removedDerivedItems = 0;
     QList<CacheCleanupFailure> failures;
@@ -27,7 +29,8 @@ struct ClearLocalCacheResult final {
     [[nodiscard]] bool Succeeded() const { return !cancelled && failures.isEmpty(); }
     [[nodiscard]] int TotalRemoved() const
     {
-        return removedCoverFiles + removedCoverEntries + removedDerivedItems;
+        return removedCoverFiles + removedCoverTemporaryFiles
+            + removedCoverEntries + removedDerivedItems;
     }
 };
 
@@ -36,14 +39,16 @@ public:
     using Completion = std::function<void(ClearLocalCacheResult)>;
 
     ClearLocalCacheUseCase(CoverDownloadCoordinator &covers,
+                           const ICoverTemporaryStore &temporaryFiles,
                            QList<ICacheCleanupParticipant *> participants);
 
     bool Start(Completion completion);
-    void Cancel();
+    bool Cancel();
     [[nodiscard]] ClearLocalCacheState State() const;
 
 private:
     CoverDownloadCoordinator &covers_;
+    const ICoverTemporaryStore &temporaryFiles_;
     QList<ICacheCleanupParticipant *> participants_;
     std::atomic<ClearLocalCacheState> state_ = ClearLocalCacheState::Idle;
 };

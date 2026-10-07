@@ -58,6 +58,7 @@ private slots:
     void scannerQueryFailureDoesNotDisableMedia();
     void scannerQueryFailureIsLoggedNonfatally();
     void startupCleanupRemovesAbandonedCoverTemporaryWithoutTouchingCache();
+    void manualCleanupUsesComposedCoverTemporaryStore();
     void workerProductsReleaseConnectionsAndShutdownBeforeDatabase();
     void destroyedLifetimeCancelsScheduledStartup();
     void composesAdaptiveSynchronizationWithTheLegacyStartupSeam();
@@ -286,6 +287,27 @@ void LocalLibraryScanCompositionTests::startupCleanupRemovesAbandonedCoverTempor
     QVERIFY(!QFileInfo::exists(abandoned));
     QVERIFY(QFileInfo::exists(persistent));
     QVERIFY(QFile::remove(persistent));
+}
+
+void LocalLibraryScanCompositionTests::manualCleanupUsesComposedCoverTemporaryStore() {
+    QTemporaryDir directory;
+    auto context = createApplicationContext(optionsFor(directory));
+    QVERIFY2(context.isReady(), qPrintable(context.initializationError));
+    QVERIFY(context.coverTemporaryStore);
+    QVERIFY(context.clearLocalCache);
+    const QString temporaryRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+                                      .filePath("HaikenAnime/covers");
+    QVERIFY(QDir().mkpath(temporaryRoot));
+    const QString temporaryPath = QDir(temporaryRoot).filePath("cover-manual-cleanup.tmp");
+    writeFile(temporaryPath);
+
+    ClearLocalCacheResult result;
+    QVERIFY(context.clearLocalCache->Start(
+        [&](ClearLocalCacheResult value) { result = std::move(value); }));
+
+    QVERIFY(result.Succeeded());
+    QVERIFY(result.removedCoverTemporaryFiles >= 1);
+    QVERIFY(!QFileInfo::exists(temporaryPath));
 }
 
 void LocalLibraryScanCompositionTests::workerProductsReleaseConnectionsAndShutdownBeforeDatabase() {

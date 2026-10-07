@@ -129,6 +129,7 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/covers/ICoverFileStore.h
         src/application/covers/CoverDownloadTypes.h
         src/application/covers/ICoverDownloader.h
+        src/application/covers/ICoverTemporaryStore.h
         src/application/covers/CoverDownloadCoordinator.h
         src/application/covers/CoverDownloadCoordinator.cpp
         src/application/cache/ICacheCleanupParticipant.h
