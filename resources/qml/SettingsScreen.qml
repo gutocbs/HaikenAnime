@@ -645,6 +645,17 @@ Item {
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
                 StaticField { label: qsTr("Reprodutor preferido"); value: qsTr("Padrão do Windows") }
             }
+            SectionCard {
+                Label { text: qsTr("Cache local"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
+                Label { Layout.fillWidth: true; text: qsTr("Remove capas, arquivos temporários de capas e metadados derivados. Sua biblioteca, progresso e conta não são alterados."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
+                Button {
+                    text: controller.cacheCleanupRunning ? qsTr("Limpando cache…") : qsTr("Limpar cache local")
+                    enabled: !controller.cacheCleanupRunning
+                    onClicked: controller.ClearLocalCache()
+                }
+                Label { Layout.fillWidth: true; visible: controller.cacheCleanupStatusMessage.length > 0; text: controller.cacheCleanupStatusMessage; color: ink; font.pixelSize: 11; wrapMode: Text.Wrap }
+                Label { Layout.fillWidth: true; visible: controller.cacheCleanupErrorMessage.length > 0; text: controller.cacheCleanupErrorMessage; color: "#b13b43"; font.pixelSize: 11; wrapMode: Text.Wrap }
+            }
         }
     }
 

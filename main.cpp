@@ -95,7 +95,8 @@ int main(int argc, char *argv[]) {
     homeController.ConfigurePreferredTitle(context.userPreferences.preferredTitleKey);
     homeController.ConfigureInitialSort(context.userPreferences.homeSortKey);
     SettingsController settingsController(context.userPreferencesRepository.get(),
-                                          context.userPreferences);
+                                          context.userPreferences,
+                                          context.clearLocalCache.get());
     settingsController.SetScanCoordinator(context.localLibraryScan.get());
     if (context.adaptiveSync) {
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,

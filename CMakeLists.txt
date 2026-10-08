@@ -1070,6 +1070,8 @@ add_test(NAME HomeScreenControllerTests COMMAND HomeScreenControllerTests)
 add_executable(SettingsControllerTests
         tests/unit/SettingsControllerTests.cpp
         src/presentation/settings/SettingsController.cpp
+        src/application/cache/ClearLocalCacheUseCase.cpp
+        src/application/covers/CoverDownloadCoordinator.cpp
         src/application/configuration/UserPreferencesValidator.cpp
         src/application/media/MediaTitleResolver.cpp
         src/app/LocalLibraryScanCoordinator.h

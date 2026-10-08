@@ -8,6 +8,7 @@
 #include "../../application/configuration/IUserPreferencesRepository.h"
 
 class LocalLibraryScanCoordinator;
+class ClearLocalCacheUseCase;
 
 class SettingsController final : public QObject {
     Q_OBJECT
@@ -42,9 +43,14 @@ class SettingsController final : public QObject {
     Q_PROPERTY(qsizetype scanCandidateCount READ scanCandidateCount NOTIFY scanChanged)
     Q_PROPERTY(QString scanStatusMessage READ scanStatusMessage NOTIFY scanChanged)
     Q_PROPERTY(QString scanErrorMessage READ scanErrorMessage NOTIFY scanChanged)
+    Q_PROPERTY(bool cacheCleanupRunning READ cacheCleanupRunning NOTIFY cacheCleanupChanged)
+    Q_PROPERTY(QString cacheCleanupStatusMessage READ cacheCleanupStatusMessage NOTIFY cacheCleanupChanged)
+    Q_PROPERTY(QString cacheCleanupErrorMessage READ cacheCleanupErrorMessage NOTIFY cacheCleanupChanged)
 public:
     explicit SettingsController(IUserPreferencesRepository *repository,
-                                UserPreferences initial, QObject *parent = nullptr);
+                                UserPreferences initial,
+                                ClearLocalCacheUseCase *cacheCleanup = nullptr,
+                                QObject *parent = nullptr);
     double scoreMinimum() const;
     double scoreMaximum() const;
     double scoreStep() const;
@@ -76,6 +82,9 @@ public:
     qsizetype scanCandidateCount() const;
     QString scanStatusMessage() const;
     QString scanErrorMessage() const;
+    bool cacheCleanupRunning() const;
+    QString cacheCleanupStatusMessage() const;
+    QString cacheCleanupErrorMessage() const;
     void SetScanCoordinator(LocalLibraryScanCoordinator *coordinator);
     void ApplyExternalHomeSortKey(QString key);
 
@@ -94,12 +103,17 @@ public:
     Q_INVOKABLE void SetScanExtensionEnabled(const QString &extension, bool enabled);
     Q_INVOKABLE void ScanNow();
     Q_INVOKABLE void SynchronizeNow();
+    Q_INVOKABLE void ClearLocalCache();
     void notifySynchronizationStarted();
     void notifySynchronizationCompleted();
     void notifySynchronizationFailed(const QString &error);
 signals:
     void changed();
     void scanChanged();
+    void cacheCleanupChanged();
+    void cacheCleanupCompleted();
+    void cacheCleanupPartialFailure(QString error);
+    void cacheCleanupFailed(QString error);
     void synchronizationChanged();
     void synchronizationRequested();
     void preferencesApplied(UserPreferences preferences);
@@ -128,6 +142,10 @@ private:
     qsizetype scanCandidateCount_ = 0;
     QString scanStatusMessage_;
     QString scanErrorMessage_;
+    ClearLocalCacheUseCase *cacheCleanup_ = nullptr;
+    bool cacheCleanupRunning_ = false;
+    QString cacheCleanupStatusMessage_;
+    QString cacheCleanupErrorMessage_;
 };
 
 #endif

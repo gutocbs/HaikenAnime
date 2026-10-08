@@ -7,6 +7,8 @@
 
 #include "../../src/presentation/settings/SettingsController.h"
 #include "../../src/app/LocalLibraryScanCoordinator.h"
+#include "../../src/application/cache/ClearLocalCacheUseCase.h"
+#include "../../src/application/covers/CoverDownloadCoordinator.h"
 
 struct ScanFixture {
     QMutex mutex;
@@ -59,6 +61,65 @@ public:
     UserPreferences stored;
 };
 
+class CleanupDownloader final : public ICoverDownloader {
+public:
+    quint64 Start(const CoverRequest &, Completion) override { return 0; }
+    void Cancel(quint64) override {}
+};
+
+class CleanupCache final : public ICoverCacheRepository {
+public:
+    bool ReadAll(QHash<int, CoverCacheEntry> &, QString &) override { return true; }
+    bool Upsert(const CoverCacheEntry &, QString &) override { return true; }
+    bool Remove(int, QString &) override { return true; }
+    bool Clear(int &removedEntries, QString &error) override {
+        removedEntries = entries;
+        error = failure;
+        return failure.isEmpty();
+    }
+    int entries = 0;
+    QString failure;
+};
+
+class CleanupFiles final : public ICoverFileStore {
+public:
+    bool Exists(const QString &) const override { return false; }
+    bool Publish(int, const QString &, const QString &, const QString &, PublishedCover &, QString &) override { return false; }
+    bool Remove(const QString &, QString &) override { return true; }
+    bool Clear(int &removedFiles, QString &error) override {
+        removedFiles = files;
+        error = failure;
+        return failure.isEmpty();
+    }
+    bool RemoveOrphans(const QSet<QString> &, int, int &, QString &) override { return true; }
+    QString AbsolutePath(const QString &) const override { return {}; }
+    int files = 0;
+    QString failure;
+};
+
+class CleanupTemporaryFiles final : public ICoverTemporaryStore {
+public:
+    bool ClearAbandoned(int &removedFiles, QString &error) const override {
+        removedFiles = files;
+        error = failure;
+        return failure.isEmpty();
+    }
+    int files = 0;
+    QString failure;
+};
+
+class CleanupParticipant final : public ICacheCleanupParticipant {
+public:
+    QString Name() const override { return name; }
+    CacheCleanupParticipantResult Clear(const CacheCleanupCancellationProbe &) override {
+        if (onClear) onClear();
+        return result;
+    }
+    QString name = QStringLiteral("derived-metadata");
+    CacheCleanupParticipantResult result;
+    std::function<void()> onClear;
+};
+
 class SettingsControllerTests final : public QObject {
     Q_OBJECT
 private slots:
@@ -81,6 +142,8 @@ private slots:
     void scanSignalsUpdatePresentation();
     void coordinatorReplacementDisconnectsOldSignals();
     void requestsManualSynchronization();
+    void clearsLocalCacheWithoutChangingUnsavedDraft();
+    void reportsPartialCleanupAndIgnoresConcurrentRequest();
 };
 
 void SettingsControllerTests::editsSavesAndEmitsCompletePreferences() {
@@ -427,6 +490,58 @@ void SettingsControllerTests::requestsManualSynchronization() {
     controller.SynchronizeNow();
 
     QCOMPARE(requested.count(), 1);
+}
+
+void SettingsControllerTests::clearsLocalCacheWithoutChangingUnsavedDraft() {
+    FakePreferencesRepository repository;
+    CleanupDownloader downloader;
+    CleanupCache cache;
+    CleanupFiles files;
+    CleanupTemporaryFiles temporaryFiles;
+    CleanupParticipant participant;
+    cache.entries = 2;
+    files.files = 3;
+    temporaryFiles.files = 4;
+    participant.result.removedItems = 5;
+    CoverSettings settings;
+    CoverDownloadCoordinator covers(downloader, cache, files, settings);
+    ClearLocalCacheUseCase cleanup(covers, temporaryFiles, {&participant});
+    SettingsController controller(&repository, {}, &cleanup);
+    QSignalSpy completed(&controller, &SettingsController::cacheCleanupCompleted);
+
+    controller.SetLibraryRoot(QStringLiteral("D:\\Draft"));
+    controller.ClearLocalCache();
+
+    QVERIFY(!controller.cacheCleanupRunning());
+    QCOMPARE(completed.count(), 1);
+    QVERIFY(controller.cacheCleanupErrorMessage().isEmpty());
+    QVERIFY(controller.cacheCleanupStatusMessage().contains(QStringLiteral("14")));
+    QVERIFY(controller.dirty());
+    QCOMPARE(controller.libraryRoot(), QStringLiteral("D:\\Draft"));
+}
+
+void SettingsControllerTests::reportsPartialCleanupAndIgnoresConcurrentRequest() {
+    FakePreferencesRepository repository;
+    CleanupDownloader downloader;
+    CleanupCache cache;
+    CleanupFiles files;
+    CleanupTemporaryFiles temporaryFiles;
+    CleanupParticipant participant;
+    files.files = 1;
+    cache.failure = QStringLiteral("cover cache failed");
+    CoverSettings settings;
+    CoverDownloadCoordinator covers(downloader, cache, files, settings);
+    ClearLocalCacheUseCase cleanup(covers, temporaryFiles, {&participant});
+    SettingsController controller(&repository, {}, &cleanup);
+    QSignalSpy partial(&controller, &SettingsController::cacheCleanupPartialFailure);
+    participant.onClear = [&controller] { controller.ClearLocalCache(); };
+
+    controller.ClearLocalCache();
+
+    QVERIFY(!controller.cacheCleanupRunning());
+    QCOMPARE(partial.count(), 1);
+    QVERIFY(controller.cacheCleanupStatusMessage().isEmpty());
+    QVERIFY(controller.cacheCleanupErrorMessage().contains(QStringLiteral("parcial"), Qt::CaseInsensitive));
 }
 
 QTEST_MAIN(SettingsControllerTests)
