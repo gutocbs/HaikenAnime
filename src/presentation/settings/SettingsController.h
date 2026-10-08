@@ -23,6 +23,7 @@ class SettingsController final : public QObject {
     Q_PROPERTY(QString preferredTitleKey READ preferredTitleKey NOTIFY changed)
     Q_PROPERTY(bool includeAdultContent READ includeAdultContent NOTIFY changed)
     Q_PROPERTY(bool automaticLocalFileRecognition READ automaticLocalFileRecognition NOTIFY changed)
+    Q_PROPERTY(QStringList enabledUserLists READ enabledUserLists NOTIFY changed)
     Q_PROPERTY(QVariantList coverQualityOptions READ coverQualityOptions CONSTANT)
     Q_PROPERTY(QVariantList scoreScaleOptions READ scoreScaleOptions CONSTANT)
     Q_PROPERTY(QVariantList synchronizationIntervalOptions READ synchronizationIntervalOptions CONSTANT)
@@ -62,6 +63,7 @@ public:
     QString preferredTitleKey() const;
     bool includeAdultContent() const;
     bool automaticLocalFileRecognition() const;
+    QStringList enabledUserLists() const;
     QVariantList coverQualityOptions() const;
     QVariantList scoreScaleOptions() const;
     QVariantList synchronizationIntervalOptions() const;
@@ -97,6 +99,7 @@ public:
     Q_INVOKABLE void SetPreferredTitle(const QString &key);
     Q_INVOKABLE void SetIncludeAdultContent(bool enabled);
     Q_INVOKABLE void SetAutomaticLocalFileRecognition(bool enabled);
+    Q_INVOKABLE void SetUserListEnabled(const QString &key, bool enabled);
     Q_INVOKABLE void Save();
     Q_INVOKABLE void Discard();
     Q_INVOKABLE void SetLibraryRoot(const QString &root);

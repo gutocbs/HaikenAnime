@@ -136,27 +136,12 @@ Item {
                     }
                 }
 
-                Basic.Button {
+                SettingsButton {
                     id: settingsSaveButton
                     Layout.alignment: Qt.AlignLeft
                     text: qsTr("Salvar alterações")
                     enabled: controller.dirty && controller.valid && !controller.saving
                     onClicked: controller.Save()
-
-                    contentItem: Text {
-                        text: settingsSaveButton.text
-                        color: settingsSaveButton.enabled ? ink : muted
-                        font: settingsSaveButton.font
-                        horizontalAlignment: Text.AlignHCenter
-                        verticalAlignment: Text.AlignVCenter
-                    }
-
-                    background: Rectangle {
-                        radius: 3
-                        color: surface
-                        border.width: settingsSaveButton.activeFocus ? 2 : 1
-                        border.color: settingsSaveButton.activeFocus ? accent : line
-                    }
                 }
             }
         }
@@ -441,6 +426,28 @@ Item {
         Switch { checked: settingSwitch.checked; onToggled: settingSwitch.toggled(checked) }
     }
 
+    component SettingsButton: Basic.Button {
+        id: settingsButton
+        implicitHeight: 34
+        leftPadding: 14
+        rightPadding: 14
+        contentItem: Text {
+            text: settingsButton.text
+            color: settingsButton.enabled ? surface : muted
+            font: settingsButton.font
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+        background: Rectangle {
+            radius: 5
+            color: !settingsButton.enabled ? surfaceSoft
+                 : settingsButton.down ? "#24466d"
+                 : settingsButton.hovered ? "#3c6eaa" : accent
+            border.width: settingsButton.activeFocus ? 2 : 1
+            border.color: settingsButton.activeFocus ? ink : (settingsButton.enabled ? accent : line)
+        }
+    }
+
     Component {
         id: overviewContent
         ColumnLayout {
@@ -500,7 +507,7 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     Item { Layout.fillWidth: true }
-                    Button { text: qsTr("Conectar conta"); enabled: false }
+                    SettingsButton { text: qsTr("Conectar conta"); enabled: false }
                 }
             }
             SectionCard {
@@ -524,7 +531,7 @@ Item {
                         Label { text: qsTr("Sincronização manual"); color: ink; font.pixelSize: 12; font.weight: Font.DemiBold }
                         Label { Layout.fillWidth: true; text: qsTr("Atualize agora os dados da sua lista, sem aguardar o próximo intervalo automático."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
                     }
-                    Button {
+                    SettingsButton {
                         text: controller.synchronizationRunning ? qsTr("Sincronizando…") : qsTr("Sincronizar agora")
                         enabled: !controller.synchronizationRunning
                         onClicked: controller.SynchronizeNow()
@@ -575,7 +582,7 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     Item { Layout.fillWidth: true }
-                    Button { text: qsTr("Selecionar pasta"); onClicked: libraryFolderDialog.open() }
+                    SettingsButton { text: qsTr("Selecionar pasta"); onClicked: libraryFolderDialog.open() }
                 }
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
                 FieldLabel { text: qsTr("EXTENSÕES INCLUÍDAS") }
@@ -599,7 +606,7 @@ Item {
                         }
                     }
                 }
-                Button {
+                SettingsButton {
                     id: scanNowButton
                     text: qsTr("Escanear agora")
                     enabled: !controller.dirty && !controller.scanRunning && controller.valid && !controller.saving
@@ -648,7 +655,7 @@ Item {
             SectionCard {
                 Label { text: qsTr("Cache local"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
                 Label { Layout.fillWidth: true; text: qsTr("Remove capas, arquivos temporários de capas e metadados derivados. Sua biblioteca, progresso e conta não são alterados."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
-                Button {
+                SettingsButton {
                     text: controller.cacheCleanupRunning ? qsTr("Limpando cache…") : qsTr("Limpar cache local")
                     enabled: !controller.cacheCleanupRunning
                     onClicked: controller.ClearLocalCache()
@@ -667,8 +674,20 @@ Item {
                 Label { text: qsTr("Estados incluídos"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
                 Label { Layout.fillWidth: true; text: qsTr("Defina quais listas poderão participar de filtros e futuras automações."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
                 Repeater {
-                    model: [qsTr("Watching / Reading"), qsTr("Planning"), qsTr("On Hold"), qsTr("Dropped"), qsTr("Completed")]
-                    delegate: SettingSwitch { required property string modelData; enabled: false; title: modelData; description: qsTr("Disponível em uma etapa futura.") }
+                    model: [
+                        { key: "current", label: qsTr("Watching / Reading") },
+                        { key: "planning", label: qsTr("Planning") },
+                        { key: "on_hold", label: qsTr("On Hold") },
+                        { key: "dropped", label: qsTr("Dropped") },
+                        { key: "completed", label: qsTr("Completed") }
+                    ]
+                    delegate: SettingSwitch {
+                        required property var modelData
+                        title: modelData.label
+                        description: qsTr("Inclui mídias dessa lista na sincronização e no reconhecimento.")
+                        checked: controller.enabledUserLists.indexOf(modelData.key) >= 0
+                        onToggled: controller.SetUserListEnabled(modelData.key, checked)
+                    }
                 }
             }
             SectionCard {

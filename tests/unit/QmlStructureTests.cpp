@@ -21,6 +21,7 @@ class TestSettingsController final : public QObject {
     Q_PROPERTY(QString scanStatusMessage READ scanStatusMessage CONSTANT)
     Q_PROPERTY(int scanCandidateCount READ scanCandidateCount CONSTANT)
     Q_PROPERTY(QString scanErrorMessage READ scanErrorMessage CONSTANT)
+    Q_PROPERTY(QStringList enabledUserLists READ enabledUserLists CONSTANT)
 
 public:
     QString errorMessage() const { return {}; }
@@ -38,6 +39,7 @@ public:
     QString scanStatusMessage() const { return {}; }
     int scanCandidateCount() const { return 0; }
     QString scanErrorMessage() const { return {}; }
+    QStringList enabledUserLists() const { return {QStringLiteral("current"), QStringLiteral("planning")}; }
 
     QString toggledExtension;
     bool toggledEnabled = true;
@@ -52,6 +54,8 @@ public:
         }
         emit changed();
     }
+
+    Q_INVOKABLE void SetUserListEnabled(const QString &, bool) {}
 
 signals:
     void changed();
@@ -437,6 +441,8 @@ void QmlStructureTests::preferredTitleSelectionUsesBackendOptions() {
     QVERIFY(settingsSource.contains(QStringLiteral("controller.includeAdultContent")));
     QVERIFY(settingsSource.contains(QStringLiteral("controller.SetIncludeAdultContent")));
     QVERIFY(settingsSource.contains(QStringLiteral("INCLUIR CONTEÚDO ADULTO")));
+    QVERIFY(settingsSource.contains(QStringLiteral("controller.enabledUserLists")));
+    QVERIFY(settingsSource.contains(QStringLiteral("controller.SetUserListEnabled")));
 
     QFile mainFile(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/main.cpp"));
     QVERIFY2(mainFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(mainFile.errorString()));
@@ -643,8 +649,9 @@ void QmlStructureTests::settingsHeaderReservesMessageSpaceAfterSaveAction() {
                                                source.indexOf(QStringLiteral("text: qsTr(\"Salvar alterações\")"), saveButton)
                                                - saveButton);
     QVERIFY(!saveButtonBlock.contains(QStringLiteral("Layout.leftMargin")));
-    QVERIFY(source.contains(QStringLiteral("Basic.Button {\n                    id: settingsSaveButton")));
-    QVERIFY(source.contains(QStringLiteral("background: Rectangle")));
+    QVERIFY(source.contains(QStringLiteral("SettingsButton {\n                    id: settingsSaveButton")));
+    QVERIFY(source.contains(QStringLiteral("component SettingsButton: Basic.Button")));
+    QVERIFY(source.contains(QStringLiteral("settingsButton.hovered ? \"#3c6eaa\" : accent")));
     const qsizetype headerTitle = source.indexOf(QStringLiteral("id: settingsHeaderTitle"));
     const QString headerTitleBlock = source.mid(headerTitle, headerActions - headerTitle);
     QVERIFY(headerTitleBlock.contains(QStringLiteral("Layout.preferredWidth: 258")));
