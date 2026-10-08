@@ -84,6 +84,7 @@ private slots:
     void settingsHeaderReservesMessageSpaceAfterSaveAction();
     void seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated();
     void mainKeepsSeasonalCatalogAsSeparateNavigation();
+    void localCacheCleanupStaysInLibrarySettingsAndUsesControllerState();
 
 private:
     static QString qmlSource(const QString &name);
@@ -97,6 +98,17 @@ QString QmlStructureTests::qmlSource(const QString &name) {
     QFile file(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/resources/qml/") + name);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return {};
     return QString::fromUtf8(file.readAll());
+}
+
+void QmlStructureTests::localCacheCleanupStaysInLibrarySettingsAndUsesControllerState() {
+    const QString source = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    QVERIFY(source.contains(QStringLiteral("id: libraryContent")));
+    QVERIFY(source.contains(QStringLiteral("Limpar cache local")));
+    QVERIFY(source.contains(QStringLiteral("controller.ClearLocalCache()")));
+    QVERIFY(source.contains(QStringLiteral("controller.cacheCleanupRunning")));
+    QVERIFY(source.contains(QStringLiteral("controller.cacheCleanupStatusMessage")));
+    QVERIFY(source.contains(QStringLiteral("controller.cacheCleanupErrorMessage")));
+    QVERIFY(!source.contains(QStringLiteral("Logout")));
 }
 
 QString QmlStructureTests::scanExtensionGridSource() {

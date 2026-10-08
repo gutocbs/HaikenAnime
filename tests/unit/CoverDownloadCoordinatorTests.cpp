@@ -17,9 +17,13 @@ public:
         entries[e.mediaId]=e; return true;
     }
     bool Remove(int id, QString&) override { entries.remove(id); return true; }
-    bool Clear(QString&) override { entries.clear(); return true; }
+    bool Clear(int &removedEntries, QString &error) override {
+        if (failClear) { removedEntries = 0; error = "cache clear failure"; return false; }
+        removedEntries = entries.size(); entries.clear(); error.clear(); return true;
+    }
     QHash<int,CoverCacheEntry> entries;
     bool failUpsert = false;
+    bool failClear = false;
 };
 class FakeFiles final : public ICoverFileStore {
 public:
@@ -29,18 +33,27 @@ public:
         published.insert(id); out={QString::number(id)+".png",mime,10}; existing.insert(out.relativePath); return true;
     }
     bool Remove(const QString& p,QString&) override { existing.remove(p); removed << p; return true; }
-    bool Clear(QString&) override { existing.clear(); published.clear(); return true; }
+    bool Clear(int &removedFiles, QString &error) override {
+        if (onClear) onClear();
+        removedFiles = existing.size();
+        existing.clear(); published.clear();
+        if (failClear) { error = "file clear failure"; return false; }
+        error.clear(); return true;
+    }
     bool RemoveOrphans(const QSet<QString>&,int,int&,QString&) override{return true;}
     QString AbsolutePath(const QString& p) const override{return "/covers/"+p;}
     QSet<QString> existing; QSet<int> published; QStringList removed;
     bool failPublish = false;
+    bool failClear = false;
+    std::function<void()> onClear;
 };
 
 class CoverDownloadCoordinatorTests : public QObject {
     Q_OBJECT
 private slots:
     void boundsConcurrencyPrioritizesAndDeduplicates();
-    void discardsCompletionAfterClear();
+    void staleCompletionAfterClearCannotRepublishAndNewGenerationCanRebuild();
+    void pausesAdmissionDuringCleanupAndReportsPartialFailure();
     void replacesOldFileOnlyAfterPersistence();
     void removesTemporaryFileWhenPublicationFails();
     void removesTemporaryFileWhenPersistenceFails();
@@ -57,13 +70,55 @@ void CoverDownloadCoordinatorTests::boundsConcurrencyPrioritizesAndDeduplicates(
     d.completions.take(1)(Success(Req(1)));
     QCOMPARE(d.order, QList<int>({1,2,3,4}));
 }
-void CoverDownloadCoordinatorTests::discardsCompletionAfterClear()
+void CoverDownloadCoordinatorTests::staleCompletionAfterClearCannotRepublishAndNewGenerationCanRebuild()
 {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const auto staleTemporaryPath = directory.filePath("stale.tmp");
+    QFile staleTemporary(staleTemporaryPath);
+    QVERIFY(staleTemporary.open(QIODevice::WriteOnly));
+    staleTemporary.write("stale");
+    staleTemporary.close();
+
     FakeDownloader d; FakeCache c; FakeFiles f; CoverSettings s; s.maxRetries=0;
     CoverDownloadCoordinator coordinator(d,c,f,s); auto request=Req(8);
     coordinator.RequestWindow({request}, {}); auto completion=d.completions.take(8);
-    coordinator.Clear(); completion(Success(request));
-    QVERIFY(c.entries.isEmpty()); QVERIFY(f.published.isEmpty());
+    const auto cleanup = coordinator.Clear();
+    coordinator.RequestWindow({request}, {});
+    QCOMPARE(d.order, QList<int>({8, 8}));
+    auto staleResult = Success(request);
+    staleResult.temporaryPath = staleTemporaryPath;
+    completion(staleResult);
+    coordinator.RequestWindow({request}, {});
+
+    QVERIFY(cleanup.Succeeded());
+    QVERIFY(c.entries.isEmpty());
+    QVERIFY(f.published.isEmpty());
+    QVERIFY(!QFileInfo::exists(staleTemporaryPath));
+    QCOMPARE(d.order, QList<int>({8, 8}));
+    d.completions.take(8)(Success(request));
+    QVERIFY(c.entries.contains(8));
+    QVERIFY(f.published.contains(8));
+}
+
+void CoverDownloadCoordinatorTests::pausesAdmissionDuringCleanupAndReportsPartialFailure()
+{
+    FakeDownloader d; FakeCache c; FakeFiles f; CoverSettings s; s.maxRetries=0;
+    c.entries.insert(1, CoverCacheEntry{.mediaId = 1});
+    f.existing.insert(QStringLiteral("1.png"));
+    f.failClear = true;
+    CoverDownloadCoordinator coordinator(d,c,f,s);
+    f.onClear = [&] { coordinator.RequestWindow({Req(9)}, {}); };
+
+    const auto result = coordinator.Clear();
+
+    QCOMPARE(d.order.size(), 0);
+    QCOMPARE(result.removedFiles, 1);
+    QCOMPARE(result.removedEntries, 1);
+    QCOMPARE(result.failures.size(), 1);
+    QCOMPARE(result.failures.constFirst().component, QStringLiteral("cover-files"));
+    coordinator.RequestWindow({Req(9)}, {});
+    QCOMPARE(d.order, QList<int>({9}));
 }
 void CoverDownloadCoordinatorTests::replacesOldFileOnlyAfterPersistence()
 {

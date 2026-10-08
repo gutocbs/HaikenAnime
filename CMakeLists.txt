@@ -46,6 +46,13 @@ qt_add_executable(HaikenAnime main.cpp
         src/app/ApplicationComposition.cpp
         src/app/InitialSyncCoordinator.h
         src/app/InitialSyncCoordinator.cpp
+        src/app/AdaptiveSyncCoordinator.h
+        src/app/AdaptiveSyncCoordinator.cpp
+        src/app/AdaptiveSyncRuntime.h
+        src/app/AdaptiveSyncRuntime.cpp
+        src/app/ApplicationSyncTaskExecutor.h
+        src/app/ApplicationSyncTaskExecutor.cpp
+        src/app/SyncTaskRequest.h
         src/app/LocalLibraryScanCoordinator.h
         src/app/LocalLibraryScanCoordinator.cpp
         src/app/LocalLibraryRecognitionCoordinator.h
@@ -123,8 +130,12 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/covers/ICoverFileStore.h
         src/application/covers/CoverDownloadTypes.h
         src/application/covers/ICoverDownloader.h
+        src/application/covers/ICoverTemporaryStore.h
         src/application/covers/CoverDownloadCoordinator.h
         src/application/covers/CoverDownloadCoordinator.cpp
+        src/application/cache/ICacheCleanupParticipant.h
+        src/application/cache/ClearLocalCacheUseCase.h
+        src/application/cache/ClearLocalCacheUseCase.cpp
         src/application/configuration/ISettingsReader.h
         src/application/anilist/ISecretStore.h
         src/application/anilist/IAniListAuthProvider.h
@@ -153,6 +164,9 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/anilist/AniListMergeService.h
         src/application/anilist/AniListMergeService.cpp
         src/application/anilist/IPendingChangeRepository.h
+        src/application/scheduling/ISyncTaskStateRepository.h
+        src/application/scheduling/ISyncTaskExecutor.h
+        src/application/scheduling/SyncTaskPolicy.cpp
         src/application/anilist/IAniListUpdateClient.h
         src/infrastructure/anilist/AniListUpdateClient.h
         src/infrastructure/anilist/AniListUpdateClient.cpp
@@ -185,6 +199,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/database/SqliteLocalFileRepository.cpp
         src/infrastructure/database/SqliteUserPreferencesRepository.h
         src/infrastructure/database/SqliteUserPreferencesRepository.cpp
+        src/infrastructure/database/SqliteSyncTaskStateRepository.h
+        src/infrastructure/database/SqliteSyncTaskStateRepository.cpp
         src/infrastructure/database/SqlQueryStore.h
         src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/database/SqliteQueryConfiguration.h
@@ -270,6 +286,15 @@ set_source_files_properties(
 set_source_files_properties(
         resources/sqlite/queries/upsert-user-preferences.sql
         PROPERTIES QT_RESOURCE_ALIAS "upsert-user-preferences.sql")
+set_source_files_properties(
+        resources/sqlite/queries/read-sync-task-states.sql
+        PROPERTIES QT_RESOURCE_ALIAS "read-sync-task-states.sql")
+set_source_files_properties(
+        resources/sqlite/queries/upsert-sync-task-state.sql
+        PROPERTIES QT_RESOURCE_ALIAS "upsert-sync-task-state.sql")
+set_source_files_properties(
+        resources/sqlite/queries/delete-sync-task-state.sql
+        PROPERTIES QT_RESOURCE_ALIAS "delete-sync-task-state.sql")
 file(GLOB SQLITE_MIGRATION_RESOURCES CONFIGURE_DEPENDS resources/sqlite/migrations/*.sql)
 foreach (MIGRATION_FILE IN LISTS SQLITE_MIGRATION_RESOURCES)
     get_filename_component(MIGRATION_ALIAS "${MIGRATION_FILE}" NAME)
@@ -324,6 +349,9 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         resources/sqlite/queries/clear-cover-cache.sql
         resources/sqlite/queries/read-user-preferences.sql
         resources/sqlite/queries/upsert-user-preferences.sql
+        resources/sqlite/queries/read-sync-task-states.sql
+        resources/sqlite/queries/upsert-sync-task-state.sql
+        resources/sqlite/queries/delete-sync-task-state.sql
 )
 
 qt_add_resources(HaikenAnime sqlite_migration_resource_bundle
@@ -511,6 +539,24 @@ target_link_libraries(SqliteCoverCacheRepositoryTests
 
 add_test(NAME SqliteCoverCacheRepositoryTests COMMAND SqliteCoverCacheRepositoryTests)
 
+add_executable(SqliteSyncTaskStateRepositoryTests
+        tests/unit/SqliteSyncTaskStateRepositoryTests.cpp
+        src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/database/SqliteSyncTaskStateRepository.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+qt_add_resources(SqliteSyncTaskStateRepositoryTests sync_task_state_resources
+        PREFIX "/sqlite/queries"
+        FILES resources/sqlite/queries/read-sync-task-states.sql
+              resources/sqlite/queries/upsert-sync-task-state.sql
+              resources/sqlite/queries/delete-sync-task-state.sql)
+qt_add_resources(SqliteSyncTaskStateRepositoryTests sync_task_state_migration_resources
+        PREFIX "/sqlite/migrations"
+        FILES ${SQLITE_MIGRATION_RESOURCES})
+target_link_libraries(SqliteSyncTaskStateRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
+add_test(NAME SqliteSyncTaskStateRepositoryTests COMMAND SqliteSyncTaskStateRepositoryTests)
+
 add_executable(SqliteLocalFileRepositoryTests
         tests/unit/SqliteLocalFileRepositoryTests.cpp
         src/infrastructure/database/SqliteLocalFileRepository.cpp
@@ -631,6 +677,15 @@ target_compile_definitions(JsonSettingsReaderTests PRIVATE
         HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
+add_executable(SyncTaskPolicyTests
+        tests/unit/SyncTaskPolicyTests.cpp
+        src/application/scheduling/SyncTaskPolicy.h
+        src/application/scheduling/SyncTaskPolicy.cpp
+        src/application/scheduling/SyncTaskTypes.h
+)
+target_link_libraries(SyncTaskPolicyTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME SyncTaskPolicyTests COMMAND SyncTaskPolicyTests)
+
 add_executable(UserPreferencesValidatorTests
         tests/unit/UserPreferencesValidatorTests.cpp
         src/application/configuration/UserPreferencesValidator.cpp
@@ -696,6 +751,16 @@ add_executable(CoverDownloadCoordinatorTests tests/unit/CoverDownloadCoordinator
 target_include_directories(CoverDownloadCoordinatorTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(CoverDownloadCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME CoverDownloadCoordinatorTests COMMAND CoverDownloadCoordinatorTests)
+
+add_executable(ClearLocalCacheUseCaseTests
+        tests/unit/ClearLocalCacheUseCaseTests.cpp
+        src/application/cache/ClearLocalCacheUseCase.cpp
+        src/application/covers/CoverDownloadCoordinator.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+target_include_directories(ClearLocalCacheUseCaseTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(ClearLocalCacheUseCaseTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME ClearLocalCacheUseCaseTests COMMAND ClearLocalCacheUseCaseTests)
 
 add_executable(QtCoverDownloaderTests tests/unit/QtCoverDownloaderTests.cpp
         src/infrastructure/covers/QtCoverDownloader.cpp)
@@ -763,6 +828,8 @@ add_test(NAME AniListFlowTests COMMAND AniListFlowTests)
 
 add_executable(AniListGraphQlParsingTests
         tests/unit/AniListGraphQlParsingTests.cpp
+        src/infrastructure/anilist/AniListGraphQlClient.h
+        src/infrastructure/anilist/AniListGraphQlClient.cpp
         src/infrastructure/anilist/AniListGraphQlResponseParser.h
         src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
         src/infrastructure/anilist/AniListGraphQlPageParser.h
@@ -771,18 +838,32 @@ add_executable(AniListGraphQlParsingTests
         src/infrastructure/anilist/AniListGraphQlUserListParser.cpp
         src/infrastructure/anilist/AniListMediaMapper.h
         src/infrastructure/anilist/AniListMediaMapper.cpp
+        src/infrastructure/anilist/GraphQlAniListDataSource.h
+        src/infrastructure/anilist/GraphQlAniListDataSource.cpp
+        src/infrastructure/anilist/GraphQlQueryStore.h
+        src/infrastructure/anilist/GraphQlQueryStore.cpp
 )
 
 target_link_libraries(AniListGraphQlParsingTests
         PRIVATE
         Qt6::Core
         Qt6::Gui
+        Qt6::Network
         Qt6::Test
 )
 
 target_compile_definitions(AniListGraphQlParsingTests
         PRIVATE
         HAIKENANIME_GRAPHQL_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/page-response.json"
+        HAIKENANIME_GRAPHQL_USERLIST_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/userlist-response.json"
+)
+
+set_source_files_properties(
+        resources/anilist/queries/media-page.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "media-page.graphql")
+qt_add_resources(AniListGraphQlParsingTests anilist_partition_query_resource_bundle
+        PREFIX "/anilist/queries"
+        FILES resources/anilist/queries/media-page.graphql
 )
 
 add_test(NAME AniListGraphQlParsingTests COMMAND AniListGraphQlParsingTests)
@@ -989,6 +1070,8 @@ add_test(NAME HomeScreenControllerTests COMMAND HomeScreenControllerTests)
 add_executable(SettingsControllerTests
         tests/unit/SettingsControllerTests.cpp
         src/presentation/settings/SettingsController.cpp
+        src/application/cache/ClearLocalCacheUseCase.cpp
+        src/application/covers/CoverDownloadCoordinator.cpp
         src/application/configuration/UserPreferencesValidator.cpp
         src/application/media/MediaTitleResolver.cpp
         src/app/LocalLibraryScanCoordinator.h
@@ -1060,6 +1143,30 @@ target_compile_definitions(InitialSyncCoordinatorTests PRIVATE
 
 add_test(NAME InitialSyncCoordinatorTests COMMAND InitialSyncCoordinatorTests)
 
+add_executable(AdaptiveSyncCoordinatorTests
+        tests/unit/AdaptiveSyncCoordinatorTests.cpp
+        src/app/AdaptiveSyncCoordinator.h
+        src/app/AdaptiveSyncCoordinator.cpp
+        src/application/scheduling/ISyncTaskExecutor.h
+        src/application/scheduling/SyncTaskPolicy.h
+        src/application/scheduling/SyncTaskPolicy.cpp
+)
+target_link_libraries(AdaptiveSyncCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME AdaptiveSyncCoordinatorTests COMMAND AdaptiveSyncCoordinatorTests)
+
+add_executable(AdaptiveSyncRuntimeTests
+        tests/unit/AdaptiveSyncRuntimeTests.cpp
+        src/app/AdaptiveSyncRuntime.h
+        src/app/AdaptiveSyncRuntime.cpp
+        src/app/AdaptiveSyncCoordinator.h
+        src/app/AdaptiveSyncCoordinator.cpp
+        src/application/scheduling/ISyncTaskExecutor.h
+        src/application/scheduling/SyncTaskPolicy.h
+        src/application/scheduling/SyncTaskPolicy.cpp
+)
+target_link_libraries(AdaptiveSyncRuntimeTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME AdaptiveSyncRuntimeTests COMMAND AdaptiveSyncRuntimeTests)
+
 add_executable(LocalLibraryScanCoordinatorTests
         tests/unit/LocalLibraryScanCoordinatorTests.cpp
         src/app/LocalLibraryScanCoordinator.h
@@ -1129,9 +1236,11 @@ foreach (SQLITE_MIGRATION_TEST_TARGET IN ITEMS
         SqliteUserPreferencesRepositoryTests
         SqliteRepositoryTests
         SqliteCoverCacheRepositoryTests
+        SqliteSyncTaskStateRepositoryTests
         SqliteLocalFileRepositoryTests
         LocalEpisodeReaderTests
         InitialSyncCoordinatorTests
+        AdaptiveSyncCoordinatorTests
         LocalLibraryScanCompositionTests
         LocalLibraryRecognitionCompositionTests)
     add_sqlite_migration_test_resources(${SQLITE_MIGRATION_TEST_TARGET})
@@ -1144,6 +1253,7 @@ set(HAIKENANIME_TESTS
         SqliteUserPreferencesRepositoryTests
         SqliteRepositoryTests
         SqliteCoverCacheRepositoryTests
+        SqliteSyncTaskStateRepositoryTests
         SqliteLocalFileRepositoryTests
         LocalLibraryScannerTests
         AnitomyLocalFileRecognizerTests
@@ -1152,6 +1262,7 @@ set(HAIKENANIME_TESTS
         SqliteQueryConfigurationTests
         FileSecretStoreTests
         JsonSettingsReaderTests
+        SyncTaskPolicyTests
         UserPreferencesValidatorTests
         TranslationLoaderTests
         CoverSettingsTests
@@ -1159,6 +1270,7 @@ set(HAIKENANIME_TESTS
         CoverFileStoreTests
         CoverTemporaryStoreTests
         CoverDownloadCoordinatorTests
+        ClearLocalCacheUseCaseTests
         QtCoverDownloaderTests
         AniListAuthManagerTests
         AniListFlowTests
@@ -1178,17 +1290,19 @@ set(HAIKENANIME_TESTS
         SettingsControllerTests
         QmlStructureTests
         InitialSyncCoordinatorTests
+        AdaptiveSyncCoordinatorTests
+        AdaptiveSyncRuntimeTests
         LocalLibraryScanCoordinatorTests
         LocalLibraryScanCompositionTests
         LocalLibraryRecognitionCompositionTests
 )
 get_filename_component(MINGW_RUNTIME_DIRECTORY "${CMAKE_CXX_COMPILER}" DIRECTORY)
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
-        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;${MINGW_RUNTIME_DIRECTORY};$ENV{PATH}"
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}"
         TIMEOUT 30
 )
 set_tests_properties(QmlStructureTests PROPERTIES
-        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>;${MINGW_RUNTIME_DIRECTORY};$ENV{PATH};QT_QUICK_BACKEND=software"
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}\\;QT_QUICK_BACKEND=software"
 )
 endif ()
 

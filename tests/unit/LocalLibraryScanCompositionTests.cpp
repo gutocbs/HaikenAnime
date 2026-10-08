@@ -58,8 +58,10 @@ private slots:
     void scannerQueryFailureDoesNotDisableMedia();
     void scannerQueryFailureIsLoggedNonfatally();
     void startupCleanupRemovesAbandonedCoverTemporaryWithoutTouchingCache();
+    void manualCleanupUsesComposedCoverTemporaryStore();
     void workerProductsReleaseConnectionsAndShutdownBeforeDatabase();
     void destroyedLifetimeCancelsScheduledStartup();
+    void composesAdaptiveSynchronizationWithTheLegacyStartupSeam();
 };
 
 void LocalLibraryScanCompositionTests::persistedPreferencesOverrideDefaultsAfterRestart() {
@@ -287,6 +289,27 @@ void LocalLibraryScanCompositionTests::startupCleanupRemovesAbandonedCoverTempor
     QVERIFY(QFile::remove(persistent));
 }
 
+void LocalLibraryScanCompositionTests::manualCleanupUsesComposedCoverTemporaryStore() {
+    QTemporaryDir directory;
+    auto context = createApplicationContext(optionsFor(directory));
+    QVERIFY2(context.isReady(), qPrintable(context.initializationError));
+    QVERIFY(context.coverTemporaryStore);
+    QVERIFY(context.clearLocalCache);
+    const QString temporaryRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
+                                      .filePath("HaikenAnime/covers");
+    QVERIFY(QDir().mkpath(temporaryRoot));
+    const QString temporaryPath = QDir(temporaryRoot).filePath("cover-manual-cleanup.tmp");
+    writeFile(temporaryPath);
+
+    ClearLocalCacheResult result;
+    QVERIFY(context.clearLocalCache->Start(
+        [&](ClearLocalCacheResult value) { result = std::move(value); }));
+
+    QVERIFY(result.Succeeded());
+    QVERIFY(result.removedCoverTemporaryFiles >= 1);
+    QVERIFY(!QFileInfo::exists(temporaryPath));
+}
+
 void LocalLibraryScanCompositionTests::workerProductsReleaseConnectionsAndShutdownBeforeDatabase() {
     QTemporaryDir directory, root;
     for (int i = 0; i < 205; ++i) writeFile(root.filePath(QString::number(i) + ".mkv"));
@@ -330,6 +353,16 @@ void LocalLibraryScanCompositionTests::destroyedLifetimeCancelsScheduledStartup(
     }
     QCoreApplication::processEvents();
     QCOMPARE(started.count(), 0);
+}
+
+void LocalLibraryScanCompositionTests::composesAdaptiveSynchronizationWithTheLegacyStartupSeam() {
+    QTemporaryDir directory;
+
+    auto context = createApplicationContext(optionsFor(directory));
+
+    QVERIFY2(context.isReady(), qPrintable(context.initializationError));
+    QVERIFY(context.initialSync);
+    QVERIFY(context.adaptiveSync);
 }
 
 QTEST_GUILESS_MAIN(LocalLibraryScanCompositionTests)

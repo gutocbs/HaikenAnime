@@ -18,7 +18,7 @@ public:
                          const QString &temporaryPath, const QString &responseMime,
                          PublishedCover &result, QString &error) = 0;
     virtual bool Remove(const QString &relativePath, QString &error) = 0;
-    virtual bool Clear(QString &error) = 0;
+    virtual bool Clear(int &removedFiles, QString &error) = 0;
     virtual bool RemoveOrphans(const QSet<QString> &referencedPaths,
                                int maxFiles, int &removedFiles, QString &error) = 0;
     virtual QString AbsolutePath(const QString &relativePath) const = 0;

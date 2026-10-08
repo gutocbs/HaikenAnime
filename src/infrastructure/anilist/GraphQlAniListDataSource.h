@@ -3,20 +3,20 @@
 
 #include <QString>
 
-#include "../../application/media/IMediaDataSource.h"
+#include "../../application/anilist/IAniListDataSource.h"
 
 class AniListGraphQlClient;
 class GraphQlQueryStore;
 
 /** Loads paged AniList media through the GraphQL client and an external query file. */
-class GraphQlAniListDataSource final : public IMediaDataSource {
+class GraphQlAniListDataSource final : public IAniListDataSource {
 public:
     /** Creates a source from an already configured client and query store. */
     GraphQlAniListDataSource(AniListGraphQlClient &client, GraphQlQueryStore &queryStore);
 
-    /** Fetches one GraphQL page using the supplied filter. */
-    [[nodiscard]] bool fetchPage(const MediaSyncFilter &filter, MediaPage &result,
-                                 QString &error) override;
+    /** Fetches the exact AniList partition requested through explicit GraphQL variables. */
+    [[nodiscard]] bool fetchPage(const AniListDataSourceRequest &request,
+                                 AniListDataSourceResult &result, QString &error) override;
 
 private:
     AniListGraphQlClient &client_;

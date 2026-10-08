@@ -22,6 +22,9 @@ bool SqliteQueryConfiguration::load(QString &error, const QString &configuration
     clearCoverCachePath.clear();
     readUserPreferencesPath.clear();
     upsertUserPreferencesPath.clear();
+    readSyncTaskStatesPath.clear();
+    upsertSyncTaskStatePath.clear();
+    deleteSyncTaskStatePath.clear();
     beginLibraryScanPath.clear();
     upsertLocalFilePath.clear();
     completeLibraryScanPath.clear();
@@ -65,6 +68,9 @@ bool SqliteQueryConfiguration::load(QString &error, const QString &configuration
     clearCoverCachePath = queries.value(QStringLiteral("clearCoverCache")).toString();
     readUserPreferencesPath = queries.value(QStringLiteral("readUserPreferences")).toString();
     upsertUserPreferencesPath = queries.value(QStringLiteral("upsertUserPreferences")).toString();
+    readSyncTaskStatesPath = queries.value(QStringLiteral("readSyncTaskStates")).toString();
+    upsertSyncTaskStatePath = queries.value(QStringLiteral("upsertSyncTaskState")).toString();
+    deleteSyncTaskStatePath = queries.value(QStringLiteral("deleteSyncTaskState")).toString();
     beginLibraryScanPath = queries.value(QStringLiteral("beginLibraryScan")).toString();
     upsertLocalFilePath = queries.value(QStringLiteral("upsertLocalFile")).toString();
     completeLibraryScanPath = queries.value(QStringLiteral("completeLibraryScan")).toString();
@@ -81,6 +87,7 @@ bool SqliteQueryConfiguration::load(QString &error, const QString &configuration
         || readCoverCachePath.isEmpty() || upsertCoverCachePath.isEmpty()
         || deleteCoverCachePath.isEmpty() || clearCoverCachePath.isEmpty()
         || readUserPreferencesPath.isEmpty() || upsertUserPreferencesPath.isEmpty()
+        || readSyncTaskStatesPath.isEmpty() || upsertSyncTaskStatePath.isEmpty() || deleteSyncTaskStatePath.isEmpty()
         || beginLibraryScanPath.isEmpty() || upsertLocalFilePath.isEmpty()
         || completeLibraryScanPath.isEmpty() || failLibraryScanPath.isEmpty()
         || markLocalFilesUnavailablePath.isEmpty() || readPendingLocalFilesPath.isEmpty()

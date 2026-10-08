@@ -43,6 +43,7 @@ void CoverDownloadCoordinator::Enqueue(const CoverRequest &input)
 
 void CoverDownloadCoordinator::RequestWindow(QList<CoverRequest> visible, QList<CoverRequest> prefetch)
 {
+    if (cleanupInProgress_) return;
     if (logger_) {
         logger_->info(LogCategory::Covers,
                       QStringLiteral("Cover window requested: %1 visible, %2 prefetch.")
@@ -64,6 +65,7 @@ void CoverDownloadCoordinator::RequestWindow(QList<CoverRequest> visible, QList<
 
 void CoverDownloadCoordinator::Pump()
 {
+    if (cleanupInProgress_) return;
     while (active_.size() < settings_.maxConcurrentDownloads && (!visible_.isEmpty() || !prefetch_.isEmpty())) {
         CoverRequest request = !visible_.isEmpty() ? visible_.dequeue() : prefetch_.dequeue();
         const QString key = Key(request);
@@ -84,7 +86,10 @@ void CoverDownloadCoordinator::Pump()
 
 void CoverDownloadCoordinator::Complete(QString key, quint64 generation, int attempt, CoverDownloadResult result)
 {
-    active_.remove(key);
+    const auto active = active_.constFind(key);
+    if (active != active_.cend() && active->request.generation == generation) {
+        active_.remove(key);
+    }
     if (generation != generation_) {
         QFile::remove(result.temporaryPath);
         if (logger_) logger_->info(LogCategory::Covers, QStringLiteral("Discarded stale cover download for media %1.").arg(result.request.mediaId));
@@ -161,13 +166,37 @@ void CoverDownloadCoordinator::ReportMissingFile(int mediaId)
     emit CoverStateChanged(mediaId, CoverState::Missing);
 }
 
-void CoverDownloadCoordinator::Clear()
+CoverCacheCleanupResult CoverDownloadCoordinator::Clear()
 {
+    CoverCacheCleanupResult result;
+    if (cleanupInProgress_) {
+        result.failures.append({QStringLiteral("cover-cleanup"),
+                                QStringLiteral("Cover cleanup is already running.")});
+        return result;
+    }
+    cleanupInProgress_ = true;
     ++generation_;
-    for (const auto &active : std::as_const(active_)) downloader_.Cancel(active.id);
-    active_.clear(); visible_.clear(); prefetch_.clear(); queued_.clear(); entries_.clear(); cooldowns_.clear(); attempts_.clear();
+    visible_.clear();
+    prefetch_.clear();
+    queued_.clear();
+    cooldowns_.clear();
+    attempts_.clear();
+    QList<quint64> activeIds;
+    activeIds.reserve(active_.size());
+    for (const auto &active : std::as_const(active_)) activeIds.append(active.id);
+    active_.clear();
+    for (const auto id : std::as_const(activeIds)) downloader_.Cancel(id);
+
     QString error;
-    cache_.Clear(error);
-    files_.Clear(error);
+    if (!cache_.Clear(result.removedEntries, error)) {
+        result.failures.append({QStringLiteral("cover-metadata"), error});
+    }
+    entries_.clear();
+    error.clear();
+    if (!files_.Clear(result.removedFiles, error)) {
+        result.failures.append({QStringLiteral("cover-files"), error});
+    }
+    cleanupInProgress_ = false;
     emit ClearCompleted();
+    return result;
 }

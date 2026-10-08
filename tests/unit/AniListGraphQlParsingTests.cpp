@@ -1,11 +1,65 @@
 #include <QtTest>
 #include <QFile>
+#include <QJsonDocument>
+#include <QNetworkAccessManager>
+#include <QTcpServer>
+#include <QTcpSocket>
+#include <QTemporaryFile>
 
 #include <limits>
 
 #include "../../src/infrastructure/anilist/AniListGraphQlPageParser.h"
 #include "../../src/infrastructure/anilist/AniListGraphQlResponseParser.h"
+#include "../../src/infrastructure/anilist/AniListGraphQlClient.h"
 #include "../../src/infrastructure/anilist/AniListMediaMapper.h"
+#include "../../src/infrastructure/anilist/GraphQlAniListDataSource.h"
+#include "../../src/infrastructure/anilist/GraphQlQueryStore.h"
+#include "../../src/infrastructure/anilist/RecordedGraphQlAniListDataSource.h"
+
+namespace {
+QByteArray fixture(const QString &path) {
+    QFile file(path);
+    if (!file.open(QIODevice::ReadOnly)) return {};
+    return file.readAll();
+}
+
+class LocalGraphQlServer final {
+public:
+    bool start(const QByteArray &responseBody) {
+        response_ = QByteArrayLiteral("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ")
+            + QByteArray::number(responseBody.size())
+            + QByteArrayLiteral("\r\nConnection: close\r\n\r\n") + responseBody;
+        QObject::connect(&server_, &QTcpServer::newConnection, &server_, [this] {
+            auto *socket = server_.nextPendingConnection();
+            QObject::connect(socket, &QTcpSocket::readyRead, socket, [this, socket] {
+                request_ += socket->readAll();
+                if (!responded_) {
+                    responded_ = true;
+                    socket->write(response_);
+                    socket->disconnectFromHost();
+                }
+            });
+        });
+        return server_.listen(QHostAddress::LocalHost);
+    }
+
+    [[nodiscard]] QUrl endpoint() const {
+        return QUrl(QStringLiteral("http://127.0.0.1:%1/graphql").arg(server_.serverPort()));
+    }
+
+    [[nodiscard]] QJsonObject requestPayload() const {
+        const auto bodyOffset = request_.indexOf(QByteArrayLiteral("\r\n\r\n"));
+        if (bodyOffset < 0) return {};
+        return QJsonDocument::fromJson(request_.mid(bodyOffset + 4)).object();
+    }
+
+private:
+    QTcpServer server_;
+    QByteArray request_;
+    QByteArray response_;
+    bool responded_ = false;
+};
+}
 
 class AniListGraphQlParsingTests final : public QObject {
     Q_OBJECT
@@ -23,6 +77,15 @@ private slots:
     void omitsMalformedNumericExtendedMetadata();
     void canonicalizesAndDeduplicatesExternalLinks();
     void recordedLibraryFixtureIsComplete();
+    void recordedFixtureCachesOnlyTheAffectedPartitionAndQueryIdentity();
+    void recordedFixtureCacheSeparatesUsersAfterFilterMutation();
+    void recordedUserListMarksAnUnfilteredFirstPageAuthoritativeBeforeTheTerminalPage();
+    void recordedUserListRejectsMissingPaginationMetadata();
+    void recordedSourceSelectsTheResponseShapeForTheRequestedPartition();
+    void recordedCatalogSourceRetainsOnlyTheRequestedPartitionStatus();
+    void graphQlAdapterPostsPartitionVariablesAndParsesCatalogPage();
+    void graphQlAdapterRequiresAndPostsAUserNameForUserListRefresh();
+    void graphQlAdapterRejectsNonBooleanUserListPaginationMetadata();
 };
 
 void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
@@ -330,6 +393,227 @@ void AniListGraphQlParsingTests::recordedLibraryFixtureIsComplete() {
     QVERIFY(entriesWithSeason > 0);
     QVERIFY(entriesWithNextAiring > 0);
     QVERIFY(entriesWithExternalLinks > 0);
+}
+
+void AniListGraphQlParsingTests::recordedFixtureCachesOnlyTheAffectedPartitionAndQueryIdentity() {
+    RecordedGraphQlAniListDataSource source(QStringLiteral(HAIKENANIME_GRAPHQL_FIXTURE));
+    QString error;
+    AniListDataSourceResult result;
+    auto active = AniListDataSourceRequest::ForPartition(SyncPartition::ActiveCatalog);
+    const auto inactive = AniListDataSourceRequest::ForPartition(SyncPartition::InactiveCatalog);
+
+    QVERIFY2(source.fetchPage(active, result, error), qPrintable(error));
+    QCOMPARE(result.completedPartition, SyncPartition::ActiveCatalog);
+    QVERIFY(!result.isCompleteAuthoritativeSnapshot);
+    QCOMPARE(source.fixtureReadCount(), 1);
+    QCOMPARE(source.externalCallCount(), 0);
+
+    QVERIFY2(source.fetchPage(inactive, result, error), qPrintable(error));
+    QCOMPARE(result.completedPartition, SyncPartition::InactiveCatalog);
+    QCOMPARE(source.fixtureReadCount(), 2);
+    QVERIFY2(source.fetchPage(inactive, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 2);
+
+    active.queryIdentity = QStringLiteral("catalog:v2");
+    QVERIFY2(source.fetchPage(active, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 3);
+    QVERIFY2(source.fetchPage(inactive, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 3);
+
+    active.refresh = true;
+    QVERIFY2(source.fetchPage(active, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 4);
+    QCOMPARE(source.externalCallCount(), 0);
+
+    RecordedGraphQlAniListDataSource userListSource(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE));
+    auto userList = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    userList.filter.username = QStringLiteral("fixture-user");
+    QVERIFY2(userListSource.fetchPage(userList, result, error), qPrintable(error));
+    QCOMPARE(result.completedPartition, SyncPartition::UserList);
+    QVERIFY(result.isCompleteAuthoritativeSnapshot);
+}
+
+void AniListGraphQlParsingTests::recordedFixtureCacheSeparatesUsersAfterFilterMutation() {
+    RecordedGraphQlAniListDataSource source(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE));
+    auto firstUser = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    firstUser.filter.username = QStringLiteral("first-user");
+    auto secondUser = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    secondUser.filter.username = QStringLiteral("second-user");
+    AniListDataSourceResult result;
+    QString error;
+
+    QVERIFY2(source.fetchPage(firstUser, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 1);
+    QVERIFY2(source.fetchPage(secondUser, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 2);
+    QVERIFY2(source.fetchPage(firstUser, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 2);
+    QVERIFY2(source.fetchPage(secondUser, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 2);
+
+    secondUser.filter.list = QStringLiteral("CURRENT");
+    QVERIFY2(source.fetchPage(secondUser, result, error), qPrintable(error));
+    QCOMPARE(source.fixtureReadCount(), 3);
+    QVERIFY(!result.isCompleteAuthoritativeSnapshot);
+}
+
+void AniListGraphQlParsingTests::recordedUserListMarksAnUnfilteredFirstPageAuthoritativeBeforeTheTerminalPage() {
+    QTemporaryFile multiPageFixture;
+    QVERIFY(multiPageFixture.open());
+    auto payload = fixture(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE));
+    QVERIFY(payload.contains("\"hasNextChunk\": false"));
+    payload.replace("\"hasNextChunk\": false", "\"hasNextChunk\": true");
+    QVERIFY(multiPageFixture.write(payload) == payload.size());
+    multiPageFixture.flush();
+    RecordedGraphQlAniListDataSource source(multiPageFixture.fileName());
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.username = QStringLiteral("fixture-user");
+    AniListDataSourceResult result;
+    QString error;
+
+    QVERIFY2(source.fetchPage(request, result, error), qPrintable(error));
+    QVERIFY(result.page.hasNextPage);
+    QVERIFY(result.isCompleteAuthoritativeSnapshot);
+}
+
+void AniListGraphQlParsingTests::recordedUserListRejectsMissingPaginationMetadata() {
+    QTemporaryFile malformedFixture;
+    QVERIFY(malformedFixture.open());
+    auto payload = fixture(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE));
+    QVERIFY(payload.contains("\"hasNextChunk\": false,"));
+    payload.replace("\"hasNextChunk\": false,", "");
+    QVERIFY(malformedFixture.write(payload) == payload.size());
+    malformedFixture.flush();
+    RecordedGraphQlAniListDataSource source(malformedFixture.fileName());
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.username = QStringLiteral("fixture-user");
+    AniListDataSourceResult result;
+    QString error;
+
+    QVERIFY(!source.fetchPage(request, result, error));
+    QVERIFY(error.contains(QStringLiteral("hasNextChunk")));
+    QVERIFY(!result.isCompleteAuthoritativeSnapshot);
+}
+
+void AniListGraphQlParsingTests::recordedSourceSelectsTheResponseShapeForTheRequestedPartition() {
+    QString error;
+    AniListDataSourceResult result;
+    RecordedGraphQlAniListDataSource catalogSource(QStringLiteral(HAIKENANIME_GRAPHQL_FIXTURE));
+    const auto catalog = AniListDataSourceRequest::ForPartition(SyncPartition::CompletedCatalog);
+
+    QVERIFY2(catalogSource.fetchPage(catalog, result, error), qPrintable(error));
+    QCOMPARE(result.completedPartition, SyncPartition::CompletedCatalog);
+    QVERIFY(!result.page.media.isEmpty());
+
+    RecordedGraphQlAniListDataSource userListSource(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE));
+    auto userList = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    userList.filter.username = QStringLiteral("fixture-user");
+    QVERIFY2(userListSource.fetchPage(userList, result, error), qPrintable(error));
+    QCOMPARE(result.completedPartition, SyncPartition::UserList);
+    QVERIFY(result.isCompleteAuthoritativeSnapshot);
+
+    QCOMPARE(result.page.media.first().Id, 21366);
+}
+
+void AniListGraphQlParsingTests::recordedCatalogSourceRetainsOnlyTheRequestedPartitionStatus() {
+    RecordedGraphQlAniListDataSource source(QStringLiteral(HAIKENANIME_GRAPHQL_FIXTURE));
+    QString error;
+    AniListDataSourceResult activeResult;
+    AniListDataSourceResult inactiveResult;
+    AniListDataSourceResult completedResult;
+
+    QVERIFY2(source.fetchPage(AniListDataSourceRequest::ForPartition(SyncPartition::ActiveCatalog),
+                              activeResult, error), qPrintable(error));
+    QVERIFY2(source.fetchPage(AniListDataSourceRequest::ForPartition(SyncPartition::InactiveCatalog),
+                              inactiveResult, error), qPrintable(error));
+    QVERIFY2(source.fetchPage(AniListDataSourceRequest::ForPartition(SyncPartition::CompletedCatalog),
+                              completedResult, error), qPrintable(error));
+
+    QCOMPARE(activeResult.completedPartition, SyncPartition::ActiveCatalog);
+    QCOMPARE(inactiveResult.completedPartition, SyncPartition::InactiveCatalog);
+    QCOMPARE(completedResult.completedPartition, SyncPartition::CompletedCatalog);
+    QVERIFY(!activeResult.page.media.isEmpty());
+    QVERIFY(inactiveResult.page.media.isEmpty());
+    QVERIFY(!completedResult.page.media.isEmpty());
+    for (const auto &media : activeResult.page.media) {
+        QCOMPARE(media.Status, MediaStatus::Releasing);
+    }
+    for (const auto &media : completedResult.page.media) {
+        QCOMPARE(media.Status, MediaStatus::Released);
+    }
+}
+
+void AniListGraphQlParsingTests::graphQlAdapterPostsPartitionVariablesAndParsesCatalogPage() {
+    LocalGraphQlServer server;
+    QVERIFY2(server.start(fixture(QStringLiteral(HAIKENANIME_GRAPHQL_FIXTURE))), "Local GraphQL server did not start.");
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient client(networkManager, nullptr, server.endpoint(), 1000);
+    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/media-page.graphql"));
+    GraphQlAniListDataSource source(client, store);
+    const auto request = AniListDataSourceRequest::ForPartition(SyncPartition::ActiveCatalog);
+    AniListDataSourceResult result;
+    QString error;
+
+    QVERIFY2(source.fetchPage(request, result, error), qPrintable(error));
+    QCOMPARE(result.completedPartition, SyncPartition::ActiveCatalog);
+    QVERIFY(!result.isCompleteAuthoritativeSnapshot);
+    QCOMPARE(result.page.currentPage, 1);
+    QVERIFY(!result.page.media.isEmpty());
+
+    const auto variables = server.requestPayload().value(QStringLiteral("variables")).toObject();
+    QCOMPARE(variables.value(QStringLiteral("type")).toString(), QStringLiteral("ANIME"));
+    QCOMPARE(variables.value(QStringLiteral("status")).toString(), QStringLiteral("RELEASING"));
+    QVERIFY(variables.value(QStringLiteral("includeCatalog")).toBool());
+    QVERIFY(!variables.value(QStringLiteral("includeUserList")).toBool());
+}
+
+void AniListGraphQlParsingTests::graphQlAdapterRequiresAndPostsAUserNameForUserListRefresh() {
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient client(networkManager, nullptr, QUrl(QStringLiteral("http://127.0.0.1:9/graphql")), 1000);
+    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/media-page.graphql"));
+    GraphQlAniListDataSource source(client, store);
+    const auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    AniListDataSourceResult result;
+    QString error;
+
+    QVERIFY(!source.fetchPage(request, result, error));
+    QVERIFY(error.contains(QStringLiteral("user name"), Qt::CaseInsensitive));
+
+    LocalGraphQlServer server;
+    QVERIFY2(server.start(fixture(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE))), "Local GraphQL server did not start.");
+    QNetworkAccessManager userListNetworkManager;
+    AniListGraphQlClient userListClient(userListNetworkManager, nullptr, server.endpoint(), 1000);
+    GraphQlAniListDataSource userListSource(userListClient, store);
+    auto namedRequest = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    namedRequest.filter.username = QStringLiteral("fixture-user");
+
+    QVERIFY2(userListSource.fetchPage(namedRequest, result, error), qPrintable(error));
+    QCOMPARE(result.completedPartition, SyncPartition::UserList);
+    QVERIFY(result.isCompleteAuthoritativeSnapshot);
+    const auto variables = server.requestPayload().value(QStringLiteral("variables")).toObject();
+    QCOMPARE(variables.value(QStringLiteral("userName")).toString(), QStringLiteral("fixture-user"));
+    QVERIFY(!variables.value(QStringLiteral("includeCatalog")).toBool());
+    QVERIFY(variables.value(QStringLiteral("includeUserList")).toBool());
+}
+
+void AniListGraphQlParsingTests::graphQlAdapterRejectsNonBooleanUserListPaginationMetadata() {
+    auto payload = fixture(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE));
+    QVERIFY(payload.contains("\"hasNextChunk\": false"));
+    payload.replace("\"hasNextChunk\": false", "\"hasNextChunk\": \"false\"");
+    LocalGraphQlServer server;
+    QVERIFY2(server.start(payload), "Local GraphQL server did not start.");
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient client(networkManager, nullptr, server.endpoint(), 1000);
+    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/media-page.graphql"));
+    GraphQlAniListDataSource source(client, store);
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.username = QStringLiteral("fixture-user");
+    AniListDataSourceResult result;
+    QString error;
+
+    QVERIFY(!source.fetchPage(request, result, error));
+    QVERIFY(error.contains(QStringLiteral("hasNextChunk")));
+    QVERIFY(!result.isCompleteAuthoritativeSnapshot);
 }
 
 QTEST_MAIN(AniListGraphQlParsingTests)

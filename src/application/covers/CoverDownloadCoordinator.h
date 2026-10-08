@@ -11,6 +11,19 @@
 
 class AsyncLogger;
 
+struct CoverCacheCleanupFailure final {
+    QString component;
+    QString error;
+};
+
+struct CoverCacheCleanupResult final {
+    int removedFiles = 0;
+    int removedEntries = 0;
+    QList<CoverCacheCleanupFailure> failures;
+
+    [[nodiscard]] bool Succeeded() const { return failures.isEmpty(); }
+};
+
 class CoverDownloadCoordinator final : public QObject {
     Q_OBJECT
 public:
@@ -19,7 +32,7 @@ public:
     void setLogger(AsyncLogger *logger);
     void RequestWindow(QList<CoverRequest> visible, QList<CoverRequest> prefetch);
     void ReportMissingFile(int mediaId);
-    void Clear();
+    CoverCacheCleanupResult Clear();
 
 signals:
     void CoverAvailable(int mediaId, QString absolutePath);
@@ -45,6 +58,7 @@ private:
     QHash<QString, QDateTime> cooldowns_;
     QHash<QString, int> attempts_;
     quint64 generation_ = 1;
+    bool cleanupInProgress_ = false;
     AsyncLogger *logger_ = nullptr;
 };
 #endif

@@ -1,6 +1,7 @@
 #include "ApplicationComposition.h"
 
 #include "InitialSyncCoordinator.h"
+#include "ApplicationSyncTaskExecutor.h"
 
 #include "../infrastructure/database/SqlQueryStore.h"
 #include "../infrastructure/database/SqliteDatabase.h"
@@ -17,6 +18,7 @@
 #include "../infrastructure/library/QtLocalFileOpener.h"
 #include "../infrastructure/library/QtDirectoryEnumerator.h"
 #include "../infrastructure/database/SqliteLocalFileRepository.h"
+#include "../infrastructure/database/SqliteSyncTaskStateRepository.h"
 #include "../infrastructure/anilist/HttpFactory.h"
 #include <QStandardPaths>
 #include <QDir>
@@ -29,6 +31,18 @@ QString initializationFailure(const QString &stage, const QString &detail) {
         return QStringLiteral("Application initialization failed while %1.").arg(stage);
     }
     return QStringLiteral("Application initialization failed while %1: %2").arg(stage, detail);
+}
+
+std::map<SyncTaskKind, SyncSchedulePolicy> backgroundSynchronizationPolicies(
+    const std::map<SyncTaskKind, SyncSchedulePolicy> &configuredPolicies) {
+    std::map<SyncTaskKind, SyncSchedulePolicy> policies;
+    for (const auto kind : {SyncTaskKind::UserList, SyncTaskKind::ActiveCatalog,
+                            SyncTaskKind::InactiveCatalog, SyncTaskKind::CompletedCatalog}) {
+        const auto configured = configuredPolicies.find(kind);
+        policies.emplace(kind, configured == configuredPolicies.end()
+                                   ? DefaultSyncSchedulePolicy(kind) : configured->second);
+    }
+    return policies;
 }
 
 // Keep borrowed dependencies inside the worker-owned factory products. Member
@@ -81,6 +95,20 @@ public:
 private:
     std::unique_ptr<SqliteDatabase> database_;
     SqliteLocalFileRepository repository_;
+};
+
+class OwnedSyncTaskStateRepository final : public ISyncTaskStateRepository {
+public:
+    OwnedSyncTaskStateRepository(std::unique_ptr<SqliteDatabase> database, QString readQuery,
+                                 QString upsertQuery, QString deleteQuery)
+        : database_(std::move(database)), repository_(database_->connection(), std::move(readQuery),
+          std::move(upsertQuery), std::move(deleteQuery)) {}
+    bool ReadAll(QList<SyncTaskState> &states, QString &error) override { return repository_.ReadAll(states, error); }
+    bool Upsert(const SyncTaskState &state, QString &error) override { return repository_.Upsert(state, error); }
+    bool Remove(const SyncPartition &partition, QString &error) override { return repository_.Remove(partition, error); }
+private:
+    std::unique_ptr<SqliteDatabase> database_;
+    SqliteSyncTaskStateRepository repository_;
 };
 
 bool hasExistingQueries(const SqliteQueryConfiguration &queries) {
@@ -273,9 +301,10 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         queryConfiguration.clearCoverCachePath);
     const QString cacheRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)).filePath("covers");
     const QString temporaryRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation)).filePath("HaikenAnime/covers");
+    context.coverTemporaryStore = std::make_unique<CoverTemporaryStore>(temporaryRoot);
     int removedTemporaryFiles = 0;
     QString temporaryCleanupError;
-    if (!CoverTemporaryStore(temporaryRoot).ClearAbandoned(removedTemporaryFiles, temporaryCleanupError)) {
+    if (!context.coverTemporaryStore->ClearAbandoned(removedTemporaryFiles, temporaryCleanupError)) {
         context.logger->warning(LogCategory::Covers, temporaryCleanupError);
     } else if (removedTemporaryFiles > 0) {
         context.logger->info(LogCategory::Covers,
@@ -286,6 +315,9 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     context.coverCoordinator = std::make_unique<CoverDownloadCoordinator>(
         *context.coverDownloader, *context.coverCacheRepository, *context.coverFileStore, settings.covers);
     context.coverCoordinator->setLogger(context.logger.get());
+    context.clearLocalCache = std::make_unique<ClearLocalCacheUseCase>(
+        *context.coverCoordinator, *context.coverTemporaryStore,
+        QList<ICacheCleanupParticipant *>{});
     context.coverQuality = settings.covers.quality;
     context.initialSync = std::make_unique<InitialSyncCoordinator>(
         context.database->databasePath(),
@@ -295,6 +327,33 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         queryConfiguration.markMediaSourceRemovedPath,
         settings.syncTimeoutMs, settings.syncIntervalMs);
     context.initialSync->setLogger(context.logger.get());
+    const auto synchronizationDatabasePath = context.database->databasePath();
+    const auto readTaskStatesQueryPath = queryConfiguration.readSyncTaskStatesPath;
+    const auto upsertTaskStateQueryPath = queryConfiguration.upsertSyncTaskStatePath;
+    const auto deleteTaskStateQueryPath = queryConfiguration.deleteSyncTaskStatePath;
+    context.adaptiveSync = std::make_unique<AdaptiveSyncRuntime>(
+        [synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath,
+         deleteTaskStateQueryPath](QString &error) -> std::unique_ptr<ISyncTaskStateRepository> {
+            auto database = std::make_unique<SqliteDatabase>(synchronizationDatabasePath);
+            if (!database->open() || !database->migrate()) {
+                error = database->lastError();
+                return {};
+            }
+            return std::make_unique<OwnedSyncTaskStateRepository>(std::move(database), readTaskStatesQueryPath,
+                                                                   upsertTaskStateQueryPath, deleteTaskStateQueryPath);
+        },
+        [synchronizationDatabasePath, userListFixturePath = QStringLiteral(":/fixtures/graphql/userlist-response.json"),
+         catalogFixturePath = QStringLiteral(":/fixtures/graphql/page-response.json"),
+         upsertMediaPath = queryConfiguration.upsertMediaPath, readMediaPath = queryConfiguration.readMediaPath,
+         readActiveMediaIdsPath = queryConfiguration.readActiveMediaIdsPath,
+         markSourceRemovedPath = queryConfiguration.markMediaSourceRemovedPath, readTaskStatesQueryPath,
+         upsertTaskStateQueryPath, deleteTaskStateQueryPath, timeoutMs = settings.syncTimeoutMs] {
+            return std::make_unique<ApplicationSyncTaskExecutor>(
+                synchronizationDatabasePath, userListFixturePath, catalogFixturePath, upsertMediaPath,
+                readMediaPath, readActiveMediaIdsPath,
+                markSourceRemovedPath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
+                timeoutMs);
+        }, backgroundSynchronizationPolicies(settings.syncTaskPolicies));
     context.seasonalNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
     context.seasonalGraphQlClient = std::make_unique<AniListGraphQlClient>(
         *context.seasonalNetworkManager);

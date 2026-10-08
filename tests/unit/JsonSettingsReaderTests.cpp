@@ -24,6 +24,10 @@ private slots:
     void usesScannerDefaultsForMissingSections_data();
     void usesScannerDefaultsForMissingSections();
     void readsPackagedScannerDefaults();
+    void readsSyncTaskPolicies();
+    void usesSyncTaskPolicyDefaultsWhenSettingsAreOmitted();
+    void usesDistinctSyncTaskPolicyDefaultsWhenSettingsAreOmitted();
+    void rejectsNegativeSyncTaskPolicyDurations();
 };
 
 void JsonSettingsReaderTests::readsValidConfiguration() {
@@ -328,6 +332,84 @@ void JsonSettingsReaderTests::readsPackagedScannerDefaults() {
     QCOMPARE(settings.userPreferences.libraryRoot, QStringLiteral("Q:\\"));
     QCOMPARE(settings.userPreferences.scanExtensions, QStringList({".mkv", ".mp4", ".avi", ".webm",
                                                                  ".m4v", ".mov", ".wmv", ".ts"}));
+}
+
+void JsonSettingsReaderTests::readsSyncTaskPolicies() {
+    QTemporaryDir temporaryDirectory;
+    const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co","mediaQueryFile":"query.graphql"},
+        "http":{"timeoutMs":5000},"sync":{"policies":{"user-list":{
+        "normalIntervalMs":60000,"staleProtectionTtlMs":120000,"initialRetryDelayMs":1000,
+        "maximumRetryDelayMs":8000,"cooldownMs":30000,"jitterRatio":0.25,
+        "maximumConsecutiveImmediateRetries":2}}}})");
+    file.close();
+    JsonSettingsReader reader(path);
+    Settings settings;
+    QString error;
+
+    QVERIFY2(reader.read(settings, error), qPrintable(error));
+    const auto &policy = settings.syncTaskPolicies.at(SyncTaskKind::UserList);
+    QCOMPARE(policy.normalInterval, std::chrono::milliseconds(60000));
+    QCOMPARE(policy.staleProtectionTtl, std::chrono::milliseconds(120000));
+    QCOMPARE(policy.initialRetryDelay, std::chrono::milliseconds(1000));
+    QCOMPARE(policy.maximumRetryDelay, std::chrono::milliseconds(8000));
+    QCOMPARE(policy.cooldown, std::chrono::milliseconds(30000));
+    QCOMPARE(policy.jitterRatio, 0.25);
+    QCOMPARE(policy.maximumConsecutiveImmediateRetries, 2);
+}
+
+void JsonSettingsReaderTests::usesSyncTaskPolicyDefaultsWhenSettingsAreOmitted() {
+    QTemporaryDir temporaryDirectory;
+    const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co","mediaQueryFile":"query.graphql"},"http":{"timeoutMs":5000}})");
+    file.close();
+    JsonSettingsReader reader(path);
+    Settings settings;
+    QString error;
+
+    QVERIFY2(reader.read(settings, error), qPrintable(error));
+    QCOMPARE(settings.syncTaskPolicies.at(SyncTaskKind::ActiveCatalog).normalInterval,
+             DefaultSyncSchedulePolicy(SyncTaskKind::ActiveCatalog).normalInterval);
+}
+
+void JsonSettingsReaderTests::usesDistinctSyncTaskPolicyDefaultsWhenSettingsAreOmitted() {
+    QTemporaryDir temporaryDirectory;
+    const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co","mediaQueryFile":"query.graphql"},"http":{"timeoutMs":5000}})");
+    file.close();
+    JsonSettingsReader reader(path);
+    Settings settings;
+    QString error;
+
+    QVERIFY2(reader.read(settings, error), qPrintable(error));
+    QVERIFY(settings.syncTaskPolicies.at(SyncTaskKind::UserList).normalInterval
+            != settings.syncTaskPolicies.at(SyncTaskKind::PendingChange).normalInterval);
+    QVERIFY(settings.syncTaskPolicies.at(SyncTaskKind::UserList).staleProtectionTtl
+            != settings.syncTaskPolicies.at(SyncTaskKind::PendingChange).staleProtectionTtl);
+    QVERIFY(settings.syncTaskPolicies.at(SyncTaskKind::ActiveCatalog).normalInterval
+            != settings.syncTaskPolicies.at(SyncTaskKind::InactiveCatalog).normalInterval);
+}
+
+void JsonSettingsReaderTests::rejectsNegativeSyncTaskPolicyDurations() {
+    QTemporaryDir temporaryDirectory;
+    const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co","mediaQueryFile":"query.graphql"},
+        "http":{"timeoutMs":5000},"sync":{"policies":{"cover":{"cooldownMs":-1}}}})");
+    file.close();
+    JsonSettingsReader reader(path);
+    Settings settings;
+    QString error;
+
+    QVERIFY(!reader.read(settings, error));
+    QVERIFY(!error.isEmpty());
 }
 
 QTEST_MAIN(JsonSettingsReaderTests)

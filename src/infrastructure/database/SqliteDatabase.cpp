@@ -309,15 +309,46 @@ bool SqliteDatabase::migrate() {
             query, QStringLiteral(":/sqlite/migrations/018-add-automatic-local-file-recognition-preference.sql"), lastError_));
     const bool automaticRecognitionVersionInserted = automaticRecognitionReady
         && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/018-mark-automatic-local-file-recognition-applied.sql"), lastError_);
+    const bool syncTaskStateReady = automaticRecognitionVersionInserted && ExecuteMigrationScript(
+        query, QStringLiteral(":/sqlite/migrations/019-create-sync-task-state.sql"), lastError_);
+    bool syncTaskStateColumnsReady = syncTaskStateReady;
+    if (syncTaskStateColumnsReady && query.exec(QStringLiteral("PRAGMA table_info(sync_task_state)"))) {
+        QSet<QString> columns;
+        while (query.next()) columns.insert(query.value(1).toString());
+        const auto addColumn = [&query, &columns, this](const QString &name, const QString &sql) {
+            if (columns.contains(name)) return true;
+            if (!query.exec(sql)) {
+                lastError_ = query.lastError().text();
+                return false;
+            }
+            columns.insert(name);
+            return true;
+        };
+        syncTaskStateColumnsReady = addColumn(QStringLiteral("status"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN status TEXT NOT NULL DEFAULT 'idle'"))
+            && addColumn(QStringLiteral("next_run_at"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN next_run_at TEXT"))
+            && addColumn(QStringLiteral("safe_error_detail"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN safe_error_detail TEXT NOT NULL DEFAULT ''"))
+            && addColumn(QStringLiteral("confirmed_page"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN confirmed_page INTEGER"))
+            && addColumn(QStringLiteral("confirmed_cursor"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN confirmed_cursor TEXT"))
+            && addColumn(QStringLiteral("priority"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN priority INTEGER NOT NULL DEFAULT 0"))
+            && addColumn(QStringLiteral("generation"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN generation INTEGER NOT NULL DEFAULT 0"));
+    } else if (syncTaskStateColumnsReady) {
+        syncTaskStateColumnsReady = false;
+        lastError_ = query.lastError().text();
+    }
+    const bool syncTaskStateVersionInserted = syncTaskStateColumnsReady && ExecuteMigrationScript(
+        query, QStringLiteral(":/sqlite/migrations/019-mark-sync-task-state-applied.sql"), lastError_);
     const bool versionQueried = automaticRecognitionVersionInserted && ExecuteMigrationScript(
         query, QStringLiteral(":/sqlite/migrations/000-inspect-applied-schema-versions.sql"), lastError_);
-    const bool versionRecorded = versionQueried && query.next() && query.value(0).toBool()
+    const bool legacyVersionsRecorded = versionQueried && query.next() && query.value(0).toBool()
         && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
         && query.value(4).toBool() && query.value(5).toBool() && query.value(6).toBool()
         && query.value(7).toBool() && query.value(8).toBool() && query.value(9).toBool()
         && query.value(10).toBool() && query.value(11).toBool() && query.value(12).toBool()
         && query.value(13).toBool() && query.value(14).toBool() && query.value(15).toBool()
         && query.value(16).toBool() && query.value(17).toBool();
+    const bool versionRecorded = syncTaskStateVersionInserted && legacyVersionsRecorded
+        && query.exec(QStringLiteral("SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 19)"))
+        && query.next() && query.value(0).toBool();
 
     if (versionRecorded) {
         const bool committed = database_.commit();

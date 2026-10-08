@@ -11,10 +11,13 @@
 #include "../application/library/LocalEpisodeReader.h"
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "InitialSyncCoordinator.h"
+#include "AdaptiveSyncRuntime.h"
 #include "LocalLibraryScanCoordinator.h"
 #include "LocalLibraryRecognitionCoordinator.h"
 #include "../infrastructure/logging/AsyncLogger.h"
 #include "../application/covers/CoverDownloadCoordinator.h"
+#include "../application/covers/ICoverTemporaryStore.h"
+#include "../application/cache/ClearLocalCacheUseCase.h"
 #include "../application/configuration/IUserPreferencesRepository.h"
 #include "../application/configuration/UserPreferences.h"
 #include "../infrastructure/anilist/AniListGraphQlClient.h"
@@ -29,10 +32,13 @@ struct ApplicationContext final {
     std::unique_ptr<IMediaRepository> mediaRepository;
     std::unique_ptr<IPendingChangeRepository> pendingChangeRepository;
     std::unique_ptr<InitialSyncCoordinator> initialSync;
+    std::unique_ptr<AdaptiveSyncRuntime> adaptiveSync;
     std::unique_ptr<ICoverCacheRepository> coverCacheRepository;
     std::unique_ptr<ICoverFileStore> coverFileStore;
+    std::unique_ptr<ICoverTemporaryStore> coverTemporaryStore;
     std::unique_ptr<ICoverDownloader> coverDownloader;
     std::unique_ptr<CoverDownloadCoordinator> coverCoordinator;
+    std::unique_ptr<ClearLocalCacheUseCase> clearLocalCache;
     std::unique_ptr<IUserPreferencesRepository> userPreferencesRepository;
     UserPreferences userPreferences;
     CoverQuality coverQuality = CoverQuality::Medium;
@@ -49,8 +55,12 @@ struct ApplicationContext final {
     std::unique_ptr<LocalLibraryRecognitionCoordinator> localLibraryRecognition;
     std::unique_ptr<LocalLibraryScanCoordinator> localLibraryScan;
 
+    [[nodiscard]] QString schedulingInitializationError() const {
+        return adaptiveSync ? adaptiveSync->initializationError() : QString{};
+    }
     [[nodiscard]] bool isReady() const {
-        return mediaRepository != nullptr && initializationError.isEmpty();
+        return mediaRepository != nullptr && initializationError.isEmpty()
+            && schedulingInitializationError().isEmpty();
     }
 };
 

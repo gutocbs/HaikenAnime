@@ -97,7 +97,8 @@ bool SqliteCoverCacheRepository::Remove(const int mediaId, QString &error) {
     return true;
 }
 
-bool SqliteCoverCacheRepository::Clear(QString &error) {
+bool SqliteCoverCacheRepository::Clear(int &removedEntries, QString &error) {
+    removedEntries = 0;
     error.clear();
     QString clearQuery;
     if (!SqlQueryStore::loadSource(clearQuery_, clearQuery, error)) return false;
@@ -106,5 +107,6 @@ bool SqliteCoverCacheRepository::Clear(QString &error) {
         error = query.lastError().text();
         return false;
     }
+    removedEntries = qMax(0, static_cast<int>(query.numRowsAffected()));
     return true;
 }

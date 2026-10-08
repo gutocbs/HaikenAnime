@@ -1,5 +1,6 @@
 #include "SettingsController.h"
 
+#include "../../application/cache/ClearLocalCacheUseCase.h"
 #include "../../application/configuration/UserPreferencesValidator.h"
 #include "../../app/LocalLibraryScanCoordinator.h"
 
@@ -16,6 +17,9 @@ bool SettingsController::synchronizationRunning() const { return synchronization
 qsizetype SettingsController::scanCandidateCount() const { return scanCandidateCount_; }
 QString SettingsController::scanStatusMessage() const { return scanStatusMessage_; }
 QString SettingsController::scanErrorMessage() const { return scanErrorMessage_; }
+bool SettingsController::cacheCleanupRunning() const { return cacheCleanupRunning_; }
+QString SettingsController::cacheCleanupStatusMessage() const { return cacheCleanupStatusMessage_; }
+QString SettingsController::cacheCleanupErrorMessage() const { return cacheCleanupErrorMessage_; }
 
 void SettingsController::SetScanCoordinator(LocalLibraryScanCoordinator *coordinator) {
     if (scanCoordinator_ == coordinator) return;
@@ -112,6 +116,54 @@ void SettingsController::SynchronizeNow() {
     emit synchronizationRequested();
 }
 
+void SettingsController::ClearLocalCache() {
+    if (cacheCleanupRunning_) return;
+    if (!cacheCleanup_) {
+        cacheCleanupStatusMessage_.clear();
+        cacheCleanupErrorMessage_ = tr("A limpeza do cache local não está disponível.");
+        emit cacheCleanupFailed(cacheCleanupErrorMessage_);
+        emit cacheCleanupChanged();
+        return;
+    }
+
+    cacheCleanupRunning_ = true;
+    cacheCleanupStatusMessage_ = tr("Limpando cache local...");
+    cacheCleanupErrorMessage_.clear();
+    emit cacheCleanupChanged();
+    const bool started = cacheCleanup_->Start([this](ClearLocalCacheResult result) {
+        cacheCleanupRunning_ = false;
+        QStringList details;
+        for (const auto &failure : result.failures)
+            details.append(QStringLiteral("%1: %2").arg(failure.participant, failure.error));
+        const QString failureDetails = details.join(QStringLiteral("; "));
+        if (result.Succeeded()) {
+            cacheCleanupStatusMessage_ = tr("Cache local limpo. %1 item(ns) removido(s).")
+                .arg(result.TotalRemoved());
+            cacheCleanupErrorMessage_.clear();
+            emit cacheCleanupCompleted();
+        } else if (result.TotalRemoved() > 0) {
+            cacheCleanupStatusMessage_.clear();
+            cacheCleanupErrorMessage_ = tr("A limpeza do cache local foi concluída parcialmente: %1")
+                .arg(failureDetails);
+            emit cacheCleanupPartialFailure(cacheCleanupErrorMessage_);
+        } else {
+            cacheCleanupStatusMessage_.clear();
+            cacheCleanupErrorMessage_ = result.cancelled
+                ? tr("A limpeza do cache local foi cancelada.")
+                : tr("Não foi possível limpar o cache local: %1").arg(failureDetails);
+            emit cacheCleanupFailed(cacheCleanupErrorMessage_);
+        }
+        emit cacheCleanupChanged();
+    });
+    if (!started && cacheCleanupRunning_) {
+        cacheCleanupRunning_ = false;
+        cacheCleanupStatusMessage_.clear();
+        cacheCleanupErrorMessage_ = tr("A limpeza do cache local já está em andamento.");
+        emit cacheCleanupFailed(cacheCleanupErrorMessage_);
+        emit cacheCleanupChanged();
+    }
+}
+
 void SettingsController::notifySynchronizationStarted() {
     synchronizationRunning_ = true;
     statusMessage_ = tr("Sincronizando dados em segundo plano...");
@@ -152,13 +204,16 @@ QVariantMap scoreScaleOption(const double minimum, const double maximum, const d
 }
 
 SettingsController::SettingsController(IUserPreferencesRepository *repository,
-                                       UserPreferences initial, QObject *parent)
+                                       UserPreferences initial,
+                                       ClearLocalCacheUseCase *cacheCleanup,
+                                       QObject *parent)
     : QObject(parent), repository_(repository), persisted_(initial), draft_(initial),
       coverQualityKey_(CoverQualityName(initial.coverQuality)),
       cardStatusPresentationKey_(CardStatusPresentationKey(initial.cardStatusPresentation)),
       languageKey_(NormalizeLanguageKey(initial.languageKey)),
       appliedLanguageKey_(NormalizeLanguageKey(initial.languageKey)),
-      preferredTitleKey_(NormalizePreferredTitleKey(initial.preferredTitleKey)) {
+      preferredTitleKey_(NormalizePreferredTitleKey(initial.preferredTitleKey)),
+      cacheCleanup_(cacheCleanup) {
     qRegisterMetaType<UserPreferences>();
     scanStatusMessage_ = tr("Nenhuma varredura iniciada.");
     refreshValidation();
