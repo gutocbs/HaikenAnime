@@ -10,6 +10,7 @@ class AniListGraphQlUserListParserTests final : public QObject {
 private slots:
     void parsesUserListFixture();
     void parsesFrierenProgressFromUserListFixture();
+    void filtersEntriesByRequestedListStatus();
     void rejectsMissingCollection();
 };
 
@@ -43,6 +44,26 @@ void AniListGraphQlUserListParserTests::parsesFrierenProgressFromUserListFixture
     QVERIFY(matches != media.cend());
     QCOMPARE(matches->ConsumedChapters, 28);
     QCOMPARE(matches->TotalChapters, 28);
+}
+
+void AniListGraphQlUserListParserTests::filtersEntriesByRequestedListStatus() {
+    QFile file(QStringLiteral(HAIKENANIME_USERLIST_FIXTURE));
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    AniListGraphQlResponse response;
+    QString error;
+    QVERIFY2(AniListGraphQlResponseParser::parse(file.readAll(), response, error), qPrintable(error));
+
+    QList<Media> allMedia;
+    QVERIFY2(AniListGraphQlUserListParser::parse(response.data, allMedia, error), qPrintable(error));
+
+    QList<Media> media;
+    QVERIFY2(AniListGraphQlUserListParser::parse(response.data, media, error, QStringLiteral("CURRENT")),
+             qPrintable(error));
+    QVERIFY(!media.isEmpty());
+    QVERIFY(media.size() < allMedia.size());
+    QVERIFY(std::all_of(media.cbegin(), media.cend(), [](const Media &item) {
+        return item.ListStatus == UserListStatus::Current;
+    }));
 }
 
 void AniListGraphQlUserListParserTests::rejectsMissingCollection() {

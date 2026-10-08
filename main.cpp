@@ -195,6 +195,7 @@ int main(int argc, char *argv[]) {
                                                       preferences.scoreMaximum,
                                                       preferences.scoreStep);
         if (context.initialSync) {
+            context.initialSync->configureEnabledUserLists(preferences.enabledUserLists);
             context.initialSync->configureAutomaticSynchronization(
                 false, preferences.synchronizationIntervalMs);
         }

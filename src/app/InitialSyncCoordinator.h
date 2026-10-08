@@ -2,6 +2,7 @@
 #define HAIKENANIME_INITIALSYNCCOORDINATOR_H
 
 #include <QObject>
+#include <QStringList>
 
 #include <functional>
 
@@ -28,6 +29,7 @@ public:
     ~InitialSyncCoordinator() override;
     void setLogger(AsyncLogger *logger);
     void configureAutomaticSynchronization(bool enabled, int intervalMs);
+    void configureEnabledUserLists(const QStringList &enabledUserLists);
     [[nodiscard]] bool automaticSynchronizationEnabled() const;
     [[nodiscard]] int synchronizationIntervalMs() const;
 public slots:
@@ -38,7 +40,8 @@ signals:
     void completed();
     void failed(const QString &error);
 private:
-    bool performSynchronization(QString &error) const;
+    bool performSynchronization(bool filterUserLists, const QStringList &enabledUserLists,
+                                QString &error) const;
     void releaseFinishedThread();
 
     QString databasePath_;
@@ -56,6 +59,10 @@ private:
     bool executionActive_ = false;
     bool stopping_ = false;
     bool automaticSynchronizationEnabled_ = true;
+    bool hasEnabledUserListConfiguration_ = false;
+    QStringList enabledUserLists_ = {QStringLiteral("current"), QStringLiteral("planning"),
+                                     QStringLiteral("on_hold"), QStringLiteral("dropped"),
+                                     QStringLiteral("completed")};
 };
 
 #endif

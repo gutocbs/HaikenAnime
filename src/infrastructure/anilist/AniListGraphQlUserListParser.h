@@ -6,7 +6,8 @@
 
 class AniListGraphQlUserListParser final {
 public:
-    static bool parse(const QJsonObject &data, QList<Media> &media, QString &error);
+    static bool parse(const QJsonObject &data, QList<Media> &media, QString &error,
+                      const QString &listStatus = {});
 };
 
 #endif

@@ -2,6 +2,7 @@
 #define HAIKENANIME_MEDIASYNCFILTER_H
 
 #include <QString>
+#include <QStringList>
 
 #include "../scheduling/SyncTaskTypes.h"
 
@@ -19,5 +20,17 @@ struct MediaSyncFilter {
         return username.isEmpty() && type.isEmpty() && status.isEmpty() && list.isEmpty();
     }
 };
+
+inline QStringList AniListStatusesForEnabledUserLists(const QStringList &keys) {
+    QStringList statuses;
+    for (const auto &key : keys) {
+        if (key == QStringLiteral("current")) statuses.append(QStringLiteral("CURRENT"));
+        else if (key == QStringLiteral("planning")) statuses.append(QStringLiteral("PLANNING"));
+        else if (key == QStringLiteral("on_hold")) statuses.append(QStringLiteral("PAUSED"));
+        else if (key == QStringLiteral("dropped")) statuses.append(QStringLiteral("DROPPED"));
+        else if (key == QStringLiteral("completed")) statuses.append(QStringLiteral("COMPLETED"));
+    }
+    return statuses;
+}
 
 #endif

@@ -59,6 +59,11 @@ void InitialSyncCoordinator::configureAutomaticSynchronization(const bool enable
     if (enabled && !stopping_ && !executionActive_) scheduler_->start();
 }
 
+void InitialSyncCoordinator::configureEnabledUserLists(const QStringList &enabledUserLists) {
+    enabledUserLists_ = enabledUserLists;
+    hasEnabledUserListConfiguration_ = true;
+}
+
 bool InitialSyncCoordinator::automaticSynchronizationEnabled() const {
     return automaticSynchronizationEnabled_;
 }
@@ -82,9 +87,12 @@ void InitialSyncCoordinator::start() {
         return;
     }
     QPointer<InitialSyncCoordinator> coordinator(this);
-    thread_ = QThread::create([this, coordinator]() {
+    const bool filterUserLists = hasEnabledUserListConfiguration_;
+    const auto enabledUserLists = enabledUserLists_;
+    thread_ = QThread::create([this, coordinator, filterUserLists, enabledUserLists]() {
         QString error;
-        const bool succeeded = operation_ ? operation_(error) : performSynchronization(error);
+        const bool succeeded = operation_ ? operation_(error)
+                                          : performSynchronization(filterUserLists, enabledUserLists, error);
         if (!succeeded && error.isEmpty()) {
             error = QStringLiteral("Media synchronization failed.");
         }
@@ -116,7 +124,9 @@ void InitialSyncCoordinator::shutdown() {
     releaseFinishedThread();
 }
 
-bool InitialSyncCoordinator::performSynchronization(QString &error) const {
+bool InitialSyncCoordinator::performSynchronization(const bool filterUserLists,
+                                                     const QStringList &enabledUserLists,
+                                                     QString &error) const {
     SqliteDatabase database(databasePath_);
     database.setLogger(logger_);
     if (!database.open() || !database.migrate()) {
@@ -129,8 +139,16 @@ bool InitialSyncCoordinator::performSynchronization(QString &error) const {
     repository.setLogger(logger_);
     RecordedGraphQlAniListDataSource source(QDir::cleanPath(fixturePath_));
     AniListSyncService service(source, repository, &repository, nullptr, syncTimeoutMs_);
-    MediaSyncFilter filter;
-    return service.synchronize(filter, error);
+    if (!filterUserLists) {
+        MediaSyncFilter filter;
+        return service.synchronize(filter, error);
+    }
+    for (const auto &listStatus : AniListStatusesForEnabledUserLists(enabledUserLists)) {
+        MediaSyncFilter filter;
+        filter.list = listStatus;
+        if (!service.synchronize(filter, error)) return false;
+    }
+    return true;
 }
 
 void InitialSyncCoordinator::releaseFinishedThread() {

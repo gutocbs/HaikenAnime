@@ -92,7 +92,8 @@ inline bool RecordedGraphQlAniListDataSource::fetchPage(const AniListDataSourceR
                 error = QStringLiteral("AniList MediaListCollection contains invalid hasNextChunk pagination metadata.");
                 return false;
             }
-            if (!AniListGraphQlUserListParser::parse(response.data, result.page.media, error)) return false;
+            if (!AniListGraphQlUserListParser::parse(response.data, result.page.media, error,
+                                                      request.filter.list)) return false;
             result.page.currentPage = qMax(1, request.filter.startingPage);
             result.page.hasNextPage = hasNextChunk.toBool();
             result.page.totalPages = result.page.hasNextPage ? result.page.currentPage + 1 : result.page.currentPage;

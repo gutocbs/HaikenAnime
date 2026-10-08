@@ -19,7 +19,8 @@ public:
                                 QString readQueryPath, QString readActiveMediaIdsQueryPath,
                                 QString markSourceRemovedQueryPath, QString readTaskStatesQueryPath,
                                 QString upsertTaskStateQueryPath, QString deleteTaskStateQueryPath,
-                                int timeoutMs);
+                                QString readUserPreferencesQueryPath,
+                                QString upsertUserPreferencesQueryPath, int timeoutMs);
     ~ApplicationSyncTaskExecutor() override;
 
     void Execute(const SyncTaskState &state, qint64 generation, Completion completion) override;
@@ -47,6 +48,8 @@ private:
     QString readTaskStatesQueryPath_;
     QString upsertTaskStateQueryPath_;
     QString deleteTaskStateQueryPath_;
+    QString readUserPreferencesQueryPath_;
+    QString upsertUserPreferencesQueryPath_;
     int timeoutMs_ = 0;
     std::mutex mutex_;
     std::map<SyncPartition, std::shared_ptr<Job>> jobs_;

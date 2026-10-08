@@ -44,6 +44,8 @@ private slots:
     void disablingDuringActiveSynchronizationPreventsRestart();
     void synchronizesRealGraphQlFixtureIntoDatabase();
     void synchronizesRecordedUserListIntoDatabase();
+    void synchronizesOnlyEnabledRecordedUserLists();
+    void skipsRecordedUserListSynchronizationWhenNoListsAreEnabled();
 };
 
 void InitialSyncCoordinatorTests::configuresAutomaticSynchronizationAtRuntime() {
@@ -316,6 +318,73 @@ void InitialSyncCoordinatorTests::synchronizesRecordedUserListIntoDatabase() {
     QCOMPARE(query.value(1).toInt(), 28);
     QCOMPARE(query.value(2).toInt(), 10);
     QCOMPARE(query.value(3).toInt(), static_cast<int>(UserListStatus::Completed));
+}
+
+void InitialSyncCoordinatorTests::synchronizesOnlyEnabledRecordedUserLists() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const auto sourceRoot = QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR);
+    const auto databasePath = directory.filePath(QStringLiteral("library.sqlite"));
+    InitialSyncCoordinator coordinator(
+        databasePath,
+        QDir(sourceRoot).filePath(QStringLiteral("tests/fixtures/graphql/userlist-response.json")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/upsert-media.sql")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/read-media.sql")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/read-active-media-ids.sql")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/mark-media-source-removed.sql")),
+        60000, 60000);
+    coordinator.configureEnabledUserLists({QStringLiteral("current"), QStringLiteral("completed")});
+    QSignalSpy completedSpy(&coordinator, &InitialSyncCoordinator::completed);
+    QSignalSpy failedSpy(&coordinator, &InitialSyncCoordinator::failed);
+
+    coordinator.start();
+    QVERIFY2(completedSpy.wait(5000), failedSpy.isEmpty()
+        ? "Filtered recorded user-list synchronization did not complete."
+        : qPrintable(failedSpy.first().first().toString()));
+    coordinator.shutdown();
+
+    SqliteDatabase database(databasePath);
+    QVERIFY2(database.open(), qPrintable(database.lastError()));
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral(
+        "SELECT COUNT(*) FROM media WHERE source_removed_at IS NULL "
+        "AND user_list_status NOT IN (%1, %2)")
+        .arg(static_cast<int>(UserListStatus::Current))
+        .arg(static_cast<int>(UserListStatus::Completed))));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 0);
+    QVERIFY(query.exec(QStringLiteral(
+        "SELECT COUNT(DISTINCT user_list_status) FROM media WHERE source_removed_at IS NULL")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 2);
+}
+
+void InitialSyncCoordinatorTests::skipsRecordedUserListSynchronizationWhenNoListsAreEnabled() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const auto sourceRoot = QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR);
+    const auto databasePath = directory.filePath(QStringLiteral("library.sqlite"));
+    InitialSyncCoordinator coordinator(
+        databasePath,
+        QDir(sourceRoot).filePath(QStringLiteral("tests/fixtures/graphql/userlist-response.json")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/upsert-media.sql")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/read-media.sql")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/read-active-media-ids.sql")),
+        QDir(sourceRoot).filePath(QStringLiteral("resources/sqlite/queries/mark-media-source-removed.sql")),
+        60000, 60000);
+    coordinator.configureEnabledUserLists({});
+    QSignalSpy completedSpy(&coordinator, &InitialSyncCoordinator::completed);
+
+    coordinator.start();
+    QVERIFY(completedSpy.wait(5000));
+    coordinator.shutdown();
+
+    SqliteDatabase database(databasePath);
+    QVERIFY2(database.open(), qPrintable(database.lastError()));
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM media WHERE source_removed_at IS NULL")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 0);
 }
 
 QTEST_MAIN(InitialSyncCoordinatorTests)
