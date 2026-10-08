@@ -313,6 +313,7 @@ void SqliteUserPreferencesRepositoryTests::readsMissingAndRoundTripsReplacement(
     expected.coverQuality = CoverQuality::Large;
     expected.synchronizationEnabled = false;
     expected.synchronizationIntervalMs = 1800000;
+    expected.enabledUserLists = {QStringLiteral("current"), QStringLiteral("completed")};
     QVERIFY(repository.replace(expected, error));
     QVERIFY(repository.read(loaded, found, error));
     QVERIFY(found);

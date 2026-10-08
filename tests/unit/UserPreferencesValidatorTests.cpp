@@ -20,6 +20,7 @@ private slots:
     void rejectsUnsupportedPreferredTitle();
     void rejectsEmptyLibraryRoot();
     void comparesScannerPreferences();
+    void validatesEnabledUserLists();
 };
 
 void UserPreferencesValidatorTests::acceptsSupportedPreferences() {
@@ -173,6 +174,16 @@ void UserPreferencesValidatorTests::comparesScannerPreferences() {
     changedExtensions.scanExtensions = {".mp4"};
     QVERIFY(!(defaults == changedExtensions));
     QVERIFY(defaults == UserPreferences{});
+}
+
+void UserPreferencesValidatorTests::validatesEnabledUserLists() {
+    UserPreferences preferences;
+    preferences.enabledUserLists = {QStringLiteral("current"), QStringLiteral("completed")};
+    QVERIFY(ValidateUserPreferences(preferences).valid);
+    preferences.enabledUserLists = {QStringLiteral("unknown")};
+    QVERIFY(!ValidateUserPreferences(preferences).valid);
+    preferences.enabledUserLists.clear();
+    QVERIFY(ValidateUserPreferences(preferences).valid);
 }
 
 QTEST_MAIN(UserPreferencesValidatorTests)

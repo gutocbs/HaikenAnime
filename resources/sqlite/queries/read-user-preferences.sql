@@ -11,6 +11,7 @@ SELECT score_minimum,
        language_key,
        preferred_title_key,
        include_adult_content,
-       automatic_local_file_recognition
+       automatic_local_file_recognition,
+       enabled_user_lists
 FROM user_preferences
 WHERE id = 1
