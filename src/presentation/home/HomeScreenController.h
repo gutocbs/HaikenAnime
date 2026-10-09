@@ -13,6 +13,7 @@
 
 class ILocalEpisodeReader;
 class ILocalFileOpener;
+class IPersonalListMediaWriter;
 
 class HomeMediaModel final : public QAbstractListModel {
     Q_OBJECT
@@ -87,6 +88,7 @@ class HomeScreenController final : public QObject {
     Q_PROPERTY(int selectedProgressMaximum READ selectedProgressMaximum NOTIFY selectionChanged)
     Q_PROPERTY(double selectedScoreValue READ selectedScoreValue NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedListStatusKey READ selectedListStatusKey NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedListStatusLabel READ selectedListStatusLabel NOTIFY selectionChanged)
     Q_PROPERTY(QStringList selectedAlternativeNames READ selectedAlternativeNames NOTIFY selectionChanged)
     Q_PROPERTY(bool canWatch READ canWatch NOTIFY selectionChanged)
     Q_PROPERTY(int nextLocalEpisode READ nextLocalEpisode NOTIFY selectionChanged)
@@ -137,6 +139,7 @@ public:
     int selectedProgressMaximum() const;
     double selectedScoreValue() const;
     QString selectedListStatusKey() const;
+    QString selectedListStatusLabel() const;
     QStringList selectedAlternativeNames() const;
     bool canWatch() const;
     int nextLocalEpisode() const;
@@ -155,6 +158,7 @@ public:
     void ConfigureCardStatusPresentation(CardStatusPresentation presentation);
     void ConfigurePreferredTitle(QString key);
     void SetLocalEpisodeServices(ILocalEpisodeReader *episodeReader, ILocalFileOpener *fileOpener);
+    void SetPersonalListMediaWriter(IPersonalListMediaWriter *personalListWriter);
     void RefreshLocalEpisode();
 
     void reload();
@@ -169,6 +173,8 @@ public:
     Q_INVOKABLE void ClearBrowseCriteria();
     Q_INVOKABLE void SelectMedia(int mediaId);
     Q_INVOKABLE void WatchNext();
+    Q_INVOKABLE bool SaveSelectedMediaFromEditor(int progress, const QString &statusKey, double score,
+                                                 const QString &path, const QStringList &alternativeNames);
     Q_INVOKABLE QVariantMap PreviewCardMetadata(int progress, const QString &listStatusKey,
                                                 double score) const;
     Q_INVOKABLE QVariantMap PreviewCompactDetailMetadata(int progress,
@@ -222,6 +228,7 @@ private:
     bool hasSelection_ = false;
     ILocalEpisodeReader *episodeReader_ = nullptr;
     ILocalFileOpener *fileOpener_ = nullptr;
+    IPersonalListMediaWriter *personalListWriter_ = nullptr;
     int nextLocalEpisode_ = 0;
     int availableLocalEpisodeCount_ = 0;
     QString nextLocalEpisodePath_;

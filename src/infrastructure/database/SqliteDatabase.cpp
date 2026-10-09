@@ -69,7 +69,10 @@ bool SqliteDatabase::open() {
     if (opened) {
         QSqlQuery pragma(database_);
         opened = ExecuteMigrationScript(
-            pragma, QStringLiteral(":/sqlite/migrations/000-enable-foreign-keys.sql"), lastError_);
+            pragma, QStringLiteral(":/sqlite/migrations/000-enable-foreign-keys.sql"), lastError_)
+            && pragma.exec(QStringLiteral("PRAGMA busy_timeout = 10000"))
+            && pragma.exec(QStringLiteral("PRAGMA journal_mode = WAL"));
+        if (!opened && lastError_.isEmpty()) lastError_ = pragma.lastError().text();
         if (!opened) {
             database_.close();
         }
@@ -337,7 +340,16 @@ bool SqliteDatabase::migrate() {
     }
     const bool syncTaskStateVersionInserted = syncTaskStateColumnsReady && ExecuteMigrationScript(
         query, QStringLiteral(":/sqlite/migrations/019-mark-sync-task-state-applied.sql"), lastError_);
-    const bool versionQueried = automaticRecognitionVersionInserted && ExecuteMigrationScript(
+    bool enabledUserListsExists = false;
+    if (syncTaskStateVersionInserted && ExecuteMigrationScript(
+            query, QStringLiteral(":/sqlite/migrations/000-inspect-user-preference-columns.sql"), lastError_)) {
+        while (query.next()) enabledUserListsExists |= query.value(1).toString() == QStringLiteral("enabled_user_lists");
+    }
+    const bool enabledUserListsReady = syncTaskStateVersionInserted && (enabledUserListsExists
+        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/020-add-enabled-user-lists-preference.sql"), lastError_));
+    const bool enabledUserListsVersionInserted = enabledUserListsReady && ExecuteMigrationScript(
+        query, QStringLiteral(":/sqlite/migrations/020-mark-enabled-user-lists-preference-applied.sql"), lastError_);
+    const bool versionQueried = enabledUserListsVersionInserted && ExecuteMigrationScript(
         query, QStringLiteral(":/sqlite/migrations/000-inspect-applied-schema-versions.sql"), lastError_);
     const bool legacyVersionsRecorded = versionQueried && query.next() && query.value(0).toBool()
         && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
@@ -345,9 +357,10 @@ bool SqliteDatabase::migrate() {
         && query.value(7).toBool() && query.value(8).toBool() && query.value(9).toBool()
         && query.value(10).toBool() && query.value(11).toBool() && query.value(12).toBool()
         && query.value(13).toBool() && query.value(14).toBool() && query.value(15).toBool()
-        && query.value(16).toBool() && query.value(17).toBool();
-    const bool versionRecorded = syncTaskStateVersionInserted && legacyVersionsRecorded
-        && query.exec(QStringLiteral("SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 19)"))
+        && query.value(16).toBool() && query.value(17).toBool()
+        && query.value(18).toBool() && query.value(19).toBool();
+    const bool versionRecorded = enabledUserListsVersionInserted && legacyVersionsRecorded
+        && query.exec(QStringLiteral("SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 20)"))
         && query.next() && query.value(0).toBool();
 
     if (versionRecorded) {

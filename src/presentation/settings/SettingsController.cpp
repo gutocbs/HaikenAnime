@@ -314,6 +314,7 @@ QString SettingsController::languageKey() const { return languageKey_; }
 QString SettingsController::preferredTitleKey() const { return preferredTitleKey_; }
 bool SettingsController::includeAdultContent() const { return draft_.includeAdultContent; }
 bool SettingsController::automaticLocalFileRecognition() const { return draft_.automaticLocalFileRecognition; }
+QStringList SettingsController::enabledUserLists() const { return draft_.enabledUserLists; }
 bool SettingsController::dirty() const { return !extensionInputValid_ || !(draft_ == persisted_); }
 bool SettingsController::valid() const { return valid_; }
 bool SettingsController::saving() const { return saving_; }
@@ -415,6 +416,16 @@ void SettingsController::SetIncludeAdultContent(const bool enabled) {
 }
 void SettingsController::SetAutomaticLocalFileRecognition(const bool enabled) {
     draft_.automaticLocalFileRecognition = enabled;
+    statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
+}
+
+void SettingsController::SetUserListEnabled(const QString &key, const bool enabled) {
+    static const QStringList supported = {QStringLiteral("current"), QStringLiteral("planning"),
+                                          QStringLiteral("on_hold"), QStringLiteral("dropped"),
+                                          QStringLiteral("completed")};
+    if (!supported.contains(key)) return;
+    if (enabled && !draft_.enabledUserLists.contains(key)) draft_.enabledUserLists.append(key);
+    if (!enabled) draft_.enabledUserLists.removeAll(key);
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }
 

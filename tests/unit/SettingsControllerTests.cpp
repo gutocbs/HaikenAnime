@@ -171,6 +171,7 @@ private slots:
     void exposesBackendLanguageOptionsAndRestartNotice();
     void exposesBackendPreferredTitleOptionsWithoutRestartNotice();
     void savesAdultContentDraftWithoutChangingUnrelatedPreferences();
+    void savesEnabledUserListsAndRestoresThemOnDiscard();
     void savesAutomaticLocalRecognitionPreference();
     void libraryDraftSavesAndDiscardsAtomically();
     void invalidLibraryDraftCannotSave();
@@ -380,6 +381,24 @@ void SettingsControllerTests::savesAdultContentDraftWithoutChangingUnrelatedPref
     QVERIFY(repository.stored.includeAdultContent);
     QCOMPARE(repository.stored.homeSortKey, QStringLiteral("title_desc"));
     QCOMPARE(repository.stored.coverQuality, CoverQuality::Large);
+}
+
+void SettingsControllerTests::savesEnabledUserListsAndRestoresThemOnDiscard() {
+    FakePreferencesRepository repository;
+    UserPreferences initial;
+    SettingsController controller(&repository, initial);
+
+    QCOMPARE(controller.enabledUserLists(), initial.enabledUserLists);
+    controller.SetUserListEnabled(QStringLiteral("dropped"), false);
+    QVERIFY(controller.dirty());
+    QVERIFY(!controller.enabledUserLists().contains(QStringLiteral("dropped")));
+
+    controller.Discard();
+    QVERIFY(controller.enabledUserLists().contains(QStringLiteral("dropped")));
+
+    controller.SetUserListEnabled(QStringLiteral("dropped"), false);
+    controller.Save();
+    QVERIFY(!repository.stored.enabledUserLists.contains(QStringLiteral("dropped")));
 }
 
 void SettingsControllerTests::invalidLibraryDraftCannotSave() {

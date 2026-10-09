@@ -4,7 +4,8 @@
 #include <QJsonArray>
 #include <QSet>
 
-bool AniListGraphQlUserListParser::parse(const QJsonObject &data, QList<Media> &media, QString &error) {
+bool AniListGraphQlUserListParser::parse(const QJsonObject &data, QList<Media> &media, QString &error,
+                                         const QString &listStatus) {
     media.clear();
     error.clear();
     const auto collection = data.value(QStringLiteral("MediaListCollection"));
@@ -34,6 +35,10 @@ bool AniListGraphQlUserListParser::parse(const QJsonObject &data, QList<Media> &
                 return false;
             }
             const auto entry = entryValue.toObject();
+            if (!listStatus.isEmpty()
+                && entry.value(QStringLiteral("status")).toString() != listStatus) {
+                continue;
+            }
             const auto mediaValue = entry.value(QStringLiteral("media"));
             if (!mediaValue.isObject()) {
                 continue;

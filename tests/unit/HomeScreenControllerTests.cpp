@@ -5,6 +5,7 @@
 #include "../../src/presentation/home/HomeScreenController.h"
 #include "../../src/application/library/ILocalFileOpener.h"
 #include "../../src/application/library/LocalEpisodeReader.h"
+#include "../../src/application/media/IPersonalListMediaWriter.h"
 
 class FakeMediaReader final : public IMediaReader {
 public:
@@ -17,6 +18,20 @@ public:
         return failure.isEmpty();
     }
 
+};
+
+class FakePersonalListMediaWriter final : public IPersonalListMediaWriter {
+public:
+    bool updatePersonalListMedia(const Media &media, QString &error) override {
+        received = media;
+        ++calls;
+        error = failure;
+        return failure.isEmpty();
+    }
+
+    Media received;
+    QString failure;
+    int calls = 0;
 };
 
 class FakeLocalEpisodeReader final : public ILocalEpisodeReader {
@@ -106,6 +121,8 @@ private slots:
     void exposesControllerApprovedDeduplicatedMediaLinks();
     void fullMediaDetailsPanelProvidesSafeInteractiveDetails();
     void exposesConfigurableEditingOptions();
+    void persistsSelectedMediaEditsAndRefreshesBothModels();
+    void keepsModelsAndSelectionUnchangedWhenPersistingSelectedMediaFails();
     void selectedCoverFallsBackWhenCachedFileIsMissing();
     void updatesOnlyOneCoverRowAndPreservesOldCoverOnFailure();
     void coverQualityChangesFutureRequestsWithoutClearingDisplayedCover();
@@ -916,6 +933,78 @@ void HomeScreenControllerTests::exposesConfigurableEditingOptions() {
     QCOMPARE(controller.scoreMinimum(), 0.0);
     QCOMPARE(controller.scoreMaximum(), 100.0);
     QCOMPARE(controller.scoreStep(), 5.0);
+}
+
+void HomeScreenControllerTests::persistsSelectedMediaEditsAndRefreshesBothModels() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    media.ConsumedChapters = 5;
+    media.PersonalScore = 7;
+    reader.result = {media};
+    FakePersonalListMediaWriter writer;
+    HomeScreenController controller(reader);
+    controller.SetPersonalListMediaWriter(&writer);
+    controller.reload();
+    controller.SelectMedia(media.Id);
+
+    QVERIFY(controller.SaveSelectedMediaFromEditor(
+        12, QStringLiteral("completed"), 9.0, QStringLiteral("D:/Anime/Frieren.mkv"),
+        {QStringLiteral("Sousou no Frieren")}));
+
+    QCOMPARE(writer.calls, 1);
+    QCOMPARE(writer.received.Id, media.Id);
+    QCOMPARE(writer.received.ConsumedChapters, 12);
+    QCOMPARE(writer.received.PersonalScore, 9);
+    QCOMPARE(writer.received.ListStatus, UserListStatus::Completed);
+    QCOMPARE(writer.received.LocalPath, QStringLiteral("D:/Anime/Frieren.mkv"));
+    QCOMPARE(controller.selectedProgressValue(), 12);
+    QCOMPARE(controller.selectedScoreValue(), 9.0);
+    QCOMPARE(controller.selectedListStatusKey(), QStringLiteral("completed"));
+    QCOMPARE(controller.selectedListStatusLabel(), QStringLiteral("Concluídas"));
+    QCOMPARE(controller.selectedAlternativeNames(), QStringList({QStringLiteral("Sousou no Frieren")}));
+    QCOMPARE(controller.mediaModel()->rowCount(), 1);
+    QCOMPARE(controller.fullMediaModel()->rowCount(), 1);
+
+    controller.SetListFilter(QStringLiteral("current"));
+    QCOMPARE(controller.mediaModel()->rowCount(), 0);
+    QCOMPARE(controller.fullMediaModel()->rowCount(), 0);
+    controller.SetListFilter(QStringLiteral("completed"));
+    QCOMPARE(controller.mediaModel()->rowCount(), 1);
+    QCOMPARE(controller.fullMediaModel()->rowCount(), 1);
+}
+
+void HomeScreenControllerTests::keepsModelsAndSelectionUnchangedWhenPersistingSelectedMediaFails() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    media.ConsumedChapters = 5;
+    media.PersonalScore = 7;
+    reader.result = {media};
+    FakePersonalListMediaWriter writer;
+    writer.failure = QStringLiteral("disk unavailable");
+    HomeScreenController controller(reader);
+    controller.SetPersonalListMediaWriter(&writer);
+    controller.reload();
+    controller.SelectMedia(media.Id);
+
+    QVERIFY(!controller.SaveSelectedMediaFromEditor(
+        12, QStringLiteral("completed"), 9.0, QStringLiteral("D:/Anime/Frieren.mkv"), {}));
+
+    QCOMPARE(writer.calls, 1);
+    QCOMPARE(controller.selectedMediaId(), media.Id);
+    QCOMPARE(controller.selectedProgressValue(), 5);
+    QCOMPARE(controller.selectedScoreValue(), 7.0);
+    QCOMPARE(controller.selectedListStatusKey(), QStringLiteral("current"));
+    QCOMPARE(controller.mediaModel()->rowCount(), 1);
+    QCOMPARE(controller.fullMediaModel()->rowCount(), 1);
+    QCOMPARE(controller.errorMessage(), QStringLiteral("disk unavailable"));
 }
 
 void HomeScreenControllerTests::selectedCoverFallsBackWhenCachedFileIsMissing() {

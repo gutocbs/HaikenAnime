@@ -21,6 +21,7 @@ class TestSettingsController final : public QObject {
     Q_PROPERTY(QString scanStatusMessage READ scanStatusMessage CONSTANT)
     Q_PROPERTY(int scanCandidateCount READ scanCandidateCount CONSTANT)
     Q_PROPERTY(QString scanErrorMessage READ scanErrorMessage CONSTANT)
+    Q_PROPERTY(QStringList enabledUserLists READ enabledUserLists CONSTANT)
 
 public:
     QString errorMessage() const { return {}; }
@@ -38,6 +39,7 @@ public:
     QString scanStatusMessage() const { return {}; }
     int scanCandidateCount() const { return 0; }
     QString scanErrorMessage() const { return {}; }
+    QStringList enabledUserLists() const { return {QStringLiteral("current"), QStringLiteral("planning")}; }
 
     QString toggledExtension;
     bool toggledEnabled = true;
@@ -52,6 +54,8 @@ public:
         }
         emit changed();
     }
+
+    Q_INVOKABLE void SetUserListEnabled(const QString &, bool) {}
 
 signals:
     void changed();
@@ -69,12 +73,15 @@ private slots:
     void scanExtensionGridReachesAllBreakpointsAndPreservesInteractions();
     void browseControlsShowConfiguredLabelsAfterInitialization();
     void homeRestoresListFilterSelectionAfterReturningFromSettings();
+    void homeErrorDetailStaysWithSynchronizationStatus();
     void mediaCardAndSettingsUseControllerPreparedCardPresentation();
     void previewCardsUseControllerPreparedMetadataInBothGrids();
     void compactDetailsUseSeparatePreviewMetadata();
     void compactDetailsAreReadOnlyAndSelectable();
     void browseControlsClearFocusWithoutResettingCriteria();
     void completeLibraryStaysOpenOutsideExplicitCloseAction();
+    void externalLinksUseVisibleInteractiveButtonStates();
+    void completeLibraryAllowsDetailsAndEditorAboveItsOverlay();
     void coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads();
     void languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml();
     void preferredTitleSelectionUsesBackendOptions();
@@ -286,6 +293,24 @@ void QmlStructureTests::homeRestoresListFilterSelectionAfterReturningFromSetting
              "The complete-library filter must be synchronized when Home becomes visible again.");
 }
 
+void QmlStructureTests::homeErrorDetailStaysWithSynchronizationStatus() {
+    const QString source = qmlSource(QStringLiteral("Home.qml"));
+    QVERIFY(!source.isEmpty());
+
+    const qsizetype statusStart = source.indexOf(QStringLiteral("id: homeSynchronizationStatus"));
+    const qsizetype progressBarStart = source.indexOf(QStringLiteral("ProgressBar {"), statusStart);
+    QVERIFY(statusStart >= 0);
+    QVERIFY(progressBarStart > statusStart);
+
+    const QString statusBlock = source.mid(statusStart, progressBarStart - statusStart);
+    QVERIFY(statusBlock.contains(QStringLiteral("id: homeSynchronizationDetail")));
+    QVERIFY(statusBlock.contains(QStringLiteral("? controller.errorMessage")));
+    QVERIFY(statusBlock.contains(QStringLiteral("wrapMode: Text.Wrap")));
+
+    const QString lowerStatusArea = source.mid(progressBarStart);
+    QVERIFY(!lowerStatusArea.contains(QStringLiteral("text: controller.errorMessage")));
+}
+
 void QmlStructureTests::mediaCardAndSettingsUseControllerPreparedCardPresentation() {
     const QString cardSource = qmlSource(QStringLiteral("MediaCard.qml"));
     const QString settingsSource = qmlSource(QStringLiteral("SettingsScreen.qml"));
@@ -309,42 +334,32 @@ void QmlStructureTests::previewCardsUseControllerPreparedMetadataInBothGrids() {
     const QString source = qmlSource(QStringLiteral("Home.qml"));
     QVERIFY(!source.isEmpty());
 
-    QVERIFY(source.contains(QStringLiteral(
-        "const cardMetadata = controller.PreviewCardMetadata(progress, statusKey, score)")));
+    QVERIFY(source.contains(QStringLiteral("controller.SaveSelectedMediaFromEditor(progress, statusKey, score, path, names)")));
+    QVERIFY(source.contains(QStringLiteral("closeOnApply: false")));
+    QVERIFY(source.contains(QStringLiteral("editMediaPanel.close()")));
+    QVERIFY(!source.contains(QStringLiteral("previewEdits")));
+    QVERIFY(!source.contains(QStringLiteral("previewValue")));
     QVERIFY(!source.contains(QStringLiteral("function statusLabel(")));
     QVERIFY(!source.contains(QStringLiteral("progress + \"/\"")));
     QVERIFY(!source.contains(QStringLiteral("score === 0 ? \"—\"")));
-    QCOMPARE(source.count(QStringLiteral("status: home.previewValue(model.mediaId, \"cardStatusText\", model.statusLabel)")), 1);
-    QCOMPARE(source.count(QStringLiteral("progress: home.previewValue(model.mediaId, \"cardProgressText\", model.progress)")), 1);
-    QCOMPARE(source.count(QStringLiteral("score: home.previewValue(model.mediaId, \"cardScoreText\", model.score)")), 1);
+    QCOMPARE(source.count(QStringLiteral("status: model.statusLabel")), 2);
+    QCOMPARE(source.count(QStringLiteral("progress: model.progress")), 2);
+    QCOMPARE(source.count(QStringLiteral("score: model.score")), 2);
 }
 
 void QmlStructureTests::compactDetailsUseSeparatePreviewMetadata() {
     const QString source = qmlSource(QStringLiteral("Home.qml"));
     QVERIFY(!source.isEmpty());
 
-    QVERIFY(source.contains(QStringLiteral(
-        "const compactDetailMetadata = controller.PreviewCompactDetailMetadata(progress, statusKey, score)")));
-    QVERIFY(source.contains(QStringLiteral(
-        "status: home.previewValue(model.mediaId, \"cardStatusText\", model.statusLabel)")));
-    QVERIFY(source.contains(QStringLiteral(
-        "progress: home.previewValue(model.mediaId, \"cardProgressText\", model.progress)")));
-    QVERIFY(source.contains(QStringLiteral(
-        "score: home.previewValue(model.mediaId, \"cardScoreText\", model.score)")));
-    QVERIFY(source.contains(QStringLiteral(
-        "home.previewValue(controller.selectedMediaId, \"detailStatusText\",")));
-    QVERIFY(source.contains(QStringLiteral(
-        "home.previewValue(controller.selectedMediaId, \"detailProgressText\",")));
-    QVERIFY(source.contains(QStringLiteral(
-        "home.previewValue(controller.selectedMediaId, \"detailScoreText\",")));
+    QVERIFY(source.contains(QStringLiteral("text: controller.selectedListStatusLabel")));
+    QVERIFY(source.contains(QStringLiteral("text: controller.selectedProgress")));
+    QVERIFY(source.contains(QStringLiteral("text: controller.selectedScore")));
     QVERIFY2(source.contains(QStringLiteral("compactMetadata: true")),
              "The complete-library cards must explicitly use compact metadata presentation.");
-    QVERIFY2(source.contains(QStringLiteral(
-                 "progress: home.previewValue(model.mediaId, \"detailProgressText\", model.progress)")),
-             "Complete-library cards must receive the compact progress value without its label.");
-    QVERIFY2(source.contains(QStringLiteral(
-                 "score: home.previewValue(model.mediaId, \"detailScoreText\", model.score)")),
-             "Complete-library cards must receive the compact score value without its label.");
+    QVERIFY2(source.contains(QStringLiteral("progress: model.progress")),
+             "Complete-library cards must receive controller-backed progress.");
+    QVERIFY2(source.contains(QStringLiteral("score: model.score")),
+             "Complete-library cards must receive controller-backed score.");
 }
 
 void QmlStructureTests::compactDetailsAreReadOnlyAndSelectable() {
@@ -413,6 +428,41 @@ void QmlStructureTests::completeLibraryStaysOpenOutsideExplicitCloseAction() {
              "The complete library must retain an explicit close action.");
 }
 
+void QmlStructureTests::externalLinksUseVisibleInteractiveButtonStates() {
+    const QString source = qmlSource(QStringLiteral("MediaDetailsPanel.qml"));
+    QVERIFY(!source.isEmpty());
+
+    const qsizetype buttonStart = source.indexOf(QStringLiteral("id: externalLinkButton"));
+    QVERIFY(buttonStart >= 0);
+    const QString button = source.mid(buttonStart, source.indexOf(QStringLiteral("}\n                            }"), buttonStart));
+    QVERIFY(button.contains(QStringLiteral("background: Rectangle")));
+    QVERIFY(button.contains(QStringLiteral("externalLinkButton.hovered")));
+    QVERIFY(button.contains(QStringLiteral("externalLinkButton.down")));
+    QVERIFY(button.contains(QStringLiteral("externalLinkButton.activeFocus")));
+    QVERIFY(button.contains(QStringLiteral("border.color")));
+    QVERIFY(button.contains(QStringLiteral("Qt.openUrlExternally(modelData.url)")));
+}
+
+void QmlStructureTests::completeLibraryAllowsDetailsAndEditorAboveItsOverlay() {
+    const QString source = qmlSource(QStringLiteral("Home.qml"));
+    QVERIFY(!source.isEmpty());
+
+    const qsizetype detailsStart = source.indexOf(QStringLiteral("MediaDetailsPanel {"));
+    const qsizetype completeLibraryStart = source.indexOf(QStringLiteral("id: completeLibrary"));
+    QVERIFY(detailsStart >= 0);
+    QVERIFY(completeLibraryStart > detailsStart);
+    const QString details = source.mid(detailsStart, completeLibraryStart - detailsStart);
+    QVERIFY(details.contains(QStringLiteral("z: completeLibrary.z + 1")));
+
+    const qsizetype editorStart = source.indexOf(QStringLiteral("id: editMediaPanel"));
+    QVERIFY(editorStart >= 0);
+    const QString editor = source.mid(editorStart, detailsStart - editorStart);
+    QVERIFY(editor.contains(QStringLiteral("z: completeLibrary.z + 1")));
+    QCOMPARE(source.count(QStringLiteral("enabled: controller.hasSelection")), 2);
+    QVERIFY(source.contains(QStringLiteral("onClicked: mediaDetailsPanel.openForItem(detailsButton)")));
+    QVERIFY(source.contains(QStringLiteral("onClicked: home.openEditor()")));
+}
+
 void QmlStructureTests::languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml() {
     const QString settingsSource = qmlSource(QStringLiteral("SettingsScreen.qml"));
     QVERIFY(settingsSource.contains(QStringLiteral("model: controller.languageOptions")));
@@ -438,6 +488,8 @@ void QmlStructureTests::preferredTitleSelectionUsesBackendOptions() {
     QVERIFY(settingsSource.contains(QStringLiteral("controller.includeAdultContent")));
     QVERIFY(settingsSource.contains(QStringLiteral("controller.SetIncludeAdultContent")));
     QVERIFY(settingsSource.contains(QStringLiteral("INCLUIR CONTEÚDO ADULTO")));
+    QVERIFY(settingsSource.contains(QStringLiteral("controller.enabledUserLists")));
+    QVERIFY(settingsSource.contains(QStringLiteral("controller.SetUserListEnabled")));
 
     QFile mainFile(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/main.cpp"));
     QVERIFY2(mainFile.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(mainFile.errorString()));
@@ -644,8 +696,9 @@ void QmlStructureTests::settingsHeaderReservesMessageSpaceAfterSaveAction() {
                                                source.indexOf(QStringLiteral("text: qsTr(\"Salvar alterações\")"), saveButton)
                                                - saveButton);
     QVERIFY(!saveButtonBlock.contains(QStringLiteral("Layout.leftMargin")));
-    QVERIFY(source.contains(QStringLiteral("Basic.Button {\n                    id: settingsSaveButton")));
-    QVERIFY(source.contains(QStringLiteral("background: Rectangle")));
+    QVERIFY(source.contains(QStringLiteral("SettingsButton {\n                    id: settingsSaveButton")));
+    QVERIFY(source.contains(QStringLiteral("component SettingsButton: Basic.Button")));
+    QVERIFY(source.contains(QStringLiteral("settingsButton.hovered ? \"#3c6eaa\" : accent")));
     const qsizetype headerTitle = source.indexOf(QStringLiteral("id: settingsHeaderTitle"));
     const QString headerTitleBlock = source.mid(headerTitle, headerActions - headerTitle);
     QVERIFY(headerTitleBlock.contains(QStringLiteral("Layout.preferredWidth: 258")));

@@ -329,6 +329,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         queryConfiguration.readActiveMediaIdsPath,
         queryConfiguration.markMediaSourceRemovedPath,
         settings.syncTimeoutMs, settings.syncIntervalMs);
+    context.initialSync->configureEnabledUserLists(context.userPreferences.enabledUserLists);
     context.initialSync->setLogger(context.logger.get());
     const auto synchronizationDatabasePath = context.database->databasePath();
     const auto readTaskStatesQueryPath = queryConfiguration.readSyncTaskStatesPath;
@@ -350,12 +351,15 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
          upsertMediaPath = queryConfiguration.upsertMediaPath, readMediaPath = queryConfiguration.readMediaPath,
          readActiveMediaIdsPath = queryConfiguration.readActiveMediaIdsPath,
          markSourceRemovedPath = queryConfiguration.markMediaSourceRemovedPath, readTaskStatesQueryPath,
-         upsertTaskStateQueryPath, deleteTaskStateQueryPath, timeoutMs = settings.syncTimeoutMs] {
+         upsertTaskStateQueryPath, deleteTaskStateQueryPath,
+         readUserPreferencesPath = queryConfiguration.readUserPreferencesPath,
+         upsertUserPreferencesPath = queryConfiguration.upsertUserPreferencesPath,
+         timeoutMs = settings.syncTimeoutMs] {
             return std::make_unique<ApplicationSyncTaskExecutor>(
                 synchronizationDatabasePath, userListFixturePath, catalogFixturePath, upsertMediaPath,
                 readMediaPath, readActiveMediaIdsPath,
                 markSourceRemovedPath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
-                timeoutMs);
+                readUserPreferencesPath, upsertUserPreferencesPath, timeoutMs);
         }, backgroundSynchronizationPolicies(settings.syncTaskPolicies));
     context.seasonalNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
     context.seasonalGraphQlClient = std::make_unique<AniListGraphQlClient>(

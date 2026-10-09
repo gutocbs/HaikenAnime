@@ -26,6 +26,9 @@ struct UserPreferences final {
                                   QStringLiteral(".m4v"), QStringLiteral(".mov"),
                                   QStringLiteral(".wmv"), QStringLiteral(".ts")};
     bool automaticLocalFileRecognition = true;
+    QStringList enabledUserLists = {QStringLiteral("current"), QStringLiteral("planning"),
+                                    QStringLiteral("on_hold"), QStringLiteral("dropped"),
+                                    QStringLiteral("completed")};
 };
 
 inline bool operator==(const UserPreferences &left, const UserPreferences &right) {
@@ -42,7 +45,8 @@ inline bool operator==(const UserPreferences &left, const UserPreferences &right
         && left.includeAdultContent == right.includeAdultContent
         && left.libraryRoot == right.libraryRoot
         && left.scanExtensions == right.scanExtensions
-        && left.automaticLocalFileRecognition == right.automaticLocalFileRecognition;
+        && left.automaticLocalFileRecognition == right.automaticLocalFileRecognition
+        && left.enabledUserLists == right.enabledUserLists;
 }
 
 Q_DECLARE_METATYPE(UserPreferences)

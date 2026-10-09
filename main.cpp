@@ -99,6 +99,7 @@ int main(int argc, char *argv[]) {
     HomeScreenController homeController(context.mediaRepository.get(), context.coverCoordinator.get(),
                                         context.userPreferences.coverQuality, context.initializationError);
     homeController.SetLocalEpisodeServices(context.localEpisodeReader.get(), context.localFileOpener.get());
+    homeController.SetPersonalListMediaWriter(context.mediaRepository.get());
     SeasonalPersonalListService personalLists(context.mediaRepository.get(), context.mediaRepository.get(),
                                               context.mediaRepository.get());
     SeasonalCatalogController seasonalCatalogController(context.seasonalCatalogCoordinator.get(),
@@ -229,6 +230,7 @@ int main(int argc, char *argv[]) {
                                                       preferences.scoreMaximum,
                                                       preferences.scoreStep);
         if (context.initialSync) {
+            context.initialSync->configureEnabledUserLists(preferences.enabledUserLists);
             context.initialSync->configureAutomaticSynchronization(
                 false, preferences.synchronizationIntervalMs);
         }

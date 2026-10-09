@@ -16,6 +16,7 @@ private slots:
     void migrationCreatesPendingChangesTable();
     void pendingChangesTableStoresVersionColumns();
     void enablesForeignKeyEnforcement();
+    void configuresConcurrentAccessPragmas();
     void migrationFailureExposesDiagnostic();
     void migrationRequiresVersionToBeRecorded();
     void migrationCreatesCoverCacheVersionTwo();
@@ -165,6 +166,23 @@ void SqliteDatabaseTests::enablesForeignKeyEnforcement() {
         "(media_id, field, previous_value, new_value, created_at, local_updated_at, status) "
         "VALUES (999, 5, '{}', '{}', '2026-09-24T00:00:00Z', "
         "'2026-09-24T00:00:00Z', 0)")));
+}
+
+void SqliteDatabaseTests::configuresConcurrentAccessPragmas() {
+    QTemporaryDir temporaryDirectory;
+    QVERIFY(temporaryDirectory.isValid());
+
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+
+    QSqlQuery pragma(database.connection());
+    QVERIFY(pragma.exec(QStringLiteral("PRAGMA busy_timeout")));
+    QVERIFY(pragma.next());
+    QCOMPARE(pragma.value(0).toInt(), 10000);
+
+    QVERIFY(pragma.exec(QStringLiteral("PRAGMA journal_mode")));
+    QVERIFY(pragma.next());
+    QCOMPARE(pragma.value(0).toString().toLower(), QStringLiteral("wal"));
 }
 
 void SqliteDatabaseTests::migrationFailureExposesDiagnostic() {

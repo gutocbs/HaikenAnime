@@ -66,6 +66,21 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
     loaded.preferredTitleKey = NormalizePreferredTitleKey(storedPreferredTitleKey);
     loaded.includeAdultContent = query.value(12).toBool();
     loaded.automaticLocalFileRecognition = query.value(13).toBool();
+    if (!query.value(14).toString().isEmpty()) {
+        const auto lists = QJsonDocument::fromJson(query.value(14).toString().toUtf8(), &parseError);
+        if (parseError.error != QJsonParseError::NoError || !lists.isArray()) {
+            error = QStringLiteral("Stored enabled user lists must be a JSON array.");
+            return false;
+        }
+        loaded.enabledUserLists.clear();
+        for (const auto &list : lists.array()) {
+            if (!list.isString()) {
+                error = QStringLiteral("Stored enabled user lists must be strings.");
+                return false;
+            }
+            loaded.enabledUserLists.append(list.toString());
+        }
+    }
     if (!IsSupportedPreferredTitleKey(storedPreferredTitleKey)) {
         warning = QStringLiteral(
             "Stored preferred title key '%1' is unsupported; falling back to '%2'.")
@@ -114,6 +129,8 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
     query.bindValue(QStringLiteral(":preferred_title_key"), preferences.preferredTitleKey);
     query.bindValue(QStringLiteral(":include_adult_content"), preferences.includeAdultContent);
     query.bindValue(QStringLiteral(":automatic_local_file_recognition"), preferences.automaticLocalFileRecognition);
+    query.bindValue(QStringLiteral(":enabled_user_lists"), QString::fromUtf8(
+        QJsonDocument(QJsonArray::fromStringList(preferences.enabledUserLists)).toJson(QJsonDocument::Compact)));
     query.bindValue(QStringLiteral(":library_root"), preferences.libraryRoot);
     query.bindValue(QStringLiteral(":scan_extensions"), QString::fromUtf8(
         QJsonDocument(QJsonArray::fromStringList(NormalizeScanExtensions(preferences.scanExtensions, error)))

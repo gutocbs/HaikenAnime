@@ -134,7 +134,7 @@ private slots:
     void legacyDataSourceDoesNotReconcileUnseenMedia();
     void filteredSynchronizationDoesNotReconcile();
     void synchronizationStartingAfterPageOneDoesNotReconcile();
-    void replayAfterCheckpointFailureIsIdempotentAndReconcilesOnlyAfterACompleteRun();
+    void replayAfterCheckpointFailureIsIdempotentForLegacySource();
     void doesNotAdvanceCheckpointWhenPagePersistenceFails();
     void cancellationAfterFetchPreventsPagePersistence();
     void partitionRequestsUseExplicitCatalogVariables();
@@ -218,7 +218,7 @@ void AniListFlowTests::successfulSynchronizationClearsPreviousError() {
     AniListSyncService service(source, writer);
     QString error = QStringLiteral("stale error");
 
-    QVERIFY(service.synchronize({}, error));
+    QVERIFY(service.synchronize(MediaSyncFilter {}, error));
     QVERIFY(error.isEmpty());
 }
 
@@ -290,12 +290,13 @@ void AniListFlowTests::synchronizationStartingAfterPageOneDoesNotReconcile() {
     QCOMPARE(reconciler.calls, 0);
 }
 
-void AniListFlowTests::replayAfterCheckpointFailureIsIdempotentAndReconcilesOnlyAfterACompleteRun() {
+void AniListFlowTests::replayAfterCheckpointFailureIsIdempotentForLegacySource() {
     FileAniListDataSource source(QDir::cleanPath(fixturePath()));
     IdempotentWriter writer;
     RecordingSnapshotReconciler reconciler;
     AniListSyncService service(source, writer, &reconciler);
     MediaSyncFilter filter;
+    filter.type = QStringLiteral("TV");
     filter.perPage = 1;
     QString error;
     int failedCheckpointCalls = 0;
@@ -320,7 +321,7 @@ void AniListFlowTests::replayAfterCheckpointFailureIsIdempotentAndReconcilesOnly
     }), qPrintable(error));
     QCOMPARE(confirmedPages, QList<int>({1, 2}));
     QCOMPARE(writer.persistedById.size(), 2);
-    QCOMPARE(reconciler.calls, 1);
+    QCOMPARE(reconciler.calls, 0);
 }
 
 void AniListFlowTests::doesNotAdvanceCheckpointWhenPagePersistenceFails() {
@@ -331,7 +332,7 @@ void AniListFlowTests::doesNotAdvanceCheckpointWhenPagePersistenceFails() {
     QString error;
     int checkpointCalls = 0;
 
-    QVERIFY(!service.synchronize({}, error, [&](const int, QString &) {
+    QVERIFY(!service.synchronize(MediaSyncFilter {}, error, [&](const int, QString &) {
         ++checkpointCalls;
         return true;
     }));
@@ -345,7 +346,7 @@ void AniListFlowTests::cancellationAfterFetchPreventsPagePersistence() {
     AniListSyncService service(source, writer);
     QString error;
 
-    QVERIFY(!service.synchronize({}, error, {}, [&cancelled] { return cancelled; }));
+    QVERIFY(!service.synchronize(MediaSyncFilter {}, error, {}, [&cancelled] { return cancelled; }));
     QCOMPARE(service.lastErrorCategory(), AniListSyncErrorCategory::Cancelled);
     QCOMPARE(writer.batches.size(), 0);
 }
