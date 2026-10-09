@@ -317,12 +317,14 @@ Item {
                             text: qsTr("Ver detalhes")
                             flat: true
                             visible: controller.hasSelection
+                            enabled: controller.hasSelection
                             onClicked: mediaDetailsPanel.openForItem(detailsButton)
                         }
                         Button {
                             text: qsTr("Editar")
                             flat: true
                             visible: controller.hasSelection
+                            enabled: controller.hasSelection
                             onClicked: home.openEditor()
                         }
                     }
@@ -628,6 +630,7 @@ Item {
 
     EditMediaPanel {
         id: editMediaPanel
+        z: completeLibrary.z + 1
         controller: home.controller
         listOptions: home.controller.availableListOptions
         closeOnApply: false
@@ -657,6 +660,7 @@ Item {
 
     MediaDetailsPanel {
         id: mediaDetailsPanel
+        z: completeLibrary.z + 1
         controller: home.controller
         ink: home.ink
         muted: home.muted
@@ -668,6 +672,7 @@ Item {
 
     Popup {
         id: completeLibrary
+        z: 1
         parent: Overlay.overlay
         x: 0
         y: 0

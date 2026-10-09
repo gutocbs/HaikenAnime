@@ -79,6 +79,8 @@ private slots:
     void compactDetailsAreReadOnlyAndSelectable();
     void browseControlsClearFocusWithoutResettingCriteria();
     void completeLibraryStaysOpenOutsideExplicitCloseAction();
+    void externalLinksUseVisibleInteractiveButtonStates();
+    void completeLibraryAllowsDetailsAndEditorAboveItsOverlay();
     void coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads();
     void languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml();
     void preferredTitleSelectionUsesBackendOptions();
@@ -404,6 +406,41 @@ void QmlStructureTests::completeLibraryStaysOpenOutsideExplicitCloseAction() {
              "The complete library must not close from outside clicks.");
     QVERIFY2(source.contains(QStringLiteral("onClicked: completeLibrary.close()")),
              "The complete library must retain an explicit close action.");
+}
+
+void QmlStructureTests::externalLinksUseVisibleInteractiveButtonStates() {
+    const QString source = qmlSource(QStringLiteral("MediaDetailsPanel.qml"));
+    QVERIFY(!source.isEmpty());
+
+    const qsizetype buttonStart = source.indexOf(QStringLiteral("id: externalLinkButton"));
+    QVERIFY(buttonStart >= 0);
+    const QString button = source.mid(buttonStart, source.indexOf(QStringLiteral("}\n                            }"), buttonStart));
+    QVERIFY(button.contains(QStringLiteral("background: Rectangle")));
+    QVERIFY(button.contains(QStringLiteral("externalLinkButton.hovered")));
+    QVERIFY(button.contains(QStringLiteral("externalLinkButton.down")));
+    QVERIFY(button.contains(QStringLiteral("externalLinkButton.activeFocus")));
+    QVERIFY(button.contains(QStringLiteral("border.color")));
+    QVERIFY(button.contains(QStringLiteral("Qt.openUrlExternally(modelData.url)")));
+}
+
+void QmlStructureTests::completeLibraryAllowsDetailsAndEditorAboveItsOverlay() {
+    const QString source = qmlSource(QStringLiteral("Home.qml"));
+    QVERIFY(!source.isEmpty());
+
+    const qsizetype detailsStart = source.indexOf(QStringLiteral("MediaDetailsPanel {"));
+    const qsizetype completeLibraryStart = source.indexOf(QStringLiteral("id: completeLibrary"));
+    QVERIFY(detailsStart >= 0);
+    QVERIFY(completeLibraryStart > detailsStart);
+    const QString details = source.mid(detailsStart, completeLibraryStart - detailsStart);
+    QVERIFY(details.contains(QStringLiteral("z: completeLibrary.z + 1")));
+
+    const qsizetype editorStart = source.indexOf(QStringLiteral("id: editMediaPanel"));
+    QVERIFY(editorStart >= 0);
+    const QString editor = source.mid(editorStart, detailsStart - editorStart);
+    QVERIFY(editor.contains(QStringLiteral("z: completeLibrary.z + 1")));
+    QCOMPARE(source.count(QStringLiteral("enabled: controller.hasSelection")), 2);
+    QVERIFY(source.contains(QStringLiteral("onClicked: mediaDetailsPanel.openForItem(detailsButton)")));
+    QVERIFY(source.contains(QStringLiteral("onClicked: home.openEditor()")));
 }
 
 void QmlStructureTests::languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml() {

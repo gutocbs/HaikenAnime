@@ -237,10 +237,36 @@ Popup {
                                 delegate: Button {
                                     id: externalLinkButton
                                     required property var modelData
+                                    readonly property color serviceColor: {
+                                        const site = (modelData.site || "").toLowerCase()
+                                        if (site.indexOf("crunchyroll") >= 0) return "#f47521"
+                                        if (site.indexOf("netflix") >= 0) return "#b20710"
+                                        if (site.indexOf("amazon") >= 0) return "#00a8e1"
+                                        if (site.indexOf("anilist") >= 0) return "#02a9ff"
+                                        return panel.accent
+                                    }
                                     Layout.fillWidth: true
                                     text: modelData.site
-                                    flat: true
+                                    hoverEnabled: true
                                     Accessible.name: qsTr("Abrir %1").arg(modelData.site)
+                                    background: Rectangle {
+                                        radius: 5
+                                        color: externalLinkButton.down
+                                               ? Qt.darker(externalLinkButton.serviceColor, 1.2)
+                                               : externalLinkButton.hovered
+                                                 ? Qt.lighter(externalLinkButton.serviceColor, 1.08)
+                                                 : externalLinkButton.serviceColor
+                                        border.color: Qt.darker(externalLinkButton.serviceColor, 1.35)
+                                        border.width: externalLinkButton.activeFocus ? 2 : 1
+                                    }
+                                    contentItem: Text {
+                                        text: externalLinkButton.text
+                                        color: "#ffffff"
+                                        font: externalLinkButton.font
+                                        horizontalAlignment: Text.AlignHCenter
+                                        verticalAlignment: Text.AlignVCenter
+                                        elide: Text.ElideRight
+                                    }
                                     onClicked: Qt.openUrlExternally(modelData.url)
                                 }
                             }
