@@ -175,6 +175,10 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/anilist/AniListUpdateWorker.cpp
         src/application/anilist/AniListAuthManager.h
         src/application/anilist/AniListAuthManager.cpp
+        src/application/anilist/AniListOAuthConfig.h
+        src/application/anilist/AniListOAuthCallbackParser.h
+        src/application/anilist/AniListOAuthCallbackParser.cpp
+        src/application/anilist/IAniListViewerClient.h
         src/infrastructure/database/SqliteDatabase.h
         src/infrastructure/database/SqliteDatabase.cpp
         src/infrastructure/database/SqliteMediaRepository.h
@@ -213,10 +217,16 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/covers/QtCoverDownloader.cpp
         src/infrastructure/secrets/FileSecretStore.h
         src/infrastructure/secrets/FileSecretStore.cpp
+        src/infrastructure/secrets/WindowsCredentialStore.h
+        src/infrastructure/secrets/WindowsCredentialStore.cpp
         src/infrastructure/anilist/HttpFactory.h
         src/infrastructure/anilist/HttpFactory.cpp
         src/infrastructure/anilist/AniListGraphQlClient.h
         src/infrastructure/anilist/AniListGraphQlClient.cpp
+        src/infrastructure/anilist/AniListViewerClient.h
+        src/infrastructure/anilist/AniListViewerClient.cpp
+        src/infrastructure/anilist/WindowsAniListOAuthLauncher.h
+        src/infrastructure/anilist/WindowsAniListOAuthLauncher.cpp
         src/infrastructure/anilist/GraphQlQueryStore.h
         src/infrastructure/anilist/GraphQlQueryStore.cpp
         src/infrastructure/anilist/FileAniListDataSource.h
@@ -375,10 +385,11 @@ qt_add_resources(HaikenAnime fixture_resource_bundle
 
 set_source_files_properties(
         resources/anilist/queries/seasonal-catalog.graphql
+        resources/anilist/queries/viewer.graphql
         PROPERTIES QT_RESOURCE_ALIAS "seasonal-catalog.graphql")
 qt_add_resources(HaikenAnime anilist_query_resource_bundle
         PREFIX "/anilist/queries"
-        FILES resources/anilist/queries/seasonal-catalog.graphql)
+        FILES resources/anilist/queries/seasonal-catalog.graphql resources/anilist/queries/viewer.graphql)
 
 qt_add_qml_module(HaikenAnime
         URI HaikenAnime
@@ -407,6 +418,9 @@ target_link_libraries(HaikenAnime
         Qt6::QuickControls2
         Qt6::Sql
 )
+if (WIN32)
+    target_link_libraries(HaikenAnime PRIVATE Advapi32)
+endif()
 
 set(HAIKENANIME_TS_FILES
         translations/HaikenAnime_pt_BR.ts
@@ -658,6 +672,16 @@ target_link_libraries(FileSecretStoreTests
 
 add_test(NAME FileSecretStoreTests COMMAND FileSecretStoreTests)
 
+if (WIN32)
+    add_executable(WindowsCredentialStoreTests
+            tests/unit/WindowsCredentialStoreTests.cpp
+            src/infrastructure/secrets/WindowsCredentialStore.h
+            src/infrastructure/secrets/WindowsCredentialStore.cpp
+    )
+    target_link_libraries(WindowsCredentialStoreTests PRIVATE Qt6::Core Qt6::Test Advapi32)
+    add_test(NAME WindowsCredentialStoreTests COMMAND WindowsCredentialStoreTests)
+endif()
+
 add_executable(JsonSettingsReaderTests
         tests/unit/JsonSettingsReaderTests.cpp
         src/infrastructure/configuration/JsonSettingsReader.h
@@ -772,6 +796,9 @@ add_executable(AniListAuthManagerTests
         tests/unit/AniListAuthManagerTests.cpp
         src/application/anilist/AniListAuthManager.h
         src/application/anilist/AniListAuthManager.cpp
+        src/application/anilist/AniListOAuthConfig.h
+        src/application/anilist/AniListOAuthCallbackParser.h
+        src/application/anilist/AniListOAuthCallbackParser.cpp
 )
 
 target_link_libraries(AniListAuthManagerTests
@@ -781,6 +808,23 @@ target_link_libraries(AniListAuthManagerTests
 )
 
 add_test(NAME AniListAuthManagerTests COMMAND AniListAuthManagerTests)
+
+add_executable(AniListOAuthCallbackParserTests
+        tests/unit/AniListOAuthCallbackParserTests.cpp
+        src/application/anilist/AniListOAuthConfig.h
+        src/application/anilist/AniListOAuthCallbackParser.h
+        src/application/anilist/AniListOAuthCallbackParser.cpp
+)
+target_link_libraries(AniListOAuthCallbackParserTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME AniListOAuthCallbackParserTests COMMAND AniListOAuthCallbackParserTests)
+
+add_executable(WindowsAniListOAuthLauncherTests
+        tests/unit/WindowsAniListOAuthLauncherTests.cpp
+        src/infrastructure/anilist/WindowsAniListOAuthLauncher.h
+        src/infrastructure/anilist/WindowsAniListOAuthLauncher.cpp
+)
+target_link_libraries(WindowsAniListOAuthLauncherTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+add_test(NAME WindowsAniListOAuthLauncherTests COMMAND WindowsAniListOAuthLauncherTests)
 
 add_executable(AniListFlowTests
         tests/unit/AniListFlowTests.cpp
@@ -1273,6 +1317,8 @@ set(HAIKENANIME_TESTS
         ClearLocalCacheUseCaseTests
         QtCoverDownloaderTests
         AniListAuthManagerTests
+        AniListOAuthCallbackParserTests
+        WindowsAniListOAuthLauncherTests
         AniListFlowTests
         AniListGraphQlParsingTests
         AniListGraphQlUserListParserTests
@@ -1296,6 +1342,9 @@ set(HAIKENANIME_TESTS
         LocalLibraryScanCompositionTests
         LocalLibraryRecognitionCompositionTests
 )
+if (WIN32)
+    list(APPEND HAIKENANIME_TESTS WindowsCredentialStoreTests)
+endif()
 get_filename_component(MINGW_RUNTIME_DIRECTORY "${CMAKE_CXX_COMPILER}" DIRECTORY)
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}"

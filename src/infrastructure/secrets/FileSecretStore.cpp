@@ -44,6 +44,10 @@ bool FileSecretStore::loadAniListCredentials(AniListCredentials &credentials, QS
         } else if (key == QStringLiteral("token")) {
             credentials.token = value;
             hasToken = true;
+        } else if (key == QStringLiteral("userId")) {
+            credentials.userId = value.toLongLong();
+        } else if (key == QStringLiteral("expiresAtUnixSeconds")) {
+            credentials.expiresAtUnixSeconds = value.toLongLong();
         }
     }
 
@@ -82,6 +86,8 @@ bool FileSecretStore::saveAniListCredentials(const AniListCredentials &credentia
     QTextStream stream(&file);
     stream << "username=" << credentials.username << '\n';
     stream << "token=" << credentials.token << '\n';
+    stream << "userId=" << credentials.userId << '\n';
+    stream << "expiresAtUnixSeconds=" << credentials.expiresAtUnixSeconds << '\n';
     stream.flush();
 
     if (!file.commit()) {
@@ -89,6 +95,19 @@ bool FileSecretStore::saveAniListCredentials(const AniListCredentials &credentia
         return false;
     }
 
+    return true;
+}
+
+bool FileSecretStore::clearAniListCredentials(QString &error) {
+    error.clear();
+    QFile file(filePath_);
+    if (!file.exists()) {
+        return true;
+    }
+    if (!file.remove()) {
+        error = QStringLiteral("Could not remove AniList secrets file: %1").arg(file.errorString());
+        return false;
+    }
     return true;
 }
 
