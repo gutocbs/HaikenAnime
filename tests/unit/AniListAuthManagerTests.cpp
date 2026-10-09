@@ -21,6 +21,13 @@ public:
         return true;
     }
 
+    bool clearAniListCredentials(QString &error) override {
+        error.clear();
+        storedCredentials = {};
+        available = false;
+        return true;
+    }
+
     AniListCredentials storedCredentials;
     bool available = false;
 };
@@ -32,6 +39,8 @@ private slots:
     void loadsCredentialsFromStore();
     void doesNotReplaceCacheWhenLoadFails();
     void savesCredentialsThroughStore();
+    void savesAndLoadsSessionIdentity();
+    void clearsStoredCredentialsAndCache();
 };
 
 void AniListAuthManagerTests::loadsCredentialsFromStore() {
@@ -68,6 +77,35 @@ void AniListAuthManagerTests::savesCredentialsThroughStore() {
     QVERIFY(manager.save(expected, error));
     QCOMPARE(store.storedCredentials.username, expected.username);
     QCOMPARE(store.storedCredentials.token, expected.token);
+}
+
+void AniListAuthManagerTests::savesAndLoadsSessionIdentity() {
+    InMemorySecretStore store;
+    AniListAuthManager manager(store);
+    QString error;
+    AniListCredentials expected;
+    expected.username = QStringLiteral("user");
+    expected.token = QStringLiteral("token");
+    expected.userId = 42;
+    expected.expiresAtUnixSeconds = 1'800'000'000;
+
+    QVERIFY(manager.save(expected, error));
+    QVERIFY(manager.load(error));
+    QCOMPARE(manager.credentials().userId, 42);
+    QCOMPARE(manager.credentials().expiresAtUnixSeconds, qint64(1'800'000'000));
+}
+
+void AniListAuthManagerTests::clearsStoredCredentialsAndCache() {
+    InMemorySecretStore store;
+    AniListAuthManager manager(store);
+    QString error;
+    const AniListCredentials credentials{QStringLiteral("user"), QStringLiteral("token"), 42,
+                                          1'800'000'000};
+
+    QVERIFY(manager.save(credentials, error));
+    QVERIFY(manager.clear(error));
+    QVERIFY(manager.credentials().token.isEmpty());
+    QVERIFY(!store.available);
 }
 
 QTEST_MAIN(AniListAuthManagerTests)

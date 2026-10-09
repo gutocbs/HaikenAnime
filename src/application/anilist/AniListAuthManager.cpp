@@ -25,6 +25,16 @@ bool AniListAuthManager::save(const AniListCredentials &credentials, QString &er
     return true;
 }
 
+bool AniListAuthManager::clear(QString &error) {
+    error.clear();
+    if (!secretStore_.clearAniListCredentials(error)) {
+        return false;
+    }
+
+    credentials_ = {};
+    return true;
+}
+
 AniListCredentials AniListAuthManager::credentials() const {
     return credentials_;
 }

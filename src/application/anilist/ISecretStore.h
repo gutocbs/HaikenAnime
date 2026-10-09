@@ -20,6 +20,9 @@ public:
     /** Stores the AniList credentials and clears error on success. */
     virtual bool saveAniListCredentials(const AniListCredentials &credentials,
                                         QString &error) = 0;
+
+    /** Removes the stored AniList session and clears error on success. */
+    virtual bool clearAniListCredentials(QString &error) = 0;
 };
 
 #endif // HAIKENANIME_ISECRETSTORE_H

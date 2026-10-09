@@ -19,6 +19,8 @@ public:
     bool saveAniListCredentials(const AniListCredentials &credentials,
                                 QString &error) override;
 
+    bool clearAniListCredentials(QString &error) override;
+
     /** Returns the path used by this store. */
     [[nodiscard]] QString filePath() const;
 

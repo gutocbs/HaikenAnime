@@ -213,6 +213,8 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/covers/QtCoverDownloader.cpp
         src/infrastructure/secrets/FileSecretStore.h
         src/infrastructure/secrets/FileSecretStore.cpp
+        src/infrastructure/secrets/WindowsCredentialStore.h
+        src/infrastructure/secrets/WindowsCredentialStore.cpp
         src/infrastructure/anilist/HttpFactory.h
         src/infrastructure/anilist/HttpFactory.cpp
         src/infrastructure/anilist/AniListGraphQlClient.h
@@ -407,6 +409,9 @@ target_link_libraries(HaikenAnime
         Qt6::QuickControls2
         Qt6::Sql
 )
+if (WIN32)
+    target_link_libraries(HaikenAnime PRIVATE Advapi32)
+endif()
 
 set(HAIKENANIME_TS_FILES
         translations/HaikenAnime_pt_BR.ts
@@ -657,6 +662,16 @@ target_link_libraries(FileSecretStoreTests
 )
 
 add_test(NAME FileSecretStoreTests COMMAND FileSecretStoreTests)
+
+if (WIN32)
+    add_executable(WindowsCredentialStoreTests
+            tests/unit/WindowsCredentialStoreTests.cpp
+            src/infrastructure/secrets/WindowsCredentialStore.h
+            src/infrastructure/secrets/WindowsCredentialStore.cpp
+    )
+    target_link_libraries(WindowsCredentialStoreTests PRIVATE Qt6::Core Qt6::Test Advapi32)
+    add_test(NAME WindowsCredentialStoreTests COMMAND WindowsCredentialStoreTests)
+endif()
 
 add_executable(JsonSettingsReaderTests
         tests/unit/JsonSettingsReaderTests.cpp
@@ -1296,6 +1311,9 @@ set(HAIKENANIME_TESTS
         LocalLibraryScanCompositionTests
         LocalLibraryRecognitionCompositionTests
 )
+if (WIN32)
+    list(APPEND HAIKENANIME_TESTS WindowsCredentialStoreTests)
+endif()
 get_filename_component(MINGW_RUNTIME_DIRECTORY "${CMAKE_CXX_COMPILER}" DIRECTORY)
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}"

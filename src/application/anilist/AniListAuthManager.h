@@ -16,6 +16,9 @@ public:
     /** Saves credentials through the configured store and updates the in-memory cache. */
     [[nodiscard]] bool save(const AniListCredentials &credentials, QString &error);
 
+    /** Removes persisted credentials and clears the in-memory cache. */
+    [[nodiscard]] bool clear(QString &error);
+
     /** Returns the last successfully loaded or saved credentials. */
     [[nodiscard]] AniListCredentials credentials() const override;
 
