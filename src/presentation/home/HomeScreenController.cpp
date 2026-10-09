@@ -3,11 +3,13 @@
 #include "../../application/library/ILocalFileOpener.h"
 #include "../../application/library/LocalEpisodeReader.h"
 #include "../../application/media/MediaDetailsPresentation.h"
+#include "../../application/media/IPersonalListMediaWriter.h"
 
 #include <QCoreApplication>
 #include <QVariant>
 #include <QUrl>
 #include <QVariantMap>
+#include <QtMath>
 
 #include <algorithm>
 #include <utility>
@@ -410,6 +412,9 @@ double HomeScreenController::selectedScoreValue() const { return hasSelection_ ?
 QString HomeScreenController::selectedListStatusKey() const {
     return hasSelection_ ? userListStatusKey(selectedMedia_.ListStatus) : QString();
 }
+QString HomeScreenController::selectedListStatusLabel() const {
+    return hasSelection_ ? optionLabel(listOptions_, selectedListStatusKey(), selectedStatusLabel()) : QString();
+}
 QStringList HomeScreenController::selectedAlternativeNames() const {
     return hasSelection_ ? selectedMedia_.AlternativeNames : QStringList{};
 }
@@ -460,11 +465,15 @@ void HomeScreenController::ConfigurePreferredTitle(QString key) {
 }
 
 void HomeScreenController::SetLocalEpisodeServices(ILocalEpisodeReader *episodeReader,
-                                                    ILocalFileOpener *fileOpener) {
+                                                   ILocalFileOpener *fileOpener) {
     episodeReader_ = episodeReader;
     fileOpener_ = fileOpener;
     refreshNextLocalEpisode();
     emit selectionChanged();
+}
+
+void HomeScreenController::SetPersonalListMediaWriter(IPersonalListMediaWriter *personalListWriter) {
+    personalListWriter_ = personalListWriter;
 }
 
 void HomeScreenController::RefreshLocalEpisode() {
@@ -609,6 +618,57 @@ void HomeScreenController::WatchNext() {
             ? QStringLiteral("Não foi possível abrir o episódio local.") : error;
     }
     emit selectionChanged();
+}
+
+bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const QString &statusKey,
+                                                        const double score, const QString &path,
+                                                        const QStringList &alternativeNames) {
+    const auto setSaveError = [this](QString error) {
+        if (error.isEmpty()) error = QStringLiteral("Não foi possível salvar as alterações da mídia.");
+        if (errorMessage_ != error) {
+            errorMessage_ = std::move(error);
+            emit errorMessageChanged();
+        }
+        return false;
+    };
+    if (!hasSelection_ || personalListWriter_ == nullptr) {
+        return setSaveError(QStringLiteral("A lista local não está disponível."));
+    }
+    const auto status = userListStatusFromKey(statusKey);
+    if (status == UserListStatus::Unknown) {
+        return setSaveError(QStringLiteral("Selecione uma lista antes de salvar."));
+    }
+    const auto current = std::find_if(allMedia_.cbegin(), allMedia_.cend(), [this](const Media &media) {
+        return media.Id == selectedMedia_.Id;
+    });
+    if (current == allMedia_.cend()) {
+        return setSaveError(QStringLiteral("A mídia selecionada não está disponível."));
+    }
+
+    Media updated = *current;
+    updated.ConsumedChapters = qMax(0, progress);
+    updated.PersonalScore = qRound(score);
+    updated.ListStatus = status;
+    updated.LocalPath = path.trimmed();
+    updated.AlternativeNames = alternativeNames;
+    QString error;
+    if (!personalListWriter_->updatePersonalListMedia(updated, error)) return setSaveError(std::move(error));
+
+    const auto destination = std::find_if(allMedia_.begin(), allMedia_.end(), [id = updated.Id](const Media &media) {
+        return media.Id == id;
+    });
+    *destination = updated;
+    selectedMedia_ = updated;
+    if (!errorMessage_.isEmpty()) {
+        errorMessage_.clear();
+        emit errorMessageChanged();
+    }
+    rebuildMediaModels();
+    if (hasSelection_) {
+        refreshNextLocalEpisode();
+        emit selectionChanged();
+    }
+    return true;
 }
 
 QVariantMap HomeScreenController::PreviewCardMetadata(const int progress,

@@ -312,42 +312,32 @@ void QmlStructureTests::previewCardsUseControllerPreparedMetadataInBothGrids() {
     const QString source = qmlSource(QStringLiteral("Home.qml"));
     QVERIFY(!source.isEmpty());
 
-    QVERIFY(source.contains(QStringLiteral(
-        "const cardMetadata = controller.PreviewCardMetadata(progress, statusKey, score)")));
+    QVERIFY(source.contains(QStringLiteral("controller.SaveSelectedMediaFromEditor(progress, statusKey, score, path, names)")));
+    QVERIFY(source.contains(QStringLiteral("closeOnApply: false")));
+    QVERIFY(source.contains(QStringLiteral("editMediaPanel.close()")));
+    QVERIFY(!source.contains(QStringLiteral("previewEdits")));
+    QVERIFY(!source.contains(QStringLiteral("previewValue")));
     QVERIFY(!source.contains(QStringLiteral("function statusLabel(")));
     QVERIFY(!source.contains(QStringLiteral("progress + \"/\"")));
     QVERIFY(!source.contains(QStringLiteral("score === 0 ? \"—\"")));
-    QCOMPARE(source.count(QStringLiteral("status: home.previewValue(model.mediaId, \"cardStatusText\", model.statusLabel)")), 1);
-    QCOMPARE(source.count(QStringLiteral("progress: home.previewValue(model.mediaId, \"cardProgressText\", model.progress)")), 1);
-    QCOMPARE(source.count(QStringLiteral("score: home.previewValue(model.mediaId, \"cardScoreText\", model.score)")), 1);
+    QCOMPARE(source.count(QStringLiteral("status: model.statusLabel")), 2);
+    QCOMPARE(source.count(QStringLiteral("progress: model.progress")), 2);
+    QCOMPARE(source.count(QStringLiteral("score: model.score")), 2);
 }
 
 void QmlStructureTests::compactDetailsUseSeparatePreviewMetadata() {
     const QString source = qmlSource(QStringLiteral("Home.qml"));
     QVERIFY(!source.isEmpty());
 
-    QVERIFY(source.contains(QStringLiteral(
-        "const compactDetailMetadata = controller.PreviewCompactDetailMetadata(progress, statusKey, score)")));
-    QVERIFY(source.contains(QStringLiteral(
-        "status: home.previewValue(model.mediaId, \"cardStatusText\", model.statusLabel)")));
-    QVERIFY(source.contains(QStringLiteral(
-        "progress: home.previewValue(model.mediaId, \"cardProgressText\", model.progress)")));
-    QVERIFY(source.contains(QStringLiteral(
-        "score: home.previewValue(model.mediaId, \"cardScoreText\", model.score)")));
-    QVERIFY(source.contains(QStringLiteral(
-        "home.previewValue(controller.selectedMediaId, \"detailStatusText\",")));
-    QVERIFY(source.contains(QStringLiteral(
-        "home.previewValue(controller.selectedMediaId, \"detailProgressText\",")));
-    QVERIFY(source.contains(QStringLiteral(
-        "home.previewValue(controller.selectedMediaId, \"detailScoreText\",")));
+    QVERIFY(source.contains(QStringLiteral("text: controller.selectedListStatusLabel")));
+    QVERIFY(source.contains(QStringLiteral("text: controller.selectedProgress")));
+    QVERIFY(source.contains(QStringLiteral("text: controller.selectedScore")));
     QVERIFY2(source.contains(QStringLiteral("compactMetadata: true")),
              "The complete-library cards must explicitly use compact metadata presentation.");
-    QVERIFY2(source.contains(QStringLiteral(
-                 "progress: home.previewValue(model.mediaId, \"detailProgressText\", model.progress)")),
-             "Complete-library cards must receive the compact progress value without its label.");
-    QVERIFY2(source.contains(QStringLiteral(
-                 "score: home.previewValue(model.mediaId, \"detailScoreText\", model.score)")),
-             "Complete-library cards must receive the compact score value without its label.");
+    QVERIFY2(source.contains(QStringLiteral("progress: model.progress")),
+             "Complete-library cards must receive controller-backed progress.");
+    QVERIFY2(source.contains(QStringLiteral("score: model.score")),
+             "Complete-library cards must receive controller-backed score.");
 }
 
 void QmlStructureTests::compactDetailsAreReadOnlyAndSelectable() {

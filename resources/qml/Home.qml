@@ -24,15 +24,9 @@ Item {
     readonly property color surfaceSoft: "#f6f8fb"
     readonly property color accent: "#315d91"
     readonly property color accentSoft: "#e2ebf6"
-    property var previewEdits: ({})
     readonly property bool hasLocalLibraryMessage: controller.hasSelection
                                                   && (controller.localLibraryStatusMessage.length > 0
                                                       || controller.localLibraryErrorMessage.length > 0)
-
-    function previewValue(mediaId, key, fallback) {
-        const edit = previewEdits[mediaId]
-        return edit && edit[key] !== undefined ? edit[key] : fallback
-    }
 
     function clearBrowseControlFocus() {
         previewBrowseControls.clearControlFocus()
@@ -45,36 +39,14 @@ Item {
         onTapped: home.clearBrowseControlFocus()
     }
 
-    function applyPreviewEdit(mediaId, progress, statusKey, score, path, alternativeNames) {
-        const next = Object.assign({}, previewEdits)
-        const cardMetadata = controller.PreviewCardMetadata(progress, statusKey, score)
-        const compactDetailMetadata = controller.PreviewCompactDetailMetadata(progress, statusKey, score)
-        next[mediaId] = {
-            progress: progress,
-            cardProgressText: cardMetadata.progress,
-            detailProgressText: compactDetailMetadata.progress,
-            statusKey: statusKey,
-            cardStatusText: cardMetadata.status,
-            detailStatusText: compactDetailMetadata.status,
-            score: score,
-            cardScoreText: cardMetadata.score,
-            detailScoreText: compactDetailMetadata.score,
-            path: path,
-            alternativeNames: alternativeNames
-        }
-        previewEdits = next
-    }
-
     function openEditor() {
-        const mediaId = controller.selectedMediaId
-        const edit = previewEdits[mediaId]
         editMediaPanel.openForMedia(
-                    mediaId,
-                    edit ? edit.progress : controller.selectedProgressValue,
-                    edit ? edit.statusKey : controller.selectedListStatusKey,
-                    edit ? edit.score : controller.selectedScoreValue,
-                    edit ? edit.path : "",
-                    edit ? edit.alternativeNames : controller.selectedAlternativeNames.join("; "))
+                    controller.selectedMediaId,
+                    controller.selectedProgressValue,
+                    controller.selectedListStatusKey,
+                    controller.selectedScoreValue,
+                    "",
+                    controller.selectedAlternativeNames.join("; "))
     }
 
     Rectangle {
@@ -266,9 +238,9 @@ Item {
                             mediaId: model.mediaId
                             coverSource: model.coverSource
                             title: model.title
-                            status: home.previewValue(model.mediaId, "cardStatusText", model.statusLabel)
-                            progress: home.previewValue(model.mediaId, "cardProgressText", model.progress)
-                            score: home.previewValue(model.mediaId, "cardScoreText", model.score)
+                            status: model.statusLabel
+                            progress: model.progress
+                            score: model.score
                             selected: controller.selectedMediaId === model.mediaId
                             muted: false
                             onActivated: function(mediaId) {
@@ -442,8 +414,7 @@ Item {
                             TextEdit {
                                 id: selectedStatusText
                                 Layout.preferredHeight: contentHeight
-                                text: home.previewValue(controller.selectedMediaId, "detailStatusText",
-                                                        controller.selectedStatusLabel)
+                                text: controller.selectedListStatusLabel
                                 color: muted
                                 readOnly: true
                                 selectByMouse: true
@@ -466,8 +437,7 @@ Item {
                                 id: selectedProgressText
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: contentHeight
-                                text: home.previewValue(controller.selectedMediaId, "detailProgressText",
-                                                        controller.selectedProgress)
+                                text: controller.selectedProgress
                                 color: ink
                                 font.weight: Font.DemiBold
                                 readOnly: true
@@ -479,8 +449,7 @@ Item {
                                 id: selectedScoreText
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: contentHeight
-                                text: home.previewValue(controller.selectedMediaId, "detailScoreText",
-                                                        controller.selectedScore)
+                                text: controller.selectedScore
                                 color: ink
                                 font.weight: Font.DemiBold
                                 readOnly: true
@@ -646,7 +615,7 @@ Item {
 
                 Label {
                     Layout.fillWidth: true
-                    visible: controller.state === "error"
+                    visible: controller.errorMessage.length > 0
                     text: controller.errorMessage
                     color: "#8f3038"
                     font.pixelSize: 11
@@ -661,6 +630,7 @@ Item {
         id: editMediaPanel
         controller: home.controller
         listOptions: home.controller.availableListOptions
+        closeOnApply: false
         ink: home.ink
         muted: home.muted
         line: home.line
@@ -668,7 +638,11 @@ Item {
         surfaceSoft: home.surfaceSoft
         accent: home.accent
         onApplyRequested: function(mediaId, progress, statusKey, score, path, alternativeNames) {
-            home.applyPreviewEdit(mediaId, progress, statusKey, score, path, alternativeNames)
+            const names = alternativeNames.split(";").map(function(name) { return name.trim() })
+                                          .filter(function(name) { return name.length > 0 })
+            if (home.controller.SaveSelectedMediaFromEditor(progress, statusKey, score, path, names)) {
+                editMediaPanel.close()
+            }
         }
     }
 
@@ -781,9 +755,9 @@ Item {
                     mediaId: model.mediaId
                     coverSource: model.coverSource
                     title: model.title
-                    status: home.previewValue(model.mediaId, "detailStatusText", model.statusLabel)
-                    progress: home.previewValue(model.mediaId, "detailProgressText", model.progress)
-                    score: home.previewValue(model.mediaId, "detailScoreText", model.score)
+                    status: model.statusLabel
+                    progress: model.progress
+                    score: model.score
                     selected: controller.selectedMediaId === model.mediaId
                     onActivated: function(mediaId) {
                         controller.SelectMedia(mediaId)
