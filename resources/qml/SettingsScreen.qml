@@ -19,6 +19,7 @@ Item {
     readonly property color surfaceSoft: "#f6f8fb"
     readonly property color accent: "#315d91"
     readonly property color accentSoft: "#e2ebf6"
+    readonly property color danger: "#b42318"
     property string activeSection: "overview"
 
     readonly property var sections: [
@@ -495,12 +496,30 @@ Item {
                 GridLayout {
                     Layout.fillWidth: true; columns: 2; columnSpacing: 12; rowSpacing: 10
                     StaticField { label: qsTr("Serviço"); value: "AniList" }
-                    StaticField { label: qsTr("Usuário"); value: qsTr("Nenhuma conta conectada") }
+                    StaticField {
+                        label: qsTr("Usuário")
+                        value: controller.aniListUsername.length > 0
+                               ? controller.aniListUsername : qsTr("Nenhuma conta conectada")
+                    }
+                }
+                Label {
+                    Layout.fillWidth: true
+                    visible: controller.aniListAuthenticationMessage.length > 0
+                    text: controller.aniListAuthenticationMessage
+                    color: controller.aniListAuthenticationState === "failed" ? danger : muted
+                    font.pixelSize: 10
+                    wrapMode: Text.Wrap
                 }
                 RowLayout {
                     Layout.fillWidth: true
                     Item { Layout.fillWidth: true }
-                    Button { text: qsTr("Conectar conta"); enabled: false }
+                    Button {
+                        text: controller.aniListAuthenticationInProgress
+                              ? qsTr("Conectando conta...") : qsTr("Conectar conta")
+                        enabled: controller.aniListConnectionAvailable
+                                 && !controller.aniListAuthenticationInProgress
+                        onClicked: controller.ConnectAniList()
+                    }
                 }
             }
             SectionCard {

@@ -2,6 +2,7 @@
 #define HAIKENANIME_APPLICATIONCOMPOSITION_H
 
 #include <memory>
+#include <optional>
 
 #include <QNetworkAccessManager>
 
@@ -23,6 +24,10 @@
 #include "../infrastructure/anilist/AniListGraphQlClient.h"
 #include "../infrastructure/anilist/GraphQlQueryStore.h"
 #include "../infrastructure/anilist/GraphQlSeasonalCatalogDataSource.h"
+#include "../infrastructure/anilist/AniListViewerClient.h"
+#include "../infrastructure/anilist/WindowsAniListOAuthLauncher.h"
+#include "../application/anilist/AniListAuthManager.h"
+#include "../application/anilist/ISecretStore.h"
 #include "SeasonalCatalogCoordinator.h"
 
 
@@ -47,6 +52,14 @@ struct ApplicationContext final {
     std::unique_ptr<GraphQlQueryStore> seasonalQueryStore;
     std::unique_ptr<GraphQlSeasonalCatalogDataSource> seasonalCatalogDataSource;
     std::unique_ptr<SeasonalCatalogCoordinator> seasonalCatalogCoordinator;
+    std::unique_ptr<ISecretStore> aniListSecretStore;
+    std::unique_ptr<AniListAuthManager> aniListAuthManager;
+    std::optional<AniListOAuthConfig> aniListOAuthConfiguration;
+    std::unique_ptr<QNetworkAccessManager> aniListNetworkManager;
+    std::unique_ptr<AniListGraphQlClient> aniListGraphQlClient;
+    std::unique_ptr<GraphQlQueryStore> aniListViewerQueryStore;
+    std::unique_ptr<AniListViewerClient> aniListViewerClient;
+    std::unique_ptr<WindowsAniListOAuthLauncher> aniListOAuthLauncher;
     std::unique_ptr<ILocalEpisodeReader> localEpisodeReader;
     std::unique_ptr<ILocalFileOpener> localFileOpener;
     QString initializationError;

@@ -5,10 +5,16 @@
 #include <QVariantList>
 #include <QPointer>
 
+#include <functional>
+#include <optional>
+
 #include "../../application/configuration/IUserPreferencesRepository.h"
+#include "../../application/anilist/AniListOAuthConfig.h"
 
 class LocalLibraryScanCoordinator;
 class ClearLocalCacheUseCase;
+class AniListAuthManager;
+class IAniListViewerClient;
 
 class SettingsController final : public QObject {
     Q_OBJECT
@@ -46,7 +52,14 @@ class SettingsController final : public QObject {
     Q_PROPERTY(bool cacheCleanupRunning READ cacheCleanupRunning NOTIFY cacheCleanupChanged)
     Q_PROPERTY(QString cacheCleanupStatusMessage READ cacheCleanupStatusMessage NOTIFY cacheCleanupChanged)
     Q_PROPERTY(QString cacheCleanupErrorMessage READ cacheCleanupErrorMessage NOTIFY cacheCleanupChanged)
+    Q_PROPERTY(bool aniListConnectionAvailable READ aniListConnectionAvailable NOTIFY changed)
+    Q_PROPERTY(bool aniListAuthenticationInProgress READ aniListAuthenticationInProgress NOTIFY changed)
+    Q_PROPERTY(QString aniListAuthenticationState READ aniListAuthenticationState NOTIFY changed)
+    Q_PROPERTY(QString aniListUsername READ aniListUsername NOTIFY changed)
+    Q_PROPERTY(QString aniListAuthenticationMessage READ aniListAuthenticationMessage NOTIFY changed)
 public:
+    using AniListAuthorizationLauncher = std::function<bool(const QUrl &, QString &)>;
+
     explicit SettingsController(IUserPreferencesRepository *repository,
                                 UserPreferences initial,
                                 ClearLocalCacheUseCase *cacheCleanup = nullptr,
@@ -85,7 +98,16 @@ public:
     bool cacheCleanupRunning() const;
     QString cacheCleanupStatusMessage() const;
     QString cacheCleanupErrorMessage() const;
+    bool aniListConnectionAvailable() const;
+    bool aniListAuthenticationInProgress() const;
+    QString aniListAuthenticationState() const;
+    QString aniListUsername() const;
+    QString aniListAuthenticationMessage() const;
     void SetScanCoordinator(LocalLibraryScanCoordinator *coordinator);
+    void SetAniListAuthenticationServices(AniListAuthManager *authManager,
+                                           AniListOAuthConfig configuration,
+                                           AniListAuthorizationLauncher launcher,
+                                           IAniListViewerClient *viewerClient);
     void ApplyExternalHomeSortKey(QString key);
 
     Q_INVOKABLE void SetScoreScale(double minimum, double maximum, double step);
@@ -104,6 +126,8 @@ public:
     Q_INVOKABLE void ScanNow();
     Q_INVOKABLE void SynchronizeNow();
     Q_INVOKABLE void ClearLocalCache();
+    Q_INVOKABLE void ConnectAniList();
+    Q_INVOKABLE void HandleAniListOAuthCallback(const QUrl &callback);
     void notifySynchronizationStarted();
     void notifySynchronizationCompleted();
     void notifySynchronizationFailed(const QString &error);
@@ -119,6 +143,7 @@ signals:
     void preferencesApplied(UserPreferences preferences);
 private:
     void refreshValidation();
+    void refreshAniListPresentation();
     IUserPreferencesRepository *repository_ = nullptr;
     UserPreferences persisted_;
     UserPreferences draft_;
@@ -146,6 +171,13 @@ private:
     bool cacheCleanupRunning_ = false;
     QString cacheCleanupStatusMessage_;
     QString cacheCleanupErrorMessage_;
+    AniListAuthManager *aniListAuthManager_ = nullptr;
+    std::optional<AniListOAuthConfig> aniListOAuthConfiguration_;
+    AniListAuthorizationLauncher aniListAuthorizationLauncher_;
+    IAniListViewerClient *aniListViewerClient_ = nullptr;
+    QString aniListAuthenticationState_ = QStringLiteral("unavailable");
+    QString aniListUsername_;
+    QString aniListAuthenticationMessage_;
 };
 
 #endif

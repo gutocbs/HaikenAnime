@@ -82,6 +82,7 @@ private slots:
     void seasonalCatalogPublishesCardsOnlyAfterResultsAreReady();
     void secondaryScreenNavigationMatchesLibraryHeaderPlacement();
     void settingsHeaderReservesMessageSpaceAfterSaveAction();
+    void settingsAccountSectionUsesAniListAuthenticationControllerState();
     void seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated();
     void mainKeepsSeasonalCatalogAsSeparateNavigation();
     void localCacheCleanupStaysInLibrarySettingsAndUsesControllerState();
@@ -650,6 +651,17 @@ void QmlStructureTests::settingsHeaderReservesMessageSpaceAfterSaveAction() {
     QVERIFY(headerTitleBlock.contains(QStringLiteral("Layout.preferredWidth: 258")));
     QVERIFY(headerTitleBlock.contains(QStringLiteral("Layout.maximumWidth: 258")));
     QVERIFY(!source.contains(QStringLiteral("As opções disponíveis nesta etapa são salvas localmente e aplicadas imediatamente.")));
+}
+
+void QmlStructureTests::settingsAccountSectionUsesAniListAuthenticationControllerState() {
+    const QString source = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    QVERIFY(!source.isEmpty());
+
+    QVERIFY(source.contains(QStringLiteral("value: controller.aniListUsername")));
+    QVERIFY(source.contains(QStringLiteral("enabled: controller.aniListConnectionAvailable")));
+    QVERIFY(source.contains(QStringLiteral("onClicked: controller.ConnectAniList()")));
+    QVERIFY(source.contains(QStringLiteral("controller.aniListAuthenticationMessage")));
+    QVERIFY(source.contains(QStringLiteral("readonly property color danger:")));
 }
 
 void QmlStructureTests::seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated() {

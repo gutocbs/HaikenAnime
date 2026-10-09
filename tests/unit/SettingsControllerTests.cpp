@@ -8,6 +8,7 @@
 #include "../../src/presentation/settings/SettingsController.h"
 #include "../../src/app/LocalLibraryScanCoordinator.h"
 #include "../../src/application/cache/ClearLocalCacheUseCase.h"
+#include "../../src/application/anilist/AniListAuthManager.h"
 #include "../../src/application/covers/CoverDownloadCoordinator.h"
 
 struct ScanFixture {
@@ -59,6 +60,43 @@ public:
     int replaceCalls = 0;
     bool fail = false;
     UserPreferences stored;
+};
+
+class MemorySecretStore final : public ISecretStore {
+public:
+    bool loadAniListCredentials(AniListCredentials &credentials, QString &error) override {
+        credentials = stored;
+        error.clear();
+        return hasCredentials;
+    }
+    bool saveAniListCredentials(const AniListCredentials &credentials, QString &error) override {
+        stored = credentials;
+        hasCredentials = true;
+        error.clear();
+        return true;
+    }
+    bool clearAniListCredentials(QString &error) override {
+        stored = {};
+        hasCredentials = false;
+        error.clear();
+        return true;
+    }
+
+    AniListCredentials stored;
+    bool hasCredentials = false;
+};
+
+class ViewerClientStub final : public IAniListViewerClient {
+public:
+    bool loadViewer(AniListViewer &viewer, QString &error) override {
+        viewer = nextViewer;
+        error = nextError;
+        return succeeds;
+    }
+
+    AniListViewer nextViewer{42, QStringLiteral("TestUser")};
+    QString nextError;
+    bool succeeds = true;
 };
 
 class CleanupDownloader final : public ICoverDownloader {
@@ -142,6 +180,10 @@ private slots:
     void scanSignalsUpdatePresentation();
     void coordinatorReplacementDisconnectsOldSignals();
     void requestsManualSynchronization();
+    void leavesAniListConnectionUnavailableWithoutServices();
+    void launchesAniListAuthorizationWhenServicesAreAvailable();
+    void validatesAniListCallbackAndPublishesUsername();
+    void publishesAniListAuthenticationFailureWithoutToken();
     void clearsLocalCacheWithoutChangingUnsavedDraft();
     void reportsPartialCleanupAndIgnoresConcurrentRequest();
 };
@@ -490,6 +532,62 @@ void SettingsControllerTests::requestsManualSynchronization() {
     controller.SynchronizeNow();
 
     QCOMPARE(requested.count(), 1);
+}
+
+void SettingsControllerTests::leavesAniListConnectionUnavailableWithoutServices() {
+    SettingsController controller(nullptr, {});
+
+    QVERIFY(!controller.aniListConnectionAvailable());
+    QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("unavailable"));
+}
+
+void SettingsControllerTests::launchesAniListAuthorizationWhenServicesAreAvailable() {
+    MemorySecretStore secretStore;
+    AniListAuthManager authManager(secretStore);
+    ViewerClientStub viewer;
+    QUrl launchedUrl;
+    SettingsController controller(nullptr, {});
+    controller.SetAniListAuthenticationServices(
+        &authManager, AniListOAuthConfig(QStringLiteral("client-id"), QUrl(QStringLiteral("haikenanime://oauth/callback"))),
+        [&launchedUrl](const QUrl &url, QString &error) { launchedUrl = url; error.clear(); return true; }, &viewer);
+
+    QVERIFY(controller.aniListConnectionAvailable());
+    controller.ConnectAniList();
+
+    QCOMPARE(launchedUrl.host(), QStringLiteral("anilist.co"));
+    QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("authorizing"));
+    QVERIFY(controller.aniListAuthenticationInProgress());
+}
+
+void SettingsControllerTests::validatesAniListCallbackAndPublishesUsername() {
+    MemorySecretStore secretStore;
+    AniListAuthManager authManager(secretStore);
+    ViewerClientStub viewer;
+    SettingsController controller(nullptr, {});
+    controller.SetAniListAuthenticationServices(
+        &authManager, AniListOAuthConfig(QStringLiteral("client-id"), QUrl(QStringLiteral("haikenanime://oauth/callback"))),
+        [](const QUrl &, QString &error) { error.clear(); return true; }, &viewer);
+
+    controller.HandleAniListOAuthCallback(QUrl(QStringLiteral("haikenanime://oauth/callback#access_token=secret-token")));
+
+    QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("authenticated"));
+    QCOMPARE(controller.aniListUsername(), QStringLiteral("TestUser"));
+    QCOMPARE(secretStore.stored.username, QStringLiteral("TestUser"));
+}
+
+void SettingsControllerTests::publishesAniListAuthenticationFailureWithoutToken() {
+    MemorySecretStore secretStore;
+    AniListAuthManager authManager(secretStore);
+    ViewerClientStub viewer;
+    SettingsController controller(nullptr, {});
+    controller.SetAniListAuthenticationServices(
+        &authManager, AniListOAuthConfig(QStringLiteral("client-id"), QUrl(QStringLiteral("haikenanime://oauth/callback"))),
+        [](const QUrl &, QString &error) { error.clear(); return true; }, &viewer);
+
+    controller.HandleAniListOAuthCallback(QUrl(QStringLiteral("haikenanime://oauth/callback#error=access_denied&error_description=secret-token")));
+
+    QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("failed"));
+    QVERIFY(!controller.aniListAuthenticationMessage().contains(QStringLiteral("secret-token")));
 }
 
 void SettingsControllerTests::clearsLocalCacheWithoutChangingUnsavedDraft() {

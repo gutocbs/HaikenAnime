@@ -1,8 +1,22 @@
 #include "SettingsController.h"
 
 #include "../../application/cache/ClearLocalCacheUseCase.h"
+#include "../../application/anilist/AniListAuthManager.h"
 #include "../../application/configuration/UserPreferencesValidator.h"
 #include "../../app/LocalLibraryScanCoordinator.h"
+
+namespace {
+QString authenticationStateName(const AniListAuthenticationState state) {
+    switch (state) {
+    case AniListAuthenticationState::Disconnected: return QStringLiteral("disconnected");
+    case AniListAuthenticationState::Authorizing: return QStringLiteral("authorizing");
+    case AniListAuthenticationState::AwaitingValidation: return QStringLiteral("validating");
+    case AniListAuthenticationState::Authenticated: return QStringLiteral("authenticated");
+    case AniListAuthenticationState::AuthenticationFailed: return QStringLiteral("failed");
+    }
+    return QStringLiteral("failed");
+}
+}
 
 QString SettingsController::libraryRoot() const { return draft_.libraryRoot; }
 QStringList SettingsController::availableScanExtensions() const {
@@ -20,6 +34,28 @@ QString SettingsController::scanErrorMessage() const { return scanErrorMessage_;
 bool SettingsController::cacheCleanupRunning() const { return cacheCleanupRunning_; }
 QString SettingsController::cacheCleanupStatusMessage() const { return cacheCleanupStatusMessage_; }
 QString SettingsController::cacheCleanupErrorMessage() const { return cacheCleanupErrorMessage_; }
+bool SettingsController::aniListConnectionAvailable() const {
+    return aniListAuthManager_ && aniListOAuthConfiguration_.has_value()
+        && aniListAuthorizationLauncher_ && aniListViewerClient_;
+}
+bool SettingsController::aniListAuthenticationInProgress() const {
+    return aniListAuthenticationState_ == QStringLiteral("authorizing")
+        || aniListAuthenticationState_ == QStringLiteral("validating");
+}
+QString SettingsController::aniListAuthenticationState() const { return aniListAuthenticationState_; }
+QString SettingsController::aniListUsername() const { return aniListUsername_; }
+QString SettingsController::aniListAuthenticationMessage() const { return aniListAuthenticationMessage_; }
+
+void SettingsController::SetAniListAuthenticationServices(
+    AniListAuthManager *authManager, AniListOAuthConfig configuration,
+    AniListAuthorizationLauncher launcher, IAniListViewerClient *viewerClient) {
+    aniListAuthManager_ = authManager;
+    aniListOAuthConfiguration_ = std::move(configuration);
+    aniListAuthorizationLauncher_ = std::move(launcher);
+    aniListViewerClient_ = viewerClient;
+    refreshAniListPresentation();
+    emit changed();
+}
 
 void SettingsController::SetScanCoordinator(LocalLibraryScanCoordinator *coordinator) {
     if (scanCoordinator_ == coordinator) return;
@@ -114,6 +150,44 @@ void SettingsController::ScanNow() {
 void SettingsController::SynchronizeNow() {
     if (synchronizationRunning_) return;
     emit synchronizationRequested();
+}
+
+void SettingsController::ConnectAniList() {
+    if (!aniListConnectionAvailable() || aniListAuthenticationInProgress()) return;
+
+    QString error;
+    const QUrl authorizationUrl = aniListAuthManager_->beginAuthorization(*aniListOAuthConfiguration_);
+    if (!aniListAuthorizationLauncher_(authorizationUrl, error)) {
+        aniListAuthenticationState_ = QStringLiteral("failed");
+        aniListAuthenticationMessage_ = tr("Não foi possível abrir a autorização da AniList.");
+        emit changed();
+        return;
+    }
+    refreshAniListPresentation();
+    emit changed();
+}
+
+void SettingsController::HandleAniListOAuthCallback(const QUrl &callback) {
+    if (!aniListConnectionAvailable()) return;
+
+    QString error;
+    if (!aniListAuthManager_->handleCallback(callback, error)) {
+        aniListAuthenticationState_ = QStringLiteral("failed");
+        aniListAuthenticationMessage_ = tr("Não foi possível concluir a autorização da AniList.");
+        aniListUsername_.clear();
+        emit changed();
+        return;
+    }
+    if (!aniListAuthManager_->validateToken(*aniListViewerClient_, error)) {
+        aniListAuthenticationState_ = QStringLiteral("failed");
+        aniListAuthenticationMessage_ = tr("Não foi possível validar a conta AniList.");
+        aniListUsername_.clear();
+        emit changed();
+        return;
+    }
+    refreshAniListPresentation();
+    aniListAuthenticationMessage_ = tr("Conta AniList conectada.");
+    emit changed();
 }
 
 void SettingsController::ClearLocalCache() {
@@ -376,4 +450,16 @@ void SettingsController::refreshValidation() {
     else if (!preferredTitleKeyValid_) errorMessage_ = tr("Título preferido inválido.");
     else if (!extensionInputValid_) errorMessage_ = tr("Extensão de arquivo inválida.");
     else if (!result.valid) errorMessage_ = result.error;
+}
+
+void SettingsController::refreshAniListPresentation() {
+    if (!aniListConnectionAvailable()) {
+        aniListAuthenticationState_ = QStringLiteral("unavailable");
+        aniListUsername_.clear();
+        aniListAuthenticationMessage_.clear();
+        return;
+    }
+    aniListAuthenticationState_ = authenticationStateName(aniListAuthManager_->state());
+    aniListUsername_ = aniListAuthManager_->credentials().username;
+    aniListAuthenticationMessage_.clear();
 }

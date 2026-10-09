@@ -9,7 +9,9 @@
 #include <utility>
 
 #include "src/app/ApplicationComposition.h"
+#include "src/app/AniListOAuthCallbackReceiver.h"
 #include "src/app/TranslationLoader.h"
+#include "src/infrastructure/anilist/WindowsUrlProtocolRegistrar.h"
 #include "src/presentation/home/HomeScreenController.h"
 #include "src/presentation/seasonal/SeasonalCatalogController.h"
 #include "src/presentation/settings/SettingsController.h"
@@ -38,6 +40,22 @@ int main(int argc, char *argv[]) {
     app.setQuitOnLastWindowClosed(false);
 
     auto context = createApplicationContext();
+    AniListOAuthCallbackReceiver oauthCallbackReceiver(
+        QStringLiteral("HaikenAnime.AniListOAuthCallback"));
+    const auto initialOAuthCallback = AniListOAuthCallbackReceiver::callbackFromArguments(app.arguments());
+    QString callbackReceiverError;
+    if (oauthCallbackReceiver.start(app.arguments(), callbackReceiverError)
+        == AniListOAuthCallbackReceiver::StartResult::Forwarded) {
+        return 0;
+    }
+    WindowsUrlProtocolRegistrar protocolRegistrar;
+    QString protocolRegistrationError;
+    if (!protocolRegistrar.registerProtocol(QStringLiteral("haikenanime"),
+                                            QCoreApplication::applicationFilePath(),
+                                            protocolRegistrationError)
+        && context.logger) {
+        context.logger->warning(LogCategory::Configuration, protocolRegistrationError);
+    }
     QString translationError;
     if (!TranslationLoader::Install(app, context.userPreferences.languageKey, translationError)
         && context.logger) {
@@ -97,6 +115,19 @@ int main(int argc, char *argv[]) {
     SettingsController settingsController(context.userPreferencesRepository.get(),
                                           context.userPreferences,
                                           context.clearLocalCache.get());
+    if (context.aniListAuthManager && context.aniListOAuthConfiguration
+        && context.aniListOAuthLauncher && context.aniListViewerClient) {
+        settingsController.SetAniListAuthenticationServices(
+            context.aniListAuthManager.get(), *context.aniListOAuthConfiguration,
+            [&context](const QUrl &url, QString &error) {
+                return context.aniListOAuthLauncher->launch(url, error);
+            }, context.aniListViewerClient.get());
+    }
+    QObject::connect(&oauthCallbackReceiver, &AniListOAuthCallbackReceiver::callbackReceived,
+                     &settingsController, &SettingsController::HandleAniListOAuthCallback);
+    if (initialOAuthCallback.has_value()) {
+        settingsController.HandleAniListOAuthCallback(initialOAuthCallback.value());
+    }
     settingsController.SetScanCoordinator(context.localLibraryScan.get());
     if (context.adaptiveSync) {
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,

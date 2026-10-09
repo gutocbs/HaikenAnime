@@ -44,6 +44,10 @@ endif ()
 qt_add_executable(HaikenAnime main.cpp
         src/app/ApplicationComposition.h
         src/app/ApplicationComposition.cpp
+        src/app/AniListOAuthCallbackReceiver.h
+        src/app/AniListOAuthCallbackReceiver.cpp
+        src/infrastructure/anilist/WindowsUrlProtocolRegistrar.h
+        src/infrastructure/anilist/WindowsUrlProtocolRegistrar.cpp
         src/app/InitialSyncCoordinator.h
         src/app/InitialSyncCoordinator.cpp
         src/app/AdaptiveSyncCoordinator.h
@@ -826,6 +830,22 @@ add_executable(WindowsAniListOAuthLauncherTests
 target_link_libraries(WindowsAniListOAuthLauncherTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
 add_test(NAME WindowsAniListOAuthLauncherTests COMMAND WindowsAniListOAuthLauncherTests)
 
+add_executable(AniListOAuthCallbackReceiverTests
+        tests/unit/AniListOAuthCallbackReceiverTests.cpp
+        src/app/AniListOAuthCallbackReceiver.h
+        src/app/AniListOAuthCallbackReceiver.cpp
+)
+target_link_libraries(AniListOAuthCallbackReceiverTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+add_test(NAME AniListOAuthCallbackReceiverTests COMMAND AniListOAuthCallbackReceiverTests)
+
+add_executable(WindowsUrlProtocolRegistrarTests
+        tests/unit/WindowsUrlProtocolRegistrarTests.cpp
+        src/infrastructure/anilist/WindowsUrlProtocolRegistrar.h
+        src/infrastructure/anilist/WindowsUrlProtocolRegistrar.cpp
+)
+target_link_libraries(WindowsUrlProtocolRegistrarTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME WindowsUrlProtocolRegistrarTests COMMAND WindowsUrlProtocolRegistrarTests)
+
 add_executable(AniListFlowTests
         tests/unit/AniListFlowTests.cpp
         src/application/anilist/AniListSyncService.h
@@ -1114,6 +1134,8 @@ add_test(NAME HomeScreenControllerTests COMMAND HomeScreenControllerTests)
 add_executable(SettingsControllerTests
         tests/unit/SettingsControllerTests.cpp
         src/presentation/settings/SettingsController.cpp
+        src/application/anilist/AniListAuthManager.cpp
+        src/application/anilist/AniListOAuthCallbackParser.cpp
         src/application/cache/ClearLocalCacheUseCase.cpp
         src/application/covers/CoverDownloadCoordinator.cpp
         src/application/configuration/UserPreferencesValidator.cpp

@@ -20,6 +20,9 @@
 #include "../infrastructure/database/SqliteLocalFileRepository.h"
 #include "../infrastructure/database/SqliteSyncTaskStateRepository.h"
 #include "../infrastructure/anilist/HttpFactory.h"
+#include "../infrastructure/anilist/AniListViewerClient.h"
+#include "../infrastructure/anilist/WindowsAniListOAuthLauncher.h"
+#include "../infrastructure/secrets/WindowsCredentialStore.h"
 #include <QStandardPaths>
 #include <QDir>
 #include <QPointer>
@@ -365,6 +368,26 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         *context.seasonalCatalogDataSource, kSeasonalCatalogMaximumPageSize, nullptr,
         settings.seasonalCatalogCachePolicy);
     context.seasonalCatalogCoordinator->setLogger(context.logger.get());
+    context.aniListSecretStore = std::make_unique<WindowsCredentialStore>();
+    context.aniListAuthManager = std::make_unique<AniListAuthManager>(*context.aniListSecretStore);
+    QString credentialsError;
+    static_cast<void>(context.aniListAuthManager->load(credentialsError));
+    if (!settings.aniList.oauthClientId.trimmed().isEmpty()
+        && settings.aniList.oauthRedirectUri.isValid()
+        && !settings.aniList.oauthRedirectUri.scheme().isEmpty()) {
+        context.aniListOAuthConfiguration.emplace(settings.aniList.oauthClientId,
+                                                  settings.aniList.oauthRedirectUri);
+        context.aniListNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
+        context.aniListGraphQlClient = std::make_unique<AniListGraphQlClient>(
+            *context.aniListNetworkManager, context.aniListAuthManager.get(),
+            QUrl(settings.aniList.endpoint), settings.http.timeoutMs,
+            settings.http.maxRetries, settings.http.retryDelayMs);
+        context.aniListViewerQueryStore = std::make_unique<GraphQlQueryStore>(
+            QStringLiteral(":/anilist/queries/viewer.graphql"));
+        context.aniListViewerClient = std::make_unique<AniListViewerClient>(
+            *context.aniListGraphQlClient, *context.aniListViewerQueryStore);
+        context.aniListOAuthLauncher = std::make_unique<WindowsAniListOAuthLauncher>();
+    }
     context.logger->info(LogCategory::Application, QStringLiteral("Application composition completed."));
     return context;
 }
