@@ -58,8 +58,10 @@ void AniListOAuthCallbackReceiverTests::forwardsCallbackToExistingServer() {
     const QUrl callback(QStringLiteral("haikenanime://oauth/callback#access_token=opaque-token"));
     AniListOAuthCallbackReceiver::StartResult result = AniListOAuthCallbackReceiver::StartResult::Unavailable;
     QString forwardingError;
+    QStringList auditEvents;
     std::thread callbackProcess([&] {
         AniListOAuthCallbackReceiver receiver(serverName);
+        receiver.setAuditLogger([&auditEvents](const QString &event) { auditEvents.append(event); });
         result = receiver.start({QStringLiteral("HaikenAnime.exe"), callback.toString(QUrl::FullyEncoded)},
                                 forwardingError);
     });
@@ -74,6 +76,7 @@ void AniListOAuthCallbackReceiverTests::forwardsCallbackToExistingServer() {
     QCOMPARE(received.count(), 1);
     QVERIFY2(result == AniListOAuthCallbackReceiver::StartResult::Forwarded, qPrintable(forwardingError));
     QCOMPARE(received.first().first().toUrl(), callback);
+    QVERIFY(auditEvents.contains(QStringLiteral("AniList OAuth callback forwarded to the running application.")));
 }
 
 QTEST_MAIN(AniListOAuthCallbackReceiverTests)

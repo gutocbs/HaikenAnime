@@ -370,6 +370,9 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     context.seasonalCatalogCoordinator->setLogger(context.logger.get());
     context.aniListSecretStore = std::make_unique<WindowsCredentialStore>();
     context.aniListAuthManager = std::make_unique<AniListAuthManager>(*context.aniListSecretStore);
+    context.aniListAuthManager->setAuditLogger([logger = context.logger.get()](const QString &event) {
+        if (logger) logger->info(LogCategory::Application, event);
+    });
     QString credentialsError;
     static_cast<void>(context.aniListAuthManager->load(credentialsError));
     if (!settings.aniList.oauthClientId.trimmed().isEmpty()

@@ -42,6 +42,9 @@ int main(int argc, char *argv[]) {
     auto context = createApplicationContext();
     AniListOAuthCallbackReceiver oauthCallbackReceiver(
         QStringLiteral("HaikenAnime.AniListOAuthCallback"));
+    oauthCallbackReceiver.setAuditLogger([logger = context.logger.get()](const QString &event) {
+        if (logger) logger->info(LogCategory::Application, event);
+    });
     const auto initialOAuthCallback = AniListOAuthCallbackReceiver::callbackFromArguments(app.arguments());
     QString callbackReceiverError;
     if (oauthCallbackReceiver.start(app.arguments(), callbackReceiverError)

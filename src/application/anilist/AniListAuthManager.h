@@ -8,13 +8,18 @@
 #include "AniListOAuthConfig.h"
 #include "IAniListViewerClient.h"
 
+#include <functional>
+
 enum class AniListAuthenticationState { Disconnected, Authorizing, AwaitingValidation, Authenticated, AuthenticationFailed };
 
 /** Loads and caches AniList credentials while keeping storage separate from API transport. */
 class AniListAuthManager final : public IAniListAuthProvider {
 public:
+    using AuditLogger = std::function<void(const QString &)>;
+
     /** Creates an authorization manager backed by the supplied secret store. */
     explicit AniListAuthManager(ISecretStore &secretStore);
+    void setAuditLogger(AuditLogger logger);
 
     /** Loads credentials from storage and writes any failure description to error. */
     [[nodiscard]] bool load(QString &error);
@@ -41,7 +46,9 @@ public:
     [[nodiscard]] AniListCredentials credentials() const override;
 
 private:
+    void audit(const QString &event) const;
     ISecretStore &secretStore_;
+    AuditLogger auditLogger_;
     AniListCredentials credentials_;
     AniListAuthenticationState state_ = AniListAuthenticationState::Disconnected;
 };
