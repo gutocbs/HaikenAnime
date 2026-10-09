@@ -787,6 +787,9 @@ add_executable(AniListAuthManagerTests
         tests/unit/AniListAuthManagerTests.cpp
         src/application/anilist/AniListAuthManager.h
         src/application/anilist/AniListAuthManager.cpp
+        src/application/anilist/AniListOAuthConfig.h
+        src/application/anilist/AniListOAuthCallbackParser.h
+        src/application/anilist/AniListOAuthCallbackParser.cpp
 )
 
 target_link_libraries(AniListAuthManagerTests
@@ -796,6 +799,23 @@ target_link_libraries(AniListAuthManagerTests
 )
 
 add_test(NAME AniListAuthManagerTests COMMAND AniListAuthManagerTests)
+
+add_executable(AniListOAuthCallbackParserTests
+        tests/unit/AniListOAuthCallbackParserTests.cpp
+        src/application/anilist/AniListOAuthConfig.h
+        src/application/anilist/AniListOAuthCallbackParser.h
+        src/application/anilist/AniListOAuthCallbackParser.cpp
+)
+target_link_libraries(AniListOAuthCallbackParserTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME AniListOAuthCallbackParserTests COMMAND AniListOAuthCallbackParserTests)
+
+add_executable(WindowsAniListOAuthLauncherTests
+        tests/unit/WindowsAniListOAuthLauncherTests.cpp
+        src/infrastructure/anilist/WindowsAniListOAuthLauncher.h
+        src/infrastructure/anilist/WindowsAniListOAuthLauncher.cpp
+)
+target_link_libraries(WindowsAniListOAuthLauncherTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
+add_test(NAME WindowsAniListOAuthLauncherTests COMMAND WindowsAniListOAuthLauncherTests)
 
 add_executable(AniListFlowTests
         tests/unit/AniListFlowTests.cpp
@@ -1288,6 +1308,8 @@ set(HAIKENANIME_TESTS
         ClearLocalCacheUseCaseTests
         QtCoverDownloaderTests
         AniListAuthManagerTests
+        AniListOAuthCallbackParserTests
+        WindowsAniListOAuthLauncherTests
         AniListFlowTests
         AniListGraphQlParsingTests
         AniListGraphQlUserListParserTests

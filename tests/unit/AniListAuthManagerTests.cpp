@@ -1,6 +1,9 @@
 #include <QtTest>
 
+#include <QUrlQuery>
+
 #include "../../src/application/anilist/AniListAuthManager.h"
+#include "../../src/application/anilist/AniListOAuthConfig.h"
 
 class InMemorySecretStore final : public ISecretStore {
 public:
@@ -41,6 +44,8 @@ private slots:
     void savesCredentialsThroughStore();
     void savesAndLoadsSessionIdentity();
     void clearsStoredCredentialsAndCache();
+    void beginsAuthorizationWithoutPersistingCredentials();
+    void acceptsCallbackTokenUntilViewerValidation();
 };
 
 void AniListAuthManagerTests::loadsCredentialsFromStore() {
@@ -105,6 +110,33 @@ void AniListAuthManagerTests::clearsStoredCredentialsAndCache() {
     QVERIFY(manager.save(credentials, error));
     QVERIFY(manager.clear(error));
     QVERIFY(manager.credentials().token.isEmpty());
+    QVERIFY(!store.available);
+}
+
+void AniListAuthManagerTests::beginsAuthorizationWithoutPersistingCredentials() {
+    InMemorySecretStore store;
+    AniListAuthManager manager(store);
+    const AniListOAuthConfig config(QStringLiteral("12345"),
+                                    QUrl(QStringLiteral("haikenanime://oauth/callback")));
+
+    const QUrl authorizationUrl = manager.beginAuthorization(config);
+
+    QCOMPARE(manager.state(), AniListAuthenticationState::Authorizing);
+    QCOMPARE(QUrlQuery(authorizationUrl).queryItemValue(QStringLiteral("client_id")),
+             QStringLiteral("12345"));
+    QVERIFY(!store.available);
+}
+
+void AniListAuthManagerTests::acceptsCallbackTokenUntilViewerValidation() {
+    InMemorySecretStore store;
+    AniListAuthManager manager(store);
+    QString error;
+
+    QVERIFY(manager.handleCallback(
+        QUrl(QStringLiteral("haikenanime://oauth/callback#access_token=token")), error));
+
+    QCOMPARE(manager.state(), AniListAuthenticationState::AwaitingValidation);
+    QCOMPARE(manager.credentials().token, QStringLiteral("token"));
     QVERIFY(!store.available);
 }
 

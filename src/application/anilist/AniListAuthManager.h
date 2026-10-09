@@ -4,6 +4,11 @@
 #include "IAniListAuthProvider.h"
 #include "ISecretStore.h"
 
+#include "AniListOAuthCallbackParser.h"
+#include "AniListOAuthConfig.h"
+
+enum class AniListAuthenticationState { Disconnected, Authorizing, AwaitingValidation, Authenticated, AuthenticationFailed };
+
 /** Loads and caches AniList credentials while keeping storage separate from API transport. */
 class AniListAuthManager final : public IAniListAuthProvider {
 public:
@@ -19,12 +24,22 @@ public:
     /** Removes persisted credentials and clears the in-memory cache. */
     [[nodiscard]] bool clear(QString &error);
 
+    /** Starts the browser authorization flow and returns the AniList authorization URL. */
+    [[nodiscard]] QUrl beginAuthorization(const AniListOAuthConfig &config);
+
+    /** Parses an OAuth callback and caches its token until Viewer validation completes. */
+    [[nodiscard]] bool handleCallback(const QUrl &callback, QString &error);
+
+    /** Returns the state of the AniList integration session. */
+    [[nodiscard]] AniListAuthenticationState state() const;
+
     /** Returns the last successfully loaded or saved credentials. */
     [[nodiscard]] AniListCredentials credentials() const override;
 
 private:
     ISecretStore &secretStore_;
     AniListCredentials credentials_;
+    AniListAuthenticationState state_ = AniListAuthenticationState::Disconnected;
 };
 
 #endif // HAIKENANIME_ANILISTAUTHMANAGER_H
