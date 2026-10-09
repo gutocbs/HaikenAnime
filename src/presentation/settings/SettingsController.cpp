@@ -160,10 +160,14 @@ void SettingsController::ConnectAniList() {
     if (!aniListAuthorizationLauncher_(authorizationUrl, error)) {
         aniListAuthenticationState_ = QStringLiteral("failed");
         aniListAuthenticationMessage_ = tr("Não foi possível abrir a autorização da AniList.");
+        statusMessage_.clear();
+        errorMessage_ = aniListAuthenticationMessage_;
         emit changed();
         return;
     }
     refreshAniListPresentation();
+    statusMessage_ = tr("Conectando conta AniList...");
+    errorMessage_.clear();
     emit changed();
 }
 
@@ -175,6 +179,8 @@ void SettingsController::HandleAniListOAuthCallback(const QUrl &callback) {
         aniListAuthenticationState_ = QStringLiteral("failed");
         aniListAuthenticationMessage_ = tr("Não foi possível concluir a autorização da AniList.");
         aniListUsername_.clear();
+        statusMessage_.clear();
+        errorMessage_ = aniListAuthenticationMessage_;
         emit changed();
         return;
     }
@@ -182,11 +188,15 @@ void SettingsController::HandleAniListOAuthCallback(const QUrl &callback) {
         aniListAuthenticationState_ = QStringLiteral("failed");
         aniListAuthenticationMessage_ = tr("Não foi possível validar a conta AniList.");
         aniListUsername_.clear();
+        statusMessage_.clear();
+        errorMessage_ = aniListAuthenticationMessage_;
         emit changed();
         return;
     }
     refreshAniListPresentation();
     aniListAuthenticationMessage_ = tr("Conta AniList conectada.");
+    statusMessage_ = aniListAuthenticationMessage_;
+    errorMessage_.clear();
     emit changed();
 }
 

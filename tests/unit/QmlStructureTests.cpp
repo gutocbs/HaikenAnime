@@ -660,7 +660,7 @@ void QmlStructureTests::settingsAccountSectionUsesAniListAuthenticationControlle
     QVERIFY(source.contains(QStringLiteral("value: controller.aniListUsername")));
     QVERIFY(source.contains(QStringLiteral("enabled: controller.aniListConnectionAvailable")));
     QVERIFY(source.contains(QStringLiteral("onClicked: controller.ConnectAniList()")));
-    QVERIFY(source.contains(QStringLiteral("controller.aniListAuthenticationMessage")));
+    QVERIFY(!source.contains(QStringLiteral("controller.aniListAuthenticationMessage")));
     QVERIFY(source.contains(QStringLiteral("readonly property color danger:")));
 }
 

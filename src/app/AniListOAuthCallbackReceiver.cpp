@@ -30,26 +30,25 @@ std::optional<QUrl> AniListOAuthCallbackReceiver::callbackFromArguments(
 AniListOAuthCallbackReceiver::StartResult AniListOAuthCallbackReceiver::start(
     const QStringList &arguments, QString &error) {
     error.clear();
+    const auto callback = callbackFromArguments(arguments);
+    if (callback.has_value()) {
+        QLocalSocket socket;
+        socket.connectToServer(serverName_);
+        if (socket.waitForConnected(1000)) {
+            socket.write(callback->toString(QUrl::FullyEncoded).toUtf8());
+            if (!socket.waitForBytesWritten(1000)) {
+                error = socket.errorString();
+                return StartResult::Unavailable;
+            }
+            return StartResult::Forwarded;
+        }
+    }
+
+    server_.setSocketOptions(QLocalServer::UserAccessOption);
     if (server_.listen(serverName_)) return StartResult::Listening;
 
-    const auto callback = callbackFromArguments(arguments);
-    if (!callback.has_value()) {
-        error = server_.errorString();
-        return StartResult::Unavailable;
-    }
-
-    QLocalSocket socket;
-    socket.connectToServer(serverName_);
-    if (!socket.waitForConnected(1000)) {
-        error = socket.errorString();
-        return StartResult::Unavailable;
-    }
-    socket.write(callback->toString(QUrl::FullyEncoded).toUtf8());
-    if (!socket.waitForBytesWritten(1000)) {
-        error = socket.errorString();
-        return StartResult::Unavailable;
-    }
-    return StartResult::Forwarded;
+    error = server_.errorString();
+    return StartResult::Unavailable;
 }
 
 void AniListOAuthCallbackReceiver::receivePendingConnections() {

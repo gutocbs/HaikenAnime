@@ -12,7 +12,7 @@ bool AniListAuthManager::load(QString &error) {
     }
 
     credentials_ = loadedCredentials;
-    state_ = AniListAuthenticationState::AwaitingValidation;
+    state_ = AniListAuthenticationState::Authenticated;
     return true;
 }
 

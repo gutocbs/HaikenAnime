@@ -1,6 +1,10 @@
+#include <QElapsedTimer>
+#include <QEventLoop>
 #include <QSignalSpy>
 #include <QLocalSocket>
 #include <QtTest>
+
+#include <thread>
 
 #include "../../src/app/AniListOAuthCallbackReceiver.h"
 
@@ -10,6 +14,7 @@ class AniListOAuthCallbackReceiverTests final : public QObject {
 private slots:
     void findsCallbackUriInApplicationArguments();
     void deliversCallbackFromLocalClient();
+    void forwardsCallbackToExistingServer();
 };
 
 void AniListOAuthCallbackReceiverTests::findsCallbackUriInApplicationArguments() {
@@ -39,6 +44,35 @@ void AniListOAuthCallbackReceiverTests::deliversCallbackFromLocalClient() {
              qint64(callback.toString(QUrl::FullyEncoded).toUtf8().size()));
 
     QTRY_COMPARE(received.count(), 1);
+    QCOMPARE(received.first().first().toUrl(), callback);
+}
+
+void AniListOAuthCallbackReceiverTests::forwardsCallbackToExistingServer() {
+    const QString serverName = QStringLiteral("HaikenAnimeOAuthForwardingTest.%1")
+        .arg(QCoreApplication::applicationPid());
+    AniListOAuthCallbackReceiver owner(serverName);
+    QString error;
+    QCOMPARE(owner.start({}, error), AniListOAuthCallbackReceiver::StartResult::Listening);
+    QSignalSpy received(&owner, &AniListOAuthCallbackReceiver::callbackReceived);
+
+    const QUrl callback(QStringLiteral("haikenanime://oauth/callback#access_token=opaque-token"));
+    AniListOAuthCallbackReceiver::StartResult result = AniListOAuthCallbackReceiver::StartResult::Unavailable;
+    QString forwardingError;
+    std::thread callbackProcess([&] {
+        AniListOAuthCallbackReceiver receiver(serverName);
+        result = receiver.start({QStringLiteral("HaikenAnime.exe"), callback.toString(QUrl::FullyEncoded)},
+                                forwardingError);
+    });
+
+    QElapsedTimer elapsed;
+    elapsed.start();
+    while (received.count() == 0 && !elapsed.hasExpired(1'000)) {
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 10);
+        QTest::qWait(10);
+    }
+    callbackProcess.join();
+    QCOMPARE(received.count(), 1);
+    QVERIFY2(result == AniListOAuthCallbackReceiver::StartResult::Forwarded, qPrintable(forwardingError));
     QCOMPARE(received.first().first().toUrl(), callback);
 }
 

@@ -557,6 +557,7 @@ void SettingsControllerTests::launchesAniListAuthorizationWhenServicesAreAvailab
     QCOMPARE(launchedUrl.host(), QStringLiteral("anilist.co"));
     QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("authorizing"));
     QVERIFY(controller.aniListAuthenticationInProgress());
+    QCOMPARE(controller.statusMessage(), QStringLiteral("Conectando conta AniList..."));
 }
 
 void SettingsControllerTests::validatesAniListCallbackAndPublishesUsername() {
@@ -573,6 +574,7 @@ void SettingsControllerTests::validatesAniListCallbackAndPublishesUsername() {
     QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("authenticated"));
     QCOMPARE(controller.aniListUsername(), QStringLiteral("TestUser"));
     QCOMPARE(secretStore.stored.username, QStringLiteral("TestUser"));
+    QCOMPARE(controller.statusMessage(), QStringLiteral("Conta AniList conectada."));
 }
 
 void SettingsControllerTests::publishesAniListAuthenticationFailureWithoutToken() {
@@ -588,6 +590,8 @@ void SettingsControllerTests::publishesAniListAuthenticationFailureWithoutToken(
 
     QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("failed"));
     QVERIFY(!controller.aniListAuthenticationMessage().contains(QStringLiteral("secret-token")));
+    QVERIFY(!controller.errorMessage().contains(QStringLiteral("secret-token")));
+    QVERIFY(!controller.errorMessage().isEmpty());
 }
 
 void SettingsControllerTests::clearsLocalCacheWithoutChangingUnsavedDraft() {

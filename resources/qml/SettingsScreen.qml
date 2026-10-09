@@ -502,14 +502,6 @@ Item {
                                ? controller.aniListUsername : qsTr("Nenhuma conta conectada")
                     }
                 }
-                Label {
-                    Layout.fillWidth: true
-                    visible: controller.aniListAuthenticationMessage.length > 0
-                    text: controller.aniListAuthenticationMessage
-                    color: controller.aniListAuthenticationState === "failed" ? danger : muted
-                    font.pixelSize: 10
-                    wrapMode: Text.Wrap
-                }
                 RowLayout {
                     Layout.fillWidth: true
                     Item { Layout.fillWidth: true }
