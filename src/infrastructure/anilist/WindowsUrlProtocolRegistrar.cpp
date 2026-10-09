@@ -33,10 +33,10 @@ bool WindowsUrlProtocolRegistrar::registerProtocol(const QString &scheme,
 
     const QString root = QStringLiteral("HKEY_CURRENT_USER\\Software\\Classes\\%1").arg(scheme);
     const QList<Write> writes{
-        {root, {}, QStringLiteral("URL:HaikenAnime Protocol")},
-        {root, QStringLiteral("URL Protocol"), {}},
-        {root + QStringLiteral("\\DefaultIcon"), {}, applicationPath + QStringLiteral(",0")},
-        {root + QStringLiteral("\\shell\\open\\command"), {},
+        {root, QStringLiteral("."), QStringLiteral("URL:HaikenAnime Protocol")},
+        {root, QStringLiteral("URL Protocol"), QString{}},
+        {root + QStringLiteral("\\DefaultIcon"), QStringLiteral("."), applicationPath + QStringLiteral(",0")},
+        {root + QStringLiteral("\\shell\\open\\command"), QStringLiteral("."),
          QStringLiteral("\"") + applicationPath + QStringLiteral("\" \"%1\"")}
     };
     for (const auto &write : writes) {
