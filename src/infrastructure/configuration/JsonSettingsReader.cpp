@@ -138,6 +138,20 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
 
     settings.aniList.endpoint = aniList.value(QStringLiteral("endpoint")).toString();
     settings.aniList.mediaQueryFile = aniList.value(QStringLiteral("mediaQueryFile")).toString();
+    settings.aniList.oauthClientId = aniList.value(QStringLiteral("oauthClientId")).toString();
+    const auto oauthRedirectUri = aniList.value(QStringLiteral("oauthRedirectUri"));
+    if (!oauthRedirectUri.isUndefined()) {
+        if (!oauthRedirectUri.isString()) {
+            error = QStringLiteral("Settings.json AniList OAuth redirect URI must be a string.");
+            return false;
+        }
+        settings.aniList.oauthRedirectUri = QUrl(oauthRedirectUri.toString());
+        if (!settings.aniList.oauthRedirectUri.isValid()
+            || settings.aniList.oauthRedirectUri.scheme().isEmpty()) {
+            error = QStringLiteral("Settings.json AniList OAuth redirect URI is invalid.");
+            return false;
+        }
+    }
     const auto sync = root.value(QStringLiteral("sync")).toObject();
     const auto logging = root.value(QStringLiteral("logging")).toObject();
     const auto covers = root.value(QStringLiteral("covers")).toObject();
