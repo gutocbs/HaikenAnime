@@ -175,6 +175,10 @@ qt_add_executable(HaikenAnime main.cpp
         src/application/anilist/AniListUpdateWorker.cpp
         src/application/anilist/AniListAuthManager.h
         src/application/anilist/AniListAuthManager.cpp
+        src/application/anilist/AniListOAuthConfig.h
+        src/application/anilist/AniListOAuthCallbackParser.h
+        src/application/anilist/AniListOAuthCallbackParser.cpp
+        src/application/anilist/IAniListViewerClient.h
         src/infrastructure/database/SqliteDatabase.h
         src/infrastructure/database/SqliteDatabase.cpp
         src/infrastructure/database/SqliteMediaRepository.h
@@ -219,6 +223,10 @@ qt_add_executable(HaikenAnime main.cpp
         src/infrastructure/anilist/HttpFactory.cpp
         src/infrastructure/anilist/AniListGraphQlClient.h
         src/infrastructure/anilist/AniListGraphQlClient.cpp
+        src/infrastructure/anilist/AniListViewerClient.h
+        src/infrastructure/anilist/AniListViewerClient.cpp
+        src/infrastructure/anilist/WindowsAniListOAuthLauncher.h
+        src/infrastructure/anilist/WindowsAniListOAuthLauncher.cpp
         src/infrastructure/anilist/GraphQlQueryStore.h
         src/infrastructure/anilist/GraphQlQueryStore.cpp
         src/infrastructure/anilist/FileAniListDataSource.h
@@ -377,10 +385,11 @@ qt_add_resources(HaikenAnime fixture_resource_bundle
 
 set_source_files_properties(
         resources/anilist/queries/seasonal-catalog.graphql
+        resources/anilist/queries/viewer.graphql
         PROPERTIES QT_RESOURCE_ALIAS "seasonal-catalog.graphql")
 qt_add_resources(HaikenAnime anilist_query_resource_bundle
         PREFIX "/anilist/queries"
-        FILES resources/anilist/queries/seasonal-catalog.graphql)
+        FILES resources/anilist/queries/seasonal-catalog.graphql resources/anilist/queries/viewer.graphql)
 
 qt_add_qml_module(HaikenAnime
         URI HaikenAnime

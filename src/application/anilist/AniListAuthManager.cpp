@@ -56,6 +56,24 @@ bool AniListAuthManager::handleCallback(const QUrl &callback, QString &error) {
     return true;
 }
 
+bool AniListAuthManager::validateToken(IAniListViewerClient &viewerClient, QString &error) {
+    AniListViewer viewer;
+    if (!viewerClient.loadViewer(viewer, error) || viewer.id <= 0 || viewer.username.trimmed().isEmpty()) {
+        if (error.isEmpty()) {
+            error = QStringLiteral("AniList Viewer validation returned invalid account data.");
+        }
+        state_ = AniListAuthenticationState::AuthenticationFailed;
+        return false;
+    }
+    credentials_.userId = viewer.id;
+    credentials_.username = viewer.username;
+    if (!save(credentials_, error)) {
+        state_ = AniListAuthenticationState::AuthenticationFailed;
+        return false;
+    }
+    return true;
+}
+
 AniListAuthenticationState AniListAuthManager::state() const {
     return state_;
 }

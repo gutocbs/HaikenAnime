@@ -6,6 +6,7 @@
 
 #include "AniListOAuthCallbackParser.h"
 #include "AniListOAuthConfig.h"
+#include "IAniListViewerClient.h"
 
 enum class AniListAuthenticationState { Disconnected, Authorizing, AwaitingValidation, Authenticated, AuthenticationFailed };
 
@@ -29,6 +30,9 @@ public:
 
     /** Parses an OAuth callback and caches its token until Viewer validation completes. */
     [[nodiscard]] bool handleCallback(const QUrl &callback, QString &error);
+
+    /** Validates the cached OAuth token and persists the authenticated AniList identity. */
+    [[nodiscard]] bool validateToken(IAniListViewerClient &viewerClient, QString &error);
 
     /** Returns the state of the AniList integration session. */
     [[nodiscard]] AniListAuthenticationState state() const;

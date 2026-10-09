@@ -4,6 +4,7 @@
 
 #include "../../src/application/anilist/AniListAuthManager.h"
 #include "../../src/application/anilist/AniListOAuthConfig.h"
+#include "../../src/application/anilist/IAniListViewerClient.h"
 
 class InMemorySecretStore final : public ISecretStore {
 public:
@@ -35,6 +36,17 @@ public:
     bool available = false;
 };
 
+class FakeViewerClient final : public IAniListViewerClient {
+public:
+    bool loadViewer(AniListViewer &viewer, QString &error) override {
+        if (!succeeds) { error = QStringLiteral("Unauthorized"); return false; }
+        viewer = result;
+        return true;
+    }
+    AniListViewer result{42, QStringLiteral("viewer")};
+    bool succeeds = true;
+};
+
 class AniListAuthManagerTests : public QObject {
     Q_OBJECT
 
@@ -46,6 +58,8 @@ private slots:
     void clearsStoredCredentialsAndCache();
     void beginsAuthorizationWithoutPersistingCredentials();
     void acceptsCallbackTokenUntilViewerValidation();
+    void validatesCallbackTokenAndPersistsViewerIdentity();
+    void keepsCallbackTokenInMemoryWhenViewerValidationFails();
 };
 
 void AniListAuthManagerTests::loadsCredentialsFromStore() {
@@ -136,6 +150,34 @@ void AniListAuthManagerTests::acceptsCallbackTokenUntilViewerValidation() {
         QUrl(QStringLiteral("haikenanime://oauth/callback#access_token=token")), error));
 
     QCOMPARE(manager.state(), AniListAuthenticationState::AwaitingValidation);
+    QCOMPARE(manager.credentials().token, QStringLiteral("token"));
+    QVERIFY(!store.available);
+}
+
+void AniListAuthManagerTests::validatesCallbackTokenAndPersistsViewerIdentity() {
+    InMemorySecretStore store;
+    AniListAuthManager manager(store);
+    FakeViewerClient viewerClient;
+    QString error;
+    QVERIFY(manager.handleCallback(QUrl(QStringLiteral("haikenanime://oauth/callback#access_token=token")), error));
+
+    QVERIFY(manager.validateToken(viewerClient, error));
+    QCOMPARE(manager.state(), AniListAuthenticationState::Authenticated);
+    QCOMPARE(manager.credentials().userId, 42);
+    QCOMPARE(manager.credentials().username, QStringLiteral("viewer"));
+    QVERIFY(store.available);
+}
+
+void AniListAuthManagerTests::keepsCallbackTokenInMemoryWhenViewerValidationFails() {
+    InMemorySecretStore store;
+    AniListAuthManager manager(store);
+    FakeViewerClient viewerClient;
+    viewerClient.succeeds = false;
+    QString error;
+    QVERIFY(manager.handleCallback(QUrl(QStringLiteral("haikenanime://oauth/callback#access_token=token")), error));
+
+    QVERIFY(!manager.validateToken(viewerClient, error));
+    QCOMPARE(manager.state(), AniListAuthenticationState::AuthenticationFailed);
     QCOMPARE(manager.credentials().token, QStringLiteral("token"));
     QVERIFY(!store.available);
 }
