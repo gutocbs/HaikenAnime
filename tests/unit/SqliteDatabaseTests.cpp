@@ -108,7 +108,7 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 19);
+    QCOMPARE(query.value(0).toInt(), 20);
 }
 
 void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
@@ -208,7 +208,7 @@ void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
     QVERIFY(versions.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
     QList<int> values;
     while (versions.next()) values.append(versions.value(0).toInt());
-    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}));
+    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}));
 }
 
 void SqliteDatabaseTests::migrationCreatesUserPreferencesVersionFive() {
