@@ -7,7 +7,6 @@ QUrl AniListOAuthConfig::authorizationUrl() const {
     QUrl url(QStringLiteral("https://anilist.co/api/v2/oauth/authorize"));
     QUrlQuery query;
     query.addQueryItem(QStringLiteral("client_id"), clientId_);
-    query.addQueryItem(QStringLiteral("redirect_uri"), redirectUri_.toString(QUrl::FullyEncoded));
     query.addQueryItem(QStringLiteral("response_type"), QStringLiteral("token"));
     url.setQuery(query);
     return url;

@@ -9,14 +9,14 @@ class AniListOAuthCallbackParserTests : public QObject {
     Q_OBJECT
 
 private slots:
-    void createsImplicitGrantUrlWithExactRedirectUri();
+    void createsImplicitGrantUrlWithoutRedirectUri();
     void extractsAccessTokenFromCallbackFragment();
     void rejectsTokenInQueryInsteadOfFragment();
     void rejectsCallbackWithoutAccessToken();
     void reportsCallbackErrorWithoutLeakingToken();
 };
 
-void AniListOAuthCallbackParserTests::createsImplicitGrantUrlWithExactRedirectUri() {
+void AniListOAuthCallbackParserTests::createsImplicitGrantUrlWithoutRedirectUri() {
     AniListOAuthConfig config(QStringLiteral("12345"), QUrl(QStringLiteral("haikenanime://oauth/callback")));
 
     const QUrl url = config.authorizationUrl();
@@ -26,8 +26,7 @@ void AniListOAuthCallbackParserTests::createsImplicitGrantUrlWithExactRedirectUr
     QCOMPARE(url.path(), QStringLiteral("/api/v2/oauth/authorize"));
     const QUrlQuery query(url);
     QCOMPARE(query.queryItemValue(QStringLiteral("client_id")), QStringLiteral("12345"));
-    QCOMPARE(query.queryItemValue(QStringLiteral("redirect_uri")),
-             QStringLiteral("haikenanime://oauth/callback"));
+    QVERIFY(!query.hasQueryItem(QStringLiteral("redirect_uri")));
     QCOMPARE(query.queryItemValue(QStringLiteral("response_type")), QStringLiteral("token"));
 }
 
