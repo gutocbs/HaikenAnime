@@ -570,6 +570,7 @@ Item {
                     }
 
                     ColumnLayout {
+                        id: homeSynchronizationStatus
                         Layout.preferredWidth: 210
                         spacing: 1
 
@@ -585,9 +586,12 @@ Item {
                         }
 
                         Label {
+                            id: homeSynchronizationDetail
                             Layout.fillWidth: true
                             text: controller.state === "error"
-                                  ? qsTr("Verifique os detalhes")
+                                  ? (controller.errorMessage.length > 0
+                                     ? controller.errorMessage
+                                     : qsTr("Verifique os detalhes"))
                                   : home.hasLocalLibraryMessage
                                     ? (controller.localLibraryErrorMessage.length > 0
                                        ? controller.localLibraryErrorMessage
@@ -601,6 +605,8 @@ Item {
                                    ? "#b13b43" : ink
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
+                            wrapMode: Text.Wrap
+                            maximumLineCount: controller.state === "error" ? 2 : 1
                             elide: Text.ElideRight
                         }
                     }
@@ -614,16 +620,6 @@ Item {
                     value: controller.synchronizationProgress
                     indeterminate: !controller.synchronizationProgressKnown
                 }
-
-                Label {
-                    Layout.fillWidth: true
-                    visible: controller.errorMessage.length > 0
-                    text: controller.errorMessage
-                    color: "#8f3038"
-                    font.pixelSize: 11
-                    elide: Text.ElideRight
-                }
-
             }
         }
     }

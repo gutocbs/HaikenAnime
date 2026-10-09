@@ -73,6 +73,7 @@ private slots:
     void scanExtensionGridReachesAllBreakpointsAndPreservesInteractions();
     void browseControlsShowConfiguredLabelsAfterInitialization();
     void homeRestoresListFilterSelectionAfterReturningFromSettings();
+    void homeErrorDetailStaysWithSynchronizationStatus();
     void mediaCardAndSettingsUseControllerPreparedCardPresentation();
     void previewCardsUseControllerPreparedMetadataInBothGrids();
     void compactDetailsUseSeparatePreviewMetadata();
@@ -289,6 +290,24 @@ void QmlStructureTests::homeRestoresListFilterSelectionAfterReturningFromSetting
              "The preview filter must be synchronized when Home becomes visible again.");
     QVERIFY2(homeSource.contains(QStringLiteral("completeBrowseControls.synchronizeWithController()")),
              "The complete-library filter must be synchronized when Home becomes visible again.");
+}
+
+void QmlStructureTests::homeErrorDetailStaysWithSynchronizationStatus() {
+    const QString source = qmlSource(QStringLiteral("Home.qml"));
+    QVERIFY(!source.isEmpty());
+
+    const qsizetype statusStart = source.indexOf(QStringLiteral("id: homeSynchronizationStatus"));
+    const qsizetype progressBarStart = source.indexOf(QStringLiteral("ProgressBar {"), statusStart);
+    QVERIFY(statusStart >= 0);
+    QVERIFY(progressBarStart > statusStart);
+
+    const QString statusBlock = source.mid(statusStart, progressBarStart - statusStart);
+    QVERIFY(statusBlock.contains(QStringLiteral("id: homeSynchronizationDetail")));
+    QVERIFY(statusBlock.contains(QStringLiteral("? controller.errorMessage")));
+    QVERIFY(statusBlock.contains(QStringLiteral("wrapMode: Text.Wrap")));
+
+    const QString lowerStatusArea = source.mid(progressBarStart);
+    QVERIFY(!lowerStatusArea.contains(QStringLiteral("text: controller.errorMessage")));
 }
 
 void QmlStructureTests::mediaCardAndSettingsUseControllerPreparedCardPresentation() {
