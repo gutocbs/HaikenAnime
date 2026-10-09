@@ -69,7 +69,10 @@ bool SqliteDatabase::open() {
     if (opened) {
         QSqlQuery pragma(database_);
         opened = ExecuteMigrationScript(
-            pragma, QStringLiteral(":/sqlite/migrations/000-enable-foreign-keys.sql"), lastError_);
+            pragma, QStringLiteral(":/sqlite/migrations/000-enable-foreign-keys.sql"), lastError_)
+            && pragma.exec(QStringLiteral("PRAGMA busy_timeout = 10000"))
+            && pragma.exec(QStringLiteral("PRAGMA journal_mode = WAL"));
+        if (!opened && lastError_.isEmpty()) lastError_ = pragma.lastError().text();
         if (!opened) {
             database_.close();
         }
