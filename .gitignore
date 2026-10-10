@@ -1,9 +1,37 @@
-/.idea
-/cmake-build-validation
-/cmake-build-debug
-/src/presentation/home/.idea
-/docs/superpowers
-/cmake-build-task12-part4
-/cmake-build-qt-validation
-/.superpowers
-/cmake-build-codex
+# ==========================================
+# Prerequisites & Compilers
+# ==========================================
+*.d
+*.o
+*.obj
+*.gch
+*.pch
+
+# ==========================================
+# Compiled Binaries & Libraries
+# ==========================================
+*.exe
+*.out
+*.app
+*.a
+*.lib
+*.la
+*.lai
+*.so
+*.so.*
+*.dylib
+
+# ==========================================
+# IDEs & Text Editors
+# ==========================================
+.idea/
+.vscode/
+*.swp
+*~
+
+# ==========================================
+# Build Directories (CMake & Project Specific)
+# ==========================================
+# This blocks any folder starting with "cmake" or containing "superpowers"
+cmake*/
+*superpowers*/
