@@ -15,6 +15,7 @@ const auto MarkSourceRemoved = QStringLiteral(":/sqlite/queries/mark-media-sourc
 const auto UpdatePersonalListMedia = QStringLiteral(":/sqlite/queries/update-personal-list-media.sql");
 const auto EnqueueChange = QStringLiteral(":/sqlite/queries/enqueue-pending-change.sql");
 const auto ReadChanges = QStringLiteral(":/sqlite/queries/read-pending-changes.sql");
+const auto ReadPendingMediaIds = QStringLiteral(":/sqlite/queries/read-pending-media-ids.sql");
 const auto UpdateChange = QStringLiteral(":/sqlite/queries/update-pending-change.sql");
 
 bool insertMedia(QSqlDatabase database, int mediaId) {
@@ -37,6 +38,8 @@ private slots:
     void personalListUpdatePersistsEditorFieldsWithoutOverwritingCatalogMetadata();
     void personalListChangePersistsMediaAndPendingChangesTogether();
     void pendingChangeRoundTripPreservesRemoteObservedAt();
+    void readsDistinctMediaIdsWithAutomaticallySendableChanges();
+    void updatingStatusWithNullLastErrorStoresEmptyText();
     void malformedPendingValueFailsInsteadOfBecomingEmptyText();
     void fractionalPendingIntegerIsRejected();
     void updatingMissingPendingChangeFails();
@@ -341,6 +344,69 @@ void SqliteRepositoryTests::pendingChangeRoundTripPreservesRemoteObservedAt() {
     QVERIFY(repository.getPending(7, actual, error));
     QCOMPARE(actual.size(), 1);
     QCOMPARE(actual.first().remoteObservedAt, expected.remoteObservedAt);
+}
+
+void SqliteRepositoryTests::readsDistinctMediaIdsWithAutomaticallySendableChanges() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    for (const int mediaId : {7, 8, 9}) QVERIFY(insertMedia(database.connection(), mediaId));
+    QSqlQuery insert(database.connection());
+    QVERIFY(insert.exec(QStringLiteral(
+        "INSERT INTO anilist_pending_changes "
+        "(media_id, field, previous_value, new_value, created_at, local_updated_at, status) VALUES "
+        "(7, 5, '{\"type\":\"int\",\"value\":1}', '{\"type\":\"int\",\"value\":2}', "
+        "'2026-10-10T10:00:00Z', '2026-10-10T10:00:00Z', 0), "
+        "(7, 5, '{\"type\":\"int\",\"value\":2}', '{\"type\":\"int\",\"value\":3}', "
+        "'2026-10-10T10:01:00Z', '2026-10-10T10:01:00Z', 3), "
+        "(8, 9, '{\"type\":\"text\",\"value\":\"\"}', '{\"type\":\"text\",\"value\":\"delete\"}', "
+        "'2026-10-10T10:02:00Z', '2026-10-10T10:02:00Z', 4), "
+        "(9, 5, '{\"type\":\"int\",\"value\":1}', '{\"type\":\"int\",\"value\":2}', "
+        "'2026-10-10T10:03:00Z', '2026-10-10T10:03:00Z', 2)")));
+    SqlitePendingChangeRepository repository(database.connection(), EnqueueChange, ReadChanges,
+                                              ReadPendingMediaIds, UpdateChange);
+    QList<int> mediaIds;
+    QString error;
+
+    QVERIFY2(repository.getPendingMediaIds(mediaIds, error), qPrintable(error));
+    QCOMPARE(mediaIds, QList<int>{7});
+}
+
+void SqliteRepositoryTests::updatingStatusWithNullLastErrorStoresEmptyText() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    QVERIFY(insertMedia(database.connection(), 7));
+    SqlitePendingChangeRepository repository(
+        database.connection(), EnqueueChange, ReadChanges, UpdateChange);
+
+    AniListPendingChange change;
+    change.mediaId = 7;
+    change.field = AniListField::Progress;
+    change.previousValue = 1;
+    change.newValue = 2;
+    change.createdAt = QDateTime::fromString(QStringLiteral("2026-10-10T10:00:00Z"), Qt::ISODate);
+    change.localUpdatedAt = change.createdAt;
+    QString error;
+    QVERIFY2(repository.enqueue(change, error), qPrintable(error));
+
+    QList<AniListPendingChange> pending;
+    QVERIFY2(repository.getPending(7, pending, error), qPrintable(error));
+    QCOMPARE(pending.size(), 1);
+    change = pending.first();
+    change.status = AniListPendingChangeStatus::Succeeded;
+    change.lastError.clear();
+
+    QVERIFY2(repository.updateStatus(change, error), qPrintable(error));
+    QSqlQuery persisted(database.connection());
+    QVERIFY(persisted.exec(QStringLiteral(
+        "SELECT status, last_error FROM anilist_pending_changes WHERE id = %1").arg(change.id)));
+    QVERIFY(persisted.next());
+    QCOMPARE(persisted.value(0).toInt(), static_cast<int>(AniListPendingChangeStatus::Succeeded));
+    QCOMPARE(persisted.value(1).toString(), QStringLiteral(""));
+    QVERIFY(!persisted.value(1).isNull());
 }
 
 void SqliteRepositoryTests::malformedPendingValueFailsInsteadOfBecomingEmptyText() {

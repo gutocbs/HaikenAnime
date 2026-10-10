@@ -139,18 +139,10 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
     settings.aniList.endpoint = aniList.value(QStringLiteral("endpoint")).toString();
     settings.aniList.mediaQueryFile = aniList.value(QStringLiteral("mediaQueryFile")).toString();
     settings.aniList.oauthClientId = aniList.value(QStringLiteral("oauthClientId")).toString();
-    if (!readInteger(aniList, QStringLiteral("userListPerChunk"), 100,
+    if (!readInteger(aniList, QStringLiteral("userListPerChunk"), 500,
                      settings.aniList.userListPerChunk)) {
         error = QStringLiteral("Settings.json AniList user-list chunk size must be a whole number.");
         return false;
-    }
-    const auto captureResponses = aniList.value(QStringLiteral("captureGraphQlResponsesForDiagnostics"));
-    if (!captureResponses.isUndefined()) {
-        if (!captureResponses.isBool()) {
-            error = QStringLiteral("Settings.json AniList GraphQL response capture must be boolean.");
-            return false;
-        }
-        settings.aniList.captureGraphQlResponsesForDiagnostics = captureResponses.toBool();
     }
     const auto oauthRedirectUri = aniList.value(QStringLiteral("oauthRedirectUri"));
     if (!oauthRedirectUri.isUndefined()) {
@@ -303,7 +295,7 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
     }
 
     if (settings.aniList.endpoint.isEmpty() || settings.aniList.mediaQueryFile.isEmpty()
-        || settings.aniList.userListPerChunk <= 0
+        || settings.aniList.userListPerChunk <= 0 || settings.aniList.userListPerChunk > 500
         || settings.http.timeoutMs <= 0 || settings.http.maxRetries < 0
         || settings.http.retryDelayMs < 0 || settings.syncTimeoutMs <= 0
         || settings.syncIntervalMs <= 0) {

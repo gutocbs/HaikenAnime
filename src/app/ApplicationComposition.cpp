@@ -40,7 +40,7 @@ QString initializationFailure(const QString &stage, const QString &detail) {
 std::map<SyncTaskKind, SyncSchedulePolicy> backgroundSynchronizationPolicies(
     const std::map<SyncTaskKind, SyncSchedulePolicy> &configuredPolicies) {
     std::map<SyncTaskKind, SyncSchedulePolicy> policies;
-    for (const auto kind : {SyncTaskKind::UserList}) {
+    for (const auto kind : {SyncTaskKind::UserList, SyncTaskKind::PendingChange}) {
         const auto configured = configuredPolicies.find(kind);
         policies.emplace(kind, configured == configuredPolicies.end()
                                    ? DefaultSyncSchedulePolicy(kind) : configured->second);
@@ -343,10 +343,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         const AniListGraphQlClient::Diagnostics oauthDiagnostics{
             .log = [logger = context.logger.get()](const QString &event) {
                 if (logger) logger->info(LogCategory::Sync, event);
-            },
-            .responseCaptureDirectory = settings.aniList.captureGraphQlResponsesForDiagnostics
-                ? QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath("logs")
-                : QString{}};
+            }};
         context.aniListGraphQlClient = std::make_unique<AniListGraphQlClient>(
             *context.aniListNetworkManager, context.aniListAuthManager.get(),
             QUrl(settings.aniList.endpoint), settings.http.timeoutMs,
@@ -369,10 +366,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         settings.http.retryDelayMs,
         [logger = context.logger.get()](const QString &event) {
             if (logger) logger->info(LogCategory::Sync, event);
-        },
-        settings.aniList.captureGraphQlResponsesForDiagnostics
-            ? QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath("logs")
-            : QString{}};
+        }};
     context.adaptiveSync = std::make_unique<AdaptiveSyncRuntime>(
         [synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath,
          deleteTaskStateQueryPath](QString &error) -> std::unique_ptr<ISyncTaskStateRepository> {
@@ -401,10 +395,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     const AniListGraphQlClient::Diagnostics seasonalDiagnostics{
         .log = [logger = context.logger.get()](const QString &event) {
             if (logger) logger->info(LogCategory::Sync, event);
-        },
-        .responseCaptureDirectory = settings.aniList.captureGraphQlResponsesForDiagnostics
-            ? QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath("logs")
-            : QString{}};
+        }};
     context.seasonalGraphQlClient = std::make_unique<AniListGraphQlClient>(
         *context.seasonalNetworkManager, nullptr, QUrl(settings.aniList.endpoint), settings.http.timeoutMs,
         settings.http.maxRetries, settings.http.retryDelayMs, seasonalDiagnostics);

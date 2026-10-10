@@ -143,12 +143,10 @@ bool InitialSyncCoordinator::performSynchronization(const bool filterUserLists,
         MediaSyncFilter filter;
         return service.synchronize(filter, error);
     }
-    for (const auto &listStatus : AniListStatusesForEnabledUserLists(enabledUserLists)) {
-        MediaSyncFilter filter;
-        filter.list = listStatus;
-        if (!service.synchronize(filter, error)) return false;
-    }
-    return true;
+    MediaSyncFilter filter;
+    filter.acceptedListStatuses = AniListStatusesForEnabledUserLists(enabledUserLists);
+    if (filter.acceptedListStatuses.isEmpty()) return true;
+    return service.synchronize(filter, error);
 }
 
 void InitialSyncCoordinator::releaseFinishedThread() {

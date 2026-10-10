@@ -24,6 +24,7 @@ class PersonalListChangeServiceTests final : public QObject {
 
 private slots:
     void persistsLocalEditWithRemotePendingChanges();
+    void requestsPendingSynchronizationOnlyAfterDurableOutboxWrite();
 };
 
 void PersonalListChangeServiceTests::persistsLocalEditWithRemotePendingChanges() {
@@ -51,6 +52,27 @@ void PersonalListChangeServiceTests::persistsLocalEditWithRemotePendingChanges()
     QCOMPARE(writer.savedChanges.at(0).newValue, AniListFieldValue(12));
     QCOMPARE(writer.savedChanges.at(1).field, AniListField::PersonalScore);
     QCOMPARE(writer.savedChanges.at(2).field, AniListField::ListStatus);
+}
+
+void PersonalListChangeServiceTests::requestsPendingSynchronizationOnlyAfterDurableOutboxWrite() {
+    RecordingPersonalListChangeWriter writer;
+    PersonalListChangeService service(writer);
+    int requests = 0;
+    service.setPendingChangesNotifier([&requests] { ++requests; });
+    Media previous;
+    previous.Id = 154587;
+    previous.ConsumedChapters = 4;
+    Media updated = previous;
+    updated.ConsumedChapters = 5;
+    QString error;
+
+    writer.failure = QStringLiteral("database write failed");
+    QVERIFY(!service.save(previous, updated, error));
+    QCOMPARE(requests, 0);
+
+    writer.failure.clear();
+    QVERIFY2(service.save(previous, updated, error), qPrintable(error));
+    QCOMPARE(requests, 1);
 }
 
 QTEST_MAIN(PersonalListChangeServiceTests)

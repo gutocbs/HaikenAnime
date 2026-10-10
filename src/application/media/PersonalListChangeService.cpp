@@ -30,6 +30,10 @@ PersonalListChangeService::PersonalListChangeService(IPersonalListChangeWriter &
     : writer_(writer) {
 }
 
+void PersonalListChangeService::setPendingChangesNotifier(std::function<void()> notifier) {
+    pendingChangesNotifier_ = std::move(notifier);
+}
+
 bool PersonalListChangeService::save(const Media &previous, const Media &updated, QString &error) const {
     error.clear();
     if (updated.Id <= 0) {
@@ -46,5 +50,7 @@ bool PersonalListChangeService::save(const Media &previous, const Media &updated
                          aniListStatus(updated.ListStatus), changes, error)) {
         return false;
     }
-    return writer_.save(updated, changes, error);
+    if (!writer_.save(updated, changes, error)) return false;
+    if (!changes.isEmpty() && pendingChangesNotifier_) pendingChangesNotifier_();
+    return true;
 }

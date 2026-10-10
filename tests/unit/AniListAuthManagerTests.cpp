@@ -191,7 +191,7 @@ void AniListAuthManagerTests::logsViewerValidationFailureWithoutLoggingToken() {
     QCOMPARE(manager.state(), AniListAuthenticationState::AuthenticationFailed);
     QCOMPARE(manager.credentials().token, QStringLiteral("secret-token"));
     QVERIFY(!store.available);
-    QVERIFY(auditEvents.contains(QStringLiteral("AniList Viewer validation failed: Unauthorized")));
+    QVERIFY(auditEvents.contains(QStringLiteral("AniList Viewer validation failed.")));
     QVERIFY(!auditEvents.join(QLatin1Char('\n')).contains(QStringLiteral("secret-token")));
 }
 

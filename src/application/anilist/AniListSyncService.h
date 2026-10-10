@@ -12,6 +12,7 @@
 #include <functional>
 
 class AniListPendingChangeProcessor;
+class AniListPendingChangeReconciler;
 
 class AniListSyncService {
 public:
@@ -21,19 +22,21 @@ public:
     AniListSyncService(IMediaDataSource &dataSource, IMediaWriter &mediaWriter,
                        IMediaSnapshotReconciler *snapshotReconciler = nullptr,
                        AniListPendingChangeProcessor *pendingProcessor = nullptr,
-                       int timeoutMs = 0)
+                       int timeoutMs = 0,
+                       AniListPendingChangeReconciler *pendingReconciler = nullptr)
         : dataSource_(&dataSource), mediaWriter_(mediaWriter),
           snapshotReconciler_(snapshotReconciler), pendingProcessor_(pendingProcessor),
-          timeoutMs_(timeoutMs) {
+          pendingReconciler_(pendingReconciler), timeoutMs_(timeoutMs) {
     }
 
     AniListSyncService(IAniListDataSource &dataSource, IMediaWriter &mediaWriter,
                        IMediaSnapshotReconciler *snapshotReconciler = nullptr,
                        AniListPendingChangeProcessor *pendingProcessor = nullptr,
-                       int timeoutMs = 0)
+                       int timeoutMs = 0,
+                       AniListPendingChangeReconciler *pendingReconciler = nullptr)
         : aniListDataSource_(&dataSource), mediaWriter_(mediaWriter),
           snapshotReconciler_(snapshotReconciler), pendingProcessor_(pendingProcessor),
-          timeoutMs_(timeoutMs) {
+          pendingReconciler_(pendingReconciler), timeoutMs_(timeoutMs) {
     }
 
     /** Fetches and persists all pages selected by filter, or all available data when empty. */
@@ -51,6 +54,7 @@ private:
     IMediaWriter &mediaWriter_;
     IMediaSnapshotReconciler *snapshotReconciler_;
     AniListPendingChangeProcessor *pendingProcessor_;
+    AniListPendingChangeReconciler *pendingReconciler_;
     int timeoutMs_;
     AniListSyncErrorCategory lastErrorCategory_ = AniListSyncErrorCategory::None;
 };

@@ -29,6 +29,7 @@ private slots:
     void usesDistinctSyncTaskPolicyDefaultsWhenSettingsAreOmitted();
     void rejectsNegativeSyncTaskPolicyDurations();
     void readsAniListOAuthConfiguration();
+    void rejectsAniListUserListChunkAboveMaximum();
 };
 
 void JsonSettingsReaderTests::readsValidConfiguration() {
@@ -75,7 +76,30 @@ void JsonSettingsReaderTests::readsValidConfiguration() {
     QCOMPARE(settings.userPreferences.coverQuality, CoverQuality::ExtraLarge);
     QCOMPARE(settings.userPreferences.synchronizationEnabled, false);
     QCOMPARE(settings.userPreferences.synchronizationIntervalMs, 1800000);
+    QCOMPARE(settings.aniList.userListPerChunk, 500);
     QVERIFY(error.isEmpty());
+}
+
+void JsonSettingsReaderTests::rejectsAniListUserListChunkAboveMaximum() {
+    QTemporaryDir temporaryDirectory;
+    const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
+    file.write(R"({
+        "anilist": {
+          "endpoint": "https://graphql.anilist.co",
+          "mediaQueryFile": "query.graphql",
+          "userListPerChunk": 501
+        },
+        "http": {"timeoutMs": 5000}
+    })");
+    file.close();
+    JsonSettingsReader reader(path);
+    Settings settings;
+    QString error;
+
+    QVERIFY(!reader.read(settings, error));
+    QVERIFY(error.contains(QStringLiteral("invalid AniList")));
 }
 
 void JsonSettingsReaderTests::readsAniListOAuthConfiguration() {
@@ -89,8 +113,7 @@ void JsonSettingsReaderTests::readsAniListOAuthConfiguration() {
           "mediaQueryFile": "query.graphql",
           "oauthClientId": "12345",
           "oauthRedirectUri": "haikenanime://oauth/callback",
-          "userListPerChunk": 100,
-          "captureGraphQlResponsesForDiagnostics": true
+          "userListPerChunk": 100
         },
         "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100}
     })");
@@ -104,7 +127,6 @@ void JsonSettingsReaderTests::readsAniListOAuthConfiguration() {
     QCOMPARE(settings.aniList.oauthRedirectUri,
              QUrl(QStringLiteral("haikenanime://oauth/callback")));
     QCOMPARE(settings.aniList.userListPerChunk, 100);
-    QVERIFY(settings.aniList.captureGraphQlResponsesForDiagnostics);
 }
 
 void JsonSettingsReaderTests::readsSeasonalCatalogCachePolicy() {

@@ -107,6 +107,14 @@ int main(int argc, char *argv[]) {
     homeController.SetLocalEpisodeServices(context.localEpisodeReader.get(), context.localFileOpener.get());
     homeController.SetPersonalListMediaWriter(context.mediaRepository.get());
     homeController.SetPersonalListChangeService(context.personalListChangeService.get());
+    if (context.personalListChangeService && context.adaptiveSync) {
+        context.personalListChangeService->setPendingChangesNotifier(
+            [runtime = context.adaptiveSync.get(), auth = context.aniListAuthManager.get()] {
+                if (runtime && auth && !auth->credentials().token.isEmpty()) {
+                    runtime->requestNow(SyncPartition::PendingChanges);
+                }
+            });
+    }
     SeasonalPersonalListService personalLists(context.mediaRepository.get(), context.mediaRepository.get(),
                                               context.mediaRepository.get(), context.personalListChangeService.get());
     SeasonalCatalogController seasonalCatalogController(context.seasonalCatalogCoordinator.get(),
@@ -213,18 +221,21 @@ int main(int argc, char *argv[]) {
                      &homeController, &HomeScreenController::reload);
 
     if (context.adaptiveSync) {
-        const auto requestUserListSynchronization = [&context, &homeController, &settingsController] {
+        const auto requestAniListSynchronization = [&context, &homeController, &settingsController] {
             if (!context.adaptiveSync) return;
+            if (!context.aniListAuthManager
+                || context.aniListAuthManager->credentials().token.isEmpty()) return;
             homeController.notifySynchronizationStarted();
             settingsController.notifySynchronizationStarted();
             context.adaptiveSync->requestNow(SyncPartition::UserList);
+            context.adaptiveSync->requestNow(SyncPartition::PendingChanges);
         };
         QObject::connect(&settingsController, &SettingsController::synchronizationRequested,
-                         &app, requestUserListSynchronization);
+                         &app, requestAniListSynchronization);
         QObject::connect(&settingsController, &SettingsController::aniListAuthenticationSucceeded,
-                         &app, requestUserListSynchronization);
+                         &app, requestAniListSynchronization);
         if (context.userPreferences.synchronizationEnabled) {
-            QTimer::singleShot(0, &app, requestUserListSynchronization);
+            QTimer::singleShot(0, &app, requestAniListSynchronization);
         }
     }
 

@@ -1,5 +1,6 @@
 #include "AniListSyncService.h"
 #include "AniListPendingChangeProcessor.h"
+#include "AniListPendingChangeReconciler.h"
 #include "AniListSyncErrorClassifier.h"
 
 #include <QElapsedTimer>
@@ -69,7 +70,7 @@ bool AniListSyncService::synchronize(const AniListDataSourceRequest &request, QS
             sourceResult.completedPartition = pageRequest.filter.partition;
             sourceResult.isCompleteAuthoritativeSnapshot = false;
         }
-        const MediaPage &page = sourceResult.page;
+        MediaPage page = std::move(sourceResult.page);
         if (isCancelled && isCancelled()) {
             error = QStringLiteral("AniList synchronization cancelled.");
             lastErrorCategory_ = AniListSyncErrorCategory::Cancelled;
@@ -81,6 +82,12 @@ bool AniListSyncService::synchronize(const AniListDataSourceRequest &request, QS
                         .arg(page.currentPage)
                         .arg(pageRequest.filter.startingPage);
             lastErrorCategory_ = AniListSyncErrorCategory::InvalidData;
+            return false;
+        }
+
+        if (pendingReconciler_ != nullptr && !page.media.isEmpty()
+            && !pendingReconciler_->reconcile(page.media, error)) {
+            lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
             return false;
         }
 

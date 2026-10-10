@@ -8,12 +8,8 @@
 #include <variant>
 
 AniListUpdateClient::AniListUpdateClient(AniListGraphQlClient &graphQlClient,
-                                         GraphQlQueryStore &progressQuery,
-                                         GraphQlQueryStore &scoreQuery,
-                                         GraphQlQueryStore &listStatusQuery,
-                                         GraphQlQueryStore &deleteQuery)
-    : graphQlClient_(graphQlClient), progressQuery_(progressQuery), scoreQuery_(scoreQuery),
-      listStatusQuery_(listStatusQuery), deleteQuery_(deleteQuery) {
+                                         GraphQlQueryStore &updateQuery)
+    : graphQlClient_(graphQlClient), updateQuery_(updateQuery) {
 }
 
 bool AniListUpdateClient::Execute(GraphQlQueryStore &queryStore, const QJsonObject &variables,
@@ -41,65 +37,37 @@ bool AniListUpdateClient::updateMedia(const AniListMediaPendingChanges &changes,
         return false;
     }
 
-    // The grouped contract is established here. The mutation payload will be consolidated
-    // into one SaveMediaListEntry query when the real AniList transport is enabled.
+    QJsonObject variables{{QStringLiteral("mediaId"), changes.mediaId}};
     for (const auto &change : changes.changes) {
         switch (change.field) {
         case AniListField::Progress:
-            if (!std::holds_alternative<int>(change.newValue) ||
-                !UpdateProgress(changes.mediaId, std::get<int>(change.newValue), error)) {
+            if (!std::holds_alternative<int>(change.newValue)) {
+                error = QStringLiteral("AniList progress must be an integer.");
                 return false;
             }
+            variables.insert(QStringLiteral("progress"), std::get<int>(change.newValue));
             break;
         case AniListField::PersonalScore:
-            if (!std::holds_alternative<int>(change.newValue) ||
-                !UpdateScore(changes.mediaId, std::get<int>(change.newValue), error)) {
+            if (!std::holds_alternative<int>(change.newValue)) {
+                error = QStringLiteral("AniList score must be numeric.");
                 return false;
             }
+            variables.insert(QStringLiteral("score"), std::get<int>(change.newValue));
             break;
         case AniListField::ListStatus:
-            if (!std::holds_alternative<QString>(change.newValue) ||
-                !UpdateListStatus(changes.mediaId, std::get<QString>(change.newValue), error)) {
+            if (!std::holds_alternative<QString>(change.newValue)) {
+                error = QStringLiteral("AniList list status must be text.");
                 return false;
             }
+            variables.insert(QStringLiteral("status"), std::get<QString>(change.newValue));
             break;
         case AniListField::Deletion:
-            if (change.status != AniListPendingChangeStatus::RequiresConfirmation ||
-                !DeleteListEntry(changes.mediaId, error)) {
-                if (error.isEmpty()) {
-                    error = QStringLiteral("Deletion requires user confirmation before sending.");
-                }
-                return false;
-            }
-            break;
+            error = QStringLiteral("Deletion requires a separate confirmed operation.");
+            return false;
         default:
             error = QStringLiteral("The field does not have an update mutation.");
             return false;
         }
     }
-    return true;
-}
-
-bool AniListUpdateClient::UpdateProgress(const int mediaId, const int progress, QString &error) {
-    QJsonObject variables{{QStringLiteral("mediaId"), mediaId},
-                          {QStringLiteral("progress"), progress}};
-    return Execute(progressQuery_, variables, error);
-}
-
-bool AniListUpdateClient::UpdateScore(const int mediaId, const double score, QString &error) {
-    QJsonObject variables{{QStringLiteral("mediaId"), mediaId},
-                          {QStringLiteral("score"), score}};
-    return Execute(scoreQuery_, variables, error);
-}
-
-bool AniListUpdateClient::UpdateListStatus(const int mediaId, const QString &status,
-                                           QString &error) {
-    QJsonObject variables{{QStringLiteral("mediaId"), mediaId},
-                          {QStringLiteral("status"), status}};
-    return Execute(listStatusQuery_, variables, error);
-}
-
-bool AniListUpdateClient::DeleteListEntry(const int mediaId, QString &error) {
-    QJsonObject variables{{QStringLiteral("mediaId"), mediaId}};
-    return Execute(deleteQuery_, variables, error);
+    return Execute(updateQuery_, variables, error);
 }

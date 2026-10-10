@@ -10,8 +10,7 @@ struct AniListSettings {
     QString mediaQueryFile;
     QString oauthClientId;
     QUrl oauthRedirectUri;
-    int userListPerChunk = 100;
-    bool captureGraphQlResponsesForDiagnostics = false;
+    int userListPerChunk = 500;
 };
 
 #endif // HAIKENANIME_APPLICATION_ANILISTSETTINGS_H

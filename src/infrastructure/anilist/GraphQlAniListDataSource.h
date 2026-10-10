@@ -15,7 +15,7 @@ public:
     /** Creates a source from an already configured client and query store. */
     GraphQlAniListDataSource(AniListGraphQlClient &client, GraphQlQueryStore &queryStore,
                              IAniListAuthProvider *authProvider = nullptr,
-                             int userListPerChunk = 100);
+                             int userListPerChunk = 500);
 
     /** Fetches the exact AniList partition requested through explicit GraphQL variables. */
     [[nodiscard]] bool fetchPage(const AniListDataSourceRequest &request,
@@ -25,7 +25,7 @@ private:
     AniListGraphQlClient &client_;
     GraphQlQueryStore &queryStore_;
     IAniListAuthProvider *authProvider_ = nullptr;
-    int userListPerChunk_ = 100;
+    int userListPerChunk_ = 500;
 };
 
 #endif // HAIKENANIME_GRAPHQLANILISTDATASOURCE_H

@@ -26,7 +26,6 @@ public:
         int httpMaxRetries = 0;
         int httpRetryDelayMs = 0;
         std::function<void(const QString &)> auditLogger;
-        QString responseCaptureDirectory;
     };
 
     ApplicationSyncTaskExecutor(QString databasePath, QString upsertQueryPath,

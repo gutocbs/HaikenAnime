@@ -52,8 +52,36 @@ bool DecodeValue(const QString &encoded, AniListFieldValue &value) {
 
 SqlitePendingChangeRepository::SqlitePendingChangeRepository(
     QSqlDatabase database, QString enqueueQuery, QString pendingQuery, QString updateStatusQuery)
+    : SqlitePendingChangeRepository(std::move(database), std::move(enqueueQuery),
+                                    std::move(pendingQuery),
+                                    QStringLiteral(":/sqlite/queries/read-pending-media-ids.sql"),
+                                    std::move(updateStatusQuery)) {
+}
+
+SqlitePendingChangeRepository::SqlitePendingChangeRepository(
+    QSqlDatabase database, QString enqueueQuery, QString pendingQuery,
+    QString pendingMediaIdsQuery, QString updateStatusQuery)
     : database_(std::move(database)), enqueueQuery_(std::move(enqueueQuery)),
-      pendingQuery_(std::move(pendingQuery)), updateStatusQuery_(std::move(updateStatusQuery)) {
+      pendingQuery_(std::move(pendingQuery)), pendingMediaIdsQuery_(std::move(pendingMediaIdsQuery)),
+      updateStatusQuery_(std::move(updateStatusQuery)) {
+}
+
+bool SqlitePendingChangeRepository::getPendingMediaIds(QList<int> &mediaIds, QString &error) {
+    mediaIds.clear();
+    error.clear();
+    QString source;
+    if (!SqlQueryStore::loadSource(pendingMediaIdsQuery_, source, error)) return false;
+    QSqlQuery query(database_);
+    if (!query.prepare(source)) {
+        error = query.lastError().text();
+        return false;
+    }
+    if (!query.exec()) {
+        error = query.lastError().text();
+        return false;
+    }
+    while (query.next()) mediaIds.append(query.value(QStringLiteral("media_id")).toInt());
+    return true;
 }
 
 bool SqlitePendingChangeRepository::enqueue(const AniListPendingChange &change, QString &error) {
@@ -133,7 +161,8 @@ bool SqlitePendingChangeRepository::updateStatus(const AniListPendingChange &cha
     query.bindValue(QStringLiteral(":id"), change.id);
     query.bindValue(QStringLiteral(":status"), static_cast<int>(change.status));
     query.bindValue(QStringLiteral(":attempts"), change.attempts);
-    query.bindValue(QStringLiteral(":last_error"), change.lastError);
+    query.bindValue(QStringLiteral(":last_error"),
+                    change.lastError.isNull() ? QStringLiteral("") : change.lastError);
     if (!query.exec()) {
         error = query.lastError().text();
         return false;

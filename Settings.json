@@ -2,8 +2,7 @@
   "anilist": {
     "endpoint": "https://graphql.anilist.co",
     "mediaQueryFile": "resources/anilist/queries/media-page.graphql",
-    "userListPerChunk": 100,
-    "captureGraphQlResponsesForDiagnostics": true,
+    "userListPerChunk": 500,
     "oauthClientId": "53243",
     "oauthRedirectUri": "haikenanime://oauth/callback"
   },

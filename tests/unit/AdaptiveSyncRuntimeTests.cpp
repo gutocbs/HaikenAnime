@@ -40,6 +40,7 @@ struct ExecutorState final {
     std::atomic_int cancellationCount = 0;
     std::mutex completionMutex;
     ISyncTaskExecutor::Completion completion;
+    QList<SyncPartition> partitions;
     ISyncTaskExecutor::ShutdownAcknowledgement shutdownAcknowledgement;
 };
 
@@ -47,10 +48,11 @@ class FakeTaskExecutor final : public ISyncTaskExecutor {
 public:
     explicit FakeTaskExecutor(std::shared_ptr<ExecutorState> state) : state_(std::move(state)) {}
 
-    void Execute(const SyncTaskState &, qint64, Completion completion) override {
+    void Execute(const SyncTaskState &state, qint64, Completion completion) override {
         {
             std::lock_guard lock(state_->completionMutex);
             state_->completion = std::move(completion);
+            state_->partitions.append(state.partition);
         }
         ++state_->executionCount;
     }
@@ -92,6 +94,21 @@ std::unique_ptr<ISyncTaskStateRepository> freshUserListRepository(QString &error
     state.nextRunAt = state.lastSucceededAt->addDays(1);
     return std::make_unique<FakeTaskStateRepository>(QList<SyncTaskState>{state});
 }
+
+std::unique_ptr<ISyncTaskStateRepository> freshAniListRepository(QString &error) {
+    error.clear();
+    auto userList = freshUserListRepository(error);
+    auto *repository = static_cast<FakeTaskStateRepository *>(userList.get());
+    SyncTaskState pendingChanges;
+    pendingChanges.kind = SyncTaskKind::PendingChange;
+    pendingChanges.partition = SyncPartition::PendingChanges;
+    pendingChanges.status = SyncTaskStatus::Succeeded;
+    pendingChanges.cacheValidity = CacheValidity::Fresh;
+    pendingChanges.lastSucceededAt = QDateTime::currentDateTimeUtc();
+    pendingChanges.nextRunAt = pendingChanges.lastSucceededAt->addDays(1);
+    repository->states.append(pendingChanges);
+    return userList;
+}
 }
 
 class AdaptiveSyncRuntimeTests final : public QObject {
@@ -101,6 +118,7 @@ private slots:
     void startsQueuedBeforeInitializationOnlyOnce();
     void startsPersistedWorkOnlyAfterExplicitActivation();
     void forcesFreshUserListSynchronizationWhenRequested();
+    void preservesMultipleRequestsQueuedBeforeInitialization();
     void drainsAnActiveExecutorBeforeStopping();
     void exposesRepositoryInitializationFailure();
     void propagatesCompletedBackgroundTask();
@@ -190,6 +208,42 @@ void AdaptiveSyncRuntimeTests::forcesFreshUserListSynchronizationWhenRequested()
     QTRY_VERIFY(executorState->shutdownRequested.load());
     executorState->shutdownAcknowledgement();
     QTRY_VERIFY(runtime.isStopped());
+}
+
+void AdaptiveSyncRuntimeTests::preservesMultipleRequestsQueuedBeforeInitialization() {
+    QSemaphore initializationGate;
+    const auto executorState = std::make_shared<ExecutorState>();
+    AdaptiveSyncRuntime runtime(
+        [&initializationGate](QString &error) {
+            initializationGate.acquire();
+            return freshAniListRepository(error);
+        },
+        [executorState] { return std::make_unique<FakeTaskExecutor>(executorState); },
+        DefaultSyncTaskPolicies());
+
+    runtime.requestNow(SyncPartition::UserList);
+    runtime.requestNow(SyncPartition::PendingChanges);
+    initializationGate.release();
+    QList<SyncPartition> partitions;
+    for (int expectedExecutions = 1; expectedExecutions <= 3; ++expectedExecutions) {
+        QTRY_VERIFY(executorState->executionCount.load() >= expectedExecutions);
+        ISyncTaskExecutor::Completion completion;
+        {
+            std::lock_guard lock(executorState->completionMutex);
+            completion = executorState->completion;
+            partitions = executorState->partitions;
+        }
+        completion(SyncTaskExecutionResult{.succeeded = true});
+        if (partitions.contains(SyncPartition::UserList)
+            && partitions.contains(SyncPartition::PendingChanges)) break;
+    }
+
+    runtime.shutdown();
+    QTRY_VERIFY(executorState->shutdownRequested.load());
+    executorState->shutdownAcknowledgement();
+    QTRY_VERIFY(runtime.isStopped());
+    QVERIFY(partitions.contains(SyncPartition::UserList));
+    QVERIFY(partitions.contains(SyncPartition::PendingChanges));
 }
 
 void AdaptiveSyncRuntimeTests::drainsAnActiveExecutorBeforeStopping() {

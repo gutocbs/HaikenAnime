@@ -9,6 +9,7 @@
 
 #include <QFile>
 #include <QHash>
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 
@@ -53,6 +54,8 @@ inline QString RecordedGraphQlAniListDataSource::cacheKey(const AniListDataSourc
     identity.insert(QStringLiteral("type"), request.filter.type);
     identity.insert(QStringLiteral("status"), request.filter.status);
     identity.insert(QStringLiteral("list"), request.filter.list);
+    identity.insert(QStringLiteral("acceptedListStatuses"),
+                    QJsonArray::fromStringList(request.filter.acceptedListStatuses));
     identity.insert(QStringLiteral("startingPage"), qMax(1, request.filter.startingPage));
     identity.insert(QStringLiteral("perPage"), qMax(1, request.filter.perPage));
     identity.insert(QStringLiteral("variables"), request.variables);
@@ -93,7 +96,7 @@ inline bool RecordedGraphQlAniListDataSource::fetchPage(const AniListDataSourceR
                 return false;
             }
             if (!AniListGraphQlUserListParser::parse(response.data, result.page.media, error,
-                                                      request.filter.list)) return false;
+                                                      request.filter.acceptedListStatuses)) return false;
             result.page.currentPage = qMax(1, request.filter.startingPage);
             result.page.hasNextPage = hasNextChunk.toBool();
             result.page.totalPages = result.page.hasNextPage ? result.page.currentPage + 1 : result.page.currentPage;
@@ -131,7 +134,8 @@ inline bool RecordedGraphQlAniListDataSource::fetchPage(const AniListDataSourceR
     result.completedPartition = request.filter.partition;
     result.isCompleteAuthoritativeSnapshot = request.filter.partition == SyncPartition::UserList
         && request.filter.startingPage == 1 && request.filter.type.isEmpty()
-        && request.filter.status.isEmpty() && request.filter.list.isEmpty();
+        && request.filter.status.isEmpty() && request.filter.list.isEmpty()
+        && request.filter.acceptedListStatuses.isEmpty();
     cachedResults_.insert(key, result);
     return true;
 }

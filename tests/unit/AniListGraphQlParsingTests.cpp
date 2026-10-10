@@ -28,8 +28,10 @@ QByteArray fixture(const QString &path) {
 
 class LocalGraphQlServer final {
 public:
-    bool start(const QByteArray &responseBody) {
-        response_ = QByteArrayLiteral("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ")
+    bool start(const QByteArray &responseBody,
+               const QByteArray &status = QByteArrayLiteral("200 OK")) {
+        response_ = QByteArrayLiteral("HTTP/1.1 ") + status
+            + QByteArrayLiteral("\r\nContent-Type: application/json\r\nContent-Length: ")
             + QByteArray::number(responseBody.size())
             + QByteArrayLiteral("\r\nConnection: close\r\n\r\n") + responseBody;
         QObject::connect(&server_, &QTcpServer::newConnection, &server_, [this] {
@@ -96,10 +98,12 @@ private slots:
     void graphQlAdapterPostsPartitionVariablesAndParsesCatalogPage();
     void graphQlAdapterRequiresAuthenticatedIdentityForUserListRefresh();
     void graphQlAdapterUsesAuthenticatedIdentityAndConfiguredChunkForUserListRefresh();
+    void graphQlAdapterKeepsNovelsInMangaUserListResponse();
     void userListQueryRequestsChunkPaginationMetadata();
     void graphQlAdapterRejectsNonBooleanUserListPaginationMetadata();
-    void graphQlClientLogsAndCapturesSuccessfulResponseForDiagnostics();
-    void graphQlClientLogsGraphQlErrorDetailForDiagnostics();
+    void graphQlClientLogsOnlySafeSuccessTelemetry();
+    void graphQlClientDoesNotLogGraphQlErrorPayload();
+    void graphQlClientPreservesGraphQlErrorWithoutLoggingPayload();
 };
 
 void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
@@ -585,7 +589,7 @@ void AniListGraphQlParsingTests::graphQlAdapterRequiresAuthenticatedIdentityForU
     QNetworkAccessManager networkManager;
     AniListGraphQlClient client(networkManager, nullptr,
                                 QUrl(QStringLiteral("http://127.0.0.1:9/graphql")), 1000);
-    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/user-anime-list.graphql"));
+    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/user-media-list.graphql"));
     GraphQlAniListDataSource source(client, store);
     AniListDataSourceResult result;
     QString error;
@@ -598,10 +602,10 @@ void AniListGraphQlParsingTests::graphQlAdapterRequiresAuthenticatedIdentityForU
 void AniListGraphQlParsingTests::graphQlAdapterUsesAuthenticatedIdentityAndConfiguredChunkForUserListRefresh() {
     QNetworkAccessManager networkManager;
     AniListGraphQlClient client(networkManager, nullptr, QUrl(QStringLiteral("http://127.0.0.1:9/graphql")), 1000);
-    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/user-anime-list.graphql"));
+    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/user-media-list.graphql"));
     AuthProviderStub authProvider;
     authProvider.value.username = QStringLiteral("authenticated-user");
-    GraphQlAniListDataSource source(client, store, &authProvider, 100);
+    GraphQlAniListDataSource source(client, store, &authProvider, 500);
     const auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
     AniListDataSourceResult result;
     QString error;
@@ -613,21 +617,97 @@ void AniListGraphQlParsingTests::graphQlAdapterUsesAuthenticatedIdentityAndConfi
     QVERIFY2(server.start(fixture(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE))), "Local GraphQL server did not start.");
     QNetworkAccessManager userListNetworkManager;
     AniListGraphQlClient userListClient(userListNetworkManager, nullptr, server.endpoint(), 1000);
-    GraphQlAniListDataSource userListSource(userListClient, store, &authProvider, 100);
+    GraphQlAniListDataSource userListSource(userListClient, store, &authProvider, 500);
     auto namedRequest = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
-    namedRequest.filter.list = QStringLiteral("CURRENT");
+    namedRequest.filter.acceptedListStatuses = {
+        QStringLiteral("CURRENT"), QStringLiteral("COMPLETED")};
+    namedRequest.filter.type = QStringLiteral("MANGA");
 
     QVERIFY2(userListSource.fetchPage(namedRequest, result, error), qPrintable(error));
     QCOMPARE(result.completedPartition, SyncPartition::UserList);
     QVERIFY(!result.isCompleteAuthoritativeSnapshot);
     const auto variables = server.requestPayload().value(QStringLiteral("variables")).toObject();
     QCOMPARE(variables.value(QStringLiteral("userName")).toString(), QStringLiteral("authenticated-user"));
-    QCOMPARE(variables.value(QStringLiteral("perChunk")).toInt(), 100);
-    QCOMPARE(variables.value(QStringLiteral("status")).toString(), QStringLiteral("CURRENT"));
+    QCOMPARE(variables.value(QStringLiteral("perChunk")).toInt(), 500);
+    QVERIFY(!variables.contains(QStringLiteral("status")));
+    QCOMPARE(variables.value(QStringLiteral("type")).toString(), QStringLiteral("MANGA"));
+    QVERIFY(server.requestPayload().value(QStringLiteral("query")).toString().contains(
+        QStringLiteral("type: $type")));
+    QVERIFY(!server.requestPayload().value(QStringLiteral("query")).toString().contains(
+        QStringLiteral("status: $status")));
+}
+
+void AniListGraphQlParsingTests::graphQlAdapterKeepsNovelsInMangaUserListResponse() {
+    const auto payload = QByteArrayLiteral(R"json({
+        "data": {
+            "MediaListCollection": {
+                "hasNextChunk": false,
+                "lists": [{
+                    "entries": [
+                        {
+                            "status": "CURRENT",
+                            "progress": 4,
+                            "score": 8,
+                            "media": {
+                                "id": 101,
+                                "type": "MANGA",
+                                "format": "MANGA",
+                                "status": "RELEASING",
+                                "title": {"romaji": "Manga"}
+                            }
+                        },
+                        {
+                            "status": "CURRENT",
+                            "progress": 2,
+                            "score": 9,
+                            "media": {
+                                "id": 102,
+                                "type": "MANGA",
+                                "format": "ONE_SHOT",
+                                "status": "FINISHED",
+                                "title": {"romaji": "One Shot"}
+                            }
+                        },
+                        {
+                            "status": "CURRENT",
+                            "progress": 6,
+                            "score": 10,
+                            "media": {
+                                "id": 103,
+                                "type": "MANGA",
+                                "format": "NOVEL",
+                                "status": "RELEASING",
+                                "title": {"romaji": "Light Novel"}
+                            }
+                        }
+                    ]
+                }]
+            }
+        }
+    })json");
+    LocalGraphQlServer server;
+    QVERIFY2(server.start(payload), "Local GraphQL server did not start.");
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient client(networkManager, nullptr, server.endpoint(), 1000);
+    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/user-media-list.graphql"));
+    AuthProviderStub authProvider;
+    authProvider.value.username = QStringLiteral("authenticated-user");
+    GraphQlAniListDataSource source(client, store, &authProvider, 500);
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.type = QStringLiteral("MANGA");
+    request.filter.acceptedListStatuses = {QStringLiteral("CURRENT")};
+    AniListDataSourceResult result;
+    QString error;
+
+    QVERIFY2(source.fetchPage(request, result, error), qPrintable(error));
+    QCOMPARE(result.page.media.size(), 3);
+    QCOMPARE(result.page.media.at(0).Type, MediaType::Manga);
+    QCOMPARE(result.page.media.at(1).Type, MediaType::Manga);
+    QCOMPARE(result.page.media.at(2).Type, MediaType::Novel);
 }
 
 void AniListGraphQlParsingTests::userListQueryRequestsChunkPaginationMetadata() {
-    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/user-anime-list.graphql"));
+    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/user-media-list.graphql"));
     QString query;
     QString error;
 
@@ -656,34 +736,33 @@ void AniListGraphQlParsingTests::graphQlAdapterRejectsNonBooleanUserListPaginati
     QVERIFY(!result.isCompleteAuthoritativeSnapshot);
 }
 
-void AniListGraphQlParsingTests::graphQlClientLogsAndCapturesSuccessfulResponseForDiagnostics() {
-    const auto payload = fixture(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE));
+void AniListGraphQlParsingTests::graphQlClientLogsOnlySafeSuccessTelemetry() {
+    const QByteArray payload = R"json({"data":{"Viewer":{"id":1,"secret":"response-secret"}}})json";
     LocalGraphQlServer server;
     QVERIFY2(server.start(payload), "Local GraphQL server did not start.");
-    QTemporaryDir captureDirectory;
-    QVERIFY(captureDirectory.isValid());
     QStringList diagnostics;
     AniListGraphQlClient::Diagnostics configuration;
     configuration.log = [&diagnostics](const QString &message) { diagnostics.append(message); };
-    configuration.responseCaptureDirectory = captureDirectory.path();
     QNetworkAccessManager networkManager;
     AniListGraphQlClient client(networkManager, nullptr, server.endpoint(), 1000, 0, 0, configuration);
     AniListGraphQlResponse response;
     QString error;
 
-    QVERIFY2(client.execute(QStringLiteral("query Viewer { Viewer { id } }"), QJsonObject{}, response, error),
+    QJsonObject variables;
+    variables.insert(QStringLiteral("userName"), QStringLiteral("request-secret"));
+    QVERIFY2(client.execute(QStringLiteral("query Viewer { Viewer { id secret } }"), variables, response, error),
              qPrintable(error));
-    QVERIFY(diagnostics.join('\n').contains(QStringLiteral("request started"), Qt::CaseInsensitive));
-    QVERIFY(diagnostics.join('\n').contains(QStringLiteral("HTTP 200"), Qt::CaseInsensitive));
-    const auto captures = QDir(captureDirectory.path()).entryList({QStringLiteral("anilist-response-*.json")},
-                                                                    QDir::Files);
-    QCOMPARE(captures.size(), 1);
-    QCOMPARE(fixture(QDir(captureDirectory.path()).filePath(captures.first())), payload);
+    const auto log = diagnostics.join('\n');
+    QVERIFY(log.contains(QStringLiteral("request started"), Qt::CaseInsensitive));
+    QVERIFY(log.contains(QStringLiteral("HTTP 200"), Qt::CaseInsensitive));
+    QVERIFY(log.contains(QStringLiteral("succeeded"), Qt::CaseInsensitive));
+    QVERIFY(!log.contains(QStringLiteral("request-secret")));
+    QVERIFY(!log.contains(QStringLiteral("response-secret")));
 }
 
-void AniListGraphQlParsingTests::graphQlClientLogsGraphQlErrorDetailForDiagnostics() {
+void AniListGraphQlParsingTests::graphQlClientDoesNotLogGraphQlErrorPayload() {
     LocalGraphQlServer server;
-    QVERIFY2(server.start(R"json({"errors":[{"message":"Invalid AniList query."}]})json"),
+    QVERIFY2(server.start(R"json({"errors":[{"message":"graphql-secret-error"}]})json"),
              "Local GraphQL server did not start.");
     QStringList diagnostics;
     AniListGraphQlClient::Diagnostics configuration;
@@ -696,7 +775,30 @@ void AniListGraphQlParsingTests::graphQlClientLogsGraphQlErrorDetailForDiagnosti
     QVERIFY2(client.execute(QStringLiteral("query Viewer { Viewer { id } }"), QJsonObject{}, response, error),
              qPrintable(error));
     QVERIFY(response.hasErrors());
-    QVERIFY(diagnostics.join('\n').contains(QStringLiteral("Invalid AniList query.")));
+    QCOMPARE(response.errors.first().message, QStringLiteral("graphql-secret-error"));
+    QVERIFY(!diagnostics.join('\n').contains(QStringLiteral("graphql-secret-error")));
+}
+
+void AniListGraphQlParsingTests::graphQlClientPreservesGraphQlErrorWithoutLoggingPayload() {
+    const QByteArray payload = R"json({"errors":[{"message":"http-secret-error"}]})json";
+    LocalGraphQlServer server;
+    QVERIFY2(server.start(payload, QByteArrayLiteral("400 Bad Request")),
+             "Local GraphQL server did not start.");
+    QStringList diagnostics;
+    AniListGraphQlClient::Diagnostics configuration;
+    configuration.log = [&diagnostics](const QString &message) { diagnostics.append(message); };
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient client(networkManager, nullptr, server.endpoint(), 1000, 0, 0, configuration);
+    AniListGraphQlResponse response;
+    QString error;
+
+    QVERIFY(!client.execute(QStringLiteral("mutation Update { SaveMediaListEntry(mediaId: 1) { id } }"),
+                            QJsonObject{}, response, error));
+    QCOMPARE(error, QStringLiteral("http-secret-error"));
+    QVERIFY(response.hasErrors());
+    const auto log = diagnostics.join('\n');
+    QVERIFY(log.contains(QStringLiteral("HTTP 400")));
+    QVERIFY(!log.contains(QStringLiteral("http-secret-error")));
 }
 
 QTEST_MAIN(AniListGraphQlParsingTests)

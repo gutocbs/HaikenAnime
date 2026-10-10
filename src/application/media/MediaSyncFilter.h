@@ -13,11 +13,13 @@ struct MediaSyncFilter {
     QString type;
     QString status;
     QString list;
+    QStringList acceptedListStatuses;
     int startingPage = 1;
     int perPage = 50;
 
     [[nodiscard]] bool isEmpty() const {
-        return username.isEmpty() && type.isEmpty() && status.isEmpty() && list.isEmpty();
+        return username.isEmpty() && type.isEmpty() && status.isEmpty() && list.isEmpty()
+            && acceptedListStatuses.isEmpty();
     }
 };
 

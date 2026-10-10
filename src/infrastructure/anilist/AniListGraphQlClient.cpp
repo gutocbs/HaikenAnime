@@ -2,16 +2,12 @@
 #include "AniListGraphQlResponseParser.h"
 
 #include <QEventLoop>
-#include <QDateTime>
-#include <QDir>
-#include <QFile>
 #include <QJsonDocument>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QTimer>
 #include <QThread>
-#include <QUuid>
 
 #include <utility>
 
@@ -39,9 +35,9 @@ bool AniListGraphQlClient::ExecuteWithAttempt(const QString &query, const QJsonO
                                              const int attempt) const {
     response = {};
     error.clear();
-    Log(QStringLiteral("AniList GraphQL request started (attempt=%1, endpoint=%2, variables=%3).")
+    Log(QStringLiteral("AniList GraphQL request started (attempt=%1, host=%2).")
             .arg(attempt + 1)
-            .arg(endpoint_.toString(), QString::fromUtf8(QJsonDocument(variables).toJson(QJsonDocument::Compact))));
+            .arg(endpoint_.host()));
     QNetworkRequest request(endpoint_);
     request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
     request.setRawHeader("Accept", "application/json");
@@ -79,13 +75,33 @@ bool AniListGraphQlClient::ExecuteWithAttempt(const QString &query, const QJsonO
         return false;
     }
 
-    if (reply->error() != QNetworkReply::NoError) {
-        error = reply->errorString();
-        Log(QStringLiteral("AniList GraphQL request failed (attempt=%1, networkError=%2, detail=%3).")
+    const auto responsePayload = reply->readAll();
+    const auto statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    const auto networkError = reply->error();
+    const auto networkErrorDetail = reply->errorString();
+    reply->deleteLater();
+    Log(QStringLiteral("AniList GraphQL request received HTTP %1 (%2 bytes).")
+            .arg(statusCode).arg(responsePayload.size()));
+
+    if (networkError != QNetworkReply::NoError) {
+        AniListGraphQlResponse errorResponse;
+        QString responseParseError;
+        QStringList graphQlErrorMessages;
+        if (AniListGraphQlResponseParser::parse(
+                responsePayload, errorResponse, responseParseError)
+            && errorResponse.hasErrors()) {
+            response = std::move(errorResponse);
+            for (const auto &graphQlError : response.errors) {
+                graphQlErrorMessages.append(graphQlError.message);
+            }
+            error = graphQlErrorMessages.join(QStringLiteral(" | "));
+        } else {
+            error = networkErrorDetail;
+        }
+        Log(QStringLiteral("AniList GraphQL request failed (attempt=%1, HTTP=%2, networkError=%3).")
                 .arg(attempt + 1)
-                .arg(static_cast<int>(reply->error()))
-                .arg(error));
-        reply->deleteLater();
+                .arg(statusCode)
+                .arg(static_cast<int>(networkError)));
         if (attempt < maxRetries_) {
             QThread::msleep(static_cast<unsigned long>(retryDelayMs_));
             return ExecuteWithAttempt(query, variables, response, error, attempt + 1);
@@ -93,50 +109,19 @@ bool AniListGraphQlClient::ExecuteWithAttempt(const QString &query, const QJsonO
         return false;
     }
 
-    const auto responsePayload = reply->readAll();
-    const auto statusCode = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    reply->deleteLater();
-    Log(QStringLiteral("AniList GraphQL request received HTTP %1 (%2 bytes).")
-            .arg(statusCode).arg(responsePayload.size()));
-    CaptureResponse(responsePayload);
     const bool parsed = AniListGraphQlResponseParser::parse(responsePayload, response, error);
     if (!parsed) {
-        Log(QStringLiteral("AniList GraphQL response parsing failed: %1").arg(error));
+        Log(QStringLiteral("AniList GraphQL response parsing failed."));
     } else if (response.hasErrors()) {
-        QStringList messages;
-        for (const auto &graphQlError : response.errors) messages.append(graphQlError.message);
-        Log(QStringLiteral("AniList GraphQL response contains GraphQL errors: %1")
-                .arg(messages.join(QStringLiteral(" | "))));
+        Log(QStringLiteral("AniList GraphQL response contains %1 GraphQL error(s).").arg(response.errors.size()));
     } else {
-        Log(QStringLiteral("AniList GraphQL response parsed successfully."));
+        Log(QStringLiteral("AniList GraphQL request succeeded."));
     }
     return parsed;
 }
 
 void AniListGraphQlClient::Log(QString message) const {
     if (diagnostics_.log) diagnostics_.log(std::move(message));
-}
-
-void AniListGraphQlClient::CaptureResponse(const QByteArray &payload) const {
-    if (diagnostics_.responseCaptureDirectory.isEmpty()) return;
-    QDir directory(diagnostics_.responseCaptureDirectory);
-    if (!directory.exists() && !directory.mkpath(QStringLiteral("."))) {
-        Log(QStringLiteral("AniList GraphQL response capture failed: unable to create directory."));
-        return;
-    }
-    const auto fileName = QStringLiteral("anilist-response-%1-%2.json")
-                              .arg(QDateTime::currentDateTimeUtc().toString(QStringLiteral("yyyyMMddTHHmmsszzz")),
-                                   QUuid::createUuid().toString(QUuid::WithoutBraces));
-    QFile file(directory.filePath(fileName));
-    if (!file.open(QIODevice::WriteOnly)) {
-        Log(QStringLiteral("AniList GraphQL response capture failed: unable to open output file."));
-        return;
-    }
-    if (file.write(payload) != payload.size()) {
-        Log(QStringLiteral("AniList GraphQL response capture failed: unable to write complete response."));
-        return;
-    }
-    Log(QStringLiteral("AniList GraphQL response captured to %1.").arg(file.fileName()));
 }
 
 QUrl AniListGraphQlClient::endpoint() const {

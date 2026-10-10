@@ -5,7 +5,8 @@
 #include <QSet>
 
 bool AniListGraphQlUserListParser::parse(const QJsonObject &data, QList<Media> &media, QString &error,
-                                         const QString &listStatus) {
+                                         const QStringList &acceptedListStatuses,
+                                         const QList<MediaType> &acceptedMediaTypes) {
     media.clear();
     error.clear();
     const auto collection = data.value(QStringLiteral("MediaListCollection"));
@@ -17,6 +18,10 @@ bool AniListGraphQlUserListParser::parse(const QJsonObject &data, QList<Media> &
     if (!lists.isArray()) {
         error = QStringLiteral("AniList MediaListCollection has an invalid lists field.");
         return false;
+    }
+    QSet<QString> acceptedStatuses;
+    for (const auto &status : acceptedListStatuses) {
+        acceptedStatuses.insert(status.trimmed().toUpper());
     }
     QSet<int> seenIds;
     for (const auto &listValue : lists.toArray()) {
@@ -35,8 +40,8 @@ bool AniListGraphQlUserListParser::parse(const QJsonObject &data, QList<Media> &
                 return false;
             }
             const auto entry = entryValue.toObject();
-            if (!listStatus.isEmpty()
-                && entry.value(QStringLiteral("status")).toString() != listStatus) {
+            const auto entryStatus = entry.value(QStringLiteral("status")).toString().toUpper();
+            if (!acceptedStatuses.isEmpty() && !acceptedStatuses.contains(entryStatus)) {
                 continue;
             }
             const auto mediaValue = entry.value(QStringLiteral("media"));
@@ -51,9 +56,13 @@ bool AniListGraphQlUserListParser::parse(const QJsonObject &data, QList<Media> &
             if (id <= 0 || seenIds.contains(id)) {
                 continue;
             }
+            const auto mappedMedia = AniListMediaMapper::ToDomainMedia(
+                AniListMediaMapper::FromGraphQlJson(mediaObject));
+            if (!acceptedMediaTypes.isEmpty() && !acceptedMediaTypes.contains(mappedMedia.Type)) {
+                continue;
+            }
             seenIds.insert(id);
-            media.append(AniListMediaMapper::ToDomainMedia(
-                AniListMediaMapper::FromGraphQlJson(mediaObject)));
+            media.append(mappedMedia);
         }
     }
     return true;

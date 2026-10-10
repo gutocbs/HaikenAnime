@@ -13,7 +13,7 @@ GraphQlAniListDataSource::GraphQlAniListDataSource(AniListGraphQlClient &client,
                                                    IAniListAuthProvider *authProvider,
                                                    const int userListPerChunk)
     : client_(client), queryStore_(queryStore), authProvider_(authProvider),
-      userListPerChunk_(qMax(1, userListPerChunk)) {
+      userListPerChunk_(qBound(1, userListPerChunk, 500)) {
 }
 
 namespace {
@@ -51,10 +51,12 @@ bool GraphQlAniListDataSource::fetchPage(const AniListDataSourceRequest &request
     networkRequest.variables = {};
     if (partition == SyncPartition::UserList) {
         const auto credentials = authProvider_->credentials();
+        const auto requestedType = request.filter.type.trimmed().isEmpty()
+            ? QStringLiteral("ANIME") : request.filter.type.trimmed().toUpper();
         networkRequest.variables.insert(QStringLiteral("userName"), credentials.username);
         networkRequest.variables.insert(QStringLiteral("chunk"), qMax(1, request.filter.startingPage));
         networkRequest.variables.insert(QStringLiteral("perChunk"), userListPerChunk_);
-        networkRequest.variables.insert(QStringLiteral("status"), variableValue(request.filter.list));
+        networkRequest.variables.insert(QStringLiteral("type"), requestedType);
     } else {
         networkRequest.variables.insert(QStringLiteral("page"), qMax(1, request.filter.startingPage));
         networkRequest.variables.insert(QStringLiteral("perPage"), qMax(1, request.filter.perPage));
@@ -87,14 +89,23 @@ bool GraphQlAniListDataSource::fetchPage(const AniListDataSourceRequest &request
             error = QStringLiteral("AniList MediaListCollection contains invalid hasNextChunk pagination metadata.");
             return false;
         }
+        QList<MediaType> acceptedMediaTypes;
+        const auto requestedType = request.filter.type.trimmed().isEmpty()
+            ? QStringLiteral("ANIME") : request.filter.type.trimmed().toUpper();
+        if (requestedType == QStringLiteral("ANIME")) {
+            acceptedMediaTypes.append(MediaType::Anime);
+        } else if (requestedType == QStringLiteral("MANGA")) {
+            acceptedMediaTypes = {MediaType::Manga, MediaType::Novel};
+        }
         if (!AniListGraphQlUserListParser::parse(response.data, result.page.media, error,
-                                                  request.filter.list)) return false;
+                                                  request.filter.acceptedListStatuses,
+                                                  acceptedMediaTypes)) return false;
         result.page.currentPage = qMax(1, request.filter.startingPage);
         result.page.hasNextPage = hasNextChunk.toBool();
         result.page.totalPages = result.page.hasNextPage ? result.page.currentPage + 1 : result.page.currentPage;
         result.isCompleteAuthoritativeSnapshot = request.filter.startingPage == 1
             && request.filter.type.isEmpty() && request.filter.status.isEmpty()
-            && request.filter.list.isEmpty();
+            && request.filter.list.isEmpty() && request.filter.acceptedListStatuses.isEmpty();
         return true;
     }
 

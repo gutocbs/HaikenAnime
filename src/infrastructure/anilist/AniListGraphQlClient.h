@@ -18,7 +18,6 @@ class AniListGraphQlClient final {
 public:
     struct Diagnostics final {
         std::function<void(const QString &)> log;
-        QString responseCaptureDirectory;
     };
 
     /** Creates a client using the supplied manager and optional authorization provider. */
@@ -46,7 +45,6 @@ private:
                                           AniListGraphQlResponse &response, QString &error,
                                           int attempt) const;
     void Log(QString message) const;
-    void CaptureResponse(const QByteArray &payload) const;
 
     QNetworkAccessManager &networkManager_;
     IAniListAuthProvider *authProvider_;

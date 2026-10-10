@@ -22,6 +22,12 @@ public:
         return true;
     }
 
+    bool getPendingMediaIds(QList<int> &result, QString &error) override {
+        result.clear();
+        error.clear();
+        return true;
+    }
+
     bool updateStatus(const AniListPendingChange &change, QString &error) override {
         Q_UNUSED(error)
         statuses.append(change.status);

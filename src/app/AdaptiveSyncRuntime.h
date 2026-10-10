@@ -7,7 +7,7 @@
 
 #include <functional>
 #include <memory>
-#include <optional>
+#include <set>
 
 #include "AdaptiveSyncCoordinator.h"
 
@@ -61,7 +61,7 @@ private:
     bool stopRequested_ = false;
     bool startRequested_ = false;
     bool coordinatorStarted_ = false;
-    std::optional<SyncPartition> pendingRequest_;
+    std::set<SyncPartition> pendingRequests_;
     bool disposalScheduled_ = false;
 };
 

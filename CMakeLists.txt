@@ -158,6 +158,10 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/application/anilist/AniListSyncErrorCategory.h
         src/application/anilist/AniListPendingChangeProcessor.h
         src/application/anilist/AniListPendingChangeProcessor.cpp
+        src/application/anilist/AniListPendingChangeDrain.h
+        src/application/anilist/AniListPendingChangeDrain.cpp
+        src/application/anilist/AniListPendingChangeReconciler.h
+        src/application/anilist/AniListPendingChangeReconciler.cpp
         src/application/anilist/AniListPendingChangeCompactor.h
         src/application/anilist/AniListPendingChangeCompactor.cpp
         src/application/anilist/AniListPendingChangeGrouper.h
@@ -285,6 +289,9 @@ set_source_files_properties(
         resources/sqlite/queries/read-pending-changes.sql
         PROPERTIES QT_RESOURCE_ALIAS "read-pending-changes.sql")
 set_source_files_properties(
+        resources/sqlite/queries/read-pending-media-ids.sql
+        PROPERTIES QT_RESOURCE_ALIAS "read-pending-media-ids.sql")
+set_source_files_properties(
         resources/sqlite/queries/update-pending-change.sql
         PROPERTIES QT_RESOURCE_ALIAS "update-pending-change.sql")
 set_source_files_properties(
@@ -317,6 +324,9 @@ set_source_files_properties(
 set_source_files_properties(
         resources/anilist/mutations/update-progress.graphql
         PROPERTIES QT_RESOURCE_ALIAS "update-progress.graphql")
+set_source_files_properties(
+        resources/anilist/mutations/update-media-list-entry.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "update-media-list-entry.graphql")
 set_source_files_properties(
         resources/anilist/mutations/update-score.graphql
         PROPERTIES QT_RESOURCE_ALIAS "update-score.graphql")
@@ -373,6 +383,7 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         resources/sqlite/queries/mark-media-source-removed.sql
         resources/sqlite/queries/enqueue-pending-change.sql
         resources/sqlite/queries/read-pending-changes.sql
+        resources/sqlite/queries/read-pending-media-ids.sql
         resources/sqlite/queries/update-pending-change.sql
         resources/sqlite/queries/read-cover-cache.sql
         resources/sqlite/queries/upsert-cover-cache.sql
@@ -400,6 +411,7 @@ qt_add_resources(HaikenAnime anilist_mutation_resource_bundle
         PREFIX "/anilist/mutations"
         FILES
         resources/anilist/mutations/update-progress.graphql
+        resources/anilist/mutations/update-media-list-entry.graphql
         resources/anilist/mutations/update-score.graphql
         resources/anilist/mutations/update-list-status.graphql
         resources/anilist/mutations/delete-list-entry.graphql
@@ -420,12 +432,12 @@ set_source_files_properties(
         resources/anilist/queries/viewer.graphql
         PROPERTIES QT_RESOURCE_ALIAS "viewer.graphql")
 set_source_files_properties(
-        resources/anilist/queries/user-anime-list.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "user-anime-list.graphql")
+        resources/anilist/queries/user-media-list.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "user-media-list.graphql")
 qt_add_resources(HaikenAnime anilist_query_resource_bundle
         PREFIX "/anilist/queries"
         FILES resources/anilist/queries/seasonal-catalog.graphql resources/anilist/queries/viewer.graphql
-              resources/anilist/queries/user-anime-list.graphql)
+              resources/anilist/queries/user-media-list.graphql)
 
 qt_add_qml_module(HaikenAnime
         URI HaikenAnime
@@ -553,6 +565,7 @@ qt_add_resources(SqliteRepositoryTests repository_query_resources
               resources/sqlite/queries/update-personal-list-media.sql
               resources/sqlite/queries/enqueue-pending-change.sql
               resources/sqlite/queries/read-pending-changes.sql
+              resources/sqlite/queries/read-pending-media-ids.sql
               resources/sqlite/queries/update-pending-change.sql)
 
 target_link_libraries(SqliteRepositoryTests
@@ -884,6 +897,10 @@ add_executable(AniListFlowTests
         tests/unit/AniListFlowTests.cpp
         src/application/anilist/AniListSyncService.h
         src/application/anilist/AniListSyncService.cpp
+        src/application/anilist/AniListPendingChangeReconciler.h
+        src/application/anilist/AniListPendingChangeReconciler.cpp
+        src/application/anilist/AniListMergeService.h
+        src/application/anilist/AniListMergeService.cpp
         src/application/anilist/AniListSyncErrorClassifier.h
         src/application/anilist/AniListSyncErrorClassifier.cpp
         src/application/anilist/AniListPendingChangeProcessor.h
@@ -961,7 +978,7 @@ set_source_files_properties(
         PROPERTIES QT_RESOURCE_ALIAS "media-page.graphql")
 qt_add_resources(AniListGraphQlParsingTests anilist_partition_query_resource_bundle
         PREFIX "/anilist/queries"
-        FILES resources/anilist/queries/media-page.graphql resources/anilist/queries/user-anime-list.graphql
+        FILES resources/anilist/queries/media-page.graphql resources/anilist/queries/user-media-list.graphql
 )
 
 add_test(NAME AniListGraphQlParsingTests COMMAND AniListGraphQlParsingTests)
@@ -1125,6 +1142,26 @@ target_link_libraries(AniListMergeServiceTests
 
 add_test(NAME AniListMergeServiceTests COMMAND AniListMergeServiceTests)
 
+add_executable(AniListPendingChangeReconcilerTests
+        tests/unit/AniListPendingChangeReconcilerTests.cpp
+        src/application/anilist/AniListPendingChangeReconciler.h
+        src/application/anilist/AniListPendingChangeReconciler.cpp
+        src/application/anilist/AniListPendingChangeCompactor.h
+        src/application/anilist/AniListPendingChangeCompactor.cpp
+        src/application/anilist/AniListMergePolicyResolver.h
+        src/application/anilist/AniListMergePolicyResolver.cpp
+        src/application/anilist/AniListMergeService.h
+        src/application/anilist/AniListMergeService.cpp
+)
+
+target_link_libraries(AniListPendingChangeReconcilerTests
+        PRIVATE
+        Qt6::Core
+        Qt6::Test
+)
+
+add_test(NAME AniListPendingChangeReconcilerTests COMMAND AniListPendingChangeReconcilerTests)
+
 add_executable(AniListPendingChangeProcessorTests
         tests/unit/AniListPendingChangeProcessorTests.cpp
         src/application/anilist/AniListPendingChangeProcessor.h
@@ -1145,6 +1182,36 @@ target_link_libraries(AniListPendingChangeProcessorTests
 )
 
 add_test(NAME AniListPendingChangeProcessorTests COMMAND AniListPendingChangeProcessorTests)
+
+add_executable(AniListPendingChangeDrainTests
+        tests/unit/AniListPendingChangeDrainTests.cpp
+        src/application/anilist/AniListPendingChangeDrain.h
+        src/application/anilist/AniListPendingChangeDrain.cpp
+        src/application/anilist/AniListPendingChangeProcessor.h
+        src/application/anilist/AniListPendingChangeProcessor.cpp
+        src/application/anilist/AniListPendingChangeCompactor.h
+        src/application/anilist/AniListPendingChangeCompactor.cpp
+        src/application/anilist/AniListPendingChangeGrouper.h
+        src/application/anilist/AniListPendingChangeGrouper.cpp
+        src/application/anilist/AniListMergePolicyResolver.h
+        src/application/anilist/AniListMergePolicyResolver.cpp
+)
+target_link_libraries(AniListPendingChangeDrainTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME AniListPendingChangeDrainTests COMMAND AniListPendingChangeDrainTests)
+
+add_executable(AniListUpdateClientTests
+        tests/unit/AniListUpdateClientTests.cpp
+        src/infrastructure/anilist/AniListUpdateClient.h
+        src/infrastructure/anilist/AniListUpdateClient.cpp
+        src/infrastructure/anilist/AniListGraphQlClient.h
+        src/infrastructure/anilist/AniListGraphQlClient.cpp
+        src/infrastructure/anilist/AniListGraphQlResponseParser.h
+        src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
+        src/infrastructure/anilist/GraphQlQueryStore.h
+        src/infrastructure/anilist/GraphQlQueryStore.cpp
+)
+target_link_libraries(AniListUpdateClientTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+add_test(NAME AniListUpdateClientTests COMMAND AniListUpdateClientTests)
 
 add_executable(HomeScreenControllerTests
         tests/unit/HomeScreenControllerTests.cpp
@@ -1409,7 +1476,10 @@ set(HAIKENANIME_TESTS
         AniListMergePolicyResolverTests
         AniListPendingChangeFactoryTests
         AniListMergeServiceTests
+        AniListPendingChangeReconcilerTests
         AniListPendingChangeProcessorTests
+        AniListPendingChangeDrainTests
+        AniListUpdateClientTests
         HomeScreenControllerTests
         SettingsControllerTests
         QmlStructureTests

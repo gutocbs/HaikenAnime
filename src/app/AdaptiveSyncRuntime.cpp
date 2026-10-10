@@ -57,14 +57,16 @@ void AdaptiveSyncRuntime::start() {
 
 void AdaptiveSyncRuntime::requestNow(const SyncPartition partition) {
     QObject *owner = nullptr;
+    bool ready = false;
     {
         QMutexLocker lock(&stateMutex_);
         if (state_ == State::Stopped || state_ == State::Failed || stopRequested_) return;
         startRequested_ = true;
-        pendingRequest_ = partition;
+        ready = state_ == State::Ready;
+        if (!ready) pendingRequests_.insert(partition);
         owner = owner_;
     }
-    if (isReady() && owner) {
+    if (ready && owner) {
         QMetaObject::invokeMethod(owner, [this, partition] { RequestNowOnWorker(partition); }, Qt::QueuedConnection);
     }
 }
@@ -118,16 +120,17 @@ void AdaptiveSyncRuntime::Initialize(RepositoryFactory repositoryFactory, Execut
         return;
     }
     bool startRequested = false;
-    std::optional<SyncPartition> pendingRequest;
+    std::set<SyncPartition> pendingRequests;
     {
         QMutexLocker lock(&stateMutex_);
         if (state_ == State::Initializing) state_ = State::Ready;
         startRequested = startRequested_;
-        pendingRequest = std::exchange(pendingRequest_, std::nullopt);
+        pendingRequests = std::move(pendingRequests_);
+        pendingRequests_.clear();
     }
     QMetaObject::invokeMethod(this, [this] { emit Ready(); }, Qt::QueuedConnection);
     if (startRequested) StartOnWorker();
-    if (pendingRequest.has_value()) RequestNowOnWorker(*pendingRequest);
+    for (const auto partition : pendingRequests) RequestNowOnWorker(partition);
 }
 
 void AdaptiveSyncRuntime::StartOnWorker() {

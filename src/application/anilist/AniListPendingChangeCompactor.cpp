@@ -1,8 +1,14 @@
 #include "AniListPendingChangeCompactor.h"
 
-#include "AniListMergePolicyResolver.h"
-
 #include <algorithm>
+
+namespace {
+bool IsCompactable(const AniListField field) {
+    return field == AniListField::Progress
+        || field == AniListField::PersonalScore
+        || field == AniListField::ListStatus;
+}
+}
 
 QList<AniListPendingChange> AniListPendingChangeCompactor::Compact(
     QList<AniListPendingChange> changes) {
@@ -18,8 +24,7 @@ QList<AniListPendingChange> AniListPendingChangeCompactor::Compact(
 
     QList<AniListPendingChange> compacted;
     for (const auto &change : changes) {
-        if (AniListMergePolicyResolver::PolicyFor(change.field) !=
-            AniListMergePolicy::LocalWinsLatest) {
+        if (!IsCompactable(change.field)) {
             compacted.append(change);
             continue;
         }

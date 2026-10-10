@@ -130,7 +130,7 @@ void AdaptiveSyncCoordinator::ProcessDueTasks() {
     for (auto &[partition, state] : states_) {
         if (activeGenerations_.contains(partition)) continue;
         if (state.nextRunAt.has_value()) {
-            if (*state.nextRunAt <= now) due.append(state);
+            if (*state.nextRunAt <= now && CanStart(partition)) due.append(state);
             continue;
         }
         const auto decision = SyncTaskPolicy::Decide(state, PolicyFor(state.kind), now, {});
@@ -138,7 +138,7 @@ void AdaptiveSyncCoordinator::ProcessDueTasks() {
         scheduled.nextRunAt = decision.schedule.nextRunAt;
         if (!Persist(scheduled)) continue;
         state = scheduled;
-        if (decision.schedule.shouldRunNow) due.append(scheduled);
+        if (decision.schedule.shouldRunNow && CanStart(partition)) due.append(scheduled);
     }
 
     std::sort(due.begin(), due.end(), [](const SyncTaskState &left, const SyncTaskState &right) {
@@ -152,7 +152,11 @@ void AdaptiveSyncCoordinator::ProcessDueTasks() {
 void AdaptiveSyncCoordinator::Request(const SyncPartition partition, const SyncTaskTrigger trigger) {
     if (!started_ || stopped_) return;
     const auto iterator = states_.find(partition);
-    if (iterator == states_.end() || activeGenerations_.contains(partition)) return;
+    if (iterator == states_.end()) return;
+    if (activeGenerations_.contains(partition)) {
+        rerunRequested_.insert(partition);
+        return;
+    }
 
     const auto decision = SyncTaskPolicy::Decide(iterator->second, PolicyFor(iterator->second.kind), Now(),
                                                   {.trigger = trigger});
@@ -182,12 +186,14 @@ void AdaptiveSyncCoordinator::Request(const SyncPartition partition, const SyncT
         if (!Persist(state)) return;
         iterator->second = state;
     }
-    if (decision.schedule.shouldRunNow && activeGenerations_.empty()) StartTask(state);
+    if (decision.schedule.shouldRunNow && activeGenerations_.empty() && CanStart(state.partition)) {
+        StartTask(state);
+    }
     ScheduleWakeUp();
 }
 
 void AdaptiveSyncCoordinator::StartTask(SyncTaskState state) {
-    if (stopped_ || activeGenerations_.contains(state.partition)) return;
+    if (stopped_ || activeGenerations_.contains(state.partition) || !CanStart(state.partition)) return;
 
     if (state.status == SyncTaskStatus::Succeeded) {
         state.confirmedPage.reset();
@@ -229,6 +235,7 @@ void AdaptiveSyncCoordinator::CompleteTask(const SyncPartition partition, const 
         completed.safeErrorDetail.clear();
         completed.consecutiveFailures = 0;
         completed.consecutiveImmediateRetries = 0;
+        if (partition == SyncPartition::UserList) userListReady_ = true;
         if (result.confirmedPage.has_value()) completed.confirmedPage = result.confirmedPage;
         if (result.confirmedCursor.has_value()) completed.confirmedCursor = result.confirmedCursor;
     } else {
@@ -253,7 +260,12 @@ void AdaptiveSyncCoordinator::CompleteTask(const SyncPartition partition, const 
     } else {
         emit TaskFailed(partition, completed.safeErrorDetail);
     }
-    ProcessDueTasks();
+    if (result.succeeded && rerunRequested_.erase(partition) > 0) {
+        Request(partition, SyncTaskTrigger::LocalChange);
+    } else {
+        rerunRequested_.erase(partition);
+        ProcessDueTasks();
+    }
 }
 
 void AdaptiveSyncCoordinator::ScheduleWakeUp() {
@@ -261,7 +273,10 @@ void AdaptiveSyncCoordinator::ScheduleWakeUp() {
 
     std::optional<QDateTime> nearest;
     for (const auto &[partition, state] : states_) {
-        if (activeGenerations_.contains(partition) || !state.nextRunAt.has_value()) continue;
+        if (activeGenerations_.contains(partition) || !state.nextRunAt.has_value()
+            || !CanStart(partition)) {
+            continue;
+        }
         if (!nearest.has_value() || *state.nextRunAt < *nearest) nearest = state.nextRunAt;
     }
     if (!nearest.has_value()) {
@@ -306,4 +321,10 @@ const SyncSchedulePolicy &AdaptiveSyncCoordinator::PolicyFor(const SyncTaskKind 
     if (policy != policies_.end()) return policy->second;
     static const auto defaultPolicies = DefaultSyncTaskPolicies();
     return defaultPolicies.at(kind);
+}
+
+bool AdaptiveSyncCoordinator::CanStart(const SyncPartition partition) const {
+    return partition != SyncPartition::PendingChanges
+        || userListReady_
+        || !states_.contains(SyncPartition::UserList);
 }

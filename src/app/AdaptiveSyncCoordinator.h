@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <map>
+#include <set>
 
 #include "../application/scheduling/ISyncTaskExecutor.h"
 #include "../application/scheduling/ISyncTaskStateRepository.h"
@@ -52,6 +53,7 @@ private:
     void FinishStopping();
     [[nodiscard]] QDateTime Now() const;
     [[nodiscard]] const SyncSchedulePolicy &PolicyFor(SyncTaskKind kind) const;
+    [[nodiscard]] bool CanStart(SyncPartition partition) const;
 
     ISyncTaskStateRepository &stateRepository_;
     ISyncTaskExecutor &executor_;
@@ -59,12 +61,14 @@ private:
     std::map<SyncTaskKind, SyncSchedulePolicy> policies_;
     std::map<SyncPartition, SyncTaskState> states_;
     std::map<SyncPartition, qint64> activeGenerations_;
+    std::set<SyncPartition> rerunRequested_;
     QTimer *wakeUpTimer_ = nullptr;
     bool started_ = false;
     bool stopped_ = false;
     bool stopping_ = false;
     bool shutdownAcknowledged_ = false;
     bool seedMissingTasks_ = false;
+    bool userListReady_ = false;
 };
 
 #endif // HAIKENANIME_ADAPTIVESYNCCOORDINATOR_H

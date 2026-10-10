@@ -121,6 +121,8 @@ class AdaptiveSyncCoordinatorTests final : public QObject {
 private slots:
     void selectsDueTasksInPolicyPriorityOrder();
     void runsOnlyOneDueTaskAtATime();
+    void rerunsPartitionWhenRequestedDuringActiveExecution();
+    void runsAnotherRequestedPartitionAfterTheActiveOneWithoutRepeatingIt();
     void persistsMissingPolicyPartitionsBeforeSchedulingThem();
     void doesNotSchedulePersistedPartitionsOutsideConfiguredPolicies();
     void neverStartsTheSamePartitionTwiceWhileItIsRunning();
@@ -137,7 +139,83 @@ private slots:
     void retainsExistingActivePartitionDuringCompletedPromotion();
     void forwardsRetryAfterToTheSchedulingPolicy();
     void waitsForCancellationAndExecutorShutdownAcknowledgements();
+    void holdsPendingChangesUntilUserListSynchronizationSucceeds();
 };
+
+void AdaptiveSyncCoordinatorTests::holdsPendingChangesUntilUserListSynchronizationSucceeds() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList),
+                         DueState(SyncTaskKind::PendingChange, SyncPartition::PendingChanges)};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor,
+        [&clock] { return clock.CurrentTime(); }, DefaultSyncTaskPolicies(), false);
+
+    QVERIFY(coordinator.Start());
+    QCOMPARE(executor.started, QList<SyncPartition>{SyncPartition::UserList});
+
+    executor.Complete(SyncPartition::UserList,
+                      {.succeeded = false,
+                       .errorCategory = AniListSyncErrorCategory::Network,
+                       .safeErrorDetail = QStringLiteral("offline")});
+    QCoreApplication::processEvents();
+    QCOMPARE(executor.started, QList<SyncPartition>{SyncPartition::UserList});
+
+    coordinator.RequestNow(SyncPartition::UserList);
+    QTRY_COMPARE(executor.started.size(), 2);
+    QCOMPARE(executor.started.last(), SyncPartition::UserList);
+    executor.Complete(SyncPartition::UserList, {.succeeded = true});
+
+    QTRY_COMPARE(executor.started.size(), 3);
+    QCOMPARE(executor.started.last(), SyncPartition::PendingChanges);
+}
+
+void AdaptiveSyncCoordinatorTests::rerunsPartitionWhenRequestedDuringActiveExecution() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::PendingChange, SyncPartition::PendingChanges)};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor,
+        [&clock] { return clock.CurrentTime(); }, {}, false);
+
+    QVERIFY(coordinator.Start());
+    QCOMPARE(executor.started, QList<SyncPartition>{SyncPartition::PendingChanges});
+
+    coordinator.NotifyLocalChange(SyncPartition::PendingChanges);
+    executor.Complete(SyncPartition::PendingChanges,
+                      SyncTaskExecutionResult{.succeeded = true});
+
+    QTRY_COMPARE(executor.started.size(), 2);
+    QCOMPARE(executor.started.last(), SyncPartition::PendingChanges);
+}
+
+void AdaptiveSyncCoordinatorTests::runsAnotherRequestedPartitionAfterTheActiveOneWithoutRepeatingIt() {
+    FakeClock clock;
+    auto userList = DueState(SyncTaskKind::UserList, SyncPartition::UserList);
+    userList.status = SyncTaskStatus::Succeeded;
+    userList.cacheValidity = CacheValidity::Fresh;
+    userList.lastSucceededAt = clock.CurrentTime();
+    userList.nextRunAt = clock.CurrentTime().addDays(1);
+    auto pendingChanges = userList;
+    pendingChanges.kind = SyncTaskKind::PendingChange;
+    pendingChanges.partition = SyncPartition::PendingChanges;
+    FakeTaskStateRepository repository;
+    repository.states = {userList, pendingChanges};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor,
+        [&clock] { return clock.CurrentTime(); }, DefaultSyncTaskPolicies(), false);
+
+    QVERIFY(coordinator.Start());
+    coordinator.RequestNow(SyncPartition::UserList);
+    coordinator.RequestNow(SyncPartition::PendingChanges);
+    QCOMPARE(executor.started, QList<SyncPartition>{SyncPartition::UserList});
+
+    executor.Complete(SyncPartition::UserList,
+                      SyncTaskExecutionResult{.succeeded = true});
+
+    QTRY_COMPARE(executor.started.size(), 2);
+    QCOMPARE(executor.started.last(), SyncPartition::PendingChanges);
+}
 
 void AdaptiveSyncCoordinatorTests::selectsDueTasksInPolicyPriorityOrder() {
     FakeClock clock;

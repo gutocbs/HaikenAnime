@@ -5,6 +5,7 @@
 
 #include "../../src/application/anilist/IAniListDataSource.h"
 #include "../../src/application/anilist/AniListSyncService.h"
+#include "../../src/application/anilist/AniListPendingChangeReconciler.h"
 #include "../../src/application/media/MediaSyncFilter.h"
 #include "../../src/application/media/MediaPage.h"
 #include "../../src/application/media/IMediaSnapshotReconciler.h"
@@ -119,6 +120,38 @@ public:
     QList<AniListDataSourceRequest> requests;
 };
 
+class ReconciliationPendingRepository final : public IPendingChangeRepository {
+public:
+    bool enqueue(const AniListPendingChange &change, QString &error) override {
+        pending = change;
+        error.clear();
+        return true;
+    }
+    bool getPending(const int mediaId, QList<AniListPendingChange> &result,
+                    QString &error) override {
+        result.clear();
+        if (pending.mediaId == mediaId
+            && pending.status != AniListPendingChangeStatus::Succeeded
+            && pending.status != AniListPendingChangeStatus::Superseded) {
+            result.append(pending);
+        }
+        error.clear();
+        return true;
+    }
+    bool getPendingMediaIds(QList<int> &result, QString &error) override {
+        result.clear();
+        error.clear();
+        return true;
+    }
+    bool updateStatus(const AniListPendingChange &change, QString &error) override {
+        pending = change;
+        error.clear();
+        return true;
+    }
+
+    AniListPendingChange pending;
+};
+
 class AniListFlowTests : public QObject {
     Q_OBJECT
 
@@ -141,6 +174,7 @@ private slots:
     void partialPartitionDoesNotReconcileUnseenMedia();
     void reconcilesFullMultiPageUserListAtTerminalPage();
     void partialUserListRunDoesNotReconcileAtTerminalPage();
+    void reconcilesPendingProgressBeforePersistingTheRemotePage();
 };
 
 static QString fixturePath() {
@@ -434,6 +468,29 @@ void AniListFlowTests::partialUserListRunDoesNotReconcileAtTerminalPage() {
 
     QVERIFY2(service.synchronize(request, error), qPrintable(error));
     QCOMPARE(reconciler.calls, 0);
+}
+
+void AniListFlowTests::reconcilesPendingProgressBeforePersistingTheRemotePage() {
+    PartitionResultDataSource source;
+    source.nextResult.completedPartition = SyncPartition::UserList;
+    source.nextResult.page.currentPage = 1;
+    source.nextResult.page.media.append(Media{.Id = 42, .ConsumedChapters = 12});
+    ReconciliationPendingRepository pendingRepository;
+    pendingRepository.pending.id = 1;
+    pendingRepository.pending.mediaId = 42;
+    pendingRepository.pending.field = AniListField::Progress;
+    pendingRepository.pending.previousValue = 9;
+    pendingRepository.pending.newValue = 10;
+    AniListPendingChangeReconciler pendingReconciler(pendingRepository);
+    CollectingWriter writer;
+    AniListSyncService service(source, writer, nullptr, nullptr, 0, &pendingReconciler);
+    QString error;
+
+    QVERIFY2(service.synchronize(AniListDataSourceRequest::ForPartition(SyncPartition::UserList),
+                                 error), qPrintable(error));
+    QCOMPARE(writer.batches.size(), 1);
+    QCOMPARE(writer.batches.first().first().ConsumedChapters, 12);
+    QCOMPARE(pendingRepository.pending.status, AniListPendingChangeStatus::Superseded);
 }
 
 QTEST_MAIN(AniListFlowTests)
