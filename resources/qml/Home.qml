@@ -674,7 +674,7 @@ Item {
         y: 0
         width: Math.min(parent.width, Math.max(720, Math.round(parent.width * 0.605)))
         height: parent.height
-        modal: true
+        modal: false
         dim: false
         focus: true
         padding: 0
