@@ -1,9 +1,10 @@
-query UserAnimeList($userName: String!, $page: Int, $perPage: Int) {
+query UserAnimeList($userName: String!, $chunk: Int, $perChunk: Int, $status: MediaListStatus) {
   MediaListCollection(
     userName: $userName
     type: ANIME
-    chunk: $page
-    perChunk: $perPage
+    status: $status
+    chunk: $chunk
+    perChunk: $perChunk
   ) {
     lists {
       name

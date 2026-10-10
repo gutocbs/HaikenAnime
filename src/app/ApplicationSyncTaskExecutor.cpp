@@ -2,6 +2,11 @@
 #include "SyncTaskRequest.h"
 
 #include "../application/anilist/AniListSyncService.h"
+#include "../application/anilist/IAniListAuthProvider.h"
+#include "../infrastructure/anilist/AniListGraphQlClient.h"
+#include "../infrastructure/anilist/GraphQlAniListDataSource.h"
+#include "../infrastructure/anilist/GraphQlQueryStore.h"
+#include "../infrastructure/anilist/HttpFactory.h"
 #include "../infrastructure/anilist/RecordedGraphQlAniListDataSource.h"
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "../infrastructure/database/SqliteMediaRepository.h"
@@ -9,17 +14,31 @@
 #include "../infrastructure/database/SqliteUserPreferencesRepository.h"
 
 #include <QThread>
+#include <QNetworkAccessManager>
 
 #include <utility>
 
+namespace {
+class SnapshotAuthProvider final : public IAniListAuthProvider {
+public:
+    explicit SnapshotAuthProvider(AniListCredentials credentials)
+        : credentials_(std::move(credentials)) {}
+
+    [[nodiscard]] AniListCredentials credentials() const override { return credentials_; }
+
+private:
+    AniListCredentials credentials_;
+};
+}
+
 ApplicationSyncTaskExecutor::ApplicationSyncTaskExecutor(
-    QString databasePath, QString userListFixturePath, QString catalogFixturePath, QString upsertQueryPath,
+    QString databasePath, QString catalogFixturePath, QString upsertQueryPath,
     QString readQueryPath,
     QString readActiveMediaIdsQueryPath, QString markSourceRemovedQueryPath,
     QString readTaskStatesQueryPath, QString upsertTaskStateQueryPath, QString deleteTaskStateQueryPath,
-    QString readUserPreferencesQueryPath, QString upsertUserPreferencesQueryPath, const int timeoutMs)
-    : databasePath_(std::move(databasePath)), userListFixturePath_(std::move(userListFixturePath)),
-      catalogFixturePath_(std::move(catalogFixturePath)),
+    QString readUserPreferencesQueryPath, QString upsertUserPreferencesQueryPath, const int timeoutMs,
+    AuthenticatedUserListConfiguration authenticatedUserList)
+    : databasePath_(std::move(databasePath)), catalogFixturePath_(std::move(catalogFixturePath)),
       upsertQueryPath_(std::move(upsertQueryPath)), readQueryPath_(std::move(readQueryPath)),
       readActiveMediaIdsQueryPath_(std::move(readActiveMediaIdsQueryPath)),
       markSourceRemovedQueryPath_(std::move(markSourceRemovedQueryPath)),
@@ -27,7 +46,8 @@ ApplicationSyncTaskExecutor::ApplicationSyncTaskExecutor(
       upsertTaskStateQueryPath_(std::move(upsertTaskStateQueryPath)),
       deleteTaskStateQueryPath_(std::move(deleteTaskStateQueryPath)),
       readUserPreferencesQueryPath_(std::move(readUserPreferencesQueryPath)),
-      upsertUserPreferencesQueryPath_(std::move(upsertUserPreferencesQueryPath)), timeoutMs_(timeoutMs) {
+      upsertUserPreferencesQueryPath_(std::move(upsertUserPreferencesQueryPath)), timeoutMs_(timeoutMs),
+      authenticatedUserList_(std::move(authenticatedUserList)) {
 }
 
 ApplicationSyncTaskExecutor::~ApplicationSyncTaskExecutor() {
@@ -68,45 +88,77 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                                                       readActiveMediaIdsQueryPath_, markSourceRemovedQueryPath_);
                 SqliteSyncTaskStateRepository taskRepository(
                     database.connection(), readTaskStatesQueryPath_, upsertTaskStateQueryPath_, deleteTaskStateQueryPath_);
-                RecordedGraphQlAniListDataSource source(partition == SyncPartition::UserList
-                    ? userListFixturePath_ : catalogFixturePath_);
-                AniListSyncService service(source, mediaRepository, &mediaRepository, nullptr, timeoutMs_);
-                const auto synchronize = [&](AniListDataSourceRequest request) {
-                    return service.synchronize(
+                if (partition == SyncPartition::UserList) {
+                    if (authenticatedUserList_.credentials.token.isEmpty()
+                        || authenticatedUserList_.credentials.username.isEmpty()) {
+                        error = QStringLiteral("AniList user-list synchronization requires authentication.");
+                        result.errorCategory = AniListSyncErrorCategory::Authentication;
+                    } else {
+                        if (authenticatedUserList_.auditLogger) {
+                            authenticatedUserList_.auditLogger(
+                                QStringLiteral("AniList authenticated user-list synchronization started."));
+                        }
+                        auto networkManager = std::unique_ptr<QNetworkAccessManager>(
+                            HttpFactory::createNetworkAccessManager(nullptr));
+                        SnapshotAuthProvider authProvider(authenticatedUserList_.credentials);
+                        AniListGraphQlClient client(*networkManager, &authProvider,
+                            authenticatedUserList_.endpoint, authenticatedUserList_.httpTimeoutMs,
+                            authenticatedUserList_.httpMaxRetries,
+                            authenticatedUserList_.httpRetryDelayMs,
+                            {.log = authenticatedUserList_.auditLogger,
+                             .responseCaptureDirectory = authenticatedUserList_.responseCaptureDirectory});
+                        GraphQlQueryStore queryStore(QStringLiteral(":/anilist/queries/user-anime-list.graphql"));
+                        GraphQlAniListDataSource userListSource(client, queryStore, &authProvider,
+                                                                  authenticatedUserList_.perChunk);
+                        AniListSyncService service(userListSource, mediaRepository, &mediaRepository,
+                                                    nullptr, timeoutMs_);
+                        UserPreferences preferences;
+                        bool found = false;
+                        SqliteUserPreferencesRepository preferencesRepository(
+                            database.connection(), readUserPreferencesQueryPath_, upsertUserPreferencesQueryPath_);
+                        if (!preferencesRepository.read(preferences, found, error)) {
+                            result.succeeded = false;
+                            result.errorCategory = AniListSyncErrorCategory::Persistence;
+                        } else {
+                            result.succeeded = true;
+                            const auto initialState = checkpointState;
+                            for (const auto &listStatus : AniListStatusesForEnabledUserLists(preferences.enabledUserLists)) {
+                                auto request = SyncTaskRequest::ForState(initialState);
+                                request.filter.list = listStatus;
+                                if (!service.synchronize(
+                                        request, error,
+                                        [&taskRepository, &checkpointState](const int page, QString &checkpointError) {
+                                            checkpointState.confirmedPage = page;
+                                            return taskRepository.Upsert(checkpointState, checkpointError);
+                                        },
+                                        [job] { return job->cancelled.load(); })) {
+                                    result.succeeded = false;
+                                    break;
+                                }
+                            }
+                            result.errorCategory = result.succeeded ? AniListSyncErrorCategory::None
+                                : service.lastErrorCategory();
+                        }
+                        if (authenticatedUserList_.auditLogger) {
+                            authenticatedUserList_.auditLogger(result.succeeded
+                                ? QStringLiteral("AniList authenticated user-list synchronization completed.")
+                                : QStringLiteral("AniList authenticated user-list synchronization failed."));
+                        }
+                    }
+                } else {
+                    RecordedGraphQlAniListDataSource source(catalogFixturePath_);
+                    AniListSyncService service(source, mediaRepository, &mediaRepository, nullptr, timeoutMs_);
+                    const auto request = SyncTaskRequest::ForState(checkpointState);
+                    result.succeeded = service.synchronize(
                         request, error,
                         [&taskRepository, &checkpointState](const int page, QString &checkpointError) {
                             checkpointState.confirmedPage = page;
                             return taskRepository.Upsert(checkpointState, checkpointError);
                         },
                         [job] { return job->cancelled.load(); });
-                };
-                bool succeeded = true;
-                if (partition == SyncPartition::UserList) {
-                    UserPreferences preferences;
-                    bool found = false;
-                    SqliteUserPreferencesRepository preferencesRepository(
-                        database.connection(), readUserPreferencesQueryPath_, upsertUserPreferencesQueryPath_);
-                    if (!preferencesRepository.read(preferences, found, error)) {
-                        succeeded = false;
-                        result.errorCategory = AniListSyncErrorCategory::Persistence;
-                    } else {
-                        const auto initialState = checkpointState;
-                        for (const auto &listStatus : AniListStatusesForEnabledUserLists(preferences.enabledUserLists)) {
-                            auto request = SyncTaskRequest::ForState(initialState);
-                            request.filter.list = listStatus;
-                            request.variables.insert(QStringLiteral("list"), listStatus);
-                            if (!synchronize(request)) {
-                                succeeded = false;
-                                break;
-                            }
-                        }
-                    }
-                } else {
-                    succeeded = synchronize(SyncTaskRequest::ForState(checkpointState));
+                    result.errorCategory = result.succeeded ? AniListSyncErrorCategory::None
+                        : service.lastErrorCategory();
                 }
-                result.succeeded = succeeded;
-                if (succeeded) result.errorCategory = AniListSyncErrorCategory::None;
-                else if (result.errorCategory == AniListSyncErrorCategory::None) result.errorCategory = service.lastErrorCategory();
                 result.confirmedPage = checkpointState.confirmedPage;
             }
         }

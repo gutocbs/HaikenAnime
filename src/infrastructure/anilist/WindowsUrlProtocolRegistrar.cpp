@@ -1,5 +1,6 @@
 #include "WindowsUrlProtocolRegistrar.h"
 
+#include <QDir>
 #include <QSettings>
 
 #include <utility>
@@ -31,13 +32,14 @@ bool WindowsUrlProtocolRegistrar::registerProtocol(const QString &scheme,
         return false;
     }
 
+    const QString nativeApplicationPath = QDir::toNativeSeparators(applicationPath);
     const QString root = QStringLiteral("HKEY_CURRENT_USER\\Software\\Classes\\%1").arg(scheme);
     const QList<Write> writes{
         {root, QStringLiteral("."), QStringLiteral("URL:HaikenAnime Protocol")},
         {root, QStringLiteral("URL Protocol"), QString{}},
-        {root + QStringLiteral("\\DefaultIcon"), QStringLiteral("."), applicationPath + QStringLiteral(",0")},
+        {root + QStringLiteral("\\DefaultIcon"), QStringLiteral("."), nativeApplicationPath + QStringLiteral(",0")},
         {root + QStringLiteral("\\shell\\open\\command"), QStringLiteral("."),
-         QStringLiteral("\"") + applicationPath + QStringLiteral("\" \"%1\"")}
+         QStringLiteral("\"") + nativeApplicationPath + QStringLiteral("\" \"%1\"")}
     };
     for (const auto &write : writes) {
         if (!writer_(write, error)) return false;

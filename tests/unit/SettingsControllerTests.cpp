@@ -565,14 +565,17 @@ void SettingsControllerTests::launchesAniListAuthorizationWhenServicesAreAvailab
     AniListAuthManager authManager(secretStore);
     ViewerClientStub viewer;
     QUrl launchedUrl;
+    bool receiverStarted = false;
     SettingsController controller(nullptr, {});
     controller.SetAniListAuthenticationServices(
         &authManager, AniListOAuthConfig(QStringLiteral("client-id"), QUrl(QStringLiteral("haikenanime://oauth/callback"))),
-        [&launchedUrl](const QUrl &url, QString &error) { launchedUrl = url; error.clear(); return true; }, &viewer);
+        [&launchedUrl](const QUrl &url, QString &error) { launchedUrl = url; error.clear(); return true; }, &viewer,
+        [&receiverStarted](QString &error) { receiverStarted = true; error.clear(); return true; }, [] {});
 
     QVERIFY(controller.aniListConnectionAvailable());
     controller.ConnectAniList();
 
+    QVERIFY(receiverStarted);
     QCOMPARE(launchedUrl.host(), QStringLiteral("anilist.co"));
     QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("authorizing"));
     QVERIFY(controller.aniListAuthenticationInProgress());

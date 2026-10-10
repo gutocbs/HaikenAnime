@@ -41,7 +41,7 @@ if (COMMAND qt_policy)
     qt_policy(SET QTP0004 NEW)
 endif ()
 
-qt_add_executable(HaikenAnime main.cpp
+qt_add_executable(HaikenAnime WIN32 main.cpp
         src/app/ApplicationComposition.h
         src/app/ApplicationComposition.cpp
         src/app/AniListOAuthCallbackReceiver.h
@@ -389,11 +389,17 @@ qt_add_resources(HaikenAnime fixture_resource_bundle
 
 set_source_files_properties(
         resources/anilist/queries/seasonal-catalog.graphql
-        resources/anilist/queries/viewer.graphql
         PROPERTIES QT_RESOURCE_ALIAS "seasonal-catalog.graphql")
+set_source_files_properties(
+        resources/anilist/queries/viewer.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "viewer.graphql")
+set_source_files_properties(
+        resources/anilist/queries/user-anime-list.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "user-anime-list.graphql")
 qt_add_resources(HaikenAnime anilist_query_resource_bundle
         PREFIX "/anilist/queries"
-        FILES resources/anilist/queries/seasonal-catalog.graphql resources/anilist/queries/viewer.graphql)
+        FILES resources/anilist/queries/seasonal-catalog.graphql resources/anilist/queries/viewer.graphql
+              resources/anilist/queries/user-anime-list.graphql)
 
 qt_add_qml_module(HaikenAnime
         URI HaikenAnime
@@ -927,7 +933,7 @@ set_source_files_properties(
         PROPERTIES QT_RESOURCE_ALIAS "media-page.graphql")
 qt_add_resources(AniListGraphQlParsingTests anilist_partition_query_resource_bundle
         PREFIX "/anilist/queries"
-        FILES resources/anilist/queries/media-page.graphql
+        FILES resources/anilist/queries/media-page.graphql resources/anilist/queries/user-anime-list.graphql
 )
 
 add_test(NAME AniListGraphQlParsingTests COMMAND AniListGraphQlParsingTests)

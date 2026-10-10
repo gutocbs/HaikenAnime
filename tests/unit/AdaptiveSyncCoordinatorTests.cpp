@@ -124,6 +124,7 @@ private slots:
     void neverStartsTheSamePartitionTwiceWhileItIsRunning();
     void recordsIndependentProgressWhenAnotherPartitionFails();
     void resumesAnIncompleteTaskFromItsPersistedCheckpoint();
+    void restartsPersistedRetryScheduledTaskWithoutWaitingForPreviousProcessCooldown();
     void reschedulesSuccessfulWorkAtItsAdaptivePolicyCadence();
     void turnsPersistedCheckpointIntoTheNextPartitionRequestPage();
     void schedulesRetryAtThePolicyDueTime();
@@ -223,6 +224,25 @@ void AdaptiveSyncCoordinatorTests::resumesAnIncompleteTaskFromItsPersistedCheckp
     const auto resumed = executor.requests.at(SyncPartition::UserList).state;
     QCOMPARE(resumed.confirmedPage, std::optional<int>(2));
     QCOMPARE(resumed.confirmedCursor, std::optional<QString>(QStringLiteral("page-2")));
+}
+
+void AdaptiveSyncCoordinatorTests::restartsPersistedRetryScheduledTaskWithoutWaitingForPreviousProcessCooldown() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    auto delayedRetry = DueState(SyncTaskKind::UserList, SyncPartition::UserList);
+    delayedRetry.status = SyncTaskStatus::RetryScheduled;
+    delayedRetry.lastAttemptedAt = clock.CurrentTime();
+    delayedRetry.nextRunAt = clock.CurrentTime().addSecs(60 * 60);
+    delayedRetry.lastErrorCategory = AniListSyncErrorCategory::Persistence;
+    delayedRetry.safeErrorDetail = QStringLiteral("database is locked");
+    repository.states = {delayedRetry};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
+
+    QVERIFY(coordinator.Start());
+
+    QCOMPARE(executor.started, QList<SyncPartition>({SyncPartition::UserList}));
+    QCOMPARE(executor.requests.at(SyncPartition::UserList).state.confirmedPage, std::optional<int>{});
 }
 
 void AdaptiveSyncCoordinatorTests::reschedulesSuccessfulWorkAtItsAdaptivePolicyCadence() {

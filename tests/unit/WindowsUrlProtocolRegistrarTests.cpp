@@ -6,10 +6,10 @@ class WindowsUrlProtocolRegistrarTests final : public QObject {
     Q_OBJECT
 
 private slots:
-    void writesCurrentUserProtocolRegistration();
+    void writesCurrentUserProtocolRegistrationWithNativeExecutablePath();
 };
 
-void WindowsUrlProtocolRegistrarTests::writesCurrentUserProtocolRegistration() {
+void WindowsUrlProtocolRegistrarTests::writesCurrentUserProtocolRegistrationWithNativeExecutablePath() {
     QList<WindowsUrlProtocolRegistrar::Write> writes;
     WindowsUrlProtocolRegistrar registrar(
         [&writes](const WindowsUrlProtocolRegistrar::Write &write, QString &error) {
@@ -29,10 +29,11 @@ void WindowsUrlProtocolRegistrarTests::writesCurrentUserProtocolRegistration() {
     QVERIFY(writes.at(1).value.isValid());
     QCOMPARE(writes.at(1).value.toString(), QString());
     QCOMPARE(writes.at(2).key, QStringLiteral("."));
+    QCOMPARE(writes.at(2).value, QStringLiteral("C:\\Apps\\HaikenAnime.exe,0"));
     QCOMPARE(writes.at(3).registryPath,
              QStringLiteral("HKEY_CURRENT_USER\\Software\\Classes\\haikenanime\\shell\\open\\command"));
     QCOMPARE(writes.at(3).key, QStringLiteral("."));
-    QCOMPARE(writes.at(3).value, QStringLiteral("\"C:/Apps/HaikenAnime.exe\" \"%1\""));
+    QCOMPARE(writes.at(3).value, QStringLiteral("\"C:\\Apps\\HaikenAnime.exe\" \"%1\""));
 }
 
 QTEST_MAIN(WindowsUrlProtocolRegistrarTests)

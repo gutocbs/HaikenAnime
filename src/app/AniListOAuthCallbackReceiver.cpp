@@ -11,13 +11,19 @@ AniListOAuthCallbackReceiver::AniListOAuthCallbackReceiver(QString serverName, Q
 }
 
 AniListOAuthCallbackReceiver::~AniListOAuthCallbackReceiver() {
-    if (!server_.isListening()) return;
-    server_.close();
-    QLocalServer::removeServer(serverName_);
+    stop();
 }
 
 void AniListOAuthCallbackReceiver::setAuditLogger(AuditLogger logger) {
     auditLogger_ = std::move(logger);
+}
+
+void AniListOAuthCallbackReceiver::stop() {
+    if (!receiverStarted_) return;
+    receiverStarted_ = false;
+    server_.close();
+    QLocalServer::removeServer(serverName_);
+    audit(QStringLiteral("AniList OAuth callback receiver stopped."));
 }
 
 std::optional<QUrl> AniListOAuthCallbackReceiver::callbackFromArguments(
@@ -49,10 +55,14 @@ AniListOAuthCallbackReceiver::StartResult AniListOAuthCallbackReceiver::start(
             audit(QStringLiteral("AniList OAuth callback forwarded to the running application."));
             return StartResult::Forwarded;
         }
+        error = socket.errorString();
+        audit(QStringLiteral("AniList OAuth callback could not be forwarded."));
+        return StartResult::Unavailable;
     }
 
     server_.setSocketOptions(QLocalServer::UserAccessOption);
     if (server_.listen(serverName_)) {
+        receiverStarted_ = true;
         audit(QStringLiteral("AniList OAuth callback receiver started."));
         return StartResult::Listening;
     }
@@ -65,16 +75,26 @@ AniListOAuthCallbackReceiver::StartResult AniListOAuthCallbackReceiver::start(
 void AniListOAuthCallbackReceiver::receivePendingConnections() {
     while (QLocalSocket *socket = server_.nextPendingConnection()) {
         socket->setParent(this);
-        connect(socket, &QLocalSocket::readyRead, this, [this, socket] {
-            const QUrl callback(QString::fromUtf8(socket->readAll()));
-            if (callback.isValid() && callback.scheme() == QStringLiteral("haikenanime")) {
-                audit(QStringLiteral("AniList OAuth callback received from the local channel."));
-                emit callbackReceived(callback);
-            }
-            socket->disconnectFromServer();
-            socket->deleteLater();
-        });
+        connect(socket, &QLocalSocket::readyRead, this,
+                [this, socket] { receiveCallback(socket); });
+        if (socket->bytesAvailable() > 0) receiveCallback(socket);
     }
+}
+
+void AniListOAuthCallbackReceiver::receiveCallback(QLocalSocket *socket) {
+    const QByteArray payload = socket->readAll();
+    if (payload.isEmpty()) return;
+
+    const QUrl callback(QString::fromUtf8(payload));
+    if (callback.isValid() && callback.scheme() == QStringLiteral("haikenanime")) {
+        audit(QStringLiteral("AniList OAuth callback received from the local channel."));
+        emit callbackReceived(callback);
+    } else {
+        audit(QStringLiteral("AniList OAuth callback from the local channel was invalid."));
+    }
+    stop();
+    socket->disconnectFromServer();
+    socket->deleteLater();
 }
 
 void AniListOAuthCallbackReceiver::audit(const QString &event) const {

@@ -322,6 +322,36 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         *context.coverCoordinator, *context.coverTemporaryStore,
         QList<ICacheCleanupParticipant *>{});
     context.coverQuality = settings.covers.quality;
+    context.aniListSecretStore = std::make_unique<WindowsCredentialStore>();
+    context.aniListAuthManager = std::make_unique<AniListAuthManager>(*context.aniListSecretStore);
+    context.aniListAuthManager->setAuditLogger([logger = context.logger.get()](const QString &event) {
+        if (logger) logger->info(LogCategory::Application, event);
+    });
+    QString credentialsError;
+    static_cast<void>(context.aniListAuthManager->load(credentialsError));
+    if (!settings.aniList.oauthClientId.trimmed().isEmpty()
+        && settings.aniList.oauthRedirectUri.isValid()
+        && !settings.aniList.oauthRedirectUri.scheme().isEmpty()) {
+        context.aniListOAuthConfiguration.emplace(settings.aniList.oauthClientId,
+                                                  settings.aniList.oauthRedirectUri);
+        context.aniListNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
+        const AniListGraphQlClient::Diagnostics oauthDiagnostics{
+            .log = [logger = context.logger.get()](const QString &event) {
+                if (logger) logger->info(LogCategory::Sync, event);
+            },
+            .responseCaptureDirectory = settings.aniList.captureGraphQlResponsesForDiagnostics
+                ? QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath("logs")
+                : QString{}};
+        context.aniListGraphQlClient = std::make_unique<AniListGraphQlClient>(
+            *context.aniListNetworkManager, context.aniListAuthManager.get(),
+            QUrl(settings.aniList.endpoint), settings.http.timeoutMs,
+            settings.http.maxRetries, settings.http.retryDelayMs, oauthDiagnostics);
+        context.aniListViewerQueryStore = std::make_unique<GraphQlQueryStore>(
+            QStringLiteral(":/anilist/queries/viewer.graphql"));
+        context.aniListViewerClient = std::make_unique<AniListViewerClient>(
+            *context.aniListGraphQlClient, *context.aniListViewerQueryStore);
+        context.aniListOAuthLauncher = std::make_unique<WindowsAniListOAuthLauncher>();
+    }
     context.initialSync = std::make_unique<InitialSyncCoordinator>(
         context.database->databasePath(),
         QStringLiteral(":/fixtures/graphql/userlist-response.json"),
@@ -346,24 +376,41 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
             return std::make_unique<OwnedSyncTaskStateRepository>(std::move(database), readTaskStatesQueryPath,
                                                                    upsertTaskStateQueryPath, deleteTaskStateQueryPath);
         },
-        [synchronizationDatabasePath, userListFixturePath = QStringLiteral(":/fixtures/graphql/userlist-response.json"),
-         catalogFixturePath = QStringLiteral(":/fixtures/graphql/page-response.json"),
+        [synchronizationDatabasePath, catalogFixturePath = QStringLiteral(":/fixtures/graphql/page-response.json"),
          upsertMediaPath = queryConfiguration.upsertMediaPath, readMediaPath = queryConfiguration.readMediaPath,
          readActiveMediaIdsPath = queryConfiguration.readActiveMediaIdsPath,
          markSourceRemovedPath = queryConfiguration.markMediaSourceRemovedPath, readTaskStatesQueryPath,
          upsertTaskStateQueryPath, deleteTaskStateQueryPath,
          readUserPreferencesPath = queryConfiguration.readUserPreferencesPath,
          upsertUserPreferencesPath = queryConfiguration.upsertUserPreferencesPath,
-         timeoutMs = settings.syncTimeoutMs] {
+         timeoutMs = settings.syncTimeoutMs,
+         userListConfiguration = ApplicationSyncTaskExecutor::AuthenticatedUserListConfiguration{
+             QUrl(settings.aniList.endpoint), context.aniListAuthManager->credentials(),
+             settings.aniList.userListPerChunk, settings.http.timeoutMs, settings.http.maxRetries,
+             settings.http.retryDelayMs,
+             [logger = context.logger.get()](const QString &event) {
+                 if (logger) logger->info(LogCategory::Sync, event);
+             },
+             settings.aniList.captureGraphQlResponsesForDiagnostics
+                 ? QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath("logs")
+                 : QString{}}] {
             return std::make_unique<ApplicationSyncTaskExecutor>(
-                synchronizationDatabasePath, userListFixturePath, catalogFixturePath, upsertMediaPath,
+                synchronizationDatabasePath, catalogFixturePath, upsertMediaPath,
                 readMediaPath, readActiveMediaIdsPath,
                 markSourceRemovedPath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
-                readUserPreferencesPath, upsertUserPreferencesPath, timeoutMs);
+                readUserPreferencesPath, upsertUserPreferencesPath, timeoutMs, userListConfiguration);
         }, backgroundSynchronizationPolicies(settings.syncTaskPolicies));
     context.seasonalNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
+    const AniListGraphQlClient::Diagnostics seasonalDiagnostics{
+        .log = [logger = context.logger.get()](const QString &event) {
+            if (logger) logger->info(LogCategory::Sync, event);
+        },
+        .responseCaptureDirectory = settings.aniList.captureGraphQlResponsesForDiagnostics
+            ? QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath("logs")
+            : QString{}};
     context.seasonalGraphQlClient = std::make_unique<AniListGraphQlClient>(
-        *context.seasonalNetworkManager);
+        *context.seasonalNetworkManager, nullptr, QUrl(settings.aniList.endpoint), settings.http.timeoutMs,
+        settings.http.maxRetries, settings.http.retryDelayMs, seasonalDiagnostics);
     context.seasonalQueryStore = std::make_unique<GraphQlQueryStore>(
         QStringLiteral(":/anilist/queries/seasonal-catalog.graphql"));
     context.seasonalCatalogDataSource = std::make_unique<GraphQlSeasonalCatalogDataSource>(
@@ -372,29 +419,6 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         *context.seasonalCatalogDataSource, kSeasonalCatalogMaximumPageSize, nullptr,
         settings.seasonalCatalogCachePolicy);
     context.seasonalCatalogCoordinator->setLogger(context.logger.get());
-    context.aniListSecretStore = std::make_unique<WindowsCredentialStore>();
-    context.aniListAuthManager = std::make_unique<AniListAuthManager>(*context.aniListSecretStore);
-    context.aniListAuthManager->setAuditLogger([logger = context.logger.get()](const QString &event) {
-        if (logger) logger->info(LogCategory::Application, event);
-    });
-    QString credentialsError;
-    static_cast<void>(context.aniListAuthManager->load(credentialsError));
-    if (!settings.aniList.oauthClientId.trimmed().isEmpty()
-        && settings.aniList.oauthRedirectUri.isValid()
-        && !settings.aniList.oauthRedirectUri.scheme().isEmpty()) {
-        context.aniListOAuthConfiguration.emplace(settings.aniList.oauthClientId,
-                                                  settings.aniList.oauthRedirectUri);
-        context.aniListNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
-        context.aniListGraphQlClient = std::make_unique<AniListGraphQlClient>(
-            *context.aniListNetworkManager, context.aniListAuthManager.get(),
-            QUrl(settings.aniList.endpoint), settings.http.timeoutMs,
-            settings.http.maxRetries, settings.http.retryDelayMs);
-        context.aniListViewerQueryStore = std::make_unique<GraphQlQueryStore>(
-            QStringLiteral(":/anilist/queries/viewer.graphql"));
-        context.aniListViewerClient = std::make_unique<AniListViewerClient>(
-            *context.aniListGraphQlClient, *context.aniListViewerQueryStore);
-        context.aniListOAuthLauncher = std::make_unique<WindowsAniListOAuthLauncher>();
-    }
     context.logger->info(LogCategory::Application, QStringLiteral("Application composition completed."));
     return context;
 }

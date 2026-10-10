@@ -2,25 +2,40 @@
 #define HAIKENANIME_APPLICATIONSYNCTASKEXECUTOR_H
 
 #include <atomic>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <vector>
+#include <QUrl>
 
 #include "../application/scheduling/ISyncTaskExecutor.h"
+#include "../application/anilist/AniListCredentials.h"
 
 class QThread;
 
 /** Creates each synchronization task's network and SQLite dependencies on its worker thread. */
 class ApplicationSyncTaskExecutor final : public ISyncTaskExecutor {
 public:
-    ApplicationSyncTaskExecutor(QString databasePath, QString userListFixturePath, QString catalogFixturePath,
+    struct AuthenticatedUserListConfiguration final {
+        QUrl endpoint;
+        AniListCredentials credentials;
+        int perChunk = 100;
+        int httpTimeoutMs = 30000;
+        int httpMaxRetries = 0;
+        int httpRetryDelayMs = 0;
+        std::function<void(const QString &)> auditLogger;
+        QString responseCaptureDirectory;
+    };
+
+    ApplicationSyncTaskExecutor(QString databasePath, QString catalogFixturePath,
                                 QString upsertQueryPath,
                                 QString readQueryPath, QString readActiveMediaIdsQueryPath,
                                 QString markSourceRemovedQueryPath, QString readTaskStatesQueryPath,
                                 QString upsertTaskStateQueryPath, QString deleteTaskStateQueryPath,
                                 QString readUserPreferencesQueryPath,
-                                QString upsertUserPreferencesQueryPath, int timeoutMs);
+                                QString upsertUserPreferencesQueryPath, int timeoutMs,
+                                AuthenticatedUserListConfiguration authenticatedUserList);
     ~ApplicationSyncTaskExecutor() override;
 
     void Execute(const SyncTaskState &state, qint64 generation, Completion completion) override;
@@ -39,7 +54,6 @@ private:
     void NotifyShutdownIfIdle();
 
     QString databasePath_;
-    QString userListFixturePath_;
     QString catalogFixturePath_;
     QString upsertQueryPath_;
     QString readQueryPath_;
@@ -51,6 +65,7 @@ private:
     QString readUserPreferencesQueryPath_;
     QString upsertUserPreferencesQueryPath_;
     int timeoutMs_ = 0;
+    AuthenticatedUserListConfiguration authenticatedUserList_;
     std::mutex mutex_;
     std::map<SyncPartition, std::shared_ptr<Job>> jobs_;
     ShutdownAcknowledgement shutdownAcknowledgement_;

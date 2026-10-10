@@ -5,6 +5,8 @@
 #include <QString>
 #include <QUrl>
 
+#include <functional>
+
 #include "../../application/anilist/IAniListAuthProvider.h"
 #include "../../application/anilist/IAniListDataSource.h"
 #include "AniListGraphQlResponse.h"
@@ -14,12 +16,17 @@ class QNetworkAccessManager;
 /** Sends read-only GraphQL operations to AniList through a supplied network manager. */
 class AniListGraphQlClient final {
 public:
+    struct Diagnostics final {
+        std::function<void(const QString &)> log;
+        QString responseCaptureDirectory;
+    };
+
     /** Creates a client using the supplied manager and optional authorization provider. */
     explicit AniListGraphQlClient(QNetworkAccessManager &networkManager,
                                   IAniListAuthProvider *authProvider = nullptr,
                                   QUrl endpoint = QUrl(QStringLiteral("https://graphql.anilist.co")),
                                   int timeoutMs = 30000, int maxRetries = 0,
-                                  int retryDelayMs = 0);
+                                  int retryDelayMs = 0, Diagnostics diagnostics = {});
 
     /**
      * Sends a GraphQL POST request and parses both data and GraphQL errors.
@@ -38,6 +45,8 @@ private:
     [[nodiscard]] bool ExecuteWithAttempt(const QString &query, const QJsonObject &variables,
                                           AniListGraphQlResponse &response, QString &error,
                                           int attempt) const;
+    void Log(QString message) const;
+    void CaptureResponse(const QByteArray &payload) const;
 
     QNetworkAccessManager &networkManager_;
     IAniListAuthProvider *authProvider_;
@@ -45,6 +54,7 @@ private:
     int timeoutMs_;
     int maxRetries_;
     int retryDelayMs_;
+    Diagnostics diagnostics_;
 };
 
 #endif // HAIKENANIME_ANILISTGRAPHQLCLIENT_H

@@ -1,5 +1,13 @@
 #include "AniListAuthManager.h"
 
+namespace {
+QString safeAuditError(QString error, const QString &token) {
+    if (error.isEmpty()) return QStringLiteral("Unknown error.");
+    if (!token.isEmpty()) error.replace(token, QStringLiteral("[REDACTED]"));
+    return error;
+}
+}
+
 AniListAuthManager::AniListAuthManager(ISecretStore &secretStore)
     : secretStore_(secretStore) {
 }
@@ -66,7 +74,6 @@ bool AniListAuthManager::handleCallback(const QUrl &callback, QString &error) {
     credentials_ = callbackCredentials;
     state_ = AniListAuthenticationState::AwaitingValidation;
     audit(QStringLiteral("AniList OAuth callback received."));
-    audit(QStringLiteral("TEMPORARY DIAGNOSTIC AniList OAuth access token: %1").arg(credentials_.token));
     return true;
 }
 
@@ -78,7 +85,8 @@ bool AniListAuthManager::validateToken(IAniListViewerClient &viewerClient, QStri
             error = QStringLiteral("AniList Viewer validation returned invalid account data.");
         }
         state_ = AniListAuthenticationState::AuthenticationFailed;
-        audit(QStringLiteral("AniList Viewer validation failed."));
+        audit(QStringLiteral("AniList Viewer validation failed: %1")
+                  .arg(safeAuditError(error, credentials_.token)));
         return false;
     }
     credentials_.userId = viewer.id;

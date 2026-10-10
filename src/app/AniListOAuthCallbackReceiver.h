@@ -18,6 +18,7 @@ public:
     explicit AniListOAuthCallbackReceiver(QString serverName, QObject *parent = nullptr);
     ~AniListOAuthCallbackReceiver() override;
     void setAuditLogger(AuditLogger logger);
+    void stop();
 
     [[nodiscard]] static std::optional<QUrl> callbackFromArguments(const QStringList &arguments);
     [[nodiscard]] StartResult start(const QStringList &arguments, QString &error);
@@ -28,9 +29,11 @@ signals:
 private:
     void audit(const QString &event) const;
     void receivePendingConnections();
+    void receiveCallback(QLocalSocket *socket);
     QString serverName_;
     AuditLogger auditLogger_;
     QLocalServer server_;
+    bool receiverStarted_ = false;
 };
 
 #endif // HAIKENANIME_ANILISTOAUTHCALLBACKRECEIVER_H

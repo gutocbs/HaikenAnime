@@ -4,12 +4,16 @@
 #include "AniListGraphQlPageParser.h"
 #include "AniListGraphQlUserListParser.h"
 #include "GraphQlQueryStore.h"
+#include "../../application/anilist/IAniListAuthProvider.h"
 
 #include <QJsonObject>
 
 GraphQlAniListDataSource::GraphQlAniListDataSource(AniListGraphQlClient &client,
-                                                   GraphQlQueryStore &queryStore)
-    : client_(client), queryStore_(queryStore) {
+                                                   GraphQlQueryStore &queryStore,
+                                                   IAniListAuthProvider *authProvider,
+                                                   const int userListPerChunk)
+    : client_(client), queryStore_(queryStore), authProvider_(authProvider),
+      userListPerChunk_(qMax(1, userListPerChunk)) {
 }
 
 namespace {
@@ -29,8 +33,9 @@ bool GraphQlAniListDataSource::fetchPage(const AniListDataSourceRequest &request
     result = {};
     error.clear();
     const auto partition = request.filter.partition;
-    if (partition == SyncPartition::UserList && request.filter.username.isEmpty()) {
-        error = QStringLiteral("AniList user-list refresh requires a user name.");
+    if (partition == SyncPartition::UserList
+        && (!authProvider_ || authProvider_->credentials().username.isEmpty())) {
+        error = QStringLiteral("AniList user-list refresh requires an authenticated identity.");
         return false;
     }
     if (partition != SyncPartition::UserList && !isCatalogPartition(partition)) {
@@ -43,14 +48,23 @@ bool GraphQlAniListDataSource::fetchPage(const AniListDataSourceRequest &request
     }
 
     AniListDataSourceRequest networkRequest = request;
-    networkRequest.variables.insert(QStringLiteral("page"), qMax(1, request.filter.startingPage));
-    networkRequest.variables.insert(QStringLiteral("perPage"), qMax(1, request.filter.perPage));
-    networkRequest.variables.insert(QStringLiteral("type"), variableValue(request.filter.type));
-    networkRequest.variables.insert(QStringLiteral("status"), variableValue(request.filter.status));
-    networkRequest.variables.insert(QStringLiteral("list"), variableValue(request.filter.list));
-    networkRequest.variables.insert(QStringLiteral("userName"), variableValue(request.filter.username));
-    networkRequest.variables.insert(QStringLiteral("includeCatalog"), isCatalogPartition(partition));
-    networkRequest.variables.insert(QStringLiteral("includeUserList"), partition == SyncPartition::UserList);
+    networkRequest.variables = {};
+    if (partition == SyncPartition::UserList) {
+        const auto credentials = authProvider_->credentials();
+        networkRequest.variables.insert(QStringLiteral("userName"), credentials.username);
+        networkRequest.variables.insert(QStringLiteral("chunk"), qMax(1, request.filter.startingPage));
+        networkRequest.variables.insert(QStringLiteral("perChunk"), userListPerChunk_);
+        networkRequest.variables.insert(QStringLiteral("status"), variableValue(request.filter.list));
+    } else {
+        networkRequest.variables.insert(QStringLiteral("page"), qMax(1, request.filter.startingPage));
+        networkRequest.variables.insert(QStringLiteral("perPage"), qMax(1, request.filter.perPage));
+        networkRequest.variables.insert(QStringLiteral("type"), variableValue(request.filter.type));
+        networkRequest.variables.insert(QStringLiteral("status"), variableValue(request.filter.status));
+        networkRequest.variables.insert(QStringLiteral("list"), variableValue(request.filter.list));
+        networkRequest.variables.insert(QStringLiteral("userName"), variableValue(request.filter.username));
+        networkRequest.variables.insert(QStringLiteral("includeCatalog"), true);
+        networkRequest.variables.insert(QStringLiteral("includeUserList"), false);
+    }
 
     AniListGraphQlResponse response;
     if (!client_.execute(query, networkRequest, response, error)) {

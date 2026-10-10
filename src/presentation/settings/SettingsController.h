@@ -60,6 +60,8 @@ class SettingsController final : public QObject {
     Q_PROPERTY(QString aniListAuthenticationMessage READ aniListAuthenticationMessage NOTIFY changed)
 public:
     using AniListAuthorizationLauncher = std::function<bool(const QUrl &, QString &)>;
+    using AniListOAuthReceiverStarter = std::function<bool(QString &)>;
+    using AniListOAuthReceiverStopper = std::function<void()>;
 
     explicit SettingsController(IUserPreferencesRepository *repository,
                                 UserPreferences initial,
@@ -109,7 +111,9 @@ public:
     void SetAniListAuthenticationServices(AniListAuthManager *authManager,
                                            AniListOAuthConfig configuration,
                                            AniListAuthorizationLauncher launcher,
-                                           IAniListViewerClient *viewerClient);
+                                           IAniListViewerClient *viewerClient,
+                                           AniListOAuthReceiverStarter receiverStarter = {},
+                                           AniListOAuthReceiverStopper receiverStopper = {});
     void ApplyExternalHomeSortKey(QString key);
 
     Q_INVOKABLE void SetScoreScale(double minimum, double maximum, double step);
@@ -178,6 +182,8 @@ private:
     std::optional<AniListOAuthConfig> aniListOAuthConfiguration_;
     AniListAuthorizationLauncher aniListAuthorizationLauncher_;
     IAniListViewerClient *aniListViewerClient_ = nullptr;
+    AniListOAuthReceiverStarter aniListOAuthReceiverStarter_;
+    AniListOAuthReceiverStopper aniListOAuthReceiverStopper_;
     QString aniListAuthenticationState_ = QStringLiteral("unavailable");
     QString aniListUsername_;
     QString aniListAuthenticationMessage_;

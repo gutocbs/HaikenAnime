@@ -50,7 +50,15 @@ bool AdaptiveSyncCoordinator::Start() {
         return false;
     }
 
-    for (const auto &state : persistedStates) states_[state.partition] = state;
+    QList<SyncPartition> restartScheduledPartitions;
+    const auto now = Now();
+    for (const auto &state : persistedStates) {
+        states_[state.partition] = state;
+        if (state.status != SyncTaskStatus::Succeeded && state.nextRunAt.has_value()
+            && *state.nextRunAt > now) {
+            restartScheduledPartitions.append(state.partition);
+        }
+    }
     if (seedMissingTasks_) {
         for (const auto &[kind, policy] : policies_) {
             Q_UNUSED(policy);
@@ -66,6 +74,7 @@ bool AdaptiveSyncCoordinator::Start() {
     }
     started_ = true;
     ProcessDueTasks();
+    for (const auto partition : restartScheduledPartitions) RequestNow(partition);
     return true;
 }
 

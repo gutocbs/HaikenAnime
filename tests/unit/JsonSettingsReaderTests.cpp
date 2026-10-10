@@ -88,7 +88,9 @@ void JsonSettingsReaderTests::readsAniListOAuthConfiguration() {
           "endpoint": "https://graphql.anilist.co",
           "mediaQueryFile": "query.graphql",
           "oauthClientId": "12345",
-          "oauthRedirectUri": "haikenanime://oauth/callback"
+          "oauthRedirectUri": "haikenanime://oauth/callback",
+          "userListPerChunk": 100,
+          "captureGraphQlResponsesForDiagnostics": true
         },
         "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100}
     })");
@@ -101,6 +103,8 @@ void JsonSettingsReaderTests::readsAniListOAuthConfiguration() {
     QCOMPARE(settings.aniList.oauthClientId, QStringLiteral("12345"));
     QCOMPARE(settings.aniList.oauthRedirectUri,
              QUrl(QStringLiteral("haikenanime://oauth/callback")));
+    QCOMPARE(settings.aniList.userListPerChunk, 100);
+    QVERIFY(settings.aniList.captureGraphQlResponsesForDiagnostics);
 }
 
 void JsonSettingsReaderTests::readsSeasonalCatalogCachePolicy() {

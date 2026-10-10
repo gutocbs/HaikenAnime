@@ -48,11 +48,14 @@ QString SettingsController::aniListAuthenticationMessage() const { return aniLis
 
 void SettingsController::SetAniListAuthenticationServices(
     AniListAuthManager *authManager, AniListOAuthConfig configuration,
-    AniListAuthorizationLauncher launcher, IAniListViewerClient *viewerClient) {
+    AniListAuthorizationLauncher launcher, IAniListViewerClient *viewerClient,
+    AniListOAuthReceiverStarter receiverStarter, AniListOAuthReceiverStopper receiverStopper) {
     aniListAuthManager_ = authManager;
     aniListOAuthConfiguration_ = std::move(configuration);
     aniListAuthorizationLauncher_ = std::move(launcher);
     aniListViewerClient_ = viewerClient;
+    aniListOAuthReceiverStarter_ = std::move(receiverStarter);
+    aniListOAuthReceiverStopper_ = std::move(receiverStopper);
     refreshAniListPresentation();
     emit changed();
 }
@@ -156,8 +159,18 @@ void SettingsController::ConnectAniList() {
     if (!aniListConnectionAvailable() || aniListAuthenticationInProgress()) return;
 
     QString error;
+    if (aniListOAuthReceiverStarter_
+        && !aniListOAuthReceiverStarter_(error)) {
+        aniListAuthenticationState_ = QStringLiteral("failed");
+        aniListAuthenticationMessage_ = tr("Não foi possível preparar o retorno da autorização da AniList.");
+        statusMessage_.clear();
+        errorMessage_ = aniListAuthenticationMessage_;
+        emit changed();
+        return;
+    }
     const QUrl authorizationUrl = aniListAuthManager_->beginAuthorization(*aniListOAuthConfiguration_);
     if (!aniListAuthorizationLauncher_(authorizationUrl, error)) {
+        if (aniListOAuthReceiverStopper_) aniListOAuthReceiverStopper_();
         aniListAuthenticationState_ = QStringLiteral("failed");
         aniListAuthenticationMessage_ = tr("Não foi possível abrir a autorização da AniList.");
         statusMessage_.clear();
@@ -172,6 +185,7 @@ void SettingsController::ConnectAniList() {
 }
 
 void SettingsController::HandleAniListOAuthCallback(const QUrl &callback) {
+    if (aniListOAuthReceiverStopper_) aniListOAuthReceiverStopper_();
     if (!aniListConnectionAvailable()) return;
 
     QString error;

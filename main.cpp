@@ -46,9 +46,17 @@ int main(int argc, char *argv[]) {
         if (logger) logger->info(LogCategory::Application, event);
     });
     const auto initialOAuthCallback = AniListOAuthCallbackReceiver::callbackFromArguments(app.arguments());
-    QString callbackReceiverError;
-    if (oauthCallbackReceiver.start(app.arguments(), callbackReceiverError)
-        == AniListOAuthCallbackReceiver::StartResult::Forwarded) {
+    if (initialOAuthCallback.has_value()) {
+        QString callbackReceiverError;
+        if (oauthCallbackReceiver.start(app.arguments(), callbackReceiverError)
+            != AniListOAuthCallbackReceiver::StartResult::Forwarded) {
+            if (context.logger) {
+                context.logger->warning(
+                    LogCategory::Application,
+                    QStringLiteral("AniList OAuth callback could not be forwarded: %1")
+                        .arg(callbackReceiverError));
+            }
+        }
         return 0;
     }
     WindowsUrlProtocolRegistrar protocolRegistrar;
@@ -125,13 +133,15 @@ int main(int argc, char *argv[]) {
             context.aniListAuthManager.get(), *context.aniListOAuthConfiguration,
             [&context](const QUrl &url, QString &error) {
                 return context.aniListOAuthLauncher->launch(url, error);
-            }, context.aniListViewerClient.get());
+            }, context.aniListViewerClient.get(),
+            [&oauthCallbackReceiver](QString &error) {
+                return oauthCallbackReceiver.start({}, error)
+                    == AniListOAuthCallbackReceiver::StartResult::Listening;
+            },
+            [&oauthCallbackReceiver] { oauthCallbackReceiver.stop(); });
     }
     QObject::connect(&oauthCallbackReceiver, &AniListOAuthCallbackReceiver::callbackReceived,
                      &settingsController, &SettingsController::HandleAniListOAuthCallback);
-    if (initialOAuthCallback.has_value()) {
-        settingsController.HandleAniListOAuthCallback(initialOAuthCallback.value());
-    }
     settingsController.SetScanCoordinator(context.localLibraryScan.get());
     if (context.adaptiveSync) {
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,
