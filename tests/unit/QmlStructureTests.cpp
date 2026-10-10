@@ -80,7 +80,7 @@ private slots:
     void browseControlsClearFocusWithoutResettingCriteria();
     void completeLibraryStaysOpenOutsideExplicitCloseAction();
     void externalLinksUseVisibleInteractiveButtonStates();
-    void completeLibraryAllowsDetailsAndEditorAboveItsOverlay();
+    void completeLibraryAllowsInteractionWithDetailsActions();
     void coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads();
     void languageSelectionUsesBackendOptionsAndStartupInstallsBeforeQml();
     void preferredTitleSelectionUsesBackendOptions();
@@ -423,7 +423,7 @@ void QmlStructureTests::externalLinksUseVisibleInteractiveButtonStates() {
     QVERIFY(button.contains(QStringLiteral("Qt.openUrlExternally(modelData.url)")));
 }
 
-void QmlStructureTests::completeLibraryAllowsDetailsAndEditorAboveItsOverlay() {
+void QmlStructureTests::completeLibraryAllowsInteractionWithDetailsActions() {
     const QString source = qmlSource(QStringLiteral("Home.qml"));
     QVERIFY(!source.isEmpty());
 
@@ -438,6 +438,15 @@ void QmlStructureTests::completeLibraryAllowsDetailsAndEditorAboveItsOverlay() {
     QVERIFY(editorStart >= 0);
     const QString editor = source.mid(editorStart, detailsStart - editorStart);
     QVERIFY(editor.contains(QStringLiteral("z: completeLibrary.z + 1")));
+
+    const qsizetype completeLibraryEnd = source.indexOf(
+        QStringLiteral("onClosed: mediaGrid.reportWindow()"), completeLibraryStart);
+    QVERIFY(completeLibraryEnd > completeLibraryStart);
+    const QString completeLibraryHeader = source.mid(
+        completeLibraryStart, completeLibraryEnd - completeLibraryStart);
+    QVERIFY2(completeLibraryHeader.contains(QStringLiteral("modal: false")),
+             "The complete library must not consume clicks on the details actions beside it.");
+
     QCOMPARE(source.count(QStringLiteral("enabled: controller.hasSelection")), 2);
     QVERIFY(source.contains(QStringLiteral("onClicked: mediaDetailsPanel.openForItem(detailsButton)")));
     QVERIFY(source.contains(QStringLiteral("onClicked: home.openEditor()")));
