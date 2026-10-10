@@ -35,3 +35,5 @@
 # This blocks any folder starting with "cmake" or containing "superpowers"
 cmake*/
 *superpowers*/
+/docs
+/.superpowers
