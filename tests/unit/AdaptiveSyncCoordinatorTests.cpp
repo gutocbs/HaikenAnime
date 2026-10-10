@@ -120,7 +120,9 @@ class AdaptiveSyncCoordinatorTests final : public QObject {
 
 private slots:
     void selectsDueTasksInPolicyPriorityOrder();
+    void runsOnlyOneDueTaskAtATime();
     void persistsMissingPolicyPartitionsBeforeSchedulingThem();
+    void doesNotSchedulePersistedPartitionsOutsideConfiguredPolicies();
     void neverStartsTheSamePartitionTwiceWhileItIsRunning();
     void recordsIndependentProgressWhenAnotherPartitionFails();
     void resumesAnIncompleteTaskFromItsPersistedCheckpoint();
@@ -148,9 +150,31 @@ void AdaptiveSyncCoordinatorTests::selectsDueTasksInPolicyPriorityOrder() {
 
     coordinator.Start();
 
-    QCOMPARE(executor.started,
-             QList<SyncPartition>({SyncPartition::UserList, SyncPartition::ActiveCatalog,
-                                   SyncPartition::Covers}));
+    QCOMPARE(executor.started, QList<SyncPartition>({SyncPartition::UserList}));
+    executor.Complete(SyncPartition::UserList, {.succeeded = true});
+    QTRY_COMPARE(executor.started,
+                 QList<SyncPartition>({SyncPartition::UserList, SyncPartition::ActiveCatalog}));
+    executor.Complete(SyncPartition::ActiveCatalog, {.succeeded = true});
+    QTRY_COMPARE(executor.started,
+                 QList<SyncPartition>({SyncPartition::UserList, SyncPartition::ActiveCatalog,
+                                       SyncPartition::Covers}));
+}
+
+void AdaptiveSyncCoordinatorTests::runsOnlyOneDueTaskAtATime() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList),
+                         DueState(SyncTaskKind::ActiveCatalog, SyncPartition::ActiveCatalog),
+                         DueState(SyncTaskKind::CompletedCatalog, SyncPartition::CompletedCatalog)};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
+
+    QVERIFY(coordinator.Start());
+
+    QCOMPARE(executor.started.size(), 1);
+    executor.Complete(executor.started.constFirst(), {.succeeded = true});
+
+    QTRY_COMPARE(executor.started.size(), 2);
 }
 
 void AdaptiveSyncCoordinatorTests::persistsMissingPolicyPartitionsBeforeSchedulingThem() {
@@ -166,9 +190,26 @@ void AdaptiveSyncCoordinatorTests::persistsMissingPolicyPartitionsBeforeScheduli
     QVERIFY(coordinator.Start());
 
     QCOMPARE(repository.states.size(), 3);
-    QCOMPARE(executor.started, QList<SyncPartition>({SyncPartition::UserList,
-                                                      SyncPartition::ActiveCatalog,
-                                                      SyncPartition::CompletedCatalog}));
+    QCOMPARE(executor.started, QList<SyncPartition>({SyncPartition::UserList}));
+}
+
+void AdaptiveSyncCoordinatorTests::doesNotSchedulePersistedPartitionsOutsideConfiguredPolicies() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList),
+                         DueState(SyncTaskKind::ActiveCatalog, SyncPartition::ActiveCatalog)};
+    FakeTaskExecutor executor;
+    std::map<SyncTaskKind, SyncSchedulePolicy> policies;
+    policies.emplace(SyncTaskKind::UserList, DefaultSyncSchedulePolicy(SyncTaskKind::UserList));
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); }, policies);
+
+    QVERIFY(coordinator.Start());
+
+    QCOMPARE(executor.started, QList<SyncPartition>({SyncPartition::UserList}));
+    executor.Complete(SyncPartition::UserList, {.succeeded = true});
+    QCoreApplication::processEvents();
+    QCOMPARE(executor.started, QList<SyncPartition>({SyncPartition::UserList}));
+    QCOMPARE(repository.states.size(), 2);
 }
 
 void AdaptiveSyncCoordinatorTests::neverStartsTheSamePartitionTwiceWhileItIsRunning() {
@@ -191,19 +232,22 @@ void AdaptiveSyncCoordinatorTests::recordsIndependentProgressWhenAnotherPartitio
     repository.states = {DueState(SyncTaskKind::PendingChange, SyncPartition::PendingChanges),
                          DueState(SyncTaskKind::ActiveCatalog, SyncPartition::ActiveCatalog)};
     FakeTaskExecutor executor;
-    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
+    auto policies = DefaultSyncTaskPolicies();
+    policies[SyncTaskKind::PendingChange].maximumConsecutiveImmediateRetries = 0;
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); }, policies);
 
     coordinator.Start();
     executor.Complete(SyncPartition::PendingChanges,
                       {.succeeded = false,
                        .errorCategory = AniListSyncErrorCategory::Network,
                        .safeErrorDetail = QStringLiteral("network unavailable")});
+    QTRY_VERIFY(executor.started.contains(SyncPartition::ActiveCatalog));
     executor.Complete(SyncPartition::ActiveCatalog,
                       {.succeeded = true, .confirmedPage = 3, .confirmedCursor = QStringLiteral("cursor-3")});
 
     QTRY_COMPARE(repository.State(SyncPartition::PendingChanges).status, SyncTaskStatus::RetryScheduled);
+    QTRY_COMPARE(repository.State(SyncPartition::ActiveCatalog).status, SyncTaskStatus::Succeeded);
     const auto completed = repository.State(SyncPartition::ActiveCatalog);
-    QCOMPARE(completed.status, SyncTaskStatus::Succeeded);
     QCOMPARE(completed.confirmedPage, std::optional<int>(3));
     QCOMPARE(completed.confirmedCursor, std::optional<QString>(QStringLiteral("cursor-3")));
 }
@@ -320,7 +364,8 @@ void AdaptiveSyncCoordinatorTests::promotesManualAndLocalChangeRequests() {
     coordinator.NotifyLocalChange(SyncPartition::CompletedCatalog);
 
     QVERIFY(executor.started.contains(SyncPartition::Covers));
-    QVERIFY(executor.started.contains(SyncPartition::ActiveCatalog));
+    executor.Complete(SyncPartition::Covers, {.succeeded = true});
+    QTRY_VERIFY(executor.started.contains(SyncPartition::ActiveCatalog));
     const auto promoted = repository.State(SyncPartition::ActiveCatalog);
     QCOMPARE(promoted.kind, SyncTaskKind::ActiveCatalog);
     QCOMPARE(promoted.partition, SyncPartition::ActiveCatalog);

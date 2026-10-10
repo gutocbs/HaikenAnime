@@ -147,6 +147,7 @@ signals:
     void cacheCleanupFailed(QString error);
     void synchronizationChanged();
     void synchronizationRequested();
+    void aniListAuthenticationSucceeded();
     void preferencesApplied(UserPreferences preferences);
 private:
     void refreshValidation();

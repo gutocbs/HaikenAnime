@@ -20,6 +20,7 @@ public:
     struct AuthenticatedUserListConfiguration final {
         QUrl endpoint;
         AniListCredentials credentials;
+        std::function<AniListCredentials()> credentialsProvider;
         int perChunk = 100;
         int httpTimeoutMs = 30000;
         int httpMaxRetries = 0;
@@ -28,8 +29,7 @@ public:
         QString responseCaptureDirectory;
     };
 
-    ApplicationSyncTaskExecutor(QString databasePath, QString catalogFixturePath,
-                                QString upsertQueryPath,
+    ApplicationSyncTaskExecutor(QString databasePath, QString upsertQueryPath,
                                 QString readQueryPath, QString readActiveMediaIdsQueryPath,
                                 QString markSourceRemovedQueryPath, QString readTaskStatesQueryPath,
                                 QString upsertTaskStateQueryPath, QString deleteTaskStateQueryPath,
@@ -54,7 +54,6 @@ private:
     void NotifyShutdownIfIdle();
 
     QString databasePath_;
-    QString catalogFixturePath_;
     QString upsertQueryPath_;
     QString readQueryPath_;
     QString readActiveMediaIdsQueryPath_;

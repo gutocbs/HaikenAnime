@@ -95,6 +95,9 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         lib/anitomy/tokenizer.cpp
         src/application/media/SeasonalPersonalListService.h
         src/application/media/SeasonalPersonalListService.cpp
+        src/application/media/IPersonalListChangeWriter.h
+        src/application/media/PersonalListChangeService.h
+        src/application/media/PersonalListChangeService.cpp
         src/application/catalog/SeasonalCatalogTypes.h
         src/application/catalog/ISeasonalCatalogDataSource.h
         src/domain/media/MediaType.h
@@ -189,6 +192,8 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/infrastructure/database/SqliteMediaRepository.cpp
         src/infrastructure/database/SqlitePendingChangeRepository.h
         src/infrastructure/database/SqlitePendingChangeRepository.cpp
+        src/infrastructure/database/SqlitePersonalListChangeWriter.h
+        src/infrastructure/database/SqlitePersonalListChangeWriter.cpp
         src/infrastructure/database/SqliteMediaMapper.h
         src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqliteCoverCacheRepository.h
@@ -309,6 +314,18 @@ set_source_files_properties(
 set_source_files_properties(
         resources/sqlite/queries/delete-sync-task-state.sql
         PROPERTIES QT_RESOURCE_ALIAS "delete-sync-task-state.sql")
+set_source_files_properties(
+        resources/anilist/mutations/update-progress.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "update-progress.graphql")
+set_source_files_properties(
+        resources/anilist/mutations/update-score.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "update-score.graphql")
+set_source_files_properties(
+        resources/anilist/mutations/update-list-status.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "update-list-status.graphql")
+set_source_files_properties(
+        resources/anilist/mutations/delete-list-entry.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "delete-list-entry.graphql")
 file(GLOB SQLITE_MIGRATION_RESOURCES CONFIGURE_DEPENDS resources/sqlite/migrations/*.sql)
 foreach (MIGRATION_FILE IN LISTS SQLITE_MIGRATION_RESOURCES)
     get_filename_component(MIGRATION_ALIAS "${MIGRATION_FILE}" NAME)
@@ -377,6 +394,15 @@ qt_add_resources(HaikenAnime application_config_resource
         PREFIX "/config"
         FILES
         Settings.json
+)
+
+qt_add_resources(HaikenAnime anilist_mutation_resource_bundle
+        PREFIX "/anilist/mutations"
+        FILES
+        resources/anilist/mutations/update-progress.graphql
+        resources/anilist/mutations/update-score.graphql
+        resources/anilist/mutations/update-list-status.graphql
+        resources/anilist/mutations/delete-list-entry.graphql
 )
 
 qt_add_resources(HaikenAnime fixture_resource_bundle
@@ -511,6 +537,8 @@ add_executable(SqliteRepositoryTests
         src/infrastructure/database/SqliteMediaRepository.cpp
         src/infrastructure/database/SqlitePendingChangeRepository.h
         src/infrastructure/database/SqlitePendingChangeRepository.cpp
+        src/infrastructure/database/SqlitePersonalListChangeWriter.h
+        src/infrastructure/database/SqlitePersonalListChangeWriter.cpp
         src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/logging/AsyncLogger.h
         src/infrastructure/logging/AsyncLogger.cpp
@@ -1027,6 +1055,11 @@ add_executable(SeasonalCatalogControllerTests
         src/application/media/MediaDetailsPresentation.cpp
         src/application/media/SeasonalPersonalListService.h
         src/application/media/SeasonalPersonalListService.cpp
+        src/application/media/IPersonalListChangeWriter.h
+        src/application/media/PersonalListChangeService.h
+        src/application/media/PersonalListChangeService.cpp
+        src/application/anilist/AniListPendingChangeFactory.h
+        src/application/anilist/AniListPendingChangeFactory.cpp
         src/infrastructure/logging/AsyncLogger.h
         src/infrastructure/logging/AsyncLogger.cpp
 )
@@ -1115,6 +1148,11 @@ add_test(NAME AniListPendingChangeProcessorTests COMMAND AniListPendingChangePro
 
 add_executable(HomeScreenControllerTests
         tests/unit/HomeScreenControllerTests.cpp
+        src/application/media/IPersonalListChangeWriter.h
+        src/application/media/PersonalListChangeService.h
+        src/application/media/PersonalListChangeService.cpp
+        src/application/anilist/AniListPendingChangeFactory.h
+        src/application/anilist/AniListPendingChangeFactory.cpp
         src/presentation/home/HomeScreenController.h
         src/presentation/home/HomeScreenController.cpp
         src/application/covers/CoverDownloadCoordinator.h
@@ -1136,6 +1174,18 @@ target_compile_definitions(HomeScreenControllerTests PRIVATE
 )
 
 add_test(NAME HomeScreenControllerTests COMMAND HomeScreenControllerTests)
+
+add_executable(PersonalListChangeServiceTests
+        tests/unit/PersonalListChangeServiceTests.cpp
+        src/application/media/IPersonalListChangeWriter.h
+        src/application/media/PersonalListChangeService.h
+        src/application/media/PersonalListChangeService.cpp
+        src/application/anilist/AniListPendingChange.h
+        src/application/anilist/AniListPendingChangeFactory.h
+        src/application/anilist/AniListPendingChangeFactory.cpp
+)
+target_link_libraries(PersonalListChangeServiceTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME PersonalListChangeServiceTests COMMAND PersonalListChangeServiceTests)
 
 add_executable(SettingsControllerTests
         tests/unit/SettingsControllerTests.cpp

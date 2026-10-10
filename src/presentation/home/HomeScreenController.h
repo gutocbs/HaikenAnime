@@ -14,6 +14,7 @@
 class ILocalEpisodeReader;
 class ILocalFileOpener;
 class IPersonalListMediaWriter;
+class PersonalListChangeService;
 
 class HomeMediaModel final : public QAbstractListModel {
     Q_OBJECT
@@ -159,6 +160,7 @@ public:
     void ConfigurePreferredTitle(QString key);
     void SetLocalEpisodeServices(ILocalEpisodeReader *episodeReader, ILocalFileOpener *fileOpener);
     void SetPersonalListMediaWriter(IPersonalListMediaWriter *personalListWriter);
+    void SetPersonalListChangeService(PersonalListChangeService *personalListChangeService);
     void RefreshLocalEpisode();
 
     void reload();
@@ -229,6 +231,7 @@ private:
     ILocalEpisodeReader *episodeReader_ = nullptr;
     ILocalFileOpener *fileOpener_ = nullptr;
     IPersonalListMediaWriter *personalListWriter_ = nullptr;
+    PersonalListChangeService *personalListChangeService_ = nullptr;
     int nextLocalEpisode_ = 0;
     int availableLocalEpisodeCount_ = 0;
     QString nextLocalEpisodePath_;

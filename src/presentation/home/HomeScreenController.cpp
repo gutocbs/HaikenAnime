@@ -4,6 +4,7 @@
 #include "../../application/library/LocalEpisodeReader.h"
 #include "../../application/media/MediaDetailsPresentation.h"
 #include "../../application/media/IPersonalListMediaWriter.h"
+#include "../../application/media/PersonalListChangeService.h"
 
 #include <QCoreApplication>
 #include <QVariant>
@@ -476,6 +477,10 @@ void HomeScreenController::SetPersonalListMediaWriter(IPersonalListMediaWriter *
     personalListWriter_ = personalListWriter;
 }
 
+void HomeScreenController::SetPersonalListChangeService(PersonalListChangeService *personalListChangeService) {
+    personalListChangeService_ = personalListChangeService;
+}
+
 void HomeScreenController::RefreshLocalEpisode() {
     if (!hasSelection_) return;
     refreshNextLocalEpisode();
@@ -631,7 +636,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
         }
         return false;
     };
-    if (!hasSelection_ || personalListWriter_ == nullptr) {
+    if (!hasSelection_ || (personalListWriter_ == nullptr && personalListChangeService_ == nullptr)) {
         return setSaveError(QStringLiteral("A lista local não está disponível."));
     }
     const auto status = userListStatusFromKey(statusKey);
@@ -652,7 +657,10 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
     updated.LocalPath = path.trimmed();
     updated.AlternativeNames = alternativeNames;
     QString error;
-    if (!personalListWriter_->updatePersonalListMedia(updated, error)) return setSaveError(std::move(error));
+    const bool saved = personalListChangeService_
+        ? personalListChangeService_->save(*current, updated, error)
+        : personalListWriter_->updatePersonalListMedia(updated, error);
+    if (!saved) return setSaveError(std::move(error));
 
     const auto destination = std::find_if(allMedia_.begin(), allMedia_.end(), [id = updated.Id](const Media &media) {
         return media.Id == id;

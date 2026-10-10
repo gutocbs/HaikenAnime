@@ -6,6 +6,7 @@ query UserAnimeList($userName: String!, $chunk: Int, $perChunk: Int, $status: Me
     chunk: $chunk
     perChunk: $perChunk
   ) {
+    hasNextChunk
     lists {
       name
       entries {

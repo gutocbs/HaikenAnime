@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 
 #include "AdaptiveSyncCoordinator.h"
 
@@ -25,6 +26,7 @@ public:
     AdaptiveSyncRuntime &operator=(const AdaptiveSyncRuntime &) = delete;
 
     void start();
+    void requestNow(SyncPartition partition);
     void shutdown();
     [[nodiscard]] bool isReady() const;
     [[nodiscard]] bool isStopped() const;
@@ -33,6 +35,7 @@ public:
 signals:
     void Ready();
     void InitializationFailed(const QString &safeError);
+    void BackgroundTaskCompleted(SyncPartition partition);
     void BackgroundTaskFailed(SyncPartition partition, const QString &safeError);
     void Stopped();
 
@@ -42,6 +45,7 @@ private:
     void Initialize(RepositoryFactory repositoryFactory, ExecutorFactory executorFactory,
                     std::map<SyncTaskKind, SyncSchedulePolicy> policies);
     void StartOnWorker();
+    void RequestNowOnWorker(SyncPartition partition);
     void StopOnWorker();
     void DisposeOnWorker(QString initializationFailure = {});
     [[nodiscard]] bool isStopRequested() const;
@@ -56,6 +60,8 @@ private:
     QString initializationError_;
     bool stopRequested_ = false;
     bool startRequested_ = false;
+    bool coordinatorStarted_ = false;
+    std::optional<SyncPartition> pendingRequest_;
     bool disposalScheduled_ = false;
 };
 

@@ -6,6 +6,7 @@
 #include <atomic>
 #include <chrono>
 #include <memory>
+#include <mutex>
 #include <thread>
 
 #include "../../src/app/AdaptiveSyncRuntime.h"
@@ -37,6 +38,8 @@ struct ExecutorState final {
     std::atomic_bool shutdownRequested = false;
     std::atomic_int executionCount = 0;
     std::atomic_int cancellationCount = 0;
+    std::mutex completionMutex;
+    ISyncTaskExecutor::Completion completion;
     ISyncTaskExecutor::ShutdownAcknowledgement shutdownAcknowledgement;
 };
 
@@ -44,7 +47,13 @@ class FakeTaskExecutor final : public ISyncTaskExecutor {
 public:
     explicit FakeTaskExecutor(std::shared_ptr<ExecutorState> state) : state_(std::move(state)) {}
 
-    void Execute(const SyncTaskState &, qint64, Completion) override { ++state_->executionCount; }
+    void Execute(const SyncTaskState &, qint64, Completion completion) override {
+        {
+            std::lock_guard lock(state_->completionMutex);
+            state_->completion = std::move(completion);
+        }
+        ++state_->executionCount;
+    }
     void Cancel(SyncPartition, CancellationAcknowledgement acknowledgement) override {
         ++state_->cancellationCount;
         acknowledgement();
@@ -71,6 +80,18 @@ std::unique_ptr<ISyncTaskStateRepository> dueRepository(QString &error) {
     state.cacheValidity = CacheValidity::Expired;
     return std::make_unique<FakeTaskStateRepository>(QList<SyncTaskState>{state});
 }
+
+std::unique_ptr<ISyncTaskStateRepository> freshUserListRepository(QString &error) {
+    error.clear();
+    SyncTaskState state;
+    state.kind = SyncTaskKind::UserList;
+    state.partition = SyncPartition::UserList;
+    state.status = SyncTaskStatus::Succeeded;
+    state.cacheValidity = CacheValidity::Fresh;
+    state.lastSucceededAt = QDateTime::currentDateTimeUtc();
+    state.nextRunAt = state.lastSucceededAt->addDays(1);
+    return std::make_unique<FakeTaskStateRepository>(QList<SyncTaskState>{state});
+}
 }
 
 class AdaptiveSyncRuntimeTests final : public QObject {
@@ -79,8 +100,10 @@ private slots:
     void constructorQueuesInitializationWithoutBlockingCaller();
     void startsQueuedBeforeInitializationOnlyOnce();
     void startsPersistedWorkOnlyAfterExplicitActivation();
+    void forcesFreshUserListSynchronizationWhenRequested();
     void drainsAnActiveExecutorBeforeStopping();
     void exposesRepositoryInitializationFailure();
+    void propagatesCompletedBackgroundTask();
     void defersWorkerDestructionUntilCoordinatorStops();
     void destructorRetainsWorkerOwnershipPastLegacyTimeout();
 };
@@ -153,6 +176,22 @@ void AdaptiveSyncRuntimeTests::startsPersistedWorkOnlyAfterExplicitActivation() 
     QTRY_VERIFY(runtime.isStopped());
 }
 
+void AdaptiveSyncRuntimeTests::forcesFreshUserListSynchronizationWhenRequested() {
+    const auto executorState = std::make_shared<ExecutorState>();
+    AdaptiveSyncRuntime runtime(
+        freshUserListRepository,
+        [executorState] { return std::make_unique<FakeTaskExecutor>(executorState); }, {});
+
+    QTRY_VERIFY(runtime.isReady());
+    runtime.requestNow(SyncPartition::UserList);
+    QTRY_COMPARE(executorState->executionCount.load(), 1);
+
+    runtime.shutdown();
+    QTRY_VERIFY(executorState->shutdownRequested.load());
+    executorState->shutdownAcknowledgement();
+    QTRY_VERIFY(runtime.isStopped());
+}
+
 void AdaptiveSyncRuntimeTests::drainsAnActiveExecutorBeforeStopping() {
     const auto executorState = std::make_shared<ExecutorState>();
     AdaptiveSyncRuntime runtime(
@@ -183,6 +222,34 @@ void AdaptiveSyncRuntimeTests::exposesRepositoryInitializationFailure() {
     QTRY_COMPARE(failed.count(), 1);
     QCOMPARE(runtime.initializationError(), QStringLiteral("task-state database unavailable"));
     QVERIFY(!runtime.isReady());
+    QTRY_VERIFY(runtime.isStopped());
+}
+
+void AdaptiveSyncRuntimeTests::propagatesCompletedBackgroundTask() {
+    const auto executorState = std::make_shared<ExecutorState>();
+    AdaptiveSyncRuntime runtime(
+        dueRepository,
+        [executorState] { return std::make_unique<FakeTaskExecutor>(executorState); }, {});
+    QSignalSpy completed(&runtime, &AdaptiveSyncRuntime::BackgroundTaskCompleted);
+
+    QTRY_VERIFY(runtime.isReady());
+    runtime.start();
+    QTRY_COMPARE(executorState->executionCount.load(), 1);
+
+    ISyncTaskExecutor::Completion completion;
+    {
+        std::lock_guard lock(executorState->completionMutex);
+        completion = executorState->completion;
+    }
+    QVERIFY(completion);
+    completion(SyncTaskExecutionResult{.succeeded = true});
+
+    QTRY_COMPARE(completed.count(), 1);
+    QCOMPARE(completed.first().first().value<SyncPartition>(), SyncPartition::UserList);
+
+    runtime.shutdown();
+    QTRY_VERIFY(executorState->shutdownRequested.load());
+    executorState->shutdownAcknowledgement();
     QTRY_VERIFY(runtime.isStopped());
 }
 

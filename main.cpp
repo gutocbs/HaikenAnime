@@ -4,6 +4,7 @@
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QThread>
+#include <QTimer>
 
 #include <memory>
 #include <utility>
@@ -82,9 +83,6 @@ int main(int argc, char *argv[]) {
         if (context.localLibraryRecognition) {
             context.localLibraryRecognition->shutdown();
         }
-        if (context.initialSync) {
-            context.initialSync->shutdown();
-        }
         if (context.coverCoordinator) {
             context.coverCoordinator->disconnect();
         }
@@ -108,8 +106,9 @@ int main(int argc, char *argv[]) {
                                         context.userPreferences.coverQuality, context.initializationError);
     homeController.SetLocalEpisodeServices(context.localEpisodeReader.get(), context.localFileOpener.get());
     homeController.SetPersonalListMediaWriter(context.mediaRepository.get());
+    homeController.SetPersonalListChangeService(context.personalListChangeService.get());
     SeasonalPersonalListService personalLists(context.mediaRepository.get(), context.mediaRepository.get(),
-                                              context.mediaRepository.get());
+                                              context.mediaRepository.get(), context.personalListChangeService.get());
     SeasonalCatalogController seasonalCatalogController(context.seasonalCatalogCoordinator.get(),
                                                         context.userPreferences.coverQuality,
                                                         context.userPreferences.preferredTitleKey, nullptr,
@@ -166,6 +165,25 @@ int main(int argc, char *argv[]) {
                                          .arg(ToString(partition), error));
                              }
                          });
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCompleted,
+                         &homeController, [&homeController](const SyncPartition partition) {
+                             if (partition == SyncPartition::UserList) homeController.reload();
+                         });
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCompleted,
+                         &settingsController, [&settingsController](const SyncPartition partition) {
+                             if (partition == SyncPartition::UserList) {
+                                 settingsController.notifySynchronizationCompleted();
+                             }
+                         });
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCompleted,
+                         &app, [&context](const SyncPartition partition) {
+                             if (context.logger) {
+                                 context.logger->info(
+                                     LogCategory::Sync,
+                                     QStringLiteral("Background synchronization for %1 completed.")
+                                         .arg(ToString(partition)));
+                             }
+                         });
         const auto schedulingError = context.schedulingInitializationError();
         if (!schedulingError.isEmpty()) homeController.notifySynchronizationFailed(schedulingError);
     }
@@ -194,34 +212,20 @@ int main(int argc, char *argv[]) {
     QObject::connect(&seasonalCatalogController, &SeasonalCatalogController::personalListSaved,
                      &homeController, &HomeScreenController::reload);
 
-    if (context.initialSync) {
-        context.initialSync->configureAutomaticSynchronization(
-            false,
-            context.userPreferences.synchronizationIntervalMs);
-        QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::started,
-                         &homeController, &HomeScreenController::notifySynchronizationStarted);
-        QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::completed,
-                         &homeController, &HomeScreenController::notifySynchronizationCompleted);
-        QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::failed,
-                         &homeController, &HomeScreenController::notifySynchronizationFailed);
-        QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::started,
-                         &settingsController, &SettingsController::notifySynchronizationStarted);
-        QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::completed,
-                         &settingsController, &SettingsController::notifySynchronizationCompleted);
-        QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::failed,
-                         &settingsController, &SettingsController::notifySynchronizationFailed);
-        if (context.adaptiveSync) {
-            const auto startBackgroundScheduling = [&context] {
-                if (context.adaptiveSync) context.adaptiveSync->start();
-            };
-            QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::completed,
-                             &app, startBackgroundScheduling);
-            QObject::connect(context.initialSync.get(), &InitialSyncCoordinator::failed,
-                             &app, startBackgroundScheduling);
-        }
+    if (context.adaptiveSync) {
+        const auto requestUserListSynchronization = [&context, &homeController, &settingsController] {
+            if (!context.adaptiveSync) return;
+            homeController.notifySynchronizationStarted();
+            settingsController.notifySynchronizationStarted();
+            context.adaptiveSync->requestNow(SyncPartition::UserList);
+        };
         QObject::connect(&settingsController, &SettingsController::synchronizationRequested,
-                         context.initialSync.get(), &InitialSyncCoordinator::start);
-        if (context.userPreferences.synchronizationEnabled) context.initialSync->start();
+                         &app, requestUserListSynchronization);
+        QObject::connect(&settingsController, &SettingsController::aniListAuthenticationSucceeded,
+                         &app, requestUserListSynchronization);
+        if (context.userPreferences.synchronizationEnabled) {
+            QTimer::singleShot(0, &app, requestUserListSynchronization);
+        }
     }
 
     QObject::connect(&settingsController, &SettingsController::preferencesApplied,
@@ -239,11 +243,6 @@ int main(int argc, char *argv[]) {
         seasonalCatalogController.ConfigureScoreScale(preferences.scoreMinimum,
                                                       preferences.scoreMaximum,
                                                       preferences.scoreStep);
-        if (context.initialSync) {
-            context.initialSync->configureEnabledUserLists(preferences.enabledUserLists);
-            context.initialSync->configureAutomaticSynchronization(
-                false, preferences.synchronizationIntervalMs);
-        }
     });
 
     QQmlApplicationEngine engine;

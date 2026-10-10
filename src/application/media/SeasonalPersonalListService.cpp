@@ -1,4 +1,5 @@
 #include "SeasonalPersonalListService.h"
+#include "PersonalListChangeService.h"
 
 #include <algorithm>
 
@@ -11,8 +12,10 @@ bool isPersonalListStatus(const UserListStatus status) {
 }
 
 SeasonalPersonalListService::SeasonalPersonalListService(IMediaReader *reader, IMediaWriter *writer,
-                                                         IPersonalListMediaWriter *personalListWriter)
-    : reader_(reader), writer_(writer), personalListWriter_(personalListWriter) {}
+                                                         IPersonalListMediaWriter *personalListWriter,
+                                                         PersonalListChangeService *personalListChangeService)
+    : reader_(reader), writer_(writer), personalListWriter_(personalListWriter),
+      personalListChangeService_(personalListChangeService) {}
 
 bool SeasonalPersonalListService::find(const int mediaId, Media &media, bool &found,
                                        QString &error) const {
@@ -59,7 +62,10 @@ bool SeasonalPersonalListService::save(const Media &catalogMedia, const Personal
         saved.ListStatus = edit.status;
         saved.LocalPath = edit.path;
         saved.AlternativeNames = edit.alternativeNames;
-        if (!personalListWriter_->updatePersonalListMedia(saved, error)) {
+        const bool savedLocally = personalListChangeService_
+            ? personalListChangeService_->save(existing, saved, error)
+            : personalListWriter_->updatePersonalListMedia(saved, error);
+        if (!savedLocally) {
             saved = {};
             return false;
         }
@@ -76,7 +82,12 @@ bool SeasonalPersonalListService::save(const Media &catalogMedia, const Personal
     saved.ListStatus = edit.status;
     saved.LocalPath = edit.path;
     saved.AlternativeNames = edit.alternativeNames;
-    if (!writer_->upsert({saved}, error)) {
+    Media previous;
+    previous.Id = saved.Id;
+    const bool savedLocally = personalListChangeService_
+        ? personalListChangeService_->save(previous, saved, error)
+        : writer_->upsert({saved}, error);
+    if (!savedLocally) {
         saved = {};
         return false;
     }

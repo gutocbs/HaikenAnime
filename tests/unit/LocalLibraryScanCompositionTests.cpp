@@ -61,6 +61,7 @@ private slots:
     void manualCleanupUsesComposedCoverTemporaryStore();
     void workerProductsReleaseConnectionsAndShutdownBeforeDatabase();
     void destroyedLifetimeCancelsScheduledStartup();
+    void productionCompositionDoesNotCreateLegacyStartupSynchronization();
     void composesAdaptiveSynchronizationWithTheLegacyStartupSeam();
 };
 
@@ -234,7 +235,7 @@ void LocalLibraryScanCompositionTests::scannerQueryFailureDoesNotDisableMedia() 
     auto context = createApplicationContext(options);
     QVERIFY2(context.isReady(), qPrintable(context.initializationError));
     QVERIFY(context.mediaRepository);
-    QVERIFY(context.initialSync);
+    QVERIFY(!context.initialSync);
     QVERIFY(context.coverCoordinator);
     QVERIFY(context.localLibraryScan);
     SettingsController controller(context.userPreferencesRepository.get(), context.userPreferences);
@@ -355,13 +356,21 @@ void LocalLibraryScanCompositionTests::destroyedLifetimeCancelsScheduledStartup(
     QCOMPARE(started.count(), 0);
 }
 
+void LocalLibraryScanCompositionTests::productionCompositionDoesNotCreateLegacyStartupSynchronization() {
+    QTemporaryDir directory;
+    auto context = createApplicationContext(optionsFor(directory));
+    QVERIFY2(context.isReady(), qPrintable(context.initializationError));
+
+    QVERIFY(!context.initialSync);
+}
+
 void LocalLibraryScanCompositionTests::composesAdaptiveSynchronizationWithTheLegacyStartupSeam() {
     QTemporaryDir directory;
 
     auto context = createApplicationContext(optionsFor(directory));
 
     QVERIFY2(context.isReady(), qPrintable(context.initializationError));
-    QVERIFY(context.initialSync);
+    QVERIFY(!context.initialSync);
     QVERIFY(context.adaptiveSync);
 }
 

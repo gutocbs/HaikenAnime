@@ -96,6 +96,7 @@ private slots:
     void graphQlAdapterPostsPartitionVariablesAndParsesCatalogPage();
     void graphQlAdapterRequiresAuthenticatedIdentityForUserListRefresh();
     void graphQlAdapterUsesAuthenticatedIdentityAndConfiguredChunkForUserListRefresh();
+    void userListQueryRequestsChunkPaginationMetadata();
     void graphQlAdapterRejectsNonBooleanUserListPaginationMetadata();
     void graphQlClientLogsAndCapturesSuccessfulResponseForDiagnostics();
     void graphQlClientLogsGraphQlErrorDetailForDiagnostics();
@@ -623,6 +624,15 @@ void AniListGraphQlParsingTests::graphQlAdapterUsesAuthenticatedIdentityAndConfi
     QCOMPARE(variables.value(QStringLiteral("userName")).toString(), QStringLiteral("authenticated-user"));
     QCOMPARE(variables.value(QStringLiteral("perChunk")).toInt(), 100);
     QCOMPARE(variables.value(QStringLiteral("status")).toString(), QStringLiteral("CURRENT"));
+}
+
+void AniListGraphQlParsingTests::userListQueryRequestsChunkPaginationMetadata() {
+    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/user-anime-list.graphql"));
+    QString query;
+    QString error;
+
+    QVERIFY2(store.load(query, error), qPrintable(error));
+    QVERIFY(query.contains(QStringLiteral("hasNextChunk")));
 }
 
 void AniListGraphQlParsingTests::graphQlAdapterRejectsNonBooleanUserListPaginationMetadata() {

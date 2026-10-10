@@ -5,6 +5,8 @@
 #include "IMediaWriter.h"
 #include "IPersonalListMediaWriter.h"
 
+class PersonalListChangeService;
+
 struct PersonalListMediaEdit final {
     int progress = 0;
     int score = 0;
@@ -17,7 +19,8 @@ struct PersonalListMediaEdit final {
 class SeasonalPersonalListService final {
 public:
     SeasonalPersonalListService(IMediaReader *reader, IMediaWriter *writer,
-                                IPersonalListMediaWriter *personalListWriter);
+                                IPersonalListMediaWriter *personalListWriter,
+                                PersonalListChangeService *personalListChangeService = nullptr);
 
     [[nodiscard]] bool find(int mediaId, Media &media, bool &found, QString &error) const;
     [[nodiscard]] bool save(const Media &catalogMedia, const PersonalListMediaEdit &edit, Media &saved,
@@ -27,6 +30,7 @@ private:
     IMediaReader *reader_ = nullptr;
     IMediaWriter *writer_ = nullptr;
     IPersonalListMediaWriter *personalListWriter_ = nullptr;
+    PersonalListChangeService *personalListChangeService_ = nullptr;
 };
 
 #endif // HAIKENANIME_SEASONALPERSONALLISTSERVICE_H

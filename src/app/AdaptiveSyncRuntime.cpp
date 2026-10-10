@@ -55,6 +55,20 @@ void AdaptiveSyncRuntime::start() {
     if (isReady() && owner) QMetaObject::invokeMethod(owner, [this] { StartOnWorker(); }, Qt::QueuedConnection);
 }
 
+void AdaptiveSyncRuntime::requestNow(const SyncPartition partition) {
+    QObject *owner = nullptr;
+    {
+        QMutexLocker lock(&stateMutex_);
+        if (state_ == State::Stopped || state_ == State::Failed || stopRequested_) return;
+        startRequested_ = true;
+        pendingRequest_ = partition;
+        owner = owner_;
+    }
+    if (isReady() && owner) {
+        QMetaObject::invokeMethod(owner, [this, partition] { RequestNowOnWorker(partition); }, Qt::QueuedConnection);
+    }
+}
+
 bool AdaptiveSyncRuntime::isStopped() const {
     QMutexLocker lock(&stateMutex_);
     return (state_ == State::Stopped || state_ == State::Failed) && !thread_.isRunning();
@@ -86,6 +100,12 @@ void AdaptiveSyncRuntime::Initialize(RepositoryFactory repositoryFactory, Execut
     coordinator_ = std::make_unique<AdaptiveSyncCoordinator>(*repository_, *executor_,
                                                                AdaptiveSyncCoordinator::Clock{}, std::move(policies), true);
     connect(coordinator_.get(), &AdaptiveSyncCoordinator::Stopped, owner_, [this] { DisposeOnWorker(); });
+    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskCompleted, owner_,
+            [this](const SyncPartition partition) {
+                QMetaObject::invokeMethod(this, [this, partition] {
+                    emit BackgroundTaskCompleted(partition);
+                }, Qt::QueuedConnection);
+            });
     connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskFailed, owner_,
             [this](const SyncPartition partition, const QString &error) {
                 QMetaObject::invokeMethod(this, [this, partition, error] {
@@ -98,17 +118,20 @@ void AdaptiveSyncRuntime::Initialize(RepositoryFactory repositoryFactory, Execut
         return;
     }
     bool startRequested = false;
+    std::optional<SyncPartition> pendingRequest;
     {
         QMutexLocker lock(&stateMutex_);
         if (state_ == State::Initializing) state_ = State::Ready;
         startRequested = startRequested_;
+        pendingRequest = std::exchange(pendingRequest_, std::nullopt);
     }
     QMetaObject::invokeMethod(this, [this] { emit Ready(); }, Qt::QueuedConnection);
     if (startRequested) StartOnWorker();
+    if (pendingRequest.has_value()) RequestNowOnWorker(*pendingRequest);
 }
 
 void AdaptiveSyncRuntime::StartOnWorker() {
-    if (isStopRequested() || !coordinator_) return;
+    if (isStopRequested() || !coordinator_ || coordinatorStarted_) return;
     QString schedulingError;
     const auto schedulingFailure = connect(coordinator_.get(), &AdaptiveSyncCoordinator::SchedulingFailed,
                                            owner_, [&schedulingError](const QString &error) {
@@ -116,9 +139,16 @@ void AdaptiveSyncRuntime::StartOnWorker() {
                                            });
     const bool started = coordinator_->Start();
     disconnect(schedulingFailure);
-    if (!started && !isStopRequested()) {
+    if (started) {
+        coordinatorStarted_ = true;
+    } else if (!isStopRequested()) {
         DisposeOnWorker(SafeError(schedulingError, QStringLiteral("Unable to load synchronization task state.")));
     }
+}
+
+void AdaptiveSyncRuntime::RequestNowOnWorker(const SyncPartition partition) {
+    StartOnWorker();
+    if (!isStopRequested() && coordinator_ && coordinatorStarted_) coordinator_->RequestNow(partition);
 }
 
 void AdaptiveSyncRuntime::StopOnWorker() {

@@ -6,6 +6,8 @@
 #include "../../src/application/library/ILocalFileOpener.h"
 #include "../../src/application/library/LocalEpisodeReader.h"
 #include "../../src/application/media/IPersonalListMediaWriter.h"
+#include "../../src/application/media/IPersonalListChangeWriter.h"
+#include "../../src/application/media/PersonalListChangeService.h"
 
 class FakeMediaReader final : public IMediaReader {
 public:
@@ -31,6 +33,22 @@ public:
 
     Media received;
     QString failure;
+    int calls = 0;
+};
+
+class RecordingPersonalListChangeWriter final : public IPersonalListChangeWriter {
+public:
+    bool save(const Media &media, const QList<AniListPendingChange> &changes,
+              QString &error) override {
+        savedMedia = media;
+        savedChanges = changes;
+        ++calls;
+        error.clear();
+        return true;
+    }
+
+    Media savedMedia;
+    QList<AniListPendingChange> savedChanges;
     int calls = 0;
 };
 
@@ -122,6 +140,7 @@ private slots:
     void fullMediaDetailsPanelProvidesSafeInteractiveDetails();
     void exposesConfigurableEditingOptions();
     void persistsSelectedMediaEditsAndRefreshesBothModels();
+    void persistsSelectedMediaEditsToTheOfflineOutbox();
     void keepsModelsAndSelectionUnchangedWhenPersistingSelectedMediaFails();
     void selectedCoverFallsBackWhenCachedFileIsMissing();
     void updatesOnlyOneCoverRowAndPreservesOldCoverOnFailure();
@@ -975,6 +994,33 @@ void HomeScreenControllerTests::persistsSelectedMediaEditsAndRefreshesBothModels
     controller.SetListFilter(QStringLiteral("completed"));
     QCOMPARE(controller.mediaModel()->rowCount(), 1);
     QCOMPARE(controller.fullMediaModel()->rowCount(), 1);
+}
+
+void HomeScreenControllerTests::persistsSelectedMediaEditsToTheOfflineOutbox() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    media.ConsumedChapters = 5;
+    media.PersonalScore = 7;
+    reader.result = {media};
+    RecordingPersonalListChangeWriter writer;
+    PersonalListChangeService offlineChanges(writer);
+    HomeScreenController controller(reader);
+    controller.SetPersonalListChangeService(&offlineChanges);
+    controller.reload();
+    controller.SelectMedia(media.Id);
+
+    QVERIFY(controller.SaveSelectedMediaFromEditor(12, QStringLiteral("completed"), 9.0,
+                                                    QStringLiteral("D:/Anime/Frieren.mkv"), {}));
+
+    QCOMPARE(writer.calls, 1);
+    QCOMPARE(writer.savedMedia.ConsumedChapters, 12);
+    QCOMPARE(writer.savedChanges.size(), 3);
+    QCOMPARE(controller.selectedProgressValue(), 12);
+    QCOMPARE(controller.selectedListStatusKey(), QStringLiteral("completed"));
 }
 
 void HomeScreenControllerTests::keepsModelsAndSelectionUnchangedWhenPersistingSelectedMediaFails() {

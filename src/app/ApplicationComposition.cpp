@@ -7,6 +7,7 @@
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "../infrastructure/database/SqliteMediaRepository.h"
 #include "../infrastructure/database/SqlitePendingChangeRepository.h"
+#include "../infrastructure/database/SqlitePersonalListChangeWriter.h"
 #include "../infrastructure/database/SqliteQueryConfiguration.h"
 #include "../infrastructure/configuration/JsonSettingsReader.h"
 #include "../infrastructure/database/SqliteCoverCacheRepository.h"
@@ -39,8 +40,7 @@ QString initializationFailure(const QString &stage, const QString &detail) {
 std::map<SyncTaskKind, SyncSchedulePolicy> backgroundSynchronizationPolicies(
     const std::map<SyncTaskKind, SyncSchedulePolicy> &configuredPolicies) {
     std::map<SyncTaskKind, SyncSchedulePolicy> policies;
-    for (const auto kind : {SyncTaskKind::UserList, SyncTaskKind::ActiveCatalog,
-                            SyncTaskKind::InactiveCatalog, SyncTaskKind::CompletedCatalog}) {
+    for (const auto kind : {SyncTaskKind::UserList}) {
         const auto configured = configuredPolicies.find(kind);
         policies.emplace(kind, configured == configuredPolicies.end()
                                    ? DefaultSyncSchedulePolicy(kind) : configured->second);
@@ -270,6 +270,11 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(
         context.database->connection(), queryConfiguration.enqueuePendingChangePath,
         queryConfiguration.readPendingChangesPath, queryConfiguration.updatePendingChangePath);
+    context.personalListChangeWriter = std::make_unique<SqlitePersonalListChangeWriter>(
+        context.database->connection(), queryConfiguration.upsertMediaPath,
+        queryConfiguration.updatePersonalListMediaPath, queryConfiguration.enqueuePendingChangePath);
+    context.personalListChangeService = std::make_unique<PersonalListChangeService>(
+        *context.personalListChangeWriter);
 
     composeLibraryScanner(context, queryConfiguration);
     composeLibraryRecognition(context, queryConfiguration);
@@ -352,51 +357,43 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
             *context.aniListGraphQlClient, *context.aniListViewerQueryStore);
         context.aniListOAuthLauncher = std::make_unique<WindowsAniListOAuthLauncher>();
     }
-    context.initialSync = std::make_unique<InitialSyncCoordinator>(
-        context.database->databasePath(),
-        QStringLiteral(":/fixtures/graphql/userlist-response.json"),
-        queryConfiguration.upsertMediaPath, queryConfiguration.readMediaPath,
-        queryConfiguration.readActiveMediaIdsPath,
-        queryConfiguration.markMediaSourceRemovedPath,
-        settings.syncTimeoutMs, settings.syncIntervalMs);
-    context.initialSync->configureEnabledUserLists(context.userPreferences.enabledUserLists);
-    context.initialSync->setLogger(context.logger.get());
     const auto synchronizationDatabasePath = context.database->databasePath();
     const auto readTaskStatesQueryPath = queryConfiguration.readSyncTaskStatesPath;
     const auto upsertTaskStateQueryPath = queryConfiguration.upsertSyncTaskStatePath;
     const auto deleteTaskStateQueryPath = queryConfiguration.deleteSyncTaskStatePath;
+    auto *authProvider = context.aniListAuthManager.get();
+    const auto userListConfiguration = ApplicationSyncTaskExecutor::AuthenticatedUserListConfiguration{
+        QUrl(settings.aniList.endpoint), context.aniListAuthManager->credentials(),
+        [authProvider] { return authProvider ? authProvider->credentials() : AniListCredentials{}; },
+        settings.aniList.userListPerChunk, settings.http.timeoutMs, settings.http.maxRetries,
+        settings.http.retryDelayMs,
+        [logger = context.logger.get()](const QString &event) {
+            if (logger) logger->info(LogCategory::Sync, event);
+        },
+        settings.aniList.captureGraphQlResponsesForDiagnostics
+            ? QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath("logs")
+            : QString{}};
     context.adaptiveSync = std::make_unique<AdaptiveSyncRuntime>(
         [synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath,
          deleteTaskStateQueryPath](QString &error) -> std::unique_ptr<ISyncTaskStateRepository> {
             auto database = std::make_unique<SqliteDatabase>(synchronizationDatabasePath);
-            if (!database->open() || !database->migrate()) {
+            if (!database->open()) {
                 error = database->lastError();
                 return {};
             }
             return std::make_unique<OwnedSyncTaskStateRepository>(std::move(database), readTaskStatesQueryPath,
                                                                    upsertTaskStateQueryPath, deleteTaskStateQueryPath);
         },
-        [synchronizationDatabasePath, catalogFixturePath = QStringLiteral(":/fixtures/graphql/page-response.json"),
-         upsertMediaPath = queryConfiguration.upsertMediaPath, readMediaPath = queryConfiguration.readMediaPath,
+        [synchronizationDatabasePath, upsertMediaPath = queryConfiguration.upsertMediaPath,
+         readMediaPath = queryConfiguration.readMediaPath,
          readActiveMediaIdsPath = queryConfiguration.readActiveMediaIdsPath,
          markSourceRemovedPath = queryConfiguration.markMediaSourceRemovedPath, readTaskStatesQueryPath,
          upsertTaskStateQueryPath, deleteTaskStateQueryPath,
          readUserPreferencesPath = queryConfiguration.readUserPreferencesPath,
          upsertUserPreferencesPath = queryConfiguration.upsertUserPreferencesPath,
-         timeoutMs = settings.syncTimeoutMs,
-         userListConfiguration = ApplicationSyncTaskExecutor::AuthenticatedUserListConfiguration{
-             QUrl(settings.aniList.endpoint), context.aniListAuthManager->credentials(),
-             settings.aniList.userListPerChunk, settings.http.timeoutMs, settings.http.maxRetries,
-             settings.http.retryDelayMs,
-             [logger = context.logger.get()](const QString &event) {
-                 if (logger) logger->info(LogCategory::Sync, event);
-             },
-             settings.aniList.captureGraphQlResponsesForDiagnostics
-                 ? QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath("logs")
-                 : QString{}}] {
+         timeoutMs = settings.syncTimeoutMs, userListConfiguration] {
             return std::make_unique<ApplicationSyncTaskExecutor>(
-                synchronizationDatabasePath, catalogFixturePath, upsertMediaPath,
-                readMediaPath, readActiveMediaIdsPath,
+                synchronizationDatabasePath, upsertMediaPath, readMediaPath, readActiveMediaIdsPath,
                 markSourceRemovedPath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
                 readUserPreferencesPath, upsertUserPreferencesPath, timeoutMs, userListConfiguration);
         }, backgroundSynchronizationPolicies(settings.syncTaskPolicies));

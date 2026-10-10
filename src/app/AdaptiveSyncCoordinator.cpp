@@ -53,6 +53,9 @@ bool AdaptiveSyncCoordinator::Start() {
     QList<SyncPartition> restartScheduledPartitions;
     const auto now = Now();
     for (const auto &state : persistedStates) {
+        if (!policies_.empty() && !policies_.contains(state.kind)) {
+            continue;
+        }
         states_[state.partition] = state;
         if (state.status != SyncTaskStatus::Succeeded && state.nextRunAt.has_value()
             && *state.nextRunAt > now) {
@@ -117,11 +120,19 @@ void AdaptiveSyncCoordinator::NotifyLocalChange(const SyncPartition partition) {
 
 void AdaptiveSyncCoordinator::ProcessDueTasks() {
     if (!started_ || stopped_) return;
+    if (!activeGenerations_.empty()) {
+        ScheduleWakeUp();
+        return;
+    }
 
     const auto now = Now();
     QList<SyncTaskState> due;
     for (auto &[partition, state] : states_) {
         if (activeGenerations_.contains(partition)) continue;
+        if (state.nextRunAt.has_value()) {
+            if (*state.nextRunAt <= now) due.append(state);
+            continue;
+        }
         const auto decision = SyncTaskPolicy::Decide(state, PolicyFor(state.kind), now, {});
         auto scheduled = decision.proposedState;
         scheduled.nextRunAt = decision.schedule.nextRunAt;
@@ -134,7 +145,7 @@ void AdaptiveSyncCoordinator::ProcessDueTasks() {
         if (left.priority != right.priority) return left.priority > right.priority;
         return ToString(left.partition) < ToString(right.partition);
     });
-    for (const auto &state : due) StartTask(state);
+    if (!due.isEmpty()) StartTask(due.constFirst());
     ScheduleWakeUp();
 }
 
@@ -171,7 +182,7 @@ void AdaptiveSyncCoordinator::Request(const SyncPartition partition, const SyncT
         if (!Persist(state)) return;
         iterator->second = state;
     }
-    if (decision.schedule.shouldRunNow && !activeGenerations_.contains(state.partition)) StartTask(state);
+    if (decision.schedule.shouldRunNow && activeGenerations_.empty()) StartTask(state);
     ScheduleWakeUp();
 }
 
@@ -242,7 +253,7 @@ void AdaptiveSyncCoordinator::CompleteTask(const SyncPartition partition, const 
     } else {
         emit TaskFailed(partition, completed.safeErrorDetail);
     }
-    ScheduleWakeUp();
+    ProcessDueTasks();
 }
 
 void AdaptiveSyncCoordinator::ScheduleWakeUp() {

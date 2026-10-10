@@ -174,6 +174,7 @@ void SqliteDatabaseTests::configuresConcurrentAccessPragmas() {
 
     SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
 
     QSqlQuery pragma(database.connection());
     QVERIFY(pragma.exec(QStringLiteral("PRAGMA busy_timeout")));

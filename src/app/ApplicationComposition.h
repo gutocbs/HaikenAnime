@@ -8,6 +8,8 @@
 
 #include "../application/media/IMediaRepository.h"
 #include "../application/anilist/IPendingChangeRepository.h"
+#include "../application/media/IPersonalListChangeWriter.h"
+#include "../application/media/PersonalListChangeService.h"
 #include "../application/library/ILocalFileOpener.h"
 #include "../application/library/LocalEpisodeReader.h"
 #include "../infrastructure/database/SqliteDatabase.h"
@@ -36,6 +38,16 @@ struct ApplicationContext final {
     std::unique_ptr<SqliteDatabase> database;
     std::unique_ptr<IMediaRepository> mediaRepository;
     std::unique_ptr<IPendingChangeRepository> pendingChangeRepository;
+    std::unique_ptr<IPersonalListChangeWriter> personalListChangeWriter;
+    std::unique_ptr<PersonalListChangeService> personalListChangeService;
+    std::unique_ptr<ISecretStore> aniListSecretStore;
+    std::unique_ptr<AniListAuthManager> aniListAuthManager;
+    std::optional<AniListOAuthConfig> aniListOAuthConfiguration;
+    std::unique_ptr<QNetworkAccessManager> aniListNetworkManager;
+    std::unique_ptr<AniListGraphQlClient> aniListGraphQlClient;
+    std::unique_ptr<GraphQlQueryStore> aniListViewerQueryStore;
+    std::unique_ptr<AniListViewerClient> aniListViewerClient;
+    std::unique_ptr<WindowsAniListOAuthLauncher> aniListOAuthLauncher;
     std::unique_ptr<InitialSyncCoordinator> initialSync;
     std::unique_ptr<AdaptiveSyncRuntime> adaptiveSync;
     std::unique_ptr<ICoverCacheRepository> coverCacheRepository;
@@ -52,14 +64,6 @@ struct ApplicationContext final {
     std::unique_ptr<GraphQlQueryStore> seasonalQueryStore;
     std::unique_ptr<GraphQlSeasonalCatalogDataSource> seasonalCatalogDataSource;
     std::unique_ptr<SeasonalCatalogCoordinator> seasonalCatalogCoordinator;
-    std::unique_ptr<ISecretStore> aniListSecretStore;
-    std::unique_ptr<AniListAuthManager> aniListAuthManager;
-    std::optional<AniListOAuthConfig> aniListOAuthConfiguration;
-    std::unique_ptr<QNetworkAccessManager> aniListNetworkManager;
-    std::unique_ptr<AniListGraphQlClient> aniListGraphQlClient;
-    std::unique_ptr<GraphQlQueryStore> aniListViewerQueryStore;
-    std::unique_ptr<AniListViewerClient> aniListViewerClient;
-    std::unique_ptr<WindowsAniListOAuthLauncher> aniListOAuthLauncher;
     std::unique_ptr<ILocalEpisodeReader> localEpisodeReader;
     std::unique_ptr<ILocalFileOpener> localFileOpener;
     QString initializationError;

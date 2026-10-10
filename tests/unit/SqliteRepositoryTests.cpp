@@ -5,6 +5,7 @@
 #include "../../src/infrastructure/database/SqliteDatabase.h"
 #include "../../src/infrastructure/database/SqliteMediaRepository.h"
 #include "../../src/infrastructure/database/SqlitePendingChangeRepository.h"
+#include "../../src/infrastructure/database/SqlitePersonalListChangeWriter.h"
 
 namespace {
 const auto UpsertMedia = QStringLiteral(":/sqlite/queries/upsert-media.sql");
@@ -34,6 +35,7 @@ private slots:
     void mediaRoundTripPreservesExtendedMetadata();
     void extendedMetadataUpsertPreservesUserEditedFields();
     void personalListUpdatePersistsEditorFieldsWithoutOverwritingCatalogMetadata();
+    void personalListChangePersistsMediaAndPendingChangesTogether();
     void pendingChangeRoundTripPreservesRemoteObservedAt();
     void malformedPendingValueFailsInsteadOfBecomingEmptyText();
     void fractionalPendingIntegerIsRejected();
@@ -276,6 +278,42 @@ void SqliteRepositoryTests::removedMediaIsHiddenAndUpsertReactivatesItPreserving
     QCOMPARE(active.first().ConsumedChapters, 12);
     QCOMPARE(active.first().PersonalScore, 90);
     QCOMPARE(active.first().CoverUrl, returning.CoverUrl);
+}
+
+void SqliteRepositoryTests::personalListChangePersistsMediaAndPendingChangesTogether() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    QVERIFY(insertMedia(database.connection(), 154587));
+    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia,
+                                          EnqueueChange);
+    Media media;
+    media.Id = 154587;
+    media.ConsumedChapters = 12;
+    media.PersonalScore = 9;
+    media.ListStatus = UserListStatus::Completed;
+    AniListPendingChange change;
+    change.mediaId = media.Id;
+    change.field = AniListField::Progress;
+    change.previousValue = 4;
+    change.newValue = 12;
+    change.createdAt = QDateTime::currentDateTimeUtc();
+    change.localUpdatedAt = change.createdAt;
+    QString error;
+
+    QVERIFY2(writer.save(media, {change}, error), qPrintable(error));
+
+    QSqlQuery localMedia(database.connection());
+    QVERIFY(localMedia.exec(QStringLiteral("SELECT consumed_chapters, personal_score, user_list_status FROM media WHERE id = 154587")));
+    QVERIFY(localMedia.next());
+    QCOMPARE(localMedia.value(0).toInt(), 12);
+    QCOMPARE(localMedia.value(1).toInt(), 9);
+    QCOMPARE(localMedia.value(2).toInt(), static_cast<int>(UserListStatus::Completed));
+    QSqlQuery pending(database.connection());
+    QVERIFY(pending.exec(QStringLiteral("SELECT COUNT(*) FROM anilist_pending_changes WHERE media_id = 154587")));
+    QVERIFY(pending.next());
+    QCOMPARE(pending.value(0).toInt(), 1);
 }
 
 void SqliteRepositoryTests::pendingChangeRoundTripPreservesRemoteObservedAt() {

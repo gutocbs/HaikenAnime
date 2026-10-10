@@ -212,6 +212,7 @@ void SettingsController::HandleAniListOAuthCallback(const QUrl &callback) {
     statusMessage_ = aniListAuthenticationMessage_;
     errorMessage_.clear();
     emit changed();
+    emit aniListAuthenticationSucceeded();
 }
 
 void SettingsController::ClearLocalCache() {
