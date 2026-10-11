@@ -92,9 +92,3 @@ AniList GraphQL queries and mutations are stored as application resources under 
 ## Development
 
 When changing a signal, slot, context property, or application contract, update its consumers and the relevant unit tests. Prefer adding tests under [`tests/unit`](tests/unit) and running the focused target before the complete CTest suite.
-
-Repository-specific development guidance is available in [`codex.md`](codex.md).
-
-## License
-
-This repository does not currently include a license file. Add an explicit license before distributing the application or accepting external contributions under defined terms.
