@@ -1,100 +1,100 @@
-# Haiken Anime
+# HaikenAnime V2
 
-Haiken Anime is a Qt desktop application for managing anime, manga and novel lists. It synchronizes media data with AniList, tracks watching/reading progress, searches local files for episodes, downloads cover images and provides torrent-related tools.
+HaikenAnime is a Qt desktop application for organizing an anime library, keeping personal lists synchronized with [AniList](https://anilist.co/), and connecting catalog data with files stored locally on the computer.
 
-## Features
+V2 is the current application architecture: it separates presentation, application workflows, domain rules, and infrastructure while keeping local data available when remote synchronization is unavailable.
 
-- Manage current, completed, paused, dropped and planned lists.
-- Support for anime, manga and novels.
-- AniList synchronization for lists, progress, scores and user data.
-- Local database and configurable media directories.
-- Automatic recognition of locally available episodes.
-- Cover/avatar downloads.
-- Anime title parsing with the bundled Anitomy library.
-- Torrent search, listing and download support.
-- QML interface with Home, configuration and torrent screens.
+## What it does
+
+- Browse anime and seasonal catalog data.
+- Manage personal list status, score, and progress.
+- Synchronize media and pending changes with AniList.
+- Keep a local SQLite database for media, preferences, covers, sync state, and local files.
+- Scan configured directories and recognize local episodes using [Anitomy](https://github.com/erengy/anitomy).
+- Download and cache cover images.
+- Open local media with the configured player or file handler.
+- Configure language, media directories, AniList access, and application preferences.
+- Preserve translations for the supported application languages.
 
 ## Technology
 
-- C++14
+- C++20
+- Qt 6: Core, Gui, Network, QML, Quick, Quick Controls 2, SQL, and Test
 - Qt Quick/QML
-- Qt Network, NetworkAuth and Concurrent
-- qmake
+- CMake 3.21+
+- SQLite
 - AniList GraphQL
-- [Anitomy](https://github.com/erengy/anitomy), included in [lib/anitomy](lib/anitomy)
-- [robotlib](https://github.com/Robot/robot), included in [lib/robotlib](lib/robotlib)
+- [Anitomy](https://github.com/erengy/anitomy), included under [`lib/anitomy`](lib/anitomy)
 
-## Repository Layout
+## Architecture
+
+The source tree is organized around explicit application boundaries:
 
 ```text
 .
-├── QML/                 # User interface and reusable QML components
-├── qrc/Anilist/         # AniList GraphQL queries and mutations
-├── src/base/            # Domain models, database, configuration and workers
-├── src/clients/         # External service clients, including AniList
-├── src/utilities/       # Networking, downloading, logging and helpers
-├── lib/anitomy/         # File-name parser
-├── lib/robotlib/        # Windows automation support
-├── main.cpp             # Application entry point
-├── mainclass.*          # C++ facade exposed to QML
-└── HaikenAnime.pro      # qmake project definition
+├── QML/                    # User interface and reusable QML components
+├── src/app/                # Application composition and workflow coordination
+├── src/application/        # Use cases, services, ports, and presentation contracts
+├── src/domain/             # Media and AniList domain types and policies
+├── src/infrastructure/     # Qt, SQLite, AniList, filesystem, and platform adapters
+├── resources/sqlite/       # SQL queries, configuration, and migrations
+├── tests/unit/             # CTest-backed unit tests
+├── translations/           # Qt translation sources
+├── lib/anitomy/            # Local file-name parsing library
+├── CMakeLists.txt          # Application and test targets
+└── codex.md                # Repository guidance for AI-assisted development
 ```
 
-The repository includes source copies of these third-party libraries:
-
-- [Anitomy](https://github.com/erengy/anitomy) — anime file-name parsing.
-- [robotlib](https://github.com/Robot/robot) — Windows automation support.
-
-Refer to the original repositories for their respective licenses and upstream project information.
+Presentation code should remain focused on rendering and interaction. Synchronization, persistence, filtering, ordering, recognition, and player decisions belong to the application, domain, or infrastructure layers.
 
 ## Requirements
 
-Install a Qt development environment with:
+- CMake 3.21 or newer.
+- Qt 6 with the components listed above. The current Windows configuration is tested with Qt 6.8.3.
+- A C++20-compatible compiler. On Windows, use a compiler that matches the selected Qt kit, such as the Qt MinGW kit or an MSVC kit.
+- A working SQLite driver supplied by Qt.
 
-- Qt 5 components for Quick, Network, NetworkAuth and Concurrent.
-- A C++14-compatible compiler.
-- qmake and the Qt build tools.
-- On Windows, the platform libraries required by `lib/robotlib` and `psapi`.
+## Build on Windows
 
-The QML files currently use Qt Quick 2.12, Qt Quick Window 2.15 and Qt Quick Controls 2.3 imports, so use a compatible Qt installation.
-
-## Build
-
-Open a Qt-enabled terminal at the repository root and run:
-
-```bash
-qmake HaikenAnime.pro
-make
-```
-
-On Windows with a MinGW kit, use the corresponding Qt `qmake` and run:
+Open a Qt-enabled PowerShell or Developer PowerShell at the repository root. Configure an out-of-source build and point CMake to the Qt installation used by your compiler:
 
 ```powershell
-qmake HaikenAnime.pro
-mingw32-make
+cmake -S . -B build -DCMAKE_PREFIX_PATH="C:/Qt/6.8.3/mingw_64"
+cmake --build build --config Debug --parallel
 ```
 
-Alternatively, open `HaikenAnime.pro` in Qt Creator, select a compatible desktop kit, configure the project and build it.
+For an MSVC kit, replace `CMAKE_PREFIX_PATH` with the matching Qt installation and use the corresponding Visual Studio generator if CMake does not select it automatically.
 
-## Run
+The executable is generated in the selected build directory. The exact output path depends on the generator and configuration.
 
-Launch the generated executable after building. On first run, configure the media directories and AniList account settings from the application configuration screen.
+## Tests
 
-The application stores local configuration, database data and downloaded media according to the configured paths and Qt's application settings location.
+Configure with testing enabled, build the test targets, and run CTest from the build directory:
+
+```powershell
+cmake -S . -B build -DBUILD_TESTING=ON -DCMAKE_PREFIX_PATH="C:/Qt/6.8.3/mingw_64"
+cmake --build build --config Debug --parallel
+ctest --test-dir build -C Debug --output-on-failure
+```
+
+The tests cover, among other areas, media rules, AniList parsing and synchronization, SQLite repositories, local-library scanning and recognition, settings, covers, translations, and QML structure.
+
+## Running the application
+
+After building, launch the generated `HaikenAnime` executable. On first run, configure the media directories and AniList account in Settings. Network access is required for remote synchronization and catalog requests; locally stored media and database data remain available independently of a successful sync.
+
+Do not commit build directories, generated binaries, local databases, credentials, or downloaded media.
 
 ## AniList
 
-AniList requests are defined as Qt resources under `qrc/Anilist` and are used by the C++ client in `src/clients`. Network availability and valid account authorization are required for synchronization; the local database remains the source for offline display when remote synchronization is unavailable.
+AniList GraphQL queries and mutations are stored as application resources under [`resources`](resources) and consumed by the AniList infrastructure layer. Authentication data is kept through the configured local secret-storage implementation; tokens and callback payloads must never be written to logs.
 
-## Development Notes
+## Development
 
-- Keep C++/QML contracts stable when changing signals, slots or context properties.
-- Preserve the existing separation between UI, application orchestration, domain code and infrastructure.
-- Update the corresponding QML consumers when changing data emitted by `MainClass`.
-- Validate AniList query and mutation changes against the client code and the external API contract.
+When changing a signal, slot, context property, or application contract, update its consumers and the relevant unit tests. Prefer adding tests under [`tests/unit`](tests/unit) and running the focused target before the complete CTest suite.
 
-See [codex.md](codex.md) for repository-specific guidance for AI-assisted development.
+Repository-specific development guidance is available in [`codex.md`](codex.md).
 
 ## License
 
-No license file is currently included in this repository. Add a license before distributing the project or accepting external contributions under defined terms.
+This repository does not currently include a license file. Add an explicit license before distributing the application or accepting external contributions under defined terms.
