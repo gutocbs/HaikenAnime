@@ -172,6 +172,8 @@ QString firstOptionKey(const QVariantList &options) {
     return options.first().toMap().value(QStringLiteral("key")).toString();
 }
 
+inline constexpr auto DefaultListFilterKey = "current";
+
 int seasonRank(const QString &season) {
     if (season.compare(QStringLiteral("WINTER"), Qt::CaseInsensitive) == 0) return 1;
     if (season.compare(QStringLiteral("SPRING"), Qt::CaseInsensitive) == 0) return 2;
@@ -359,8 +361,12 @@ QVariantList HomeScreenController::availableSortOptions() const {
 QString HomeScreenController::activeListFilter() const { return activeListFilter_; }
 QString HomeScreenController::activeSort() const { return activeSort_; }
 QString HomeScreenController::searchQuery() const { return searchQuery_; }
+QString HomeScreenController::defaultListFilter() const {
+    const auto defaultKey = QString::fromLatin1(DefaultListFilterKey);
+    return containsOptionKey(listOptions_, defaultKey) ? defaultKey : firstOptionKey(listOptions_);
+}
 bool HomeScreenController::browseCriteriaActive() const {
-    return activeListFilter_ != firstOptionKey(listOptions_)
+    return activeListFilter_ != defaultListFilter()
         || activeSort_ != firstOptionKey(sortOptions_) || !searchQuery_.isEmpty();
 }
 bool HomeScreenController::hasSelection() const { return hasSelection_; }
@@ -500,7 +506,7 @@ void HomeScreenController::ConfigureBrowseOptions(QVariantList mediaTypeOptions,
     if (!containsOptionKey(mediaTypeOptions_, activeMediaType_))
         activeMediaType_ = firstOptionKey(mediaTypeOptions_);
     if (!containsOptionKey(listOptions_, activeListFilter_))
-        activeListFilter_ = firstOptionKey(listOptions_);
+        activeListFilter_ = defaultListFilter();
     if (!containsOptionKey(sortOptions_, activeSort_))
         activeSort_ = firstOptionKey(sortOptions_);
     usesDefaultBrowseOptions_ = false;
@@ -577,12 +583,12 @@ void HomeScreenController::SetSearchQuery(const QString &query) {
 }
 
 void HomeScreenController::ClearBrowseCriteria() {
-    const auto defaultListFilter = firstOptionKey(listOptions_);
+    const auto defaultFilter = defaultListFilter();
     const auto defaultSort = firstOptionKey(sortOptions_);
-    if (activeListFilter_ == defaultListFilter
+    if (activeListFilter_ == defaultFilter
         && activeSort_ == defaultSort && searchQuery_.isEmpty()) return;
     const bool sortChanged = activeSort_ != defaultSort;
-    activeListFilter_ = defaultListFilter;
+    activeListFilter_ = defaultFilter;
     activeSort_ = defaultSort;
     searchQuery_.clear();
     rebuildMediaModels();

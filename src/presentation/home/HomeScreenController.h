@@ -206,6 +206,7 @@ private:
     void rebuildMediaModels();
     void clearSelection();
     void refreshNextLocalEpisode();
+    QString defaultListFilter() const;
 
     IMediaReader *reader_ = nullptr;
     HomeMediaModel model_;
@@ -219,7 +220,7 @@ private:
     int synchronizationProgress_ = 0;
     bool synchronizationProgressKnown_ = false;
     QString activeMediaType_ = QStringLiteral("anime");
-    QString activeListFilter_ = QStringLiteral("all");
+    QString activeListFilter_ = QStringLiteral("current");
     QString activeSort_ = QStringLiteral("title_asc");
     QString searchQuery_;
     QVariantList listOptions_;
