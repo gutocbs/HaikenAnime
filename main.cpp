@@ -257,6 +257,11 @@ int main(int argc, char *argv[]) {
     if (context.aniListAuthManager) {
         removeAniListAccount = std::make_unique<RemoveAniListAccountUseCase>(
             [&oauthCallbackReceiver] { oauthCallbackReceiver.stop(); },
+            [&context](const bool suspended) {
+                if (!context.aniListAuthManager) return;
+                if (suspended) context.aniListAuthManager->suspendCredentials();
+                else context.aniListAuthManager->resumeCredentials();
+            },
             [&context](const SyncPartition partition, std::function<void()> acknowledged) {
                 // Without a runtime there is no running synchronization to wait for.
                 if (context.adaptiveSync) context.adaptiveSync->cancel(partition, std::move(acknowledged));

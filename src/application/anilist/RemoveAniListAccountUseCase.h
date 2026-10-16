@@ -20,10 +20,22 @@ public:
     using CancelPartition = std::function<void(SyncPartition, std::function<void()> acknowledged)>;
     using RememberLastAccount = std::function<bool(qint64 userId, QString &error)>;
     using AuditLogger = AniListAuthManager::AuditLogger;
+    /** Called with true before cancelling (credentials must stop being served) and false after clear(). */
+    using SuspendCredentials = std::function<void(bool suspended)>;
+    static constexpr int DefaultCancelTimeoutMs = 10'000;
 
-    RemoveAniListAccountUseCase(std::function<void()> stopOAuthListener, CancelPartition cancelPartition,
-                                AniListAuthManager &authManager, RememberLastAccount rememberLastAccount,
-                                AuditLogger auditLogger = {});
+    /**
+     * Order: stop listener -> suspend credentials -> cancel UserList + PendingChanges (bounded wait of
+     * `cancelTimeoutMs`; on timeout it proceeds) -> clear() -> resume (no-op for an emptied account, and
+     * restores the account if clear() failed) -> remember removed account -> completion.
+     */
+    RemoveAniListAccountUseCase(std::function<void()> stopOAuthListener, SuspendCredentials suspendCredentials,
+                                CancelPartition cancelPartition, AniListAuthManager &authManager,
+                                RememberLastAccount rememberLastAccount, AuditLogger auditLogger = {},
+                                int cancelTimeoutMs = DefaultCancelTimeoutMs);
+    ~RemoveAniListAccountUseCase();
+    RemoveAniListAccountUseCase(const RemoveAniListAccountUseCase &) = delete;
+    RemoveAniListAccountUseCase &operator=(const RemoveAniListAccountUseCase &) = delete;
 
     /** Starts the removal; returns false when one is already running. Completion runs exactly once. */
     [[nodiscard]] bool Start(Completion completion);
@@ -31,16 +43,20 @@ public:
 
 private:
     struct Run final {
+        RemoveAniListAccountUseCase *owner = nullptr; // lifetime token: reset in the destructor
         Completion completion;
         qint64 removedUserId = 0;
         int pendingCancellations = 0;
     };
 
     void OnCancellationAcknowledged();
+    void ClearAccount();
     void Finish(bool succeeded, const QString &error);
     void Audit(const QString &message) const;
 
     std::function<void()> stopOAuthListener_;
+    SuspendCredentials suspendCredentials_;
+    int cancelTimeoutMs_ = DefaultCancelTimeoutMs;
     CancelPartition cancelPartition_;
     AniListAuthManager &authManager_;
     RememberLastAccount rememberLastAccount_;

@@ -49,9 +49,12 @@ private slots:
     void reportsFailureAndRemembersNothingWhenClearFails();
     void completesWhenCancellationsAcknowledgeImmediately();
     void logsWithoutCredentialDetails();
+    void resumesCredentialsWhenClearFails();
+    void hidesCredentialsFromTasksStartedDuringTheCancelWindow();
+    void proceedsAfterTimeoutWhenCancelNeverAcknowledges();
 
 private:
-    [[nodiscard]] RemoveAniListAccountUseCase MakeUseCase(bool deferAcknowledgements);
+    [[nodiscard]] RemoveAniListAccountUseCase MakeUseCase(bool deferAcknowledgements, int timeoutMs = 10'000);
 
     QStringList events;
     RecordingSecretStore secretStore{events};
@@ -72,9 +75,14 @@ void RemoveAniListAccountUseCaseTests::init() {
                               .userId = 42}, error));
 }
 
-RemoveAniListAccountUseCase RemoveAniListAccountUseCaseTests::MakeUseCase(const bool deferAcknowledgements) {
+RemoveAniListAccountUseCase RemoveAniListAccountUseCaseTests::MakeUseCase(const bool deferAcknowledgements,
+                                                                              const int timeoutMs) {
     return RemoveAniListAccountUseCase(
         [this] { events.append(QStringLiteral("stopListener")); },
+        [this](const bool suspended) {
+            events.append(suspended ? QStringLiteral("suspend") : QStringLiteral("resume"));
+            if (suspended) authManager.suspendCredentials(); else authManager.resumeCredentials();
+        },
         [this, deferAcknowledgements](const SyncPartition partition, std::function<void()> acknowledged) {
             events.append(QStringLiteral("cancel(%1)").arg(ToString(partition)));
             if (deferAcknowledgements) pendingAcknowledgements.push_back(std::move(acknowledged));
@@ -87,7 +95,7 @@ RemoveAniListAccountUseCase RemoveAniListAccountUseCaseTests::MakeUseCase(const 
             error.clear();
             return true;
         },
-        [this](const QString &message) { logs.append(message); });
+        [this](const QString &message) { logs.append(message); }, timeoutMs);
 }
 
 void RemoveAniListAccountUseCaseTests::waitsForBothCancellationsBeforeClearingAndRemembersTheRemovedAccount() {
@@ -97,7 +105,7 @@ void RemoveAniListAccountUseCaseTests::waitsForBothCancellationsBeforeClearingAn
 
     QVERIFY(useCase.Start([&](const bool ok, const QString &) { completed = true; succeeded = ok; }));
 
-    QCOMPARE(events, (QStringList{QStringLiteral("stopListener"), QStringLiteral("cancel(user-list)"),
+    QCOMPARE(events, (QStringList{QStringLiteral("stopListener"), QStringLiteral("suspend"), QStringLiteral("cancel(user-list)"),
                                    QStringLiteral("cancel(pending-changes)")}));
     QVERIFY(useCase.IsRunning());
     QCOMPARE(pendingAcknowledgements.size(), size_t{2});
@@ -105,9 +113,9 @@ void RemoveAniListAccountUseCaseTests::waitsForBothCancellationsBeforeClearingAn
     QVERIFY(!events.contains(QStringLiteral("clear")));
     pendingAcknowledgements[0]();
 
-    QCOMPARE(events, (QStringList{QStringLiteral("stopListener"), QStringLiteral("cancel(user-list)"),
+    QCOMPARE(events, (QStringList{QStringLiteral("stopListener"), QStringLiteral("suspend"), QStringLiteral("cancel(user-list)"),
                                    QStringLiteral("cancel(pending-changes)"), QStringLiteral("clear"),
-                                   QStringLiteral("remember")}));
+                                   QStringLiteral("resume"), QStringLiteral("remember")}));
     QVERIFY(completed);
     QVERIFY(succeeded);
     QCOMPARE(remembered, qint64{42});
@@ -166,6 +174,44 @@ void RemoveAniListAccountUseCaseTests::logsWithoutCredentialDetails() {
         QVERIFY(!line.contains(QStringLiteral("secret-token")));
         QVERIFY(!line.contains(QStringLiteral("TestUser")));
     }
+}
+
+void RemoveAniListAccountUseCaseTests::resumesCredentialsWhenClearFails() {
+    secretStore.failClear = true;
+    auto useCase = MakeUseCase(false);
+
+    QVERIFY(useCase.Start([](bool, const QString &) {}));
+
+    QCOMPARE(events.last(), QStringLiteral("resume"));
+    QCOMPARE(authManager.credentials().token, QStringLiteral("secret-token"));
+}
+
+void RemoveAniListAccountUseCaseTests::hidesCredentialsFromTasksStartedDuringTheCancelWindow() {
+    auto useCase = MakeUseCase(true);
+
+    QVERIFY(useCase.Start([](bool, const QString &) {}));
+
+    // A task that starts now (between the cancels and clear()) snapshots empty credentials.
+    QVERIFY(authManager.credentials().token.isEmpty());
+    QCOMPARE(authManager.credentials().userId, qint64{0});
+    for (auto &acknowledge : pendingAcknowledgements) acknowledge();
+}
+
+void RemoveAniListAccountUseCaseTests::proceedsAfterTimeoutWhenCancelNeverAcknowledges() {
+    auto useCase = MakeUseCase(true, 20);
+    bool completed = false;
+    bool succeeded = false;
+
+    QVERIFY(useCase.Start([&](const bool ok, const QString &) { completed = true; succeeded = ok; }));
+    QTRY_VERIFY_WITH_TIMEOUT(completed, 2000);
+
+    QVERIFY(succeeded);
+    QVERIFY(logs.contains(QStringLiteral("AniList account removal: cancel acknowledgement timed out.")));
+    QVERIFY(events.contains(QStringLiteral("clear")));
+    QCOMPARE(remembered, qint64{42});
+    QVERIFY(!useCase.IsRunning());
+    for (auto &acknowledge : pendingAcknowledgements) acknowledge();  // late acks are ignored
+    QCOMPARE(events.count(QStringLiteral("clear")), 1);
 }
 
 QTEST_MAIN(RemoveAniListAccountUseCaseTests)

@@ -1,5 +1,7 @@
 #include "AniListAuthManager.h"
 
+#include <QMutexLocker>
+
 AniListAuthManager::AniListAuthManager(ISecretStore &secretStore)
     : secretStore_(secretStore) {
 }
@@ -16,8 +18,7 @@ bool AniListAuthManager::load(QString &error) {
         return false;
     }
 
-    credentials_ = loadedCredentials;
-    state_ = AniListAuthenticationState::Authenticated;
+    SetSession(loadedCredentials, AniListAuthenticationState::Authenticated);
     audit(QStringLiteral("AniList credentials restored."));
     return true;
 }
@@ -29,8 +30,7 @@ bool AniListAuthManager::save(const AniListCredentials &credentials, QString &er
         return false;
     }
 
-    credentials_ = credentials;
-    state_ = AniListAuthenticationState::Authenticated;
+    SetSession(credentials, AniListAuthenticationState::Authenticated);
     audit(QStringLiteral("AniList credentials saved."));
     return true;
 }
@@ -42,14 +42,13 @@ bool AniListAuthManager::clear(QString &error) {
         return false;
     }
 
-    credentials_ = {};
-    state_ = AniListAuthenticationState::Disconnected;
+    SetSession({}, AniListAuthenticationState::Disconnected);
     audit(QStringLiteral("AniList credentials cleared."));
     return true;
 }
 
 QUrl AniListAuthManager::beginAuthorization(const AniListOAuthConfig &config) {
-    state_ = AniListAuthenticationState::Authorizing;
+    SetState(AniListAuthenticationState::Authorizing);
     audit(QStringLiteral("AniList OAuth authorization started."));
     return config.authorizationUrl();
 }
@@ -58,13 +57,12 @@ bool AniListAuthManager::handleCallback(const QUrl &callback, QString &error) {
     AniListOAuthCallbackParser parser;
     AniListCredentials callbackCredentials;
     if (!parser.parse(callback, callbackCredentials, error)) {
-        state_ = AniListAuthenticationState::AuthenticationFailed;
+        SetState(AniListAuthenticationState::AuthenticationFailed);
         audit(QStringLiteral("AniList OAuth callback was rejected."));
         return false;
     }
 
-    credentials_ = callbackCredentials;
-    state_ = AniListAuthenticationState::AwaitingValidation;
+    SetSession(callbackCredentials, AniListAuthenticationState::AwaitingValidation);
     audit(QStringLiteral("AniList OAuth callback received."));
     return true;
 }
@@ -76,14 +74,15 @@ bool AniListAuthManager::validateToken(IAniListViewerClient &viewerClient, QStri
         if (error.isEmpty()) {
             error = QStringLiteral("AniList Viewer validation returned invalid account data.");
         }
-        state_ = AniListAuthenticationState::AuthenticationFailed;
+        SetState(AniListAuthenticationState::AuthenticationFailed);
         audit(QStringLiteral("AniList Viewer validation failed."));
         return false;
     }
-    credentials_.userId = viewer.id;
-    credentials_.username = viewer.username;
-    if (!save(credentials_, error)) {
-        state_ = AniListAuthenticationState::AuthenticationFailed;
+    auto validated = StoredCredentials();
+    validated.userId = viewer.id;
+    validated.username = viewer.username;
+    if (!save(validated, error)) {
+        SetState(AniListAuthenticationState::AuthenticationFailed);
         audit(QStringLiteral("AniList Viewer validation could not persist credentials."));
         return false;
     }
@@ -92,11 +91,39 @@ bool AniListAuthManager::validateToken(IAniListViewerClient &viewerClient, QStri
 }
 
 AniListAuthenticationState AniListAuthManager::state() const {
+    QMutexLocker lock(&mutex_);
     return state_;
 }
 
 AniListCredentials AniListAuthManager::credentials() const {
+    QMutexLocker lock(&mutex_);
+    return credentialsSuspended_ ? AniListCredentials{} : credentials_;
+}
+
+void AniListAuthManager::suspendCredentials() {
+    QMutexLocker lock(&mutex_);
+    credentialsSuspended_ = true;
+}
+
+void AniListAuthManager::resumeCredentials() {
+    QMutexLocker lock(&mutex_);
+    credentialsSuspended_ = false;
+}
+
+AniListCredentials AniListAuthManager::StoredCredentials() const {
+    QMutexLocker lock(&mutex_);
     return credentials_;
+}
+
+void AniListAuthManager::SetState(const AniListAuthenticationState state) {
+    QMutexLocker lock(&mutex_);
+    state_ = state;
+}
+
+void AniListAuthManager::SetSession(const AniListCredentials &credentials, const AniListAuthenticationState state) {
+    QMutexLocker lock(&mutex_);
+    credentials_ = credentials;
+    state_ = state;
 }
 
 void AniListAuthManager::audit(const QString &event) const {

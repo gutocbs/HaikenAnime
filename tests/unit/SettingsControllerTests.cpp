@@ -604,7 +604,7 @@ struct ConnectedAccountFixture final {
 
     [[nodiscard]] RemoveAniListAccountUseCase MakeUseCase() {
         return RemoveAniListAccountUseCase(
-            [] {},
+            [] {}, [](bool) {},
             [this](SyncPartition, std::function<void()> acknowledged) {
                 pendingAcknowledgements.push_back(std::move(acknowledged));
             },

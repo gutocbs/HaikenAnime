@@ -51,6 +51,7 @@ class AniListAuthManagerTests : public QObject {
     Q_OBJECT
 
 private slots:
+    void returnsEmptyCredentialsWhileSuspendedAndRealOnesAfterResume();
     void loadsCredentialsFromStore();
     void doesNotReplaceCacheWhenLoadFails();
     void savesCredentialsThroughStore();
@@ -61,6 +62,22 @@ private slots:
     void validatesCallbackTokenAndPersistsViewerIdentity();
     void logsViewerValidationFailureWithoutLoggingToken();
 };
+
+void AniListAuthManagerTests::returnsEmptyCredentialsWhileSuspendedAndRealOnesAfterResume() {
+    InMemorySecretStore store;
+    AniListAuthManager manager(store);
+    QString error;
+    QVERIFY(manager.save({.username = QStringLiteral("viewer"), .token = QStringLiteral("token"), .userId = 42}, error));
+
+    manager.suspendCredentials();
+    QVERIFY(manager.credentials().token.isEmpty());
+    QCOMPARE(manager.credentials().userId, qint64{0});
+    QCOMPARE(manager.state(), AniListAuthenticationState::Authenticated);
+
+    manager.resumeCredentials();
+    QCOMPARE(manager.credentials().token, QStringLiteral("token"));
+    QCOMPARE(manager.credentials().userId, qint64{42});
+}
 
 void AniListAuthManagerTests::loadsCredentialsFromStore() {
     InMemorySecretStore store;
