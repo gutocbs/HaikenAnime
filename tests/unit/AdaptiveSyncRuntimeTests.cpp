@@ -40,6 +40,7 @@ struct ExecutorState final {
     std::atomic_int cancellationCount = 0;
     std::mutex completionMutex;
     ISyncTaskExecutor::Completion completion;
+    ISyncTaskExecutor::ProgressReporter progressReporter;
     QList<SyncPartition> partitions;
     ISyncTaskExecutor::ShutdownAcknowledgement shutdownAcknowledgement;
 };
@@ -55,6 +56,10 @@ public:
             state_->partitions.append(state.partition);
         }
         ++state_->executionCount;
+    }
+    void SetProgressReporter(ProgressReporter reporter) override {
+        std::lock_guard lock(state_->completionMutex);
+        state_->progressReporter = std::move(reporter);
     }
     void Cancel(SyncPartition, CancellationAcknowledgement acknowledgement) override {
         ++state_->cancellationCount;
@@ -122,6 +127,7 @@ private slots:
     void drainsAnActiveExecutorBeforeStopping();
     void exposesRepositoryInitializationFailure();
     void propagatesCompletedBackgroundTask();
+    void forwardsStartedAndProgressSignals();
     void defersWorkerDestructionUntilCoordinatorStops();
     void destructorRetainsWorkerOwnershipPastLegacyTimeout();
 };
@@ -300,6 +306,39 @@ void AdaptiveSyncRuntimeTests::propagatesCompletedBackgroundTask() {
 
     QTRY_COMPARE(completed.count(), 1);
     QCOMPARE(completed.first().first().value<SyncPartition>(), SyncPartition::UserList);
+
+    runtime.shutdown();
+    QTRY_VERIFY(executorState->shutdownRequested.load());
+    executorState->shutdownAcknowledgement();
+    QTRY_VERIFY(runtime.isStopped());
+}
+
+void AdaptiveSyncRuntimeTests::forwardsStartedAndProgressSignals() {
+    const auto executorState = std::make_shared<ExecutorState>();
+    AdaptiveSyncRuntime runtime(
+        dueRepository,
+        [executorState] { return std::make_unique<FakeTaskExecutor>(executorState); }, {});
+    QSignalSpy started(&runtime, &AdaptiveSyncRuntime::BackgroundTaskStarted);
+    QSignalSpy progress(&runtime, &AdaptiveSyncRuntime::BackgroundTaskProgress);
+
+    QTRY_VERIFY(runtime.isReady());
+    runtime.start();
+    QTRY_COMPARE(executorState->executionCount.load(), 1);
+    ISyncTaskExecutor::ProgressReporter reporter;
+    {
+        std::lock_guard lock(executorState->completionMutex);
+        reporter = executorState->progressReporter;
+    }
+    QVERIFY(reporter);
+    reporter({.partition = SyncPartition::UserList, .stageKey = QStringLiteral("anime"),
+              .stageIndex = 1, .stageCount = 3, .processedItems = 7});
+
+    QTRY_COMPARE(started.count(), 1);
+    QCOMPARE(started.first().first().value<SyncPartition>(), SyncPartition::UserList);
+    QTRY_COMPARE(progress.count(), 1);
+    const auto published = progress.first().first().value<SyncProgress>();
+    QCOMPARE(published.stageKey, QStringLiteral("anime"));
+    QCOMPARE(published.processedItems, 7);
 
     runtime.shutdown();
     QTRY_VERIFY(executorState->shutdownRequested.load());

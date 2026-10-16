@@ -113,6 +113,8 @@ bool AniListSyncService::synchronize(const AniListDataSourceRequest &request, QS
             }
         }
 
+        if (progressReporter_) progressReporter_(static_cast<int>(synchronizedMediaIds.size()));
+
         receivedCompleteAuthoritativeSnapshot = receivedCompleteAuthoritativeSnapshot
             || sourceResult.isCompleteAuthoritativeSnapshot;
         observedMediaIds.unite(sourceResult.observedMediaIds);

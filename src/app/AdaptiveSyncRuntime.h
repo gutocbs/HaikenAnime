@@ -35,6 +35,8 @@ public:
 signals:
     void Ready();
     void InitializationFailed(const QString &safeError);
+    void BackgroundTaskStarted(SyncPartition partition);
+    void BackgroundTaskProgress(SyncProgress progress);
     void BackgroundTaskCompleted(SyncPartition partition);
     void BackgroundTaskFailed(SyncPartition partition, const QString &safeError);
     void Stopped();

@@ -80,6 +80,8 @@ public:
         requests[state.partition] = {.state = state, .generation = generation, .completion = std::move(completion)};
     }
 
+    void SetProgressReporter(ProgressReporter reporter) override { progressReporter = std::move(reporter); }
+
     void Cancel(const SyncPartition partition, CancellationAcknowledgement acknowledgement) override {
         cancelled.append(partition);
         cancellationAcknowledgements[partition] = std::move(acknowledgement);
@@ -104,6 +106,7 @@ public:
     std::map<SyncPartition, Request> requests;
     std::map<SyncPartition, CancellationAcknowledgement> cancellationAcknowledgements;
     ShutdownAcknowledgement shutdownAcknowledgement;
+    ProgressReporter progressReporter;
 };
 
 SyncTaskState DueState(const SyncTaskKind kind, const SyncPartition partition) {
@@ -140,6 +143,7 @@ private slots:
     void forwardsRetryAfterToTheSchedulingPolicy();
     void waitsForCancellationAndExecutorShutdownAcknowledgements();
     void holdsPendingChangesUntilUserListSynchronizationSucceeds();
+    void republishesExecutorProgressInOrder();
 };
 
 void AdaptiveSyncCoordinatorTests::holdsPendingChangesUntilUserListSynchronizationSucceeds() {
@@ -561,3 +565,30 @@ void AdaptiveSyncCoordinatorTests::waitsForCancellationAndExecutorShutdownAcknow
 
 QTEST_MAIN(AdaptiveSyncCoordinatorTests)
 #include "AdaptiveSyncCoordinatorTests.moc"
+
+void AdaptiveSyncCoordinatorTests::republishesExecutorProgressInOrder() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList)};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor,
+        [&clock] { return clock.CurrentTime(); }, DefaultSyncTaskPolicies(), false);
+    QSignalSpy progressSpy(&coordinator, &AdaptiveSyncCoordinator::TaskProgress);
+    QVERIFY(coordinator.Start());
+    QVERIFY(executor.progressReporter);
+
+    executor.progressReporter({.partition = SyncPartition::UserList, .stageKey = QStringLiteral("anime"),
+                               .stageIndex = 1, .stageCount = 3, .processedItems = 10});
+    executor.progressReporter({.partition = SyncPartition::UserList, .stageKey = QStringLiteral("manga"),
+                               .stageIndex = 2, .stageCount = 3, .processedItems = 4});
+
+    QTRY_COMPARE(progressSpy.count(), 2);
+    const auto first = progressSpy.at(0).at(0).value<SyncProgress>();
+    const auto second = progressSpy.at(1).at(0).value<SyncProgress>();
+    QCOMPARE(first.partition, SyncPartition::UserList);
+    QCOMPARE(first.stageKey, QStringLiteral("anime"));
+    QCOMPARE(first.processedItems, 10);
+    QCOMPARE(second.stageKey, QStringLiteral("manga"));
+    QCOMPARE(second.stageIndex, 2);
+    QCOMPARE(second.totalItems, -1);
+}

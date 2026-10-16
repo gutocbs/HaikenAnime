@@ -179,6 +179,7 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/application/anilist/IPendingChangeRepository.h
         src/application/scheduling/ISyncTaskStateRepository.h
         src/application/scheduling/ISyncTaskExecutor.h
+        src/application/scheduling/SyncProgress.h
         src/application/scheduling/SyncTaskPolicy.cpp
         src/application/anilist/IAniListUpdateClient.h
         src/infrastructure/anilist/AniListUpdateClient.h
@@ -766,6 +767,7 @@ add_executable(SyncTaskPolicyTests
         src/application/scheduling/SyncTaskPolicy.h
         src/application/scheduling/SyncTaskPolicy.cpp
         src/application/scheduling/SyncTaskTypes.h
+        src/application/scheduling/SyncProgress.h
 )
 target_link_libraries(SyncTaskPolicyTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME SyncTaskPolicyTests COMMAND SyncTaskPolicyTests)
@@ -1352,6 +1354,7 @@ add_executable(AdaptiveSyncCoordinatorTests
         src/app/AdaptiveSyncCoordinator.h
         src/app/AdaptiveSyncCoordinator.cpp
         src/application/scheduling/ISyncTaskExecutor.h
+        src/application/scheduling/SyncProgress.h
         src/application/scheduling/SyncTaskPolicy.h
         src/application/scheduling/SyncTaskPolicy.cpp
 )
@@ -1365,6 +1368,7 @@ add_executable(AdaptiveSyncRuntimeTests
         src/app/AdaptiveSyncCoordinator.h
         src/app/AdaptiveSyncCoordinator.cpp
         src/application/scheduling/ISyncTaskExecutor.h
+        src/application/scheduling/SyncProgress.h
         src/application/scheduling/SyncTaskPolicy.h
         src/application/scheduling/SyncTaskPolicy.cpp
 )

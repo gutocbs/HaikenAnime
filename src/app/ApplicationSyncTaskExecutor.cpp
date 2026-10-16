@@ -70,11 +70,29 @@ ApplicationSyncTaskExecutor::~ApplicationSyncTaskExecutor() {
     }
 }
 
+void ApplicationSyncTaskExecutor::SetProgressReporter(ProgressReporter reporter) {
+    std::lock_guard lock(mutex_);
+    progressReporter_ = std::move(reporter);
+}
+
 void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint64 generation,
                                           Completion completion) {
     auto job = std::make_shared<Job>();
     const auto partition = state.partition;
-    job->thread = QThread::create([this, job, state, generation, partition, completion] {
+    ProgressReporter reportProgress;
+    {
+        std::lock_guard lock(mutex_);
+        reportProgress = progressReporter_;
+    }
+    job->thread = QThread::create([this, job, state, generation, partition, completion, reportProgress] {
+        const auto publish = [&reportProgress, partition](const QString &stageKey, const int stageIndex,
+                                                          const int stageCount, const int processedItems,
+                                                          const int totalItems) {
+            if (!reportProgress) return;
+            reportProgress({.partition = partition, .stageKey = stageKey, .stageIndex = stageIndex,
+                            .stageCount = stageCount, .processedItems = processedItems,
+                            .totalItems = totalItems});
+        };
         SyncTaskExecutionResult result;
         SyncTaskState checkpointState = state;
         checkpointState.generation = generation;
@@ -137,8 +155,16 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             }
                             QList<AniListSyncOutcome> outcomes;
                             auto snapshotErrorCategory = AniListSyncErrorCategory::None;
+                            int stageIndex = 0;
                             for (const auto &mediaType : {QStringLiteral("ANIME"), QStringLiteral("MANGA")}) {
                                 if (!result.succeeded || statuses.isEmpty()) break;
+                                ++stageIndex;
+                                const QString stageKey = stageIndex == 1 ? QStringLiteral("anime")
+                                                                         : QStringLiteral("manga");
+                                publish(stageKey, stageIndex, 3, 0, -1);
+                                service.setProgressReporter([&publish, &stageKey, stageIndex](const int processed) {
+                                    publish(stageKey, stageIndex, 3, processed, -1);
+                                });
                                 if (authenticatedUserList_.auditLogger) {
                                     authenticatedUserList_.auditLogger(
                                         QStringLiteral("AniList user-list request started: type=%1 statuses=%2.")
@@ -170,6 +196,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                                 }
                             }
                             if (!statuses.isEmpty()) {
+                                publish(QStringLiteral("reconciliation"), 3, 3, 0, -1);
                                 int removedCount = 0;
                                 bool reconciled = false;
                                 if (!ReconcileCompleteAniListSnapshot(
@@ -220,6 +247,9 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                         AniListUpdateClient updateClient(client, updateMutation);
                         AniListPendingChangeProcessor pendingProcessor(pendingChanges, updateClient);
                         AniListPendingChangeDrain drain(pendingChanges, pendingProcessor);
+                        drain.setProgressReporter([&publish](const int processed, const int total) {
+                            publish(QStringLiteral("pending_changes"), 1, 1, processed, total);
+                        });
                         result.succeeded = drain.processAll(error,
                             [job] { return job->cancelled.load(); });
                         result.errorCategory = result.succeeded ? AniListSyncErrorCategory::None

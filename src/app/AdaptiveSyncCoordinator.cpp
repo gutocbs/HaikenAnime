@@ -34,6 +34,15 @@ AdaptiveSyncCoordinator::AdaptiveSyncCoordinator(
       policies_(std::move(policies)), wakeUpTimer_(new QTimer(this)), seedMissingTasks_(seedMissingTasks) {
     wakeUpTimer_->setSingleShot(true);
     connect(wakeUpTimer_, &QTimer::timeout, this, &AdaptiveSyncCoordinator::ProcessDueTasks);
+    qRegisterMetaType<SyncProgress>();
+    // The executor reports from its worker thread; marshal each report onto this object's thread.
+    QPointer<AdaptiveSyncCoordinator> coordinator(this);
+    executor_.SetProgressReporter([coordinator](const SyncProgress &progress) {
+        if (!coordinator) return;
+        QMetaObject::invokeMethod(coordinator, [coordinator, progress] {
+            if (coordinator) emit coordinator->TaskProgress(progress);
+        }, Qt::QueuedConnection);
+    });
 }
 
 AdaptiveSyncCoordinator::~AdaptiveSyncCoordinator() {

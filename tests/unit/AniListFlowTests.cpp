@@ -217,6 +217,7 @@ private slots:
     void cancellationBetweenTypesNeverReconciles();
     void droppedMediaObservedWhileListDisabledIsNotReported();
     void cancellationBetweenChunksLeavesSnapshotIncomplete();
+    void reportsCumulativeMediaCountAfterEachPersistedPage();
 };
 
 static QString fixturePath() {
@@ -688,3 +689,24 @@ void AniListFlowTests::cancellationBetweenChunksLeavesSnapshotIncomplete() {
 
 QTEST_MAIN(AniListFlowTests)
 #include "AniListFlowTests.moc"
+
+void AniListFlowTests::reportsCumulativeMediaCountAfterEachPersistedPage() {
+    PagedPartitionResultDataSource source;
+    source.resultsByPage[1].completedPartition = SyncPartition::UserList;
+    source.resultsByPage[1].page.currentPage = 1;
+    source.resultsByPage[1].page.hasNextPage = true;
+    for (const int id : {1, 2, 3}) source.resultsByPage[1].page.media.append(Media { .Id = id });
+    source.resultsByPage[2].completedPartition = SyncPartition::UserList;
+    source.resultsByPage[2].page.currentPage = 2;
+    for (const int id : {4, 5}) source.resultsByPage[2].page.media.append(Media { .Id = id });
+    CollectingWriter writer;
+    AniListSyncService service(source, writer);
+    QList<int> reported;
+    service.setProgressReporter([&reported](const int processedItems) { reported.append(processedItems); });
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    QString error;
+
+    QVERIFY2(service.synchronize(request, error), qPrintable(error));
+
+    QCOMPARE(reported, QList<int>({3, 5}));
+}

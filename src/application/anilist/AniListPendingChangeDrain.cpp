@@ -18,12 +18,14 @@ bool AniListPendingChangeDrain::processAll(QString &error,
         if (!repository_.getPendingMediaIds(mediaIds, error)) return false;
         if (mediaIds.isEmpty()) return true;
 
+        int processed = 0;
         for (const int mediaId : mediaIds) {
             if (isCancelled && isCancelled()) {
                 error = QStringLiteral("AniList pending-change processing cancelled.");
                 return false;
             }
             if (!processor_.process(mediaId, error)) return false;
+            if (progressReporter_) progressReporter_(++processed, static_cast<int>(mediaIds.size()));
         }
     }
 }

@@ -13,6 +13,7 @@ QString SafeError(const QString &error, const QString &fallback) {
 
 AdaptiveSyncRuntime::AdaptiveSyncRuntime(RepositoryFactory repositoryFactory, ExecutorFactory executorFactory,
                                          std::map<SyncTaskKind, SyncSchedulePolicy> policies) {
+    qRegisterMetaType<SyncProgress>();
     owner_ = new QObject;
     owner_->moveToThread(&thread_);
     thread_.start(QThread::LowPriority);
@@ -102,6 +103,18 @@ void AdaptiveSyncRuntime::Initialize(RepositoryFactory repositoryFactory, Execut
     coordinator_ = std::make_unique<AdaptiveSyncCoordinator>(*repository_, *executor_,
                                                                AdaptiveSyncCoordinator::Clock{}, std::move(policies), true);
     connect(coordinator_.get(), &AdaptiveSyncCoordinator::Stopped, owner_, [this] { DisposeOnWorker(); });
+    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskStarted, owner_,
+            [this](const SyncPartition partition) {
+                QMetaObject::invokeMethod(this, [this, partition] {
+                    emit BackgroundTaskStarted(partition);
+                }, Qt::QueuedConnection);
+            });
+    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskProgress, owner_,
+            [this](const SyncProgress &progress) {
+                QMetaObject::invokeMethod(this, [this, progress] {
+                    emit BackgroundTaskProgress(progress);
+                }, Qt::QueuedConnection);
+            });
     connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskCompleted, owner_,
             [this](const SyncPartition partition) {
                 QMetaObject::invokeMethod(this, [this, partition] {

@@ -37,6 +37,7 @@ public slots:
 
 signals:
     void TaskStarted(SyncPartition partition);
+    void TaskProgress(SyncProgress progress);
     void TaskCompleted(SyncPartition partition);
     void TaskFailed(SyncPartition partition, const QString &safeError);
     void SchedulingFailed(const QString &safeError);

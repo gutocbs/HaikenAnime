@@ -25,6 +25,7 @@ class AniListSyncService {
 public:
     using CheckpointCommitter = std::function<bool(int confirmedPage, QString &error)>;
     using CancellationProbe = std::function<bool()>;
+    using ProgressReporter = std::function<void(int processedItems)>;
     /** Creates a synchronization service from a data source and media repository. */
     AniListSyncService(IMediaDataSource &dataSource, IMediaWriter &mediaWriter,
                        IMediaSnapshotReconciler *snapshotReconciler = nullptr,
@@ -53,6 +54,8 @@ public:
     [[nodiscard]] bool synchronize(const AniListDataSourceRequest &request, QString &error,
                                    const CheckpointCommitter &commitCheckpoint = {},
                                    const CancellationProbe &isCancelled = {});
+    /** Reports the cumulative media count of the run after each persisted page. */
+    void setProgressReporter(ProgressReporter reporter) { progressReporter_ = std::move(reporter); }
     [[nodiscard]] AniListSyncErrorCategory lastErrorCategory() const { return lastErrorCategory_; }
     /** Reports the entries observed by the last run and whether they form a complete snapshot. */
     [[nodiscard]] const AniListSyncOutcome &lastOutcome() const { return lastOutcome_; }
@@ -67,6 +70,7 @@ private:
     int timeoutMs_;
     AniListSyncErrorCategory lastErrorCategory_ = AniListSyncErrorCategory::None;
     AniListSyncOutcome lastOutcome_;
+    ProgressReporter progressReporter_;
 };
 
 #endif // HAIKENANIME_ANILIST_SYNCSERVICE_H
