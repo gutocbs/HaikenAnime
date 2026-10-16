@@ -1276,6 +1276,13 @@ add_executable(PersonalListChangeServiceTests
 target_link_libraries(PersonalListChangeServiceTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME PersonalListChangeServiceTests COMMAND PersonalListChangeServiceTests)
 
+add_executable(AniListAccountOwnershipTests
+        tests/unit/AniListAccountOwnershipTests.cpp
+        src/application/anilist/AniListAccountOwnership.h
+)
+target_link_libraries(AniListAccountOwnershipTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME AniListAccountOwnershipTests COMMAND AniListAccountOwnershipTests)
+
 add_executable(SettingsControllerTests
         tests/unit/SettingsControllerTests.cpp
         src/presentation/settings/SettingsController.cpp

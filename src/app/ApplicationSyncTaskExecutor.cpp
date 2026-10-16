@@ -1,6 +1,7 @@
 #include "ApplicationSyncTaskExecutor.h"
 #include "SyncTaskRequest.h"
 
+#include "../application/anilist/AniListAccountOwnership.h"
 #include "../application/anilist/AniListSyncService.h"
 #include "../application/anilist/AniListPendingChangeProcessor.h"
 #include "../application/anilist/AniListPendingChangeDrain.h"
@@ -240,6 +241,14 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                     if (credentials.token.isEmpty()) {
                         error = QStringLiteral("AniList pending-change synchronization requires authentication.");
                         result.errorCategory = AniListSyncErrorCategory::Authentication;
+                    } else if (!AniListAccountOwnership::CanProcessPendingChanges(credentials.userId)) {
+                        // Token not validated yet (no account id): nothing is sent or adopted until it is.
+                        result.succeeded = true;
+                        result.errorCategory = AniListSyncErrorCategory::None;
+                        if (authenticatedUserList_.auditLogger) {
+                            authenticatedUserList_.auditLogger(QStringLiteral(
+                                "AniList pending-change synchronization skipped: account not validated yet."));
+                        }
                     } else {
                         if (authenticatedUserList_.auditLogger) {
                             authenticatedUserList_.auditLogger(

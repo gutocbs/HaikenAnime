@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "src/app/ApplicationComposition.h"
+#include "src/application/anilist/AniListAccountOwnership.h"
 #include "src/app/AniListOAuthCallbackReceiver.h"
 #include "src/app/TranslationLoader.h"
 #include "src/infrastructure/anilist/WindowsUrlProtocolRegistrar.h"
@@ -233,21 +234,26 @@ int main(int argc, char *argv[]) {
         context.personalListChangeService->setOwnerProvider([&context]() -> qint64 {
             const qint64 connectedUserId = context.aniListAuthManager
                 ? context.aniListAuthManager->credentials().userId : 0;
-            return connectedUserId > 0 ? connectedUserId : context.userPreferences.lastAniListUserId;
+            return AniListAccountOwnership::ResolveOwnerUserId(
+                connectedUserId, context.userPreferences.lastAniListUserId);
         });
     }
-    QObject::connect(&settingsController, &SettingsController::aniListAuthenticationSucceeded,
-                     &app, [&context, &settingsController] {
-        const qint64 userId = context.aniListAuthManager
-            ? context.aniListAuthManager->credentials().userId : 0;
-        if (userId <= 0 || userId == context.userPreferences.lastAniListUserId) return;
+    const auto rememberConnectedAniListAccount = [&context, &settingsController] {
+        const qint64 userId = AniListAccountOwnership::AccountToRemember(
+            context.aniListAuthManager ? context.aniListAuthManager->credentials().userId : 0,
+            context.userPreferences.lastAniListUserId);
+        if (userId <= 0) return;
         QString error;
         if (persistLastAniListUserId(context, userId, error)) {
             settingsController.ApplyExternalLastAniListUserId(userId);
         } else if (context.logger) {
             context.logger->warning(LogCategory::Configuration, error);
         }
-    });
+    };
+    QObject::connect(&settingsController, &SettingsController::aniListAuthenticationSucceeded,
+                     &app, rememberConnectedAniListAccount);
+    // Accounts connected before this release (or loaded from the secret store) must also be remembered.
+    rememberConnectedAniListAccount();
     if (context.adaptiveSync) {
         const auto requestAniListSynchronization = [&context] {
             if (!context.adaptiveSync) return;
