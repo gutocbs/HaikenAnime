@@ -871,7 +871,19 @@ void QmlStructureTests::settingsAccountSectionUsesAniListAuthenticationControlle
     QVERIFY(source.contains(QStringLiteral("value: controller.aniListUsername")));
     QVERIFY(source.contains(QStringLiteral("enabled: controller.aniListConnectionAvailable")));
     QVERIFY(source.contains(QStringLiteral("onClicked: controller.ConnectAniList()")));
-    QVERIFY(!source.contains(QStringLiteral("controller.aniListAuthenticationMessage")));
+    QVERIFY(source.contains(QStringLiteral("controller.aniListAuthenticationMessage")));
+    QVERIFY(source.contains(QStringLiteral(
+        "enabled: controller.aniListConnectionAvailable && !controller.aniListConnected")));
+    QVERIFY(source.contains(QStringLiteral("!controller.aniListRemovalInProgress")));
+    QVERIFY(source.contains(QStringLiteral("visible: controller.aniListConnected")));
+    QVERIFY(source.contains(QStringLiteral("onClicked: removeAccountDialog.open()")));
+    QVERIFY(source.contains(QStringLiteral("onClicked: { removeAccountDialog.close(); controller.RemoveAniListAccount() }")));
+    QVERIFY(source.contains(QStringLiteral("qsTr(\"Remover conta AniList?\")")));
+    QVERIFY(source.contains(QStringLiteral(
+        "qsTr(\"A biblioteca local e as alterações não sincronizadas serão mantidas.\")")));
+    const qsizetype dialogStart = source.indexOf(QStringLiteral("id: removeAccountDialog"));
+    QVERIFY(dialogStart >= 0);
+    QVERIFY(!source.mid(dialogStart).contains(QStringLiteral("standardButtons")));
     QVERIFY(source.contains(QStringLiteral("readonly property color danger:")));
 }
 

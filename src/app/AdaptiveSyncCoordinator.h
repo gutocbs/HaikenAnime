@@ -31,6 +31,12 @@ public:
     void Stop();
     void RequestNow(SyncPartition partition);
     void NotifyLocalChange(SyncPartition partition);
+    /**
+     * Cancels the partition's active task, if any, and invalidates its generation so a late completion is
+     * ignored. `acknowledged` runs on this object's thread once the executor has accounted for the task;
+     * it runs immediately when the partition has no active task.
+     */
+    void Cancel(SyncPartition partition, std::function<void()> acknowledged);
 
 public slots:
     void ProcessDueTasks();

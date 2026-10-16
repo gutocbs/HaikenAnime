@@ -703,6 +703,16 @@
         <source>Extensão de arquivo inválida.</source>
         <translation>Extensão de arquivo inválida.</translation>
     </message>
+    <message>
+        <location filename="../src/presentation/settings/SettingsController.cpp"/>
+        <source>Conta AniList removida.</source>
+        <translation>Conta AniList removida.</translation>
+    </message>
+    <message>
+        <location filename="../src/presentation/settings/SettingsController.cpp"/>
+        <source>Não foi possível remover a conta AniList.</source>
+        <translation>Não foi possível remover a conta AniList.</translation>
+    </message>
 </context>
 <context>
     <name>SettingsScreen</name>
@@ -1184,6 +1194,26 @@
         <location filename="../resources/qml/SettingsScreen.qml" line="758"/>
         <source>Existem configurações alteradas que ainda não foram salvas.</source>
         <translation>Existem configurações alteradas que ainda não foram salvas.</translation>
+    </message>
+    <message>
+        <location filename="../resources/qml/SettingsScreen.qml"/>
+        <source>Remover conta</source>
+        <translation>Remover conta</translation>
+    </message>
+    <message>
+        <location filename="../resources/qml/SettingsScreen.qml"/>
+        <source>Remover conta AniList?</source>
+        <translation>Remover conta AniList?</translation>
+    </message>
+    <message>
+        <location filename="../resources/qml/SettingsScreen.qml"/>
+        <source>A biblioteca local e as alterações não sincronizadas serão mantidas.</source>
+        <translation>A biblioteca local e as alterações não sincronizadas serão mantidas.</translation>
+    </message>
+    <message>
+        <location filename="../resources/qml/SettingsScreen.qml"/>
+        <source>Cancelar</source>
+        <translation>Cancelar</translation>
     </message>
 </context>
 <context>

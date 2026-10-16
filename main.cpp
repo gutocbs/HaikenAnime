@@ -11,6 +11,7 @@
 
 #include "src/app/ApplicationComposition.h"
 #include "src/application/anilist/AniListAccountOwnership.h"
+#include "src/application/anilist/RemoveAniListAccountUseCase.h"
 #include "src/app/AniListOAuthCallbackReceiver.h"
 #include "src/app/TranslationLoader.h"
 #include "src/infrastructure/anilist/WindowsUrlProtocolRegistrar.h"
@@ -252,6 +253,27 @@ int main(int argc, char *argv[]) {
     };
     QObject::connect(&settingsController, &SettingsController::aniListAuthenticationSucceeded,
                      &app, rememberConnectedAniListAccount);
+    std::unique_ptr<RemoveAniListAccountUseCase> removeAniListAccount;
+    if (context.aniListAuthManager) {
+        removeAniListAccount = std::make_unique<RemoveAniListAccountUseCase>(
+            [&oauthCallbackReceiver] { oauthCallbackReceiver.stop(); },
+            [&context](const SyncPartition partition, std::function<void()> acknowledged) {
+                // Without a runtime there is no running synchronization to wait for.
+                if (context.adaptiveSync) context.adaptiveSync->cancel(partition, std::move(acknowledged));
+                else if (acknowledged) acknowledged();
+            },
+            *context.aniListAuthManager,
+            [&context, &settingsController](const qint64 userId, QString &error) {
+                // Edits made offline after the removal still belong to the removed account.
+                if (!persistLastAniListUserId(context, userId, error)) return false;
+                settingsController.ApplyExternalLastAniListUserId(userId);
+                return true;
+            },
+            [logger = context.logger.get()](const QString &event) {
+                if (logger) logger->info(LogCategory::Application, event);
+            });
+        settingsController.SetAniListAccountRemoval(removeAniListAccount.get());
+    }
     // Accounts connected before this release (or loaded from the secret store) must also be remembered.
     rememberConnectedAniListAccount();
     if (context.adaptiveSync) {

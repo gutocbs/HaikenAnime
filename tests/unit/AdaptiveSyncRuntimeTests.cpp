@@ -129,6 +129,8 @@ private slots:
     void propagatesCompletedBackgroundTask();
     void forwardsStartedAndProgressSignals();
     void defersWorkerDestructionUntilCoordinatorStops();
+    void cancelAcknowledgesOnTheCallerThreadAfterTheExecutorCancels();
+    void cancelAcknowledgesImmediatelyWhenTheRuntimeIsNotReady();
     void destructorRetainsWorkerOwnershipPastLegacyTimeout();
 };
 
@@ -343,6 +345,50 @@ void AdaptiveSyncRuntimeTests::forwardsStartedAndProgressSignals() {
     runtime.shutdown();
     QTRY_VERIFY(executorState->shutdownRequested.load());
     executorState->shutdownAcknowledgement();
+    QTRY_VERIFY(runtime.isStopped());
+}
+
+void AdaptiveSyncRuntimeTests::cancelAcknowledgesOnTheCallerThreadAfterTheExecutorCancels() {
+    const auto executorState = std::make_shared<ExecutorState>();
+    AdaptiveSyncRuntime runtime(dueRepository,
+                                [executorState] { return std::make_unique<FakeTaskExecutor>(executorState); }, {});
+    runtime.start();
+    QTRY_COMPARE(executorState->executionCount.load(), 1);
+    QThread *acknowledgedOn = nullptr;
+    bool acknowledged = false;
+
+    runtime.cancel(SyncPartition::UserList, [&] {
+        acknowledgedOn = QThread::currentThread();
+        acknowledged = true;
+    });
+
+    QTRY_VERIFY(acknowledged);
+    QCOMPARE(executorState->cancellationCount.load(), 1);
+    QCOMPARE(acknowledgedOn, QThread::currentThread());
+
+    runtime.shutdown();
+    QTRY_VERIFY(executorState->shutdownRequested.load());
+    executorState->shutdownAcknowledgement();
+    QTRY_VERIFY(runtime.isStopped());
+}
+
+void AdaptiveSyncRuntimeTests::cancelAcknowledgesImmediatelyWhenTheRuntimeIsNotReady() {
+    QSemaphore initializationGate;
+    const auto executorState = std::make_shared<ExecutorState>();
+    AdaptiveSyncRuntime runtime(
+        [&initializationGate](QString &error) {
+            initializationGate.acquire();
+            return readyRepository(error);
+        },
+        [executorState] { return std::make_unique<FakeTaskExecutor>(executorState); }, {});
+    bool acknowledged = false;
+
+    runtime.cancel(SyncPartition::UserList, [&acknowledged] { acknowledged = true; });
+
+    QVERIFY(acknowledged);
+    QCOMPARE(executorState->cancellationCount.load(), 0);
+    initializationGate.release();
+    runtime.shutdown();
     QTRY_VERIFY(runtime.isStopped());
 }
 

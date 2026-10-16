@@ -137,6 +137,8 @@ private slots:
     void schedulesRetryAtThePolicyDueTime();
     void promotesManualAndLocalChangeRequests();
     void stopCancelsWorkAndInvalidatesItsGeneration();
+    void cancelAcknowledgesOnlyAfterTheExecutorConfirmsTheActivePartition();
+    void cancelAcknowledgesImmediatelyForPartitionsWithoutActiveWork();
     void ignoresExecutorCallbacksAfterTheCoordinatorIsDestroyed();
     void doesNotExecuteWhenRunningGenerationCannotBePersisted();
     void retainsExistingActivePartitionDuringCompletedPromotion();
@@ -473,6 +475,46 @@ void AdaptiveSyncCoordinatorTests::stopCancelsWorkAndInvalidatesItsGeneration() 
     QVERIFY(executor.cancelled.contains(SyncPartition::UserList));
     QVERIFY(repository.State(SyncPartition::UserList).generation > runningGeneration);
     QCOMPARE(completed.count(), 0);
+}
+
+void AdaptiveSyncCoordinatorTests::cancelAcknowledgesOnlyAfterTheExecutorConfirmsTheActivePartition() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList)};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
+    QSignalSpy completed(&coordinator, &AdaptiveSyncCoordinator::TaskCompleted);
+    int acknowledged = 0;
+
+    coordinator.Start();
+    const auto runningGeneration = repository.State(SyncPartition::UserList).generation;
+    coordinator.Cancel(SyncPartition::UserList, [&acknowledged] { ++acknowledged; });
+
+    QVERIFY(executor.cancelled.contains(SyncPartition::UserList));
+    QCoreApplication::processEvents();
+    QCOMPARE(acknowledged, 0);
+    QVERIFY(repository.State(SyncPartition::UserList).generation > runningGeneration);
+
+    executor.AcknowledgeCancellation(SyncPartition::UserList);
+    QTRY_COMPARE(acknowledged, 1);
+    executor.Complete(SyncPartition::UserList, {.succeeded = true, .confirmedPage = 1});
+    QCoreApplication::processEvents();
+    QCOMPARE(completed.count(), 0);
+}
+
+void AdaptiveSyncCoordinatorTests::cancelAcknowledgesImmediatelyForPartitionsWithoutActiveWork() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList)};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
+    int acknowledged = 0;
+
+    coordinator.Start();
+    coordinator.Cancel(SyncPartition::PendingChanges, [&acknowledged] { ++acknowledged; });
+
+    QCOMPARE(acknowledged, 1);
+    QVERIFY(!executor.cancelled.contains(SyncPartition::PendingChanges));
 }
 
 void AdaptiveSyncCoordinatorTests::ignoresExecutorCallbacksAfterTheCoordinatorIsDestroyed() {

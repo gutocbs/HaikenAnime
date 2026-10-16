@@ -148,6 +148,8 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/application/configuration/ISettingsReader.h
         src/application/anilist/ISecretStore.h
         src/application/anilist/IAniListAuthProvider.h
+        src/application/anilist/RemoveAniListAccountUseCase.h
+        src/application/anilist/RemoveAniListAccountUseCase.cpp
         src/application/media/IMediaRepository.h
         src/application/media/IMediaReader.h
         src/application/media/IMediaWriter.h
@@ -1283,11 +1285,22 @@ add_executable(AniListAccountOwnershipTests
 target_link_libraries(AniListAccountOwnershipTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME AniListAccountOwnershipTests COMMAND AniListAccountOwnershipTests)
 
+add_executable(RemoveAniListAccountUseCaseTests
+        tests/unit/RemoveAniListAccountUseCaseTests.cpp
+        src/application/anilist/RemoveAniListAccountUseCase.h
+        src/application/anilist/RemoveAniListAccountUseCase.cpp
+        src/application/anilist/AniListAuthManager.cpp
+        src/application/anilist/AniListOAuthCallbackParser.cpp
+)
+target_link_libraries(RemoveAniListAccountUseCaseTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME RemoveAniListAccountUseCaseTests COMMAND RemoveAniListAccountUseCaseTests)
+
 add_executable(SettingsControllerTests
         tests/unit/SettingsControllerTests.cpp
         src/presentation/settings/SettingsController.cpp
         src/application/anilist/AniListAuthManager.cpp
         src/application/anilist/AniListOAuthCallbackParser.cpp
+        src/application/anilist/RemoveAniListAccountUseCase.cpp
         src/application/cache/ClearLocalCacheUseCase.cpp
         src/application/covers/CoverDownloadCoordinator.cpp
         src/application/configuration/UserPreferencesValidator.cpp
@@ -1505,6 +1518,7 @@ set(HAIKENANIME_TESTS
         ClearLocalCacheUseCaseTests
         QtCoverDownloaderTests
         AniListAuthManagerTests
+        RemoveAniListAccountUseCaseTests
         AniListOAuthCallbackParserTests
         WindowsAniListOAuthLauncherTests
         AniListFlowTests

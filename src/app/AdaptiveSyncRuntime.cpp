@@ -72,6 +72,23 @@ void AdaptiveSyncRuntime::requestNow(const SyncPartition partition) {
     }
 }
 
+void AdaptiveSyncRuntime::cancel(const SyncPartition partition, std::function<void()> acknowledged) {
+    QObject *owner = nullptr;
+    {
+        QMutexLocker lock(&stateMutex_);
+        if (state_ == State::Ready && !stopRequested_) owner = owner_;
+    }
+    if (!owner) {
+        if (acknowledged) acknowledged();
+        return;
+    }
+    // The acknowledgement is queued onto the runtime object (created on the caller's/GUI thread), not onto
+    // the worker, so the caller's continuation always runs on its own thread.
+    QMetaObject::invokeMethod(owner, [this, partition, acknowledged = std::move(acknowledged)]() mutable {
+        CancelOnWorker(partition, std::move(acknowledged));
+    }, Qt::QueuedConnection);
+}
+
 bool AdaptiveSyncRuntime::isStopped() const {
     QMutexLocker lock(&stateMutex_);
     return (state_ == State::Stopped || state_ == State::Failed) && !thread_.isRunning();
@@ -165,6 +182,19 @@ void AdaptiveSyncRuntime::StartOnWorker() {
 void AdaptiveSyncRuntime::RequestNowOnWorker(const SyncPartition partition) {
     StartOnWorker();
     if (!isStopRequested() && coordinator_ && coordinatorStarted_) coordinator_->RequestNow(partition);
+}
+
+void AdaptiveSyncRuntime::CancelOnWorker(const SyncPartition partition, std::function<void()> acknowledged) {
+    auto deliver = [this, acknowledged = std::move(acknowledged)]() mutable {
+        QMetaObject::invokeMethod(this, [acknowledged = std::move(acknowledged)] {
+            if (acknowledged) acknowledged();
+        }, Qt::QueuedConnection);
+    };
+    if (isStopRequested() || !coordinator_ || !coordinatorStarted_) {
+        deliver();
+        return;
+    }
+    coordinator_->Cancel(partition, std::move(deliver));
 }
 
 void AdaptiveSyncRuntime::StopOnWorker() {

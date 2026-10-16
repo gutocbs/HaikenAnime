@@ -15,6 +15,7 @@ class LocalLibraryScanCoordinator;
 class ClearLocalCacheUseCase;
 class AniListAuthManager;
 class IAniListViewerClient;
+class RemoveAniListAccountUseCase;
 
 class SettingsController final : public QObject {
     Q_OBJECT
@@ -54,6 +55,8 @@ class SettingsController final : public QObject {
     Q_PROPERTY(QString cacheCleanupErrorMessage READ cacheCleanupErrorMessage NOTIFY cacheCleanupChanged)
     Q_PROPERTY(bool aniListConnectionAvailable READ aniListConnectionAvailable NOTIFY changed)
     Q_PROPERTY(bool aniListAuthenticationInProgress READ aniListAuthenticationInProgress NOTIFY changed)
+    Q_PROPERTY(bool aniListConnected READ aniListConnected NOTIFY changed)
+    Q_PROPERTY(bool aniListRemovalInProgress READ aniListRemovalInProgress NOTIFY changed)
     Q_PROPERTY(QString aniListAuthenticationState READ aniListAuthenticationState NOTIFY changed)
     Q_PROPERTY(QString aniListUsername READ aniListUsername NOTIFY changed)
     Q_PROPERTY(QString aniListAuthenticationMessage READ aniListAuthenticationMessage NOTIFY changed)
@@ -102,6 +105,8 @@ public:
     QString cacheCleanupErrorMessage() const;
     bool aniListConnectionAvailable() const;
     bool aniListAuthenticationInProgress() const;
+    bool aniListConnected() const;
+    bool aniListRemovalInProgress() const;
     QString aniListAuthenticationState() const;
     QString aniListUsername() const;
     QString aniListAuthenticationMessage() const;
@@ -112,6 +117,8 @@ public:
                                            IAniListViewerClient *viewerClient,
                                            AniListOAuthReceiverStarter receiverStarter = {},
                                            AniListOAuthReceiverStopper receiverStopper = {});
+    /** Wires the account removal use case; the controller does not take ownership. */
+    void SetAniListAccountRemoval(RemoveAniListAccountUseCase *useCase);
     void ApplyExternalHomeSortKey(QString key);
     /** Mirrors the last connected AniList account saved outside the settings draft. */
     void ApplyExternalLastAniListUserId(qint64 userId);
@@ -135,6 +142,7 @@ public:
     Q_INVOKABLE void ClearLocalCache();
     Q_INVOKABLE void ConnectAniList();
     Q_INVOKABLE void HandleAniListOAuthCallback(const QUrl &callback);
+    Q_INVOKABLE void RemoveAniListAccount();
 signals:
     void changed();
     void scanChanged();
@@ -181,6 +189,8 @@ private:
     AniListOAuthReceiverStarter aniListOAuthReceiverStarter_;
     AniListOAuthReceiverStopper aniListOAuthReceiverStopper_;
     QString aniListAuthenticationState_ = QStringLiteral("unavailable");
+    RemoveAniListAccountUseCase *aniListAccountRemoval_ = nullptr;
+    bool aniListRemovalInProgress_ = false;
     QString aniListUsername_;
     QString aniListAuthenticationMessage_;
 };

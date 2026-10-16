@@ -487,14 +487,31 @@ Item {
                                ? controller.aniListUsername : qsTr("Nenhuma conta conectada")
                     }
                 }
+                Label {
+                    Layout.fillWidth: true
+                    visible: controller.aniListAuthenticationMessage.length > 0
+                    text: controller.aniListAuthenticationMessage
+                    color: muted
+                    font.pixelSize: 11
+                    wrapMode: Text.Wrap
+                }
                 RowLayout {
                     Layout.fillWidth: true
+                    spacing: 8
                     Item { Layout.fillWidth: true }
+                    AppButton {
+                        text: qsTr("Remover conta")
+                        variant: "danger"
+                        visible: controller.aniListConnected
+                        enabled: !controller.aniListRemovalInProgress
+                        onClicked: removeAccountDialog.open()
+                    }
                     AppButton {
                         text: controller.aniListAuthenticationInProgress
                               ? qsTr("Conectando conta...") : qsTr("Conectar conta")
-                        enabled: controller.aniListConnectionAvailable
+                        enabled: controller.aniListConnectionAvailable && !controller.aniListConnected
                                  && !controller.aniListAuthenticationInProgress
+                                 && !controller.aniListRemovalInProgress
                         onClicked: controller.ConnectAniList()
                     }
                 }
@@ -833,6 +850,51 @@ Item {
             text: qsTr("Existem configurações alteradas que ainda não foram salvas.")
             color: ink
             wrapMode: Text.Wrap
+        }
+    }
+
+    Dialog {
+        id: removeAccountDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        width: Math.min(420, settingsScreen.width - 48)
+        title: qsTr("Remover conta AniList?")
+        closePolicy: Popup.CloseOnEscape
+        padding: 20
+
+        background: Rectangle { color: settingsScreen.surface; border.color: settingsScreen.line; radius: 8 }
+        header: Label {
+            text: removeAccountDialog.title
+            color: settingsScreen.ink
+            font.pixelSize: 16
+            font.weight: Font.DemiBold
+            leftPadding: 20; topPadding: 20; rightPadding: 20
+        }
+        contentItem: Label {
+            text: qsTr("A biblioteca local e as alterações não sincronizadas serão mantidas.")
+            color: settingsScreen.muted
+            font.pixelSize: 12
+            wrapMode: Text.Wrap
+        }
+        footer: Item {
+            implicitHeight: 64
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 16
+                spacing: 8
+                Item { Layout.fillWidth: true }
+                AppButton {
+                    text: qsTr("Cancelar")
+                    variant: "flat"
+                    onClicked: removeAccountDialog.close()
+                }
+                AppButton {
+                    text: qsTr("Remover conta")
+                    variant: "danger"
+                    onClicked: { removeAccountDialog.close(); controller.RemoveAniListAccount() }
+                }
+            }
         }
     }
 }
