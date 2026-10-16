@@ -5,6 +5,7 @@
 #include "../application/anilist/AniListPendingChangeProcessor.h"
 #include "../application/anilist/AniListPendingChangeDrain.h"
 #include "../application/anilist/AniListPendingChangeReconciler.h"
+#include "../application/anilist/AniListSnapshotReconciliation.h"
 #include "../application/anilist/AniListSyncErrorClassifier.h"
 #include "../application/anilist/IAniListAuthProvider.h"
 #include "../infrastructure/anilist/AniListGraphQlClient.h"
@@ -134,6 +135,8 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                                 authenticatedUserList_.auditLogger(
                                     QStringLiteral("AniList user-list synchronization skipped: no lists are enabled."));
                             }
+                            QList<AniListSyncOutcome> outcomes;
+                            auto snapshotErrorCategory = AniListSyncErrorCategory::None;
                             for (const auto &mediaType : {QStringLiteral("ANIME"), QStringLiteral("MANGA")}) {
                                 if (!result.succeeded || statuses.isEmpty()) break;
                                 if (authenticatedUserList_.auditLogger) {
@@ -159,14 +162,30 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                                     }
                                     break;
                                 }
+                                outcomes.append(service.lastOutcome());
                                 if (authenticatedUserList_.auditLogger) {
                                     authenticatedUserList_.auditLogger(
                                         QStringLiteral("AniList user-list request completed: type=%1.")
                                             .arg(mediaType));
                                 }
                             }
+                            if (!statuses.isEmpty()) {
+                                int removedCount = 0;
+                                bool reconciled = false;
+                                if (!ReconcileCompleteAniListSnapshot(
+                                        outcomes, 2, result.succeeded && !job->cancelled.load(),
+                                        mediaRepository, pendingChanges, reconciled, removedCount, error)) {
+                                    result.succeeded = false;
+                                    snapshotErrorCategory = AniListSyncErrorClassifier::Classify(error);
+                                } else if (reconciled && authenticatedUserList_.auditLogger) {
+                                    authenticatedUserList_.auditLogger(
+                                        QStringLiteral("AniList snapshot reconciliation marked %1 media as removed from source.")
+                                            .arg(removedCount));
+                                }
+                            }
                             result.errorCategory = result.succeeded ? AniListSyncErrorCategory::None
-                                : service.lastErrorCategory();
+                                : (snapshotErrorCategory != AniListSyncErrorCategory::None
+                                       ? snapshotErrorCategory : service.lastErrorCategory());
                         }
                         if (authenticatedUserList_.auditLogger) {
                             authenticatedUserList_.auditLogger(result.succeeded

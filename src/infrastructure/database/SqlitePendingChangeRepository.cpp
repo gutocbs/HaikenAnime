@@ -84,6 +84,24 @@ bool SqlitePendingChangeRepository::getPendingMediaIds(QList<int> &mediaIds, QSt
     return true;
 }
 
+bool SqlitePendingChangeRepository::getMediaIdsWithUnsentChanges(QSet<int> &mediaIds, QString &error) {
+    mediaIds.clear();
+    error.clear();
+    QString source;
+    if (!SqlQueryStore::loadSource(unsentMediaIdsQuery_, source, error)) return false;
+    QSqlQuery query(database_);
+    if (!query.prepare(source)) {
+        error = query.lastError().text();
+        return false;
+    }
+    if (!query.exec()) {
+        error = query.lastError().text();
+        return false;
+    }
+    while (query.next()) mediaIds.insert(query.value(QStringLiteral("media_id")).toInt());
+    return true;
+}
+
 bool SqlitePendingChangeRepository::enqueue(const AniListPendingChange &change, QString &error) {
     error.clear();
     QString enqueueQuery;

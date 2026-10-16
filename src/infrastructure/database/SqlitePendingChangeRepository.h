@@ -19,6 +19,7 @@ public:
     [[nodiscard]] bool getPending(int mediaId, QList<AniListPendingChange> &changes,
                                   QString &error) override;
     [[nodiscard]] bool getPendingMediaIds(QList<int> &mediaIds, QString &error) override;
+    [[nodiscard]] bool getMediaIdsWithUnsentChanges(QSet<int> &mediaIds, QString &error) override;
     [[nodiscard]] bool updateStatus(const AniListPendingChange &change,
                                      QString &error) override;
 
@@ -28,6 +29,7 @@ private:
     QString pendingQuery_;
     QString pendingMediaIdsQuery_;
     QString updateStatusQuery_;
+    QString unsentMediaIdsQuery_ = QStringLiteral(":/sqlite/queries/read-unsent-media-ids.sql");
 };
 
 #endif // HAIKENANIME_SQLITEPENDINGCHANGEREPOSITORY_H

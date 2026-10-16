@@ -45,6 +45,9 @@ private slots:
     void updatingMissingPendingChangeFails();
     void authoritativeSnapshotMarksOnlyUnseenActiveMedia();
     void removedMediaIsHiddenAndUpsertReactivatesItPreservingLocalData();
+    void authoritativeSnapshotSkipsExcludedMediaAndHidesOnlyMarkedOnes();
+    void readsMediaIdsWithUnsentChangesRegardlessOfOwner();
+    void failedPendingChangeExcludesAbsentMediaFromRemoval();
 };
 
 void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
@@ -235,7 +238,7 @@ void SqliteRepositoryTests::authoritativeSnapshotMarksOnlyUnseenActiveMedia() {
 
     int removedCount = -1;
     QString error;
-    QVERIFY2(repository.reconcileAuthoritativeSnapshot(QSet<int>{7}, removedCount, error),
+    QVERIFY2(repository.reconcileAuthoritativeSnapshot(QSet<int>{7}, QSet<int>{}, removedCount, error),
              qPrintable(error));
     QCOMPARE(removedCount, 1);
 
@@ -466,6 +469,90 @@ void SqliteRepositoryTests::updatingMissingPendingChangeFails() {
     QString error;
     QVERIFY(!repository.updateStatus(missing, error));
     QVERIFY(!error.isEmpty());
+}
+
+void SqliteRepositoryTests::authoritativeSnapshotSkipsExcludedMediaAndHidesOnlyMarkedOnes() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    for (const int mediaId : {7, 8, 9}) QVERIFY(insertMedia(database.connection(), mediaId));
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved);
+    int removedCount = -1;
+    QString error;
+
+    QVERIFY2(repository.reconcileAuthoritativeSnapshot(QSet<int>{7}, QSet<int>{8}, removedCount, error),
+             qPrintable(error));
+
+    QCOMPARE(removedCount, 1);
+    QList<Media> visible;
+    QVERIFY(repository.readAll(visible, error));
+    QList<int> visibleIds;
+    for (const auto &media : visible) visibleIds.append(media.Id);
+    std::sort(visibleIds.begin(), visibleIds.end());
+    QCOMPARE(visibleIds, (QList<int>{7, 8}));
+    Media returning;
+    returning.Id = 9;
+    returning.Name = QStringLiteral("Returned");
+    QVERIFY(repository.upsert({returning}, error));
+    QVERIFY(repository.readAll(visible, error));
+    QCOMPARE(visible.size(), 3);
+}
+
+void SqliteRepositoryTests::readsMediaIdsWithUnsentChangesRegardlessOfOwner() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    for (const int mediaId : {7, 8, 9, 10, 11}) QVERIFY(insertMedia(database.connection(), mediaId));
+    QSqlQuery insert(database.connection());
+    QVERIFY(insert.exec(QStringLiteral(
+        "INSERT INTO anilist_pending_changes "
+        "(media_id, field, previous_value, new_value, created_at, local_updated_at, status) VALUES "
+        "(7, 5, '{}', '{}', '2026-10-10T10:00:00Z', '2026-10-10T10:00:00Z', 0), "
+        "(7, 5, '{}', '{}', '2026-10-10T10:01:00Z', '2026-10-10T10:01:00Z', 3), "
+        "(8, 9, '{}', '{}', '2026-10-10T10:02:00Z', '2026-10-10T10:02:00Z', 4), "
+        "(9, 5, '{}', '{}', '2026-10-10T10:03:00Z', '2026-10-10T10:03:00Z', 2), "
+        "(10, 5, '{}', '{}', '2026-10-10T10:04:00Z', '2026-10-10T10:04:00Z', 1)")));
+    SqlitePendingChangeRepository repository(database.connection(), EnqueueChange, ReadChanges,
+                                              ReadPendingMediaIds, UpdateChange);
+    QSet<int> mediaIds;
+    QString error;
+
+    QVERIFY2(repository.getMediaIdsWithUnsentChanges(mediaIds, error), qPrintable(error));
+
+    QCOMPARE(mediaIds, (QSet<int>{7, 8, 10}));
+}
+
+void SqliteRepositoryTests::failedPendingChangeExcludesAbsentMediaFromRemoval() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    for (const int mediaId : {7, 8}) QVERIFY(insertMedia(database.connection(), mediaId));
+    QSqlQuery insert(database.connection());
+    QVERIFY(insert.exec(QStringLiteral(
+        "INSERT INTO anilist_pending_changes "
+        "(media_id, field, previous_value, new_value, created_at, local_updated_at, status) VALUES "
+        "(8, 5, '{}', '{}', '2026-10-10T10:00:00Z', '2026-10-10T10:00:00Z', 3)")));
+    SqlitePendingChangeRepository pendingChanges(database.connection(), EnqueueChange, ReadChanges,
+                                                 ReadPendingMediaIds, UpdateChange);
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved);
+    QSet<int> excluded;
+    int removedCount = -1;
+    QString error;
+    QVERIFY2(pendingChanges.getMediaIdsWithUnsentChanges(excluded, error), qPrintable(error));
+
+    QVERIFY2(repository.reconcileAuthoritativeSnapshot(QSet<int>{}, excluded, removedCount, error),
+             qPrintable(error));
+
+    QCOMPARE(removedCount, 1);
+    QSqlQuery rows(database.connection());
+    QVERIFY(rows.exec(QStringLiteral("SELECT id FROM media WHERE source_removed_at IS NULL")));
+    QVERIFY(rows.next());
+    QCOMPARE(rows.value(0).toInt(), 8);
 }
 
 QTEST_MAIN(SqliteRepositoryTests)

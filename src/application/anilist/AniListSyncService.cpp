@@ -160,7 +160,7 @@ bool AniListSyncService::synchronize(const AniListDataSourceRequest &request, QS
         && snapshotReconciler_ != nullptr) {
         int removedCount = 0;
         if (!snapshotReconciler_->reconcileAuthoritativeSnapshot(
-                observedMediaIds, removedCount, error)) {
+                observedMediaIds, {}, removedCount, error)) {
             lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
             return false;
         }

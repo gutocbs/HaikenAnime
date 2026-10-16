@@ -2,6 +2,7 @@
 #define HAIKENANIME_IPENDINGCHANGEREPOSITORY_H
 
 #include <QList>
+#include <QSet>
 #include <QString>
 
 #include "AniListPendingChange.h"
@@ -20,6 +21,9 @@ public:
 
     /** Returns distinct media identifiers that have automatically sendable changes. */
     [[nodiscard]] virtual bool getPendingMediaIds(QList<int> &mediaIds, QString &error) = 0;
+
+    /** Replaces mediaIds with media that have local changes AniList has not accepted yet. */
+    [[nodiscard]] virtual bool getMediaIdsWithUnsentChanges(QSet<int> &mediaIds, QString &error) = 0;
 
     /** Updates the lifecycle state and last error of a pending change, clearing error on success. */
     [[nodiscard]] virtual bool updateStatus(const AniListPendingChange &change,

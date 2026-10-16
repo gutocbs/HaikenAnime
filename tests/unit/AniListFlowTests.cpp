@@ -6,6 +6,7 @@
 #include "../../src/application/anilist/IAniListDataSource.h"
 #include "../../src/application/anilist/AniListSyncService.h"
 #include "../../src/application/anilist/AniListPendingChangeReconciler.h"
+#include "../../src/application/anilist/AniListSnapshotReconciliation.h"
 #include "../../src/application/media/MediaSyncFilter.h"
 #include "../../src/application/media/MediaPage.h"
 #include "../../src/application/media/IMediaSnapshotReconciler.h"
@@ -56,10 +57,11 @@ private:
 
 class RecordingSnapshotReconciler final : public IMediaSnapshotReconciler {
 public:
-    bool reconcileAuthoritativeSnapshot(const QSet<int> &ids, int &removedCount,
-                                        QString &error) override {
+    bool reconcileAuthoritativeSnapshot(const QSet<int> &ids, const QSet<int> &excluded,
+                                        int &removedCount, QString &error) override {
         ++calls;
         observedIds = ids;
+        excludedIds = excluded;
         removedCount = 0;
         error.clear();
         return succeeds;
@@ -67,6 +69,7 @@ public:
 
     int calls = 0;
     QSet<int> observedIds;
+    QSet<int> excludedIds;
     bool succeeds = true;
 };
 
@@ -138,6 +141,11 @@ public:
         error.clear();
         return true;
     }
+    bool getMediaIdsWithUnsentChanges(QSet<int> &result, QString &error) override {
+        result = unsentIds;
+        error.clear();
+        return true;
+    }
     bool getPendingMediaIds(QList<int> &result, QString &error) override {
         result.clear();
         error.clear();
@@ -150,7 +158,33 @@ public:
     }
 
     AniListPendingChange pending;
+    QSet<int> unsentIds;
 };
+
+class CancelAfterFirstChunkDataSource final : public IAniListDataSource {
+public:
+    explicit CancelAfterFirstChunkDataSource(bool &cancelled) : cancelled_(cancelled) {}
+
+    bool fetchPage(const AniListDataSourceRequest &request, AniListDataSourceResult &result,
+                   QString &error) override {
+        result = {};
+        result.completedPartition = SyncPartition::UserList;
+        result.isCompleteAuthoritativeSnapshot = request.filter.startingPage == 1;
+        result.page.currentPage = request.filter.startingPage;
+        result.page.hasNextPage = request.filter.startingPage == 1;
+        result.observedMediaIds = QSet<int>({101});
+        if (request.filter.startingPage == 1) cancelled_ = true;
+        error.clear();
+        return true;
+    }
+
+private:
+    bool &cancelled_;
+};
+
+AniListSyncOutcome CompleteOutcome(const QSet<int> &ids) {
+    return {.observedMediaIds = ids, .completeSnapshot = true};
+}
 
 class AniListFlowTests : public QObject {
     Q_OBJECT
@@ -178,6 +212,11 @@ private slots:
     void failureOnSecondChunkLeavesSnapshotIncomplete();
     void nonAuthoritativeFirstChunkLeavesSnapshotIncomplete();
     void reconcilesPendingProgressBeforePersistingTheRemotePage();
+    void completeAnimeAndMangaReconcileUnionExcludingUnsentMedia();
+    void failedOrMissingTypeOutcomeNeverReconciles();
+    void cancellationBetweenTypesNeverReconciles();
+    void droppedMediaObservedWhileListDisabledIsNotReported();
+    void cancellationBetweenChunksLeavesSnapshotIncomplete();
 };
 
 static QString fixturePath() {
@@ -560,6 +599,91 @@ void AniListFlowTests::reconcilesPendingProgressBeforePersistingTheRemotePage() 
     QCOMPARE(writer.batches.size(), 1);
     QCOMPARE(writer.batches.first().first().ConsumedChapters, 12);
     QCOMPARE(pendingRepository.pending.status, AniListPendingChangeStatus::Superseded);
+}
+
+void AniListFlowTests::completeAnimeAndMangaReconcileUnionExcludingUnsentMedia() {
+    RecordingSnapshotReconciler reconciler;
+    ReconciliationPendingRepository pending;
+    pending.unsentIds = QSet<int>({9});
+    bool reconciled = false;
+    int removedCount = -1;
+    QString error;
+
+    QVERIFY2(ReconcileCompleteAniListSnapshot(
+                 {CompleteOutcome({1, 2}), CompleteOutcome({3})}, 2, true, reconciler, pending,
+                 reconciled, removedCount, error), qPrintable(error));
+
+    QVERIFY(reconciled);
+    QCOMPARE(reconciler.calls, 1);
+    QCOMPARE(reconciler.observedIds, QSet<int>({1, 2, 3}));
+    QCOMPARE(reconciler.excludedIds, QSet<int>({9}));
+}
+
+void AniListFlowTests::failedOrMissingTypeOutcomeNeverReconciles() {
+    RecordingSnapshotReconciler reconciler;
+    ReconciliationPendingRepository pending;
+    bool reconciled = true;
+    int removedCount = 0;
+    QString error;
+
+    QVERIFY(ReconcileCompleteAniListSnapshot(
+        {CompleteOutcome({1})}, 2, false, reconciler, pending, reconciled, removedCount, error));
+    QVERIFY(!reconciled);
+    QVERIFY(ReconcileCompleteAniListSnapshot(
+        {CompleteOutcome({1})}, 2, true, reconciler, pending, reconciled, removedCount, error));
+    QVERIFY(!reconciled);
+    QVERIFY(ReconcileCompleteAniListSnapshot(
+        {CompleteOutcome({1}), AniListSyncOutcome {.observedMediaIds = {2}}}, 2, true, reconciler,
+        pending, reconciled, removedCount, error));
+    QVERIFY(!reconciled);
+    QCOMPARE(reconciler.calls, 0);
+}
+
+void AniListFlowTests::cancellationBetweenTypesNeverReconciles() {
+    RecordingSnapshotReconciler reconciler;
+    ReconciliationPendingRepository pending;
+    bool reconciled = true;
+    int removedCount = 0;
+    QString error;
+
+    QVERIFY(ReconcileCompleteAniListSnapshot(
+        {CompleteOutcome({1}), CompleteOutcome({2})}, 2, false, reconciler, pending, reconciled,
+        removedCount, error));
+
+    QVERIFY(!reconciled);
+    QCOMPARE(reconciler.calls, 0);
+}
+
+void AniListFlowTests::droppedMediaObservedWhileListDisabledIsNotReported() {
+    RecordingSnapshotReconciler reconciler;
+    ReconciliationPendingRepository pending;
+    bool reconciled = false;
+    int removedCount = 0;
+    QString error;
+    constexpr int droppedMediaId = 55;
+
+    QVERIFY(ReconcileCompleteAniListSnapshot(
+        {CompleteOutcome({1, droppedMediaId}), CompleteOutcome({})}, 2, true, reconciler, pending,
+        reconciled, removedCount, error));
+
+    QVERIFY(reconciler.observedIds.contains(droppedMediaId));
+}
+
+void AniListFlowTests::cancellationBetweenChunksLeavesSnapshotIncomplete() {
+    bool cancelled = false;
+    CancelAfterFirstChunkDataSource source(cancelled);
+    CollectingWriter writer;
+    RecordingSnapshotReconciler reconciler;
+    AniListSyncService service(source, writer, &reconciler);
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.type = QStringLiteral("ANIME");
+    QString error;
+
+    QVERIFY(!service.synchronize(request, error, {}, [&cancelled] { return cancelled; }));
+
+    QCOMPARE(service.lastErrorCategory(), AniListSyncErrorCategory::Cancelled);
+    QVERIFY(!service.lastOutcome().completeSnapshot);
+    QCOMPARE(reconciler.calls, 0);
 }
 
 QTEST_MAIN(AniListFlowTests)

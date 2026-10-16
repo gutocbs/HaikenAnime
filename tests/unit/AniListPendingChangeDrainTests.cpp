@@ -38,6 +38,11 @@ public:
         return true;
     }
 
+    bool getMediaIdsWithUnsentChanges(QSet<int> &result, QString &error) override {
+        result.clear();
+        error.clear();
+        return true;
+    }
     bool getPendingMediaIds(QList<int> &result, QString &error) override {
         result.clear();
         for (const auto &change : changes) {
