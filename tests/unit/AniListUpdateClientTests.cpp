@@ -78,6 +78,7 @@ private slots:
     void treatsNotFoundGraphQlErrorAsAlreadyRemoved();
     void failsWhenDeletionIsNotConfirmed();
     void rejectsDeletionWithoutAccountId();
+    void doesNotTreatOtherNotFoundErrorsAsAlreadyRemoved();
 };
 
 namespace {
@@ -226,6 +227,22 @@ void AniListUpdateClientTests::rejectsDeletionWithoutAccountId() {
     QVERIFY(!client.deleteMediaListEntry(154587, 0, error));
     QVERIFY(!error.isEmpty());
     QCOMPARE(harness.server.payloads_.size(), 0);
+}
+
+void AniListUpdateClientTests::doesNotTreatOtherNotFoundErrorsAsAlreadyRemoved() {
+    DeletionHarness harness({Reply{
+        R"json({"errors":[{"message":"User not found."}],"data":{"MediaList":null}})json"}});
+    QVERIFY(harness.started);
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient graphQlClient(networkManager, nullptr, harness.server.endpoint(), 1000);
+    GraphQlQueryStore update(harness.queryFile.fileName());
+    GraphQlQueryStore entryIdQuery(harness.queryFile.fileName());
+    GraphQlQueryStore deleteMutation(harness.mutationFile.fileName());
+    AniListUpdateClient client(graphQlClient, update, entryIdQuery, deleteMutation);
+    QString error;
+
+    QVERIFY(!client.deleteMediaListEntry(154587, 42, error));
+    QVERIFY(!error.isEmpty());
 }
 
 QTEST_MAIN(AniListUpdateClientTests)

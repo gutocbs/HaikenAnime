@@ -38,8 +38,9 @@ bool AniListPendingChangeProcessor::processDeletion(const AniListPendingChange &
         return false;
     }
     for (auto other : changes) {
-        if (other.id == deletion.id || other.status == AniListPendingChangeStatus::Succeeded
-            || other.status == AniListPendingChangeStatus::Superseded) {
+        // Includes rows the compactor only marked Superseded in memory: they must be
+        // persisted too, otherwise a later drain would resend them and recreate the entry.
+        if (other.id == deletion.id || other.status == AniListPendingChangeStatus::Succeeded) {
             continue;
         }
         other.status = AniListPendingChangeStatus::Superseded;
@@ -61,7 +62,9 @@ bool AniListPendingChangeProcessor::process(const int mediaId, QString &error) {
     for (const auto &change : changes) {
         if (change.field == AniListField::Deletion
             && (change.status == AniListPendingChangeStatus::Pending
-                || change.status == AniListPendingChangeStatus::Failed)) {
+                || change.status == AniListPendingChangeStatus::Failed
+                // Left in Processing by a crash; resending is idempotent.
+                || change.status == AniListPendingChangeStatus::Processing)) {
             return processDeletion(change, changes, error);
         }
     }

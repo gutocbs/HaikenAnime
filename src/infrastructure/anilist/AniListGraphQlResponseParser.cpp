@@ -44,6 +44,7 @@ bool AniListGraphQlResponseParser::parse(const QByteArray &payload,
 
         AniListGraphQlError graphQlError;
         graphQlError.message = message.toString();
+        graphQlError.status = errorObject.value(QStringLiteral("status")).toInt(0);
         const auto path = errorObject.value(QStringLiteral("path"));
         if (path.isArray()) {
             for (const auto &pathValue : path.toArray()) {

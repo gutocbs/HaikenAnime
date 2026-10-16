@@ -18,11 +18,14 @@ AniListUpdateClient::AniListUpdateClient(AniListGraphQlClient &graphQlClient,
 }
 
 namespace {
-/** AniList answers a missing list entry with GraphQL error "Not Found." (HTTP 404). */
+/** AniList answers a missing list entry with GraphQL error "Not Found." (status 404). */
 bool IsNotFound(const AniListGraphQlResponse &response) {
     if (!response.hasErrors()) return false;
     for (const auto &graphQlError : response.errors) {
-        if (!graphQlError.message.contains(QStringLiteral("not found"), Qt::CaseInsensitive)) {
+        const bool isNotFound = graphQlError.status == 404
+            || graphQlError.message.trimmed().compare(QStringLiteral("Not Found."),
+                                                      Qt::CaseInsensitive) == 0;
+        if (!isNotFound) {
             return false;
         }
     }
