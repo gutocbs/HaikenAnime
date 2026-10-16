@@ -111,7 +111,9 @@ private slots:
     void exposesEmptyState();
     void exposesErrorState();
     void exposesInitializationErrorWithoutRepository();
-    void synchronizationCompletionReloadsMedia();
+    void reloadAfterSynchronizationLoadsMedia();
+    void doesNotExposeSynchronizationState();
+    void errorStateComesOnlyFromReadFailure();
     void exposesPresentationReadyStatus_data();
     void exposesPresentationReadyStatus();
     void exposesSelfDescribingCardValues();
@@ -271,7 +273,7 @@ void HomeScreenControllerTests::exposesInitializationErrorWithoutRepository() {
     QCOMPARE(controller.mediaCount(), 0);
 }
 
-void HomeScreenControllerTests::synchronizationCompletionReloadsMedia() {
+void HomeScreenControllerTests::reloadAfterSynchronizationLoadsMedia() {
     FakeMediaReader reader;
     Media media;
     media.Id = 42;
@@ -280,11 +282,34 @@ void HomeScreenControllerTests::synchronizationCompletionReloadsMedia() {
     reader.result.append(media);
     HomeScreenController controller(reader);
 
-    controller.notifySynchronizationCompleted();
+    controller.reload();
 
     QCOMPARE(controller.state(), QStringLiteral("ready"));
     QCOMPARE(controller.mediaCount(), 1);
     QCOMPARE(controller.statusMessage(), QStringLiteral("Dados locais carregados."));
+}
+
+void HomeScreenControllerTests::doesNotExposeSynchronizationState() {
+    FakeMediaReader reader;
+    HomeScreenController controller(reader);
+    const QMetaObject *meta = controller.metaObject();
+
+    QCOMPARE(meta->indexOfProperty("synchronizationProgress"), -1);
+    QCOMPARE(meta->indexOfProperty("synchronizationProgressKnown"), -1);
+    QCOMPARE(meta->indexOfSignal("synchronizationProgressChanged()"), -1);
+}
+
+void HomeScreenControllerTests::errorStateComesOnlyFromReadFailure() {
+    FakeMediaReader reader;
+    HomeScreenController healthy(reader);
+    healthy.reload();
+    QCOMPARE(healthy.state(), QStringLiteral("empty"));
+    QVERIFY(healthy.errorMessage().isEmpty());
+
+    HomeScreenController failing(nullptr, QStringLiteral("Database initialization failed"));
+    failing.reload();
+    QCOMPARE(failing.state(), QStringLiteral("error"));
+    QCOMPARE(failing.errorMessage(), QStringLiteral("Database initialization failed"));
 }
 
 void HomeScreenControllerTests::exposesPresentationReadyStatus_data() {

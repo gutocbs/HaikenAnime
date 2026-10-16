@@ -75,6 +75,7 @@ private slots:
     void browseControlsShowConfiguredLabelsAfterInitialization();
     void homeRestoresListFilterSelectionAfterReturningFromSettings();
     void homeErrorDetailStaysWithSynchronizationStatus();
+    void screensReadSynchronizationFromDedicatedStatusController();
     void mediaCardAndSettingsUseControllerPreparedCardPresentation();
     void previewCardsUseControllerPreparedMetadataInBothGrids();
     void compactDetailsUseSeparatePreviewMetadata();
@@ -359,6 +360,31 @@ void QmlStructureTests::homeErrorDetailStaysWithSynchronizationStatus() {
 
     const QString lowerStatusArea = source.mid(progressBarStart);
     QVERIFY(!lowerStatusArea.contains(QStringLiteral("text: controller.errorMessage")));
+}
+
+void QmlStructureTests::screensReadSynchronizationFromDedicatedStatusController() {
+    const QString home = qmlSource(QStringLiteral("Home.qml"));
+    const QString settings = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    QFile mainFile(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/main.cpp"));
+    QVERIFY(mainFile.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString mainSource = QString::fromUtf8(mainFile.readAll());
+
+    QVERIFY(home.contains(QStringLiteral("synchronizationStatus.visible")));
+    QVERIFY(home.contains(QStringLiteral("synchronizationStatus.percent")));
+    QVERIFY(home.contains(QStringLiteral("synchronizationStatus.progressKnown")));
+    QVERIFY(!home.contains(QStringLiteral("controller.synchronizationProgress")));
+    const qsizetype statusStart = home.indexOf(QStringLiteral("id: homeSynchronizationStatus"));
+    QVERIFY(statusStart >= 0);
+    QVERIFY2(!home.mid(statusStart).contains(QStringLiteral("controller.state === \"loading\"")),
+             "The Home synchronization area must not derive progress from the library load state.");
+    QVERIFY(settings.contains(QStringLiteral("synchronizationStatus.running")));
+    QVERIFY(!settings.contains(QStringLiteral("controller.synchronizationRunning")));
+
+    const qsizetype registered = mainSource.indexOf(
+        QStringLiteral("QStringLiteral(\"synchronizationStatus\")"));
+    const qsizetype loaded = mainSource.indexOf(QStringLiteral("engine.loadFromModule"));
+    QVERIFY(registered >= 0);
+    QVERIFY(loaded > registered);
 }
 
 void QmlStructureTests::mediaCardAndSettingsUseControllerPreparedCardPresentation() {

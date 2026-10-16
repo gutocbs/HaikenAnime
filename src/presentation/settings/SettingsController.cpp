@@ -27,7 +27,6 @@ QStringList SettingsController::availableScanExtensions() const {
 }
 QStringList SettingsController::selectedScanExtensions() const { return draft_.scanExtensions; }
 bool SettingsController::scanRunning() const { return scanRunning_; }
-bool SettingsController::synchronizationRunning() const { return synchronizationRunning_; }
 qsizetype SettingsController::scanCandidateCount() const { return scanCandidateCount_; }
 QString SettingsController::scanStatusMessage() const { return scanStatusMessage_; }
 QString SettingsController::scanErrorMessage() const { return scanErrorMessage_; }
@@ -151,7 +150,6 @@ void SettingsController::ScanNow() {
 }
 
 void SettingsController::SynchronizeNow() {
-    if (synchronizationRunning_) return;
     emit synchronizationRequested();
 }
 
@@ -261,29 +259,6 @@ void SettingsController::ClearLocalCache() {
         emit cacheCleanupFailed(cacheCleanupErrorMessage_);
         emit cacheCleanupChanged();
     }
-}
-
-void SettingsController::notifySynchronizationStarted() {
-    synchronizationRunning_ = true;
-    statusMessage_ = tr("Sincronizando dados em segundo plano...");
-    errorMessage_.clear();
-    emit synchronizationChanged();
-    emit changed();
-}
-
-void SettingsController::notifySynchronizationCompleted() {
-    synchronizationRunning_ = false;
-    statusMessage_ = tr("Sincronização concluída.");
-    emit synchronizationChanged();
-    emit changed();
-}
-
-void SettingsController::notifySynchronizationFailed(const QString &error) {
-    synchronizationRunning_ = false;
-    errorMessage_ = error;
-    statusMessage_.clear();
-    emit synchronizationChanged();
-    emit changed();
 }
 
 namespace {

@@ -181,6 +181,7 @@ private slots:
     void scanSignalsUpdatePresentation();
     void coordinatorReplacementDisconnectsOldSignals();
     void requestsManualSynchronization();
+    void doesNotTrackSynchronizationState();
     void leavesAniListConnectionUnavailableWithoutServices();
     void launchesAniListAuthorizationWhenServicesAreAvailable();
     void validatesAniListCallbackAndPublishesUsername();
@@ -551,6 +552,19 @@ void SettingsControllerTests::requestsManualSynchronization() {
     controller.SynchronizeNow();
 
     QCOMPARE(requested.count(), 1);
+}
+
+void SettingsControllerTests::doesNotTrackSynchronizationState() {
+    SettingsController controller(nullptr, {});
+    const QMetaObject *meta = controller.metaObject();
+    const auto errorBefore = controller.errorMessage();
+
+    QCOMPARE(meta->indexOfProperty("synchronizationRunning"), -1);
+    QCOMPARE(meta->indexOfSignal("synchronizationChanged()"), -1);
+    controller.SynchronizeNow();
+    controller.SynchronizeNow();
+
+    QCOMPARE(controller.errorMessage(), errorBefore);
 }
 
 void SettingsControllerTests::leavesAniListConnectionUnavailableWithoutServices() {

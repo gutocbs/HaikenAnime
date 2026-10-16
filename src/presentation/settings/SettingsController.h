@@ -46,7 +46,6 @@ class SettingsController final : public QObject {
     Q_PROPERTY(QStringList availableScanExtensions READ availableScanExtensions NOTIFY changed)
     Q_PROPERTY(QStringList selectedScanExtensions READ selectedScanExtensions NOTIFY changed)
     Q_PROPERTY(bool scanRunning READ scanRunning NOTIFY scanChanged)
-    Q_PROPERTY(bool synchronizationRunning READ synchronizationRunning NOTIFY synchronizationChanged)
     Q_PROPERTY(qsizetype scanCandidateCount READ scanCandidateCount NOTIFY scanChanged)
     Q_PROPERTY(QString scanStatusMessage READ scanStatusMessage NOTIFY scanChanged)
     Q_PROPERTY(QString scanErrorMessage READ scanErrorMessage NOTIFY scanChanged)
@@ -95,7 +94,6 @@ public:
     QStringList availableScanExtensions() const;
     QStringList selectedScanExtensions() const;
     bool scanRunning() const;
-    bool synchronizationRunning() const;
     qsizetype scanCandidateCount() const;
     QString scanStatusMessage() const;
     QString scanErrorMessage() const;
@@ -135,9 +133,6 @@ public:
     Q_INVOKABLE void ClearLocalCache();
     Q_INVOKABLE void ConnectAniList();
     Q_INVOKABLE void HandleAniListOAuthCallback(const QUrl &callback);
-    void notifySynchronizationStarted();
-    void notifySynchronizationCompleted();
-    void notifySynchronizationFailed(const QString &error);
 signals:
     void changed();
     void scanChanged();
@@ -145,7 +140,6 @@ signals:
     void cacheCleanupCompleted();
     void cacheCleanupPartialFailure(QString error);
     void cacheCleanupFailed(QString error);
-    void synchronizationChanged();
     void synchronizationRequested();
     void aniListAuthenticationSucceeded();
     void preferencesApplied(UserPreferences preferences);
@@ -171,7 +165,6 @@ private:
     QPointer<LocalLibraryScanCoordinator> scanCoordinator_;
     bool extensionInputValid_ = true;
     bool scanRunning_ = false;
-    bool synchronizationRunning_ = false;
     qsizetype scanCandidateCount_ = 0;
     QString scanStatusMessage_;
     QString scanErrorMessage_;

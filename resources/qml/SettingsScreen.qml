@@ -544,8 +544,8 @@ Item {
                         Label { Layout.fillWidth: true; text: qsTr("Atualize agora os dados da sua lista, sem aguardar o próximo intervalo automático."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
                     }
                     SettingsButton {
-                        text: controller.synchronizationRunning ? qsTr("Sincronizando…") : qsTr("Sincronizar agora")
-                        enabled: !controller.synchronizationRunning
+                        text: synchronizationStatus.running ? qsTr("Sincronizando…") : qsTr("Sincronizar agora")
+                        enabled: !synchronizationStatus.running
                         onClicked: controller.SynchronizeNow()
                     }
                 }

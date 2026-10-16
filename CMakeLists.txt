@@ -265,6 +265,8 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/presentation/seasonal/SeasonalCatalogController.cpp
         src/presentation/settings/SettingsController.h
         src/presentation/settings/SettingsController.cpp
+        src/presentation/sync/SynchronizationStatusController.h
+        src/presentation/sync/SynchronizationStatusController.cpp
 )
 
 set_source_files_properties(
@@ -1284,6 +1286,14 @@ add_executable(SettingsControllerTests
 target_link_libraries(SettingsControllerTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME SettingsControllerTests COMMAND SettingsControllerTests)
 
+add_executable(SynchronizationStatusControllerTests
+        tests/unit/SynchronizationStatusControllerTests.cpp
+        src/presentation/sync/SynchronizationStatusController.h
+        src/presentation/sync/SynchronizationStatusController.cpp
+)
+target_link_libraries(SynchronizationStatusControllerTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME SynchronizationStatusControllerTests COMMAND SynchronizationStatusControllerTests)
+
 add_executable(QmlStructureTests tests/unit/QmlStructureTests.cpp)
 target_link_libraries(QmlStructureTests PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Test)
 target_compile_definitions(QmlStructureTests PRIVATE
@@ -1501,6 +1511,7 @@ set(HAIKENANIME_TESTS
         AniListUpdateClientTests
         HomeScreenControllerTests
         SettingsControllerTests
+        SynchronizationStatusControllerTests
         QmlStructureTests
         InitialSyncCoordinatorTests
         AdaptiveSyncCoordinatorTests

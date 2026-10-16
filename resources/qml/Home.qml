@@ -505,11 +505,12 @@ Item {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: controller.state === "error" ? 112
-                                  : controller.state === "loading" ? 102 : 72
-            color: controller.state === "error" ? "#fff0f0" : surfaceSoft
+            readonly property bool synchronizationFailed: synchronizationStatus.outcome === "failed"
+            Layout.preferredHeight: controller.state === "error" || synchronizationFailed ? 112
+                                  : synchronizationStatus.visible ? 102 : 72
+            color: controller.state === "error" || synchronizationFailed ? "#fff0f0" : surfaceSoft
             radius: 8
-            border.color: controller.state === "error" ? "#e6a6aa" : line
+            border.color: controller.state === "error" || synchronizationFailed ? "#e6a6aa" : line
             border.width: 1
 
             ColumnLayout {
@@ -577,8 +578,10 @@ Item {
                         Label {
                             text: controller.state === "error" ? qsTr("ERRO")
                                   : home.hasLocalLibraryMessage ? qsTr("BIBLIOTECA LOCAL")
+                                  : synchronizationStatus.outcome === "failed" ? qsTr("ERRO DE SINCRONIZAÇÃO")
                                   : qsTr("SINCRONIZAÇÃO")
                             color: controller.state === "error" || controller.localLibraryErrorMessage.length > 0
+                                   || synchronizationStatus.outcome === "failed"
                                    ? "#b13b43" : accent
                             font.pixelSize: 10
                             font.weight: Font.DemiBold
@@ -596,17 +599,19 @@ Item {
                                     ? (controller.localLibraryErrorMessage.length > 0
                                        ? controller.localLibraryErrorMessage
                                        : controller.localLibraryStatusMessage)
-                                    : controller.state === "loading"
-                                      ? (controller.synchronizationProgressKnown
-                                         ? qsTr("Atualizando · %1%").arg(controller.synchronizationProgress)
-                                         : qsTr("Atualizando biblioteca"))
+                                    : synchronizationStatus.visible
+                                      ? (synchronizationStatus.outcome === "running" && synchronizationStatus.progressKnown
+                                         ? qsTr("%1 · %2%").arg(synchronizationStatus.stageLabel)
+                                               .arg(synchronizationStatus.percent)
+                                         : synchronizationStatus.message)
                                       : qsTr("Sincronização automática")
                             color: controller.state === "error" || controller.localLibraryErrorMessage.length > 0
+                                   || synchronizationStatus.outcome === "failed"
                                    ? "#b13b43" : ink
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
                             wrapMode: Text.Wrap
-                            maximumLineCount: controller.state === "error" ? 2 : 1
+                            maximumLineCount: controller.state === "error" || synchronizationStatus.outcome === "failed" ? 2 : 1
                             elide: Text.ElideRight
                         }
                     }
@@ -614,11 +619,11 @@ Item {
 
                 ProgressBar {
                     Layout.fillWidth: true
-                    visible: controller.state === "loading"
+                    visible: synchronizationStatus.visible
                     from: 0
                     to: 100
-                    value: controller.synchronizationProgress
-                    indeterminate: !controller.synchronizationProgressKnown
+                    value: synchronizationStatus.outcome === "succeeded" ? 100 : synchronizationStatus.percent
+                    indeterminate: synchronizationStatus.running && !synchronizationStatus.progressKnown
                 }
             }
         }

@@ -16,6 +16,7 @@
 #include "src/presentation/home/HomeScreenController.h"
 #include "src/presentation/seasonal/SeasonalCatalogController.h"
 #include "src/presentation/settings/SettingsController.h"
+#include "src/presentation/sync/SynchronizationStatusController.h"
 #include "src/application/media/SeasonalPersonalListService.h"
 
 namespace {
@@ -150,21 +151,20 @@ int main(int argc, char *argv[]) {
     QObject::connect(&oauthCallbackReceiver, &AniListOAuthCallbackReceiver::callbackReceived,
                      &settingsController, &SettingsController::HandleAniListOAuthCallback);
     settingsController.SetScanCoordinator(context.localLibraryScan.get());
+    SynchronizationStatusController synchronizationStatus;
     if (context.adaptiveSync) {
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,
-                         &homeController, &HomeScreenController::notifySynchronizationFailed);
-        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,
-                         &settingsController, &SettingsController::notifySynchronizationFailed);
-        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskFailed,
-                         &homeController,
-                         [&homeController](const SyncPartition, const QString &error) {
-                             homeController.notifySynchronizationFailed(error);
+                         &synchronizationStatus, [&synchronizationStatus](const QString &error) {
+                             synchronizationStatus.HandleFailed(SyncPartition::UserList, error);
                          });
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskStarted,
+                         &synchronizationStatus, &SynchronizationStatusController::HandleStarted);
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskProgress,
+                         &synchronizationStatus, &SynchronizationStatusController::HandleProgress);
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskFailed,
-                         &settingsController,
-                         [&settingsController](const SyncPartition, const QString &error) {
-                             settingsController.notifySynchronizationFailed(error);
-                         });
+                         &synchronizationStatus, &SynchronizationStatusController::HandleFailed);
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCompleted,
+                         &synchronizationStatus, &SynchronizationStatusController::HandleCompleted);
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskFailed,
                          &app, [&context](const SyncPartition partition, const QString &error) {
                              if (context.logger) {
@@ -178,12 +178,6 @@ int main(int argc, char *argv[]) {
                              if (partition == SyncPartition::UserList) homeController.reload();
                          });
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCompleted,
-                         &settingsController, [&settingsController](const SyncPartition partition) {
-                             if (partition == SyncPartition::UserList) {
-                                 settingsController.notifySynchronizationCompleted();
-                             }
-                         });
-        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCompleted,
                          &app, [&context](const SyncPartition partition) {
                              if (context.logger) {
                                  context.logger->info(
@@ -193,7 +187,9 @@ int main(int argc, char *argv[]) {
                              }
                          });
         const auto schedulingError = context.schedulingInitializationError();
-        if (!schedulingError.isEmpty()) homeController.notifySynchronizationFailed(schedulingError);
+        if (!schedulingError.isEmpty()) {
+            synchronizationStatus.HandleFailed(SyncPartition::UserList, schedulingError);
+        }
     }
     QObject::connect(&homeController, &HomeScreenController::sortPreferenceChanged,
                      [&context, &settingsController](const QString &key) {
@@ -221,12 +217,10 @@ int main(int argc, char *argv[]) {
                      &homeController, &HomeScreenController::reload);
 
     if (context.adaptiveSync) {
-        const auto requestAniListSynchronization = [&context, &homeController, &settingsController] {
+        const auto requestAniListSynchronization = [&context] {
             if (!context.adaptiveSync) return;
             if (!context.aniListAuthManager
                 || context.aniListAuthManager->credentials().token.isEmpty()) return;
-            homeController.notifySynchronizationStarted();
-            settingsController.notifySynchronizationStarted();
             context.adaptiveSync->requestNow(SyncPartition::UserList);
             context.adaptiveSync->requestNow(SyncPartition::PendingChanges);
         };
@@ -259,6 +253,7 @@ int main(int argc, char *argv[]) {
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("homeController"), &homeController);
     engine.rootContext()->setContextProperty(QStringLiteral("settingsController"), &settingsController);
+    engine.rootContext()->setContextProperty(QStringLiteral("synchronizationStatus"), &synchronizationStatus);
     engine.rootContext()->setContextProperty(QStringLiteral("seasonalCatalogController"), &seasonalCatalogController);
 
     int exitCode = 0;

@@ -356,6 +356,14 @@
         <source>Novel</source>
         <translation>Novel</translation>
     </message>
+    <message>
+        <source>ERRO DE SINCRONIZAÇÃO</source>
+        <translation>ERRO DE SINCRONIZAÇÃO</translation>
+    </message>
+    <message>
+        <source>%1 · %2%</source>
+        <translation>%1 · %2%</translation>
+    </message>
 </context>
 <context>
     <name>HomeMediaModel</name>
@@ -1165,6 +1173,37 @@
         <location filename="../resources/qml/SettingsScreen.qml" line="758"/>
         <source>Existem configurações alteradas que ainda não foram salvas.</source>
         <translation>Existem configurações alteradas que ainda não foram salvas.</translation>
+    </message>
+</context>
+<context>
+    <name>SynchronizationStatusController</name>
+    <message>
+        <source>Anime</source>
+        <translation>Anime</translation>
+    </message>
+    <message>
+        <source>Manga</source>
+        <translation>Manga</translation>
+    </message>
+    <message>
+        <source>Reconciliação</source>
+        <translation>Reconciliação</translation>
+    </message>
+    <message>
+        <source>Alterações pendentes</source>
+        <translation>Alterações pendentes</translation>
+    </message>
+    <message>
+        <source>Sincronizando…</source>
+        <translation>Sincronizando…</translation>
+    </message>
+    <message>
+        <source>Sincronização concluída.</source>
+        <translation>Sincronização concluída.</translation>
+    </message>
+    <message>
+        <source>A sincronização falhou.</source>
+        <translation>A sincronização falhou.</translation>
     </message>
 </context>
 </TS>

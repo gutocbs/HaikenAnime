@@ -333,14 +333,6 @@ QString HomeScreenController::errorMessage() const {
     return errorMessage_;
 }
 
-int HomeScreenController::synchronizationProgress() const {
-    return synchronizationProgress_;
-}
-
-bool HomeScreenController::synchronizationProgressKnown() const {
-    return synchronizationProgressKnown_;
-}
-
 int HomeScreenController::mediaCount() const {
     return allMedia_.size();
 }
@@ -760,49 +752,6 @@ void HomeScreenController::reload() {
     setStatusMessage(allMedia_.isEmpty()
                          ? QStringLiteral("Nenhum dado disponível.")
                          : QStringLiteral("Dados locais carregados."));
-}
-
-void HomeScreenController::notifySynchronizationCompleted() {
-    synchronizationProgress_ = 100;
-    synchronizationProgressKnown_ = true;
-    emit synchronizationProgressChanged();
-    setStatusMessage(QStringLiteral("Sincronização concluída. Atualizando dados."));
-    reload();
-}
-
-void HomeScreenController::notifySynchronizationStarted() {
-    synchronizationProgress_ = 0;
-    synchronizationProgressKnown_ = false;
-    emit synchronizationProgressChanged();
-    setState(QStringLiteral("loading"));
-    setStatusMessage(QStringLiteral("Sincronizando dados em segundo plano..."));
-}
-
-void HomeScreenController::notifySynchronizationProgress(const int processedItems, const int totalItems) {
-    if (totalItems <= 0) {
-        if (synchronizationProgressKnown_) {
-            synchronizationProgressKnown_ = false;
-            emit synchronizationProgressChanged();
-        }
-        return;
-    }
-
-    const auto progress = qBound(0, (processedItems * 100) / totalItems, 100);
-    if (synchronizationProgress_ == progress && synchronizationProgressKnown_) {
-        return;
-    }
-    synchronizationProgress_ = progress;
-    synchronizationProgressKnown_ = true;
-    emit synchronizationProgressChanged();
-}
-
-void HomeScreenController::notifySynchronizationFailed(const QString &error) {
-    synchronizationProgressKnown_ = false;
-    emit synchronizationProgressChanged();
-    errorMessage_ = error;
-    emit errorMessageChanged();
-    setState(QStringLiteral("error"));
-    setStatusMessage(QStringLiteral("A sincronização falhou."));
 }
 
 void HomeScreenController::RequestCoverWindow(const QString &scope, int firstVisibleIndex,
