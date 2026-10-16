@@ -174,6 +174,9 @@ private slots:
     void partialPartitionDoesNotReconcileUnseenMedia();
     void reconcilesFullMultiPageUserListAtTerminalPage();
     void partialUserListRunDoesNotReconcileAtTerminalPage();
+    void typedAndStatusFilteredFullCollectionReportsCompleteSnapshot();
+    void failureOnSecondChunkLeavesSnapshotIncomplete();
+    void nonAuthoritativeFirstChunkLeavesSnapshotIncomplete();
     void reconcilesPendingProgressBeforePersistingTheRemotePage();
 };
 
@@ -468,6 +471,72 @@ void AniListFlowTests::partialUserListRunDoesNotReconcileAtTerminalPage() {
 
     QVERIFY2(service.synchronize(request, error), qPrintable(error));
     QCOMPARE(reconciler.calls, 0);
+}
+
+void AniListFlowTests::typedAndStatusFilteredFullCollectionReportsCompleteSnapshot() {
+    PagedPartitionResultDataSource source;
+    source.resultsByPage[1].completedPartition = SyncPartition::UserList;
+    source.resultsByPage[1].isCompleteAuthoritativeSnapshot = true;
+    source.resultsByPage[1].page.currentPage = 1;
+    source.resultsByPage[1].page.hasNextPage = true;
+    source.resultsByPage[1].page.media.append(Media { .Id = 101 });
+    source.resultsByPage[1].observedMediaIds = QSet<int>({101, 102});
+    source.resultsByPage[2].completedPartition = SyncPartition::UserList;
+    source.resultsByPage[2].page.currentPage = 2;
+    source.resultsByPage[2].page.media.append(Media { .Id = 202 });
+    source.resultsByPage[2].observedMediaIds = QSet<int>({202, 203});
+    CollectingWriter writer;
+    RecordingSnapshotReconciler reconciler;
+    AniListSyncService service(source, writer, &reconciler);
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.type = QStringLiteral("ANIME");
+    request.filter.acceptedListStatuses = {QStringLiteral("CURRENT")};
+    QString error;
+
+    QVERIFY2(service.synchronize(request, error), qPrintable(error));
+
+    QVERIFY(service.lastOutcome().completeSnapshot);
+    QCOMPARE(service.lastOutcome().observedMediaIds, QSet<int>({101, 102, 202, 203}));
+    QCOMPARE(reconciler.calls, 1);
+    QCOMPARE(reconciler.observedIds, QSet<int>({101, 102, 202, 203}));
+}
+
+void AniListFlowTests::failureOnSecondChunkLeavesSnapshotIncomplete() {
+    PagedPartitionResultDataSource source;
+    source.resultsByPage[1].completedPartition = SyncPartition::UserList;
+    source.resultsByPage[1].isCompleteAuthoritativeSnapshot = true;
+    source.resultsByPage[1].page.currentPage = 1;
+    source.resultsByPage[1].page.hasNextPage = true;
+    source.resultsByPage[1].observedMediaIds = QSet<int>({101});
+    CollectingWriter writer;
+    RecordingSnapshotReconciler reconciler;
+    AniListSyncService service(source, writer, &reconciler);
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.type = QStringLiteral("ANIME");
+    QString error;
+
+    QVERIFY(!service.synchronize(request, error));
+
+    QVERIFY(!service.lastOutcome().completeSnapshot);
+    QCOMPARE(reconciler.calls, 0);
+}
+
+void AniListFlowTests::nonAuthoritativeFirstChunkLeavesSnapshotIncomplete() {
+    PagedPartitionResultDataSource source;
+    source.resultsByPage[1].completedPartition = SyncPartition::UserList;
+    source.resultsByPage[1].isCompleteAuthoritativeSnapshot = false;
+    source.resultsByPage[1].page.currentPage = 1;
+    source.resultsByPage[1].observedMediaIds = QSet<int>({101});
+    CollectingWriter writer;
+    AniListSyncService service(source, writer);
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.status = QStringLiteral("CURRENT");
+    QString error;
+
+    QVERIFY2(service.synchronize(request, error), qPrintable(error));
+
+    QVERIFY(!service.lastOutcome().completeSnapshot);
+    QCOMPARE(service.lastOutcome().observedMediaIds, QSet<int>({101}));
 }
 
 void AniListFlowTests::reconcilesPendingProgressBeforePersistingTheRemotePage() {

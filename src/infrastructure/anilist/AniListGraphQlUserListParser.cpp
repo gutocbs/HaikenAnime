@@ -6,9 +6,11 @@
 
 bool AniListGraphQlUserListParser::parse(const QJsonObject &data, QList<Media> &media, QString &error,
                                          const QStringList &acceptedListStatuses,
-                                         const QList<MediaType> &acceptedMediaTypes) {
+                                         const QList<MediaType> &acceptedMediaTypes,
+                                         QSet<int> *observedMediaIds) {
     media.clear();
     error.clear();
+    if (observedMediaIds != nullptr) observedMediaIds->clear();
     const auto collection = data.value(QStringLiteral("MediaListCollection"));
     if (!collection.isObject()) {
         error = QStringLiteral("AniList response is missing the MediaListCollection object.");
@@ -40,11 +42,15 @@ bool AniListGraphQlUserListParser::parse(const QJsonObject &data, QList<Media> &
                 return false;
             }
             const auto entry = entryValue.toObject();
+            const auto mediaValue = entry.value(QStringLiteral("media"));
+            if (mediaValue.isObject() && observedMediaIds != nullptr) {
+                const auto observedId = mediaValue.toObject().value(QStringLiteral("id")).toInt();
+                if (observedId > 0) observedMediaIds->insert(observedId);
+            }
             const auto entryStatus = entry.value(QStringLiteral("status")).toString().toUpper();
             if (!acceptedStatuses.isEmpty() && !acceptedStatuses.contains(entryStatus)) {
                 continue;
             }
-            const auto mediaValue = entry.value(QStringLiteral("media"));
             if (!mediaValue.isObject()) {
                 continue;
             }

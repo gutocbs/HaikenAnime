@@ -9,10 +9,17 @@
 #include "IAniListDataSource.h"
 #include "AniListSyncErrorCategory.h"
 
+#include <QSet>
+
 #include <functional>
 
 class AniListPendingChangeProcessor;
 class AniListPendingChangeReconciler;
+
+struct AniListSyncOutcome final {
+    QSet<int> observedMediaIds;
+    bool completeSnapshot = false;
+};
 
 class AniListSyncService {
 public:
@@ -47,6 +54,8 @@ public:
                                    const CheckpointCommitter &commitCheckpoint = {},
                                    const CancellationProbe &isCancelled = {});
     [[nodiscard]] AniListSyncErrorCategory lastErrorCategory() const { return lastErrorCategory_; }
+    /** Reports the entries observed by the last run and whether they form a complete snapshot. */
+    [[nodiscard]] const AniListSyncOutcome &lastOutcome() const { return lastOutcome_; }
 
 private:
     IMediaDataSource *dataSource_ = nullptr;
@@ -57,6 +66,7 @@ private:
     AniListPendingChangeReconciler *pendingReconciler_;
     int timeoutMs_;
     AniListSyncErrorCategory lastErrorCategory_ = AniListSyncErrorCategory::None;
+    AniListSyncOutcome lastOutcome_;
 };
 
 #endif // HAIKENANIME_ANILIST_SYNCSERVICE_H

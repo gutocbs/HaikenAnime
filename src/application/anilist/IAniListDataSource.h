@@ -2,6 +2,7 @@
 #define HAIKENANIME_IANILISTDATASOURCE_H
 
 #include <QJsonObject>
+#include <QSet>
 #include <QString>
 
 #include "../media/MediaPage.h"
@@ -56,6 +57,8 @@ struct AniListDataSourceResult final {
     MediaPage page;
     SyncPartition completedPartition = SyncPartition::UserList;
     bool isCompleteAuthoritativeSnapshot = false;
+    /** Every media id present in the remote entries, before any status or type filter. */
+    QSet<int> observedMediaIds;
 };
 
 /** Reads one AniList partition and reports whether its result is a complete snapshot. */

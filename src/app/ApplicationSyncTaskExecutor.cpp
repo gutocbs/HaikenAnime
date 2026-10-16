@@ -117,7 +117,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             QStringLiteral(":/sqlite/queries/update-pending-change.sql"));
                         AniListPendingChangeReconciler pendingReconciler(
                             pendingChanges, authenticatedUserList_.auditLogger);
-                        AniListSyncService service(userListSource, mediaRepository, &mediaRepository,
+                        AniListSyncService service(userListSource, mediaRepository, nullptr,
                                                     nullptr, timeoutMs_, &pendingReconciler);
                         UserPreferences preferences;
                         bool found = false;
