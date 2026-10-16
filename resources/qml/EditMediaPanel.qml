@@ -74,7 +74,7 @@ Popup {
                 Label { text: panel.controller.selectedTitle; color: panel.muted; font.pixelSize: 12; elide: Text.ElideRight; Layout.fillWidth: true }
             }
 
-            Button { text: qsTr("Fechar"); flat: true; onClicked: panel.close() }
+            AppButton { text: qsTr("Fechar"); variant: "flat"; onClicked: panel.close() }
         }
 
         Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: panel.line }
@@ -183,7 +183,7 @@ Popup {
                     RowLayout {
                         Layout.fillWidth: true
                         Basic.TextField { id: pathField; Layout.fillWidth: true; placeholderText: qsTr("C:\\Mídias\\Título") }
-                        Button { text: qsTr("Selecionar pasta"); onClicked: folderDialog.open() }
+                        AppButton { text: qsTr("Selecionar pasta"); variant: "secondary"; onClicked: folderDialog.open() }
                     }
                 }
 
@@ -210,10 +210,9 @@ Popup {
             Layout.fillWidth: true
             Layout.margins: 18
             Item { Layout.fillWidth: true }
-            Button { text: qsTr("Cancelar"); flat: true; onClicked: panel.close() }
-            Button {
+            AppButton { text: qsTr("Cancelar"); variant: "flat"; onClicked: panel.close() }
+            AppButton {
                 text: qsTr("Aplicar alterações")
-                highlighted: true
                 enabled: !panel.requiresExplicitStatus || statusField.currentIndex >= 0
                 onClicked: {
                     if (panel.requiresExplicitStatus && statusField.currentIndex < 0) return

@@ -84,8 +84,10 @@ Item {
                     font.weight: Font.Bold
                 }
 
-                Button {
+                AppButton {
                     id: homeHeaderNavigationSpacer
+                    variant: "flat"
+                    font.pixelSize: 13
                     text: qsTr("‹  Biblioteca")
                     opacity: 0
                     enabled: false
@@ -94,9 +96,9 @@ Item {
                 }
             }
 
-            Button {
+            AppButton {
                 text: qsTr("Catálogo sazonal")
-                flat: true
+                variant: "flat"
                 font.pixelSize: 13
                 Layout.alignment: Qt.AlignVCenter
                 onClicked: home.openSeasonalCatalogRequested()
@@ -108,9 +110,9 @@ Item {
                 color: line
             }
 
-            Button {
+            AppButton {
                 text: qsTr("Configurações")
-                flat: true
+                variant: "flat"
                 font.pixelSize: 13
                 Layout.alignment: Qt.AlignVCenter
                 onClicked: home.openSettingsRequested()
@@ -204,10 +206,10 @@ Item {
                             }
                         }
 
-                        Button {
+                        AppButton {
                             text: qsTr("Ver lista completa")
                             enabled: controller.filteredMediaCount > 0
-                            flat: true
+                            variant: "flat"
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
                             onClicked: completeLibrary.open()
@@ -277,11 +279,11 @@ Item {
                         accentColor: accent
                     }
 
-                    Button {
+                    AppButton {
                         Layout.alignment: Qt.AlignHCenter
                         visible: controller.filteredMediaCount === 0 && controller.browseCriteriaActive
                         text: qsTr("Limpar filtros")
-                        flat: true
+                        variant: "secondary"
                         onClicked: controller.ClearBrowseCriteria()
                     }
                 }
@@ -312,17 +314,17 @@ Item {
                             font.weight: Font.DemiBold
                             font.letterSpacing: 1.5
                         }
-                        Button {
+                        AppButton {
                             id: detailsButton
                             text: qsTr("Ver detalhes")
-                            flat: true
+                            variant: "flat"
                             visible: controller.hasSelection
                             enabled: controller.hasSelection
                             onClicked: mediaDetailsPanel.openForItem(detailsButton)
                         }
-                        Button {
+                        AppButton {
                             text: qsTr("Editar")
-                            flat: true
+                            variant: "flat"
                             visible: controller.hasSelection
                             enabled: controller.hasSelection
                             onClicked: home.openEditor()
@@ -534,7 +536,7 @@ Item {
                         accent: home.accent
                     }
 
-                    Basic.Button {
+                    AppButton {
                         id: watchNextButton
                         Layout.leftMargin: 8
                         Layout.preferredWidth: 104
@@ -542,26 +544,8 @@ Item {
                         text: qsTr("Assistir")
                         enabled: controller.canWatch
                         font.pixelSize: 12
-                        font.weight: Font.DemiBold
                         Accessible.name: qsTr("Assistir próximo episódio disponível")
                         onClicked: controller.WatchNext()
-
-                        contentItem: Text {
-                            text: watchNextButton.text
-                            color: watchNextButton.enabled ? "#ffffff" : muted
-                            font: watchNextButton.font
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-
-                        background: Rectangle {
-                            radius: 5
-                            color: watchNextButton.enabled ? accent : surface
-                            border.width: watchNextButton.activeFocus ? 2 : 1
-                            border.color: watchNextButton.enabled
-                                          ? accent
-                                          : (watchNextButton.activeFocus ? accent : line)
-                        }
                     }
 
                     Rectangle {
@@ -617,13 +601,9 @@ Item {
                     }
                 }
 
-                ProgressBar {
+                SyncProgressBar {
                     Layout.fillWidth: true
-                    visible: synchronizationStatus.visible
-                    from: 0
-                    to: 100
-                    value: synchronizationStatus.outcome === "succeeded" ? 100 : synchronizationStatus.percent
-                    indeterminate: synchronizationStatus.running && !synchronizationStatus.progressKnown
+                    status: synchronizationStatus
                 }
             }
         }
@@ -713,10 +693,10 @@ Item {
                         font.weight: Font.Bold
                     }
 
-                    Button {
+                    AppButton {
                         Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
                         text: qsTr("Fechar")
-                        flat: true
+                        variant: "flat"
                         onClicked: completeLibrary.close()
                     }
                 }

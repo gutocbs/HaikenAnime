@@ -99,10 +99,10 @@ Item {
                     font.weight: Font.Bold
                 }
 
-                Button {
+                AppButton {
                     id: settingsHeaderNavigation
+                    variant: "flat"
                     text: qsTr("‹  Biblioteca")
-                    flat: true
                     font.pixelSize: 13
                     onClicked: settingsScreen.requestBack()
                 }
@@ -137,7 +137,7 @@ Item {
                     }
                 }
 
-                SettingsButton {
+                AppButton {
                     id: settingsSaveButton
                     Layout.alignment: Qt.AlignLeft
                     text: qsTr("Salvar alterações")
@@ -427,28 +427,6 @@ Item {
         Switch { id: innerSwitch; checked: settingSwitch.checked; onToggled: function() { settingSwitch.toggled(innerSwitch.checked) } }
     }
 
-    component SettingsButton: Basic.Button {
-        id: settingsButton
-        implicitHeight: 34
-        leftPadding: 14
-        rightPadding: 14
-        contentItem: Text {
-            text: settingsButton.text
-            color: settingsButton.enabled ? surface : muted
-            font: settingsButton.font
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
-        background: Rectangle {
-            radius: 5
-            color: !settingsButton.enabled ? surfaceSoft
-                 : settingsButton.down ? "#24466d"
-                 : settingsButton.hovered ? "#3c6eaa" : accent
-            border.width: settingsButton.activeFocus ? 2 : 1
-            border.color: settingsButton.activeFocus ? ink : (settingsButton.enabled ? accent : line)
-        }
-    }
-
     Component {
         id: overviewContent
         ColumnLayout {
@@ -512,7 +490,7 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     Item { Layout.fillWidth: true }
-                    Button {
+                    AppButton {
                         text: controller.aniListAuthenticationInProgress
                               ? qsTr("Conectando conta...") : qsTr("Conectar conta")
                         enabled: controller.aniListConnectionAvailable
@@ -543,11 +521,15 @@ Item {
                         Label { text: qsTr("Sincronização manual"); color: ink; font.pixelSize: 12; font.weight: Font.DemiBold }
                         Label { Layout.fillWidth: true; text: qsTr("Atualize agora os dados da sua lista, sem aguardar o próximo intervalo automático."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
                     }
-                    SettingsButton {
+                    AppButton {
                         text: synchronizationStatus.running ? qsTr("Sincronizando…") : qsTr("Sincronizar agora")
                         enabled: !synchronizationStatus.running
                         onClicked: controller.SynchronizeNow()
                     }
+                }
+                SyncProgressBar {
+                    Layout.fillWidth: true
+                    status: synchronizationStatus
                 }
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
                 GridLayout { Layout.fillWidth: true; columns: 2; columnSpacing: 12; rowSpacing: 6
@@ -594,7 +576,7 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     Item { Layout.fillWidth: true }
-                    SettingsButton { text: qsTr("Selecionar pasta"); onClicked: libraryFolderDialog.open() }
+                    AppButton { text: qsTr("Selecionar pasta"); onClicked: libraryFolderDialog.open() }
                 }
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
                 FieldLabel { text: qsTr("EXTENSÕES INCLUÍDAS") }
@@ -619,7 +601,7 @@ Item {
                         }
                     }
                 }
-                SettingsButton {
+                AppButton {
                     id: scanNowButton
                     text: qsTr("Escanear agora")
                     enabled: !controller.dirty && !controller.scanRunning && controller.valid && !controller.saving
@@ -668,7 +650,7 @@ Item {
             SectionCard {
                 Label { text: qsTr("Cache local"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
                 Label { Layout.fillWidth: true; text: qsTr("Remove capas, arquivos temporários de capas e metadados derivados. Sua biblioteca, progresso e conta não são alterados."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
-                SettingsButton {
+                AppButton {
                     text: controller.cacheCleanupRunning ? qsTr("Limpando cache…") : qsTr("Limpar cache local")
                     enabled: !controller.cacheCleanupRunning
                     onClicked: controller.ClearLocalCache()

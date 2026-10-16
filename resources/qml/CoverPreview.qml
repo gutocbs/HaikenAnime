@@ -64,10 +64,10 @@ Popup {
                 font.weight: Font.DemiBold
             }
 
-            Button {
+            AppButton {
                 id: closeButton
                 text: qsTr("Fechar")
-                flat: true
+                variant: "flat"
                 onClicked: preview.close()
             }
         }

@@ -462,6 +462,8 @@ qt_add_qml_module(HaikenAnime
         resources/qml/EditMediaPanel.qml
         resources/qml/MediaCard.qml
         resources/qml/StatePanel.qml
+        resources/qml/AppButton.qml
+        resources/qml/SyncProgressBar.qml
         RESOURCES resources/images/cover-placeholder.svg
 )
 

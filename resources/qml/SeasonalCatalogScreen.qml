@@ -70,10 +70,10 @@ Item {
                     font.weight: Font.Bold
                 }
 
-                Button {
+                AppButton {
                     id: seasonalHeaderNavigation
+                    variant: "flat"
                     text: qsTr("‹  Biblioteca")
-                    flat: true
                     font.pixelSize: 13
                     onClicked: seasonalCatalog.backRequested()
                 }
@@ -124,8 +124,9 @@ Item {
                     onActivated: controller.SetSeason(currentValue)
                 }
 
-                Button {
+                AppButton {
                     text: qsTr("Tentar novamente")
+                    variant: "secondary"
                     visible: controller.state === "error"
                     onClicked: controller.Retry()
                 }
@@ -195,8 +196,9 @@ Item {
                             color: muted
                         }
 
-                        Button {
+                        AppButton {
                             Layout.alignment: Qt.AlignHCenter
+                            variant: "secondary"
                             text: qsTr("Tentar novamente")
                             onClicked: controller.Retry()
                         }
@@ -229,8 +231,9 @@ Item {
                             color: muted
                         }
 
-                        Button {
+                        AppButton {
                             id: seasonalErrorRetryButton
+                            variant: "secondary"
                             Layout.alignment: Qt.AlignHCenter
                             text: qsTr("Tentar novamente")
                             onClicked: controller.Retry()

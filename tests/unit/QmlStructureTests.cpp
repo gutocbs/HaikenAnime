@@ -96,6 +96,9 @@ private slots:
     void mainKeepsSeasonalCatalogAsSeparateNavigation();
     void localCacheCleanupStaysInLibrarySettingsAndUsesControllerState();
     void implicitSignalParametersAreDeclared();
+    void nativeButtonsAreNotUsed();
+    void appButtonVariantsExist();
+    void syncProgressBarUsesAniListColor();
     void mainWindowStartsMaximized();
 
 private:
@@ -157,6 +160,73 @@ void QmlStructureTests::implicitSignalParametersAreDeclared() {
 
     QVERIFY2(violations.isEmpty(), qPrintable(QStringLiteral("Handlers using undeclared implicit parameters: ")
                                               + violations.join(QStringLiteral(", "))));
+}
+
+void QmlStructureTests::nativeButtonsAreNotUsed() {
+    const QRegularExpression nativeButton(QStringLiteral(R"((?:^|[^\w.])(?:Basic\.)?Button\s*\{)"),
+                                          QRegularExpression::MultilineOption);
+    const QRegularExpression delegateButton(QStringLiteral(R"(delegate\s*:\s*(?:Basic\.)?Button\s*\{)"));
+    QStringList violations;
+    for (const QString &fileName : {QStringLiteral("SettingsScreen.qml"), QStringLiteral("Home.qml"),
+                                    QStringLiteral("EditMediaPanel.qml"), QStringLiteral("MediaDetailsPanel.qml"),
+                                    QStringLiteral("SeasonalCatalogScreen.qml"), QStringLiteral("CoverPreview.qml")}) {
+        const QString source = qmlSource(fileName);
+        QVERIFY2(!source.isEmpty(), qPrintable(fileName));
+        QRegularExpressionMatchIterator matches = nativeButton.globalMatch(source);
+        while (matches.hasNext()) {
+            const qsizetype line = source.left(matches.next().capturedStart()).count(QLatin1Char('\n')) + 1;
+            violations << QStringLiteral("%1:%2").arg(fileName).arg(line);
+        }
+        if (delegateButton.match(source).hasMatch()) violations << fileName + QStringLiteral(":delegate");
+        QVERIFY2(!source.contains(QStringLiteral("component SettingsButton")), qPrintable(fileName));
+    }
+    QVERIFY2(violations.isEmpty(), qPrintable(QStringLiteral("Native buttons still in use: ")
+                                              + violations.join(QStringLiteral(", "))));
+}
+
+void QmlStructureTests::appButtonVariantsExist() {
+    const QString source = qmlSource(QStringLiteral("AppButton.qml"));
+    QVERIFY(!source.isEmpty());
+    QVERIFY(source.contains(QStringLiteral("Basic.Button")));
+    QVERIFY(source.contains(QRegularExpression(QStringLiteral(R"(property\s+string\s+variant\s*:\s*"primary")"))));
+    for (const QString &variant : {QStringLiteral("primary"), QStringLiteral("secondary"),
+                                   QStringLiteral("flat"), QStringLiteral("danger")}) {
+        QVERIFY2(source.contains(QStringLiteral("\"%1\"").arg(variant)) || variant == QStringLiteral("primary"),
+                 qPrintable(variant));
+    }
+    QVERIFY(source.contains(QStringLiteral("variant === \"flat\"")));
+    QVERIFY(source.contains(QStringLiteral("variant === \"secondary\"")));
+    QVERIFY(source.contains(QStringLiteral("variant === \"danger\"")));
+    QVERIFY(source.contains(QStringLiteral("implicitHeight: 34")));
+    QVERIFY(source.contains(QStringLiteral("Accessible.name: text")));
+    QVERIFY(source.contains(QStringLiteral("hovered")));
+    QVERIFY(source.contains(QStringLiteral("down")));
+    QVERIFY(source.contains(QStringLiteral("activeFocus")));
+    QVERIFY(source.contains(QStringLiteral("!enabled")));
+    QVERIFY(source.contains(QStringLiteral("#3c6eaa")));
+    QVERIFY(source.contains(QStringLiteral("#24466d")));
+
+    QFile cmake(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/CMakeLists.txt"));
+    QVERIFY(cmake.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString cmakeSource = QString::fromUtf8(cmake.readAll());
+    QVERIFY(cmakeSource.contains(QStringLiteral("resources/qml/AppButton.qml")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("resources/qml/SyncProgressBar.qml")));
+}
+
+void QmlStructureTests::syncProgressBarUsesAniListColor() {
+    const QString source = qmlSource(QStringLiteral("SyncProgressBar.qml"));
+    QVERIFY(!source.isEmpty());
+    QVERIFY(source.contains(QStringLiteral("#02A9FF")));
+    QVERIFY(source.contains(QStringLiteral("visible: status.visible")));
+    QVERIFY(source.contains(QStringLiteral("required property var status")));
+    QVERIFY(source.contains(QStringLiteral("implicitHeight")));
+    QVERIFY(source.contains(QStringLiteral("itens")));
+
+    const QString home = qmlSource(QStringLiteral("Home.qml"));
+    const QString settings = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    QVERIFY(home.contains(QStringLiteral("SyncProgressBar {")));
+    QVERIFY(settings.contains(QStringLiteral("SyncProgressBar {")));
+    QVERIFY(!home.contains(QRegularExpression(QStringLiteral(R"((?<!Sync)ProgressBar\s*\{)"))));
 }
 
 void QmlStructureTests::mainWindowStartsMaximized() {
@@ -511,12 +581,16 @@ void QmlStructureTests::externalLinksUseVisibleInteractiveButtonStates() {
     const qsizetype buttonStart = source.indexOf(QStringLiteral("id: externalLinkButton"));
     QVERIFY(buttonStart >= 0);
     const QString button = source.mid(buttonStart, source.indexOf(QStringLiteral("}\n                            }"), buttonStart));
-    QVERIFY(button.contains(QStringLiteral("background: Rectangle")));
-    QVERIFY(button.contains(QStringLiteral("externalLinkButton.hovered")));
-    QVERIFY(button.contains(QStringLiteral("externalLinkButton.down")));
-    QVERIFY(button.contains(QStringLiteral("externalLinkButton.activeFocus")));
-    QVERIFY(button.contains(QStringLiteral("border.color")));
+    QVERIFY(button.contains(QStringLiteral("AppButton")) || source.contains(QStringLiteral("delegate: AppButton")));
+    QVERIFY(button.contains(QStringLiteral("baseColor: externalLinkButton.serviceColor")));
     QVERIFY(button.contains(QStringLiteral("Qt.openUrlExternally(modelData.url)")));
+
+    // Hover, pressed and focus states come from the shared AppButton.
+    const QString appButton = qmlSource(QStringLiteral("AppButton.qml"));
+    QVERIFY(appButton.contains(QStringLiteral("hovered")));
+    QVERIFY(appButton.contains(QStringLiteral("down")));
+    QVERIFY(appButton.contains(QStringLiteral("activeFocus")));
+    QVERIFY(appButton.contains(QStringLiteral("baseColor")));
 }
 
 void QmlStructureTests::completeLibraryAllowsInteractionWithDetailsActions() {
@@ -781,9 +855,8 @@ void QmlStructureTests::settingsHeaderReservesMessageSpaceAfterSaveAction() {
                                                source.indexOf(QStringLiteral("text: qsTr(\"Salvar alterações\")"), saveButton)
                                                - saveButton);
     QVERIFY(!saveButtonBlock.contains(QStringLiteral("Layout.leftMargin")));
-    QVERIFY(source.contains(QStringLiteral("SettingsButton {\n                    id: settingsSaveButton")));
-    QVERIFY(source.contains(QStringLiteral("component SettingsButton: Basic.Button")));
-    QVERIFY(source.contains(QStringLiteral("settingsButton.hovered ? \"#3c6eaa\" : accent")));
+    QVERIFY(source.contains(QStringLiteral("AppButton {\n                    id: settingsSaveButton")));
+    QVERIFY(!source.contains(QStringLiteral("component SettingsButton")));
     const qsizetype headerTitle = source.indexOf(QStringLiteral("id: settingsHeaderTitle"));
     const QString headerTitleBlock = source.mid(headerTitle, headerActions - headerTitle);
     QVERIFY(headerTitleBlock.contains(QStringLiteral("Layout.preferredWidth: 258")));

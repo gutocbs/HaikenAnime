@@ -84,10 +84,10 @@ Popup {
                 }
             }
 
-            Button {
+            AppButton {
                 id: closeButton
                 text: qsTr("Fechar")
-                flat: true
+                variant: "flat"
                 onClicked: panel.close()
             }
         }
@@ -234,7 +234,7 @@ Popup {
                             Repeater {
                                 model: controller.selectedMediaLinks
 
-                                delegate: Button {
+                                delegate: AppButton {
                                     id: externalLinkButton
                                     required property var modelData
                                     readonly property color serviceColor: {
@@ -247,26 +247,8 @@ Popup {
                                     }
                                     Layout.fillWidth: true
                                     text: modelData.site
-                                    hoverEnabled: true
+                                    baseColor: externalLinkButton.serviceColor
                                     Accessible.name: qsTr("Abrir %1").arg(modelData.site)
-                                    background: Rectangle {
-                                        radius: 5
-                                        color: externalLinkButton.down
-                                               ? Qt.darker(externalLinkButton.serviceColor, 1.2)
-                                               : externalLinkButton.hovered
-                                                 ? Qt.lighter(externalLinkButton.serviceColor, 1.08)
-                                                 : externalLinkButton.serviceColor
-                                        border.color: Qt.darker(externalLinkButton.serviceColor, 1.35)
-                                        border.width: externalLinkButton.activeFocus ? 2 : 1
-                                    }
-                                    contentItem: Text {
-                                        text: externalLinkButton.text
-                                        color: "#ffffff"
-                                        font: externalLinkButton.font
-                                        horizontalAlignment: Text.AlignHCenter
-                                        verticalAlignment: Text.AlignVCenter
-                                        elide: Text.ElideRight
-                                    }
                                     onClicked: Qt.openUrlExternally(modelData.url)
                                 }
                             }
@@ -313,19 +295,17 @@ Popup {
 
             Item { Layout.fillWidth: panel.seasonalListErrorMessage.length === 0 }
 
-            Button {
+            AppButton {
                 id: addToMyListButton
                 visible: panel.seasonalLayout && !controller.selectedMediaInPersonalList
                 text: qsTr("Adicionar à minha lista")
-                highlighted: true
                 onClicked: panel.addToMyListRequested()
             }
 
-            Button {
+            AppButton {
                 id: editPersonalListButton
                 visible: panel.seasonalLayout && controller.selectedMediaInPersonalList
                 text: qsTr("Editar mídia")
-                highlighted: true
                 onClicked: panel.editPersonalListRequested()
             }
         }

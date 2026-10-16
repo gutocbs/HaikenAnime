@@ -486,6 +486,17 @@
     </message>
 </context>
 <context>
+    <name>SyncProgressBar</name>
+    <message>
+        <source>%1 · %2 itens</source>
+        <translation>%1 · %2 itens</translation>
+    </message>
+    <message>
+        <source>Progresso da sincronização</source>
+        <translation>Progresso da sincronização</translation>
+    </message>
+</context>
+<context>
     <name>Main</name>
     <message>
         <location filename="../resources/qml/Main.qml" line="12"/>
