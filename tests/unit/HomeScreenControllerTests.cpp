@@ -119,6 +119,7 @@ private slots:
     void preparesPreviewCardMetadataForBothStatusPresentations();
     void preparesCompactDetailPreviewMetadataSeparatelyFromCards();
     void preparesCompactDetailPreviewProgressWithZeroTotal();
+    void Should_ShowQuestionMarkProgress_When_TotalChaptersIsUnknown();
     void exposesNineItemPreviewAndCompleteFilteredLibrary();
     void reloadReflectsANewLocalPersonalListEntryInPreviewAndFullList();
     void changesMediaTypeUsingStableKeys();
@@ -458,7 +459,7 @@ void HomeScreenControllerTests::exposesPlaceholdersAndConfiguredScoreMaximumOnCa
 
     const auto index = controller.mediaModel()->index(0, 0);
     QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::ProgressRole).toString(),
-             QStringLiteral("Progresso —"));
+             QStringLiteral("Progresso 0/?"));
     QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::ScoreRole).toString(),
              QStringLiteral("Nota —"));
     reader.result.first().PersonalScore = 85;
@@ -534,7 +535,33 @@ void HomeScreenControllerTests::preparesCompactDetailPreviewProgressWithZeroTota
     controller.SelectMedia(43);
 
     const auto detail = controller.PreviewCompactDetailMetadata(12, QStringLiteral("current"), 0.0);
-    QCOMPARE(detail.value(QStringLiteral("progress")).toString(), QStringLiteral("12/0"));
+    QCOMPARE(detail.value(QStringLiteral("progress")).toString(), QStringLiteral("12/?"));
+}
+
+void HomeScreenControllerTests::Should_ShowQuestionMarkProgress_When_TotalChaptersIsUnknown() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 44;
+    media.Name = QStringLiteral("Unknown total");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    media.TotalChapters = 0;
+    media.ConsumedChapters = 3;
+    reader.result.append(media);
+    HomeScreenController controller(reader);
+    controller.reload();
+    controller.SelectMedia(44);
+
+    QCOMPARE(controller.selectedProgress(), QStringLiteral("3/?"));
+    QCOMPARE(controller.PreviewCardMetadata(3, QStringLiteral("current"), 0.0)
+                 .value(QStringLiteral("progress")).toString(),
+             QStringLiteral("Progresso 3/?"));
+    QCOMPARE(controller.PreviewCompactDetailMetadata(3, QStringLiteral("current"), 0.0)
+                 .value(QStringLiteral("progress")).toString(),
+             QStringLiteral("3/?"));
+    QCOMPARE(controller.mediaModel()->data(controller.mediaModel()->index(0, 0),
+                                            HomeMediaModel::ProgressRole).toString(),
+             QStringLiteral("Progresso 3/?"));
 }
 
 void HomeScreenControllerTests::restoresConfiguredSortBeforeFirstModelPublication() {

@@ -2,6 +2,7 @@
 #include "../../application/covers/CoverSourceResolver.h"
 #include "../../application/library/ILocalFileOpener.h"
 #include "../../application/library/LocalEpisodeReader.h"
+#include "../../application/media/ProgressFormatter.h"
 #include "../../application/media/MediaDetailsPresentation.h"
 #include "../../application/media/IPersonalListMediaWriter.h"
 #include "../../application/media/PersonalListChangeService.h"
@@ -54,14 +55,12 @@ QString mediaTypeLabel(const MediaType type) {
 }
 
 QString mediaProgress(const Media &media) {
-    return QStringLiteral("%1/%2").arg(media.ConsumedChapters).arg(media.TotalChapters);
+    return FormatProgress(media.ConsumedChapters, media.TotalChapters);
 }
 
 QString cardProgress(const Media &media) {
-    if (media.TotalChapters <= 0)
-        return QCoreApplication::translate("HomeMediaModel", "Progresso —");
-    return QCoreApplication::translate("HomeMediaModel", "Progresso %1/%2")
-        .arg(media.ConsumedChapters).arg(media.TotalChapters);
+    return QCoreApplication::translate("HomeMediaModel", "Progresso %1")
+        .arg(FormatProgress(media.ConsumedChapters, media.TotalChapters));
 }
 
 QString personalScore(const Media &media) {
@@ -689,10 +688,8 @@ QVariantMap HomeScreenController::PreviewCardMetadata(const int progress,
                                                        const QString &listStatusKey,
                                                        const double score) const {
     if (!hasSelection_) return {};
-    const auto progressLabel = selectedMedia_.TotalChapters <= 0
-        ? QCoreApplication::translate("HomeMediaModel", "Progresso —")
-        : QCoreApplication::translate("HomeMediaModel", "Progresso %1/%2")
-              .arg(progress).arg(selectedMedia_.TotalChapters);
+    const auto progressLabel = QCoreApplication::translate("HomeMediaModel", "Progresso %1")
+        .arg(FormatProgress(progress, selectedMedia_.TotalChapters));
     const auto scoreLabel = score <= 0.0
         ? QCoreApplication::translate("HomeMediaModel", "Nota —")
         : QCoreApplication::translate("HomeMediaModel", "Nota %1/%2")
@@ -708,7 +705,7 @@ QVariantMap HomeScreenController::PreviewCompactDetailMetadata(const int progres
                                                                 const QString &listStatusKey,
                                                                 const double score) const {
     if (!hasSelection_) return {};
-    const auto progressLabel = QStringLiteral("%1/%2").arg(progress).arg(selectedMedia_.TotalChapters);
+    const auto progressLabel = FormatProgress(progress, selectedMedia_.TotalChapters);
     const auto scoreLabel = score <= 0.0 ? QStringLiteral("—")
                                           : QString::number(score, 'g', 15);
     return {{QStringLiteral("status"), optionLabel(listOptions_, listStatusKey,

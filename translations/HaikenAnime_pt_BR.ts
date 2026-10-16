@@ -412,6 +412,12 @@
         <source>Minha lista: %1</source>
         <translation>Minha lista: %1</translation>
     </message>
+    <message>
+        <location filename="../src/presentation/home/HomeScreenController.cpp" line="62"/>
+        <location filename="../src/presentation/home/HomeScreenController.cpp" line="691"/>
+        <source>Progresso %1</source>
+        <translation>Progresso %1</translation>
+    </message>
 </context>
 <context>
     <name>HomeScreenController</name>

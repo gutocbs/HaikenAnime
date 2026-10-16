@@ -71,6 +71,8 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/application/media/MediaSyncFilter.h
         src/application/media/MediaTitleResolver.h
         src/application/media/MediaTitleResolver.cpp
+        src/application/media/ProgressFormatter.h
+        src/application/media/ProgressFormatter.cpp
         src/application/media/MediaDetailsPresentation.h
         src/application/media/MediaDetailsPresentation.cpp
         src/application/library/LocalFileRecognitionTypes.h
@@ -483,6 +485,8 @@ qt_add_translations(HaikenAnime
 if (BUILD_TESTING)
 add_executable(MediaDomainTests
         tests/unit/MediaDomainTests.cpp
+        src/application/media/ProgressFormatter.h
+        src/application/media/ProgressFormatter.cpp
         src/domain/media/MediaLink.h
         src/domain/media/Media.h
         src/domain/media/MediaStatus.h
@@ -1069,6 +1073,7 @@ add_executable(SeasonalCatalogControllerTests
         src/app/SeasonalCatalogCoordinator.cpp
         src/application/covers/CoverSourceResolver.cpp
         src/application/media/MediaTitleResolver.cpp
+        src/application/media/ProgressFormatter.cpp
         src/application/media/MediaDetailsPresentation.cpp
         src/application/media/SeasonalPersonalListService.h
         src/application/media/SeasonalPersonalListService.cpp
@@ -1226,6 +1231,7 @@ add_executable(HomeScreenControllerTests
         src/application/covers/CoverDownloadCoordinator.cpp
         src/application/covers/CoverSourceResolver.cpp
         src/application/media/MediaTitleResolver.cpp
+        src/application/media/ProgressFormatter.cpp
         src/application/media/MediaDetailsPresentation.cpp
         src/infrastructure/logging/AsyncLogger.cpp
 )

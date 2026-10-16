@@ -114,7 +114,29 @@ private slots:
     void addsAbsentSelectionIdempotentlyAndKeepsCatalogMetadata();
     void reusesAnExistingLocalEntryWithoutOverwritingUserFields();
     void retainsTheDraftWhenLocalPersistenceFails();
+    void Should_ShowQuestionMarkProgress_When_TotalChaptersIsUnknown();
 };
+
+void SeasonalCatalogControllerTests::Should_ShowQuestionMarkProgress_When_TotalChaptersIsUnknown() {
+    RecordingSource source;
+    Media selected = media(7);
+    selected.TotalChapters = 0;
+    source.responses.insert(1, page(1, {selected}));
+    InMemoryMediaRepository repository;
+    Media existing = selected;
+    existing.ConsumedChapters = 3;
+    existing.ListStatus = UserListStatus::Current;
+    repository.media.append(existing);
+    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
+                                         DefaultPreferredTitleKey(), nullptr, &personalLists);
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+    controller.SelectMedia(selected.Id);
+
+    QCOMPARE(controller.selectedProgress(), QStringLiteral("3/?"));
+}
 
 void SeasonalCatalogControllerTests::doesNotRequestUntilBothFiltersAreExplicitlySelected() {
     RecordingSource source;

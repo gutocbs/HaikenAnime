@@ -1,5 +1,6 @@
 #include <QtTest>
 
+#include "../../src/application/media/ProgressFormatter.h"
 #include "../../src/domain/media/Media.h"
 
 class MediaDomainTests final : public QObject {
@@ -7,7 +8,23 @@ class MediaDomainTests final : public QObject {
 
 private slots:
     void defaultMediaHasSafeNeutralValues();
+    void formatProgressShowsKnownTotal();
+    void formatProgressShowsQuestionMarkForUnknownTotal();
+    void formatProgressClampsNegativeConsumedToZero();
 };
+
+void MediaDomainTests::formatProgressShowsKnownTotal() {
+    QCOMPARE(FormatProgress(3, 12), QStringLiteral("3/12"));
+}
+
+void MediaDomainTests::formatProgressShowsQuestionMarkForUnknownTotal() {
+    QCOMPARE(FormatProgress(3, 0), QStringLiteral("3/?"));
+    QCOMPARE(FormatProgress(0, -1), QStringLiteral("0/?"));
+}
+
+void MediaDomainTests::formatProgressClampsNegativeConsumedToZero() {
+    QCOMPARE(FormatProgress(-2, 5), QStringLiteral("0/5"));
+}
 
 void MediaDomainTests::defaultMediaHasSafeNeutralValues() {
     const Media media;
