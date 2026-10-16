@@ -76,6 +76,7 @@ bool SqlitePendingChangeRepository::getPendingMediaIds(QList<int> &mediaIds, QSt
         error = query.lastError().text();
         return false;
     }
+    query.bindValue(QStringLiteral(":owner"), ownerUserId_);
     if (!query.exec()) {
         error = query.lastError().text();
         return false;
@@ -123,10 +124,36 @@ bool SqlitePendingChangeRepository::enqueue(const AniListPendingChange &change, 
     query.bindValue(QStringLiteral(":status"), static_cast<int>(change.status));
     query.bindValue(QStringLiteral(":last_error"),
                     change.lastError.isNull() ? QStringLiteral("") : change.lastError);
+    query.bindValue(QStringLiteral(":owner_user_id"), change.ownerUserId);
     if (!query.exec()) {
         error = query.lastError().text();
         return false;
     }
+    return true;
+}
+
+void SqlitePendingChangeRepository::setOwnerUserId(const qint64 ownerUserId) {
+    ownerUserId_ = ownerUserId;
+}
+
+bool SqlitePendingChangeRepository::adoptOrphanChanges(const qint64 ownerUserId, int &adoptedCount,
+                                                       QString &error) {
+    adoptedCount = 0;
+    error.clear();
+    if (ownerUserId <= 0) {
+        error = QStringLiteral("Orphan pending changes can only be adopted by an authenticated account.");
+        return false;
+    }
+    QString source;
+    if (!SqlQueryStore::loadSource(adoptOrphanChangesQuery_, source, error)) return false;
+    QSqlQuery query(database_);
+    if (!query.prepare(source)) { error = query.lastError().text(); return false; }
+    query.bindValue(QStringLiteral(":owner"), ownerUserId);
+    if (!query.exec()) {
+        error = query.lastError().text();
+        return false;
+    }
+    adoptedCount = query.numRowsAffected();
     return true;
 }
 
@@ -139,6 +166,7 @@ bool SqlitePendingChangeRepository::getPending(int mediaId, QList<AniListPending
     QSqlQuery query(database_);
     if (!query.prepare(pendingQuery)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":media_id"), mediaId);
+    query.bindValue(QStringLiteral(":owner"), ownerUserId_);
     if (!query.exec()) {
         error = query.lastError().text();
         return false;
@@ -146,6 +174,7 @@ bool SqlitePendingChangeRepository::getPending(int mediaId, QList<AniListPending
     while (query.next()) {
         AniListPendingChange change;
         change.id = query.value(QStringLiteral("id")).toLongLong();
+        change.ownerUserId = query.value(QStringLiteral("owner_user_id")).toLongLong();
         change.mediaId = query.value(QStringLiteral("media_id")).toInt();
         change.field = static_cast<AniListField>(query.value(QStringLiteral("field")).toInt());
         if (!DecodeValue(query.value(QStringLiteral("previous_value")).toString(),

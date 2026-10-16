@@ -34,6 +34,10 @@ void PersonalListChangeService::setPendingChangesNotifier(std::function<void()> 
     pendingChangesNotifier_ = std::move(notifier);
 }
 
+void PersonalListChangeService::setOwnerProvider(std::function<qint64()> provider) {
+    ownerProvider_ = std::move(provider);
+}
+
 bool PersonalListChangeService::save(const Media &previous, const Media &updated, QString &error) const {
     error.clear();
     if (updated.Id <= 0) {
@@ -50,6 +54,8 @@ bool PersonalListChangeService::save(const Media &previous, const Media &updated
                          aniListStatus(updated.ListStatus), changes, error)) {
         return false;
     }
+    const qint64 ownerUserId = ownerProvider_ ? ownerProvider_() : 0;
+    for (auto &change : changes) change.ownerUserId = ownerUserId;
     if (!writer_.save(updated, changes, error)) return false;
     if (!changes.isEmpty() && pendingChangesNotifier_) pendingChangesNotifier_();
     return true;

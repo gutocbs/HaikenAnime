@@ -48,6 +48,9 @@ private slots:
     void authoritativeSnapshotSkipsExcludedMediaAndHidesOnlyMarkedOnes();
     void readsMediaIdsWithUnsentChangesRegardlessOfOwner();
     void failedPendingChangeExcludesAbsentMediaFromRemoval();
+    void pendingReadsAreScopedToCurrentOwnerAndKeepOtherOwnersQueued();
+    void adoptingOrphanChangesAssignsOwnerAndReportsCount();
+    void personalListWriterStoresOwnerOfPendingChanges();
 };
 
 void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
@@ -553,6 +556,104 @@ void SqliteRepositoryTests::failedPendingChangeExcludesAbsentMediaFromRemoval() 
     QVERIFY(rows.exec(QStringLiteral("SELECT id FROM media WHERE source_removed_at IS NULL")));
     QVERIFY(rows.next());
     QCOMPARE(rows.value(0).toInt(), 8);
+}
+
+namespace {
+AniListPendingChange ownedChange(int mediaId, qint64 owner) {
+    AniListPendingChange change;
+    change.mediaId = mediaId;
+    change.field = AniListField::Progress;
+    change.previousValue = 1;
+    change.newValue = 2;
+    change.createdAt = QDateTime::fromString(QStringLiteral("2026-10-10T10:00:00Z"), Qt::ISODate);
+    change.localUpdatedAt = change.createdAt;
+    change.ownerUserId = owner;
+    return change;
+}
+}
+
+void SqliteRepositoryTests::pendingReadsAreScopedToCurrentOwnerAndKeepOtherOwnersQueued() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    for (const int mediaId : {7, 8, 9}) QVERIFY(insertMedia(database.connection(), mediaId));
+    SqlitePendingChangeRepository repository(database.connection(), EnqueueChange, ReadChanges,
+                                              ReadPendingMediaIds, UpdateChange);
+    QString error;
+    QVERIFY2(repository.enqueue(ownedChange(7, 1), error), qPrintable(error));
+    QVERIFY2(repository.enqueue(ownedChange(8, 2), error), qPrintable(error));
+    QVERIFY2(repository.enqueue(ownedChange(9, 0), error), qPrintable(error));
+    QList<int> mediaIds;
+    QList<AniListPendingChange> changes;
+    QSet<int> unsent;
+
+    repository.setOwnerUserId(2);
+    QVERIFY2(repository.getPendingMediaIds(mediaIds, error), qPrintable(error));
+    QCOMPARE(mediaIds, QList<int>{8});
+    QVERIFY2(repository.getPending(7, changes, error), qPrintable(error));
+    QVERIFY(changes.isEmpty());
+    QVERIFY2(repository.getPending(8, changes, error), qPrintable(error));
+    QCOMPARE(changes.size(), 1);
+    QCOMPARE(changes.first().ownerUserId, qint64(2));
+    QVERIFY2(repository.getMediaIdsWithUnsentChanges(unsent, error), qPrintable(error));
+    QCOMPARE(unsent, (QSet<int>{7, 8, 9}));
+
+    repository.setOwnerUserId(1);
+    QVERIFY2(repository.getPendingMediaIds(mediaIds, error), qPrintable(error));
+    QCOMPARE(mediaIds, QList<int>{7});
+
+    repository.setOwnerUserId(0);
+    QVERIFY2(repository.getPendingMediaIds(mediaIds, error), qPrintable(error));
+    QCOMPARE(mediaIds, QList<int>{9});
+}
+
+void SqliteRepositoryTests::adoptingOrphanChangesAssignsOwnerAndReportsCount() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    for (const int mediaId : {7, 8, 9}) QVERIFY(insertMedia(database.connection(), mediaId));
+    SqlitePendingChangeRepository repository(database.connection(), EnqueueChange, ReadChanges,
+                                              ReadPendingMediaIds, UpdateChange);
+    QString error;
+    QVERIFY2(repository.enqueue(ownedChange(7, 0), error), qPrintable(error));
+    QVERIFY2(repository.enqueue(ownedChange(8, 0), error), qPrintable(error));
+    QVERIFY2(repository.enqueue(ownedChange(9, 1), error), qPrintable(error));
+    int adopted = -1;
+
+    QVERIFY2(repository.adoptOrphanChanges(2, adopted, error), qPrintable(error));
+
+    QCOMPARE(adopted, 2);
+    repository.setOwnerUserId(2);
+    QList<int> mediaIds;
+    QVERIFY2(repository.getPendingMediaIds(mediaIds, error), qPrintable(error));
+    QCOMPARE(mediaIds, (QList<int>{7, 8}));
+    QVERIFY2(repository.adoptOrphanChanges(2, adopted, error), qPrintable(error));
+    QCOMPARE(adopted, 0);
+    repository.setOwnerUserId(1);
+    QVERIFY2(repository.getPendingMediaIds(mediaIds, error), qPrintable(error));
+    QCOMPARE(mediaIds, QList<int>{9});
+}
+
+void SqliteRepositoryTests::personalListWriterStoresOwnerOfPendingChanges() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    QVERIFY(insertMedia(database.connection(), 7));
+    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia, EnqueueChange);
+    Media media;
+    media.Id = 7;
+    media.Name = QStringLiteral("Media");
+    QString error;
+
+    QVERIFY2(writer.save(media, {ownedChange(7, 5)}, error), qPrintable(error));
+
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("SELECT owner_user_id FROM anilist_pending_changes WHERE media_id = 7")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toLongLong(), qint64(5));
 }
 
 QTEST_MAIN(SqliteRepositoryTests)

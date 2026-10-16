@@ -37,6 +37,20 @@ bool persistHomeSortPreference(ApplicationContext &context, const QString &key, 
     return true;
 }
 
+bool persistLastAniListUserId(ApplicationContext &context, const qint64 userId, QString &error) {
+    error.clear();
+    if (!context.userPreferencesRepository) {
+        error = QStringLiteral("User preferences are unavailable.");
+        return false;
+    }
+
+    UserPreferences updated = context.userPreferences;
+    updated.lastAniListUserId = userId;
+    if (!context.userPreferencesRepository->replace(updated, error)) return false;
+    context.userPreferences = std::move(updated);
+    return true;
+}
+
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
     app.setQuitOnLastWindowClosed(false);
@@ -215,6 +229,25 @@ int main(int argc, char *argv[]) {
     QObject::connect(&seasonalCatalogController, &SeasonalCatalogController::personalListSaved,
                      &homeController, &HomeScreenController::reload);
 
+    if (context.personalListChangeService) {
+        context.personalListChangeService->setOwnerProvider([&context]() -> qint64 {
+            const qint64 connectedUserId = context.aniListAuthManager
+                ? context.aniListAuthManager->credentials().userId : 0;
+            return connectedUserId > 0 ? connectedUserId : context.userPreferences.lastAniListUserId;
+        });
+    }
+    QObject::connect(&settingsController, &SettingsController::aniListAuthenticationSucceeded,
+                     &app, [&context, &settingsController] {
+        const qint64 userId = context.aniListAuthManager
+            ? context.aniListAuthManager->credentials().userId : 0;
+        if (userId <= 0 || userId == context.userPreferences.lastAniListUserId) return;
+        QString error;
+        if (persistLastAniListUserId(context, userId, error)) {
+            settingsController.ApplyExternalLastAniListUserId(userId);
+        } else if (context.logger) {
+            context.logger->warning(LogCategory::Configuration, error);
+        }
+    });
     if (context.adaptiveSync) {
         const auto requestAniListSynchronization = [&context] {
             if (!context.adaptiveSync) return;

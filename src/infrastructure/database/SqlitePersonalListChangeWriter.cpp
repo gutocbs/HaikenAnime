@@ -85,6 +85,7 @@ void bindPendingChange(QSqlQuery &query, const AniListPendingChange &change) {
     query.bindValue(QStringLiteral(":status"), static_cast<int>(change.status));
     query.bindValue(QStringLiteral(":last_error"),
                     change.lastError.isNull() ? QStringLiteral("") : change.lastError);
+    query.bindValue(QStringLiteral(":owner_user_id"), change.ownerUserId);
 }
 }
 

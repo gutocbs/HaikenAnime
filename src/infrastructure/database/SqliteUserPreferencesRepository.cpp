@@ -81,6 +81,7 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
             loaded.enabledUserLists.append(list.toString());
         }
     }
+    loaded.lastAniListUserId = query.value(15).toLongLong();
     if (!IsSupportedPreferredTitleKey(storedPreferredTitleKey)) {
         warning = QStringLiteral(
             "Stored preferred title key '%1' is unsupported; falling back to '%2'.")
@@ -131,6 +132,7 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
     query.bindValue(QStringLiteral(":automatic_local_file_recognition"), preferences.automaticLocalFileRecognition);
     query.bindValue(QStringLiteral(":enabled_user_lists"), QString::fromUtf8(
         QJsonDocument(QJsonArray::fromStringList(preferences.enabledUserLists)).toJson(QJsonDocument::Compact)));
+    query.bindValue(QStringLiteral(":last_anilist_user_id"), preferences.lastAniListUserId);
     query.bindValue(QStringLiteral(":library_root"), preferences.libraryRoot);
     query.bindValue(QStringLiteral(":scan_extensions"), QString::fromUtf8(
         QJsonDocument(QJsonArray::fromStringList(NormalizeScanExtensions(preferences.scanExtensions, error)))

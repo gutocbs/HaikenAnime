@@ -303,6 +303,9 @@ set_source_files_properties(
         resources/sqlite/queries/update-pending-change.sql
         PROPERTIES QT_RESOURCE_ALIAS "update-pending-change.sql")
 set_source_files_properties(
+        resources/sqlite/queries/adopt-orphan-pending-changes.sql
+        PROPERTIES QT_RESOURCE_ALIAS "adopt-orphan-pending-changes.sql")
+set_source_files_properties(
         resources/sqlite/queries/read-cover-cache.sql
         PROPERTIES QT_RESOURCE_ALIAS "read-cover-cache.sql")
 set_source_files_properties(
@@ -394,6 +397,7 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         resources/sqlite/queries/read-pending-media-ids.sql
         resources/sqlite/queries/read-unsent-media-ids.sql
         resources/sqlite/queries/update-pending-change.sql
+        resources/sqlite/queries/adopt-orphan-pending-changes.sql
         resources/sqlite/queries/read-cover-cache.sql
         resources/sqlite/queries/upsert-cover-cache.sql
         resources/sqlite/queries/delete-cover-cache.sql
@@ -580,7 +584,8 @@ qt_add_resources(SqliteRepositoryTests repository_query_resources
               resources/sqlite/queries/read-pending-changes.sql
               resources/sqlite/queries/read-pending-media-ids.sql
               resources/sqlite/queries/read-unsent-media-ids.sql
-              resources/sqlite/queries/update-pending-change.sql)
+              resources/sqlite/queries/update-pending-change.sql
+              resources/sqlite/queries/adopt-orphan-pending-changes.sql)
 
 target_link_libraries(SqliteRepositoryTests
         PRIVATE

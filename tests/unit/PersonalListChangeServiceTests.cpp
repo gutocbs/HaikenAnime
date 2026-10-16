@@ -25,6 +25,8 @@ class PersonalListChangeServiceTests final : public QObject {
 private slots:
     void persistsLocalEditWithRemotePendingChanges();
     void requestsPendingSynchronizationOnlyAfterDurableOutboxWrite();
+    void stampsPendingChangesWithOwnerFromProvider();
+    void leavesOwnerUnsetWhenNoProviderIsConfigured();
 };
 
 void PersonalListChangeServiceTests::persistsLocalEditWithRemotePendingChanges() {
@@ -73,6 +75,41 @@ void PersonalListChangeServiceTests::requestsPendingSynchronizationOnlyAfterDura
     writer.failure.clear();
     QVERIFY2(service.save(previous, updated, error), qPrintable(error));
     QCOMPARE(requests, 1);
+}
+
+void PersonalListChangeServiceTests::stampsPendingChangesWithOwnerFromProvider() {
+    RecordingPersonalListChangeWriter writer;
+    PersonalListChangeService service(writer);
+    service.setOwnerProvider([] { return qint64(77); });
+    Media previous;
+    previous.Id = 1;
+    previous.ConsumedChapters = 1;
+    previous.PersonalScore = 5;
+    Media updated = previous;
+    updated.ConsumedChapters = 2;
+    updated.PersonalScore = 6;
+    QString error;
+
+    QVERIFY2(service.save(previous, updated, error), qPrintable(error));
+
+    QCOMPARE(writer.savedChanges.size(), 2);
+    QCOMPARE(writer.savedChanges.at(0).ownerUserId, qint64(77));
+    QCOMPARE(writer.savedChanges.at(1).ownerUserId, qint64(77));
+}
+
+void PersonalListChangeServiceTests::leavesOwnerUnsetWhenNoProviderIsConfigured() {
+    RecordingPersonalListChangeWriter writer;
+    PersonalListChangeService service(writer);
+    Media previous;
+    previous.Id = 1;
+    Media updated = previous;
+    updated.ConsumedChapters = 2;
+    QString error;
+
+    QVERIFY2(service.save(previous, updated, error), qPrintable(error));
+
+    QCOMPARE(writer.savedChanges.size(), 1);
+    QCOMPARE(writer.savedChanges.first().ownerUserId, qint64(0));
 }
 
 QTEST_MAIN(PersonalListChangeServiceTests)

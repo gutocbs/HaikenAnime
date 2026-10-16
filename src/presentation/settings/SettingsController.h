@@ -113,6 +113,8 @@ public:
                                            AniListOAuthReceiverStarter receiverStarter = {},
                                            AniListOAuthReceiverStopper receiverStopper = {});
     void ApplyExternalHomeSortKey(QString key);
+    /** Mirrors the last connected AniList account saved outside the settings draft. */
+    void ApplyExternalLastAniListUserId(qint64 userId);
 
     Q_INVOKABLE void SetScoreScale(double minimum, double maximum, double step);
     Q_INVOKABLE void SetCoverQuality(const QString &key);

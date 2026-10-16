@@ -109,6 +109,11 @@ void SettingsController::ApplyExternalHomeSortKey(QString key) {
     emit changed();
 }
 
+void SettingsController::ApplyExternalLastAniListUserId(const qint64 userId) {
+    persisted_.lastAniListUserId = userId;
+    draft_.lastAniListUserId = userId;
+}
+
 void SettingsController::SetLibraryRoot(const QString &root) {
     draft_.libraryRoot = root;
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();

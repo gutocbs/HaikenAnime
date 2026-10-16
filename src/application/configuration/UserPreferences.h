@@ -29,6 +29,8 @@ struct UserPreferences final {
     QStringList enabledUserLists = {QStringLiteral("current"), QStringLiteral("planning"),
                                     QStringLiteral("on_hold"), QStringLiteral("dropped"),
                                     QStringLiteral("completed")};
+    /** Last AniList account that was connected; owns edits made while disconnected. */
+    qint64 lastAniListUserId = 0;
 };
 
 inline bool operator==(const UserPreferences &left, const UserPreferences &right) {
@@ -46,7 +48,8 @@ inline bool operator==(const UserPreferences &left, const UserPreferences &right
         && left.libraryRoot == right.libraryRoot
         && left.scanExtensions == right.scanExtensions
         && left.automaticLocalFileRecognition == right.automaticLocalFileRecognition
-        && left.enabledUserLists == right.enabledUserLists;
+        && left.enabledUserLists == right.enabledUserLists
+        && left.lastAniListUserId == right.lastAniListUserId;
 }
 
 Q_DECLARE_METATYPE(UserPreferences)
