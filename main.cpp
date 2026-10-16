@@ -154,9 +154,8 @@ int main(int argc, char *argv[]) {
     SynchronizationStatusController synchronizationStatus;
     if (context.adaptiveSync) {
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,
-                         &synchronizationStatus, [&synchronizationStatus](const QString &error) {
-                             synchronizationStatus.HandleFailed(SyncPartition::UserList, error);
-                         });
+                         &synchronizationStatus,
+                         &SynchronizationStatusController::HandleInitializationFailed);
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskStarted,
                          &synchronizationStatus, &SynchronizationStatusController::HandleStarted);
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskProgress,
@@ -188,7 +187,7 @@ int main(int argc, char *argv[]) {
                          });
         const auto schedulingError = context.schedulingInitializationError();
         if (!schedulingError.isEmpty()) {
-            synchronizationStatus.HandleFailed(SyncPartition::UserList, schedulingError);
+            synchronizationStatus.HandleInitializationFailed(schedulingError);
         }
     }
     QObject::connect(&homeController, &HomeScreenController::sortPreferenceChanged,

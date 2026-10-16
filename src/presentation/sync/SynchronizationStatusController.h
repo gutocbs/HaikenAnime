@@ -31,7 +31,8 @@ class SynchronizationStatusController final : public QObject {
     Q_PROPERTY(bool visible READ visible NOTIFY changed)
 
 public:
-    explicit SynchronizationStatusController(int hideDelayMs = 4000, QObject *parent = nullptr);
+    explicit SynchronizationStatusController(int hideDelayMs = 4000, int settleDelayMs = 750,
+                                             QObject *parent = nullptr);
 
     bool running() const;
     QString outcome() const;
@@ -51,15 +52,20 @@ public slots:
     void HandleProgress(const SyncProgress &progress);
     void HandleCompleted(SyncPartition partition);
     void HandleFailed(SyncPartition partition, const QString &safeError);
+    void HandleInitializationFailed(const QString &safeError);
 
 signals:
     void changed();
 
 private:
-    void finishRoundIfIdle();
+    static bool isTracked(SyncPartition partition);
+    void beginRoundIfHidden();
+    void settleIfIdle();
+    void publishOutcome();
     void hide();
 
     QTimer hideTimer_;
+    QTimer settleTimer_;
     QSet<int> activePartitions_;
     bool roundFailed_ = false;
     bool visible_ = false;

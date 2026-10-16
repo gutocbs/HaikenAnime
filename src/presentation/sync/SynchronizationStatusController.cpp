@@ -2,14 +2,22 @@
 
 #include <QtGlobal>
 
-SynchronizationStatusController::SynchronizationStatusController(const int hideDelayMs, QObject *parent)
+SynchronizationStatusController::SynchronizationStatusController(const int hideDelayMs, const int settleDelayMs,
+                                                                 QObject *parent)
     : QObject(parent) {
     hideTimer_.setSingleShot(true);
     hideTimer_.setInterval(qMax(0, hideDelayMs));
     connect(&hideTimer_, &QTimer::timeout, this, &SynchronizationStatusController::hide);
+    settleTimer_.setSingleShot(true);
+    settleTimer_.setInterval(qMax(0, settleDelayMs));
+    connect(&settleTimer_, &QTimer::timeout, this, &SynchronizationStatusController::publishOutcome);
 }
 
-bool SynchronizationStatusController::running() const { return !activePartitions_.isEmpty(); }
+bool SynchronizationStatusController::isTracked(const SyncPartition partition) {
+    return partition == SyncPartition::UserList || partition == SyncPartition::PendingChanges;
+}
+
+bool SynchronizationStatusController::running() const { return outcome_ == QLatin1String("running"); }
 QString SynchronizationStatusController::outcome() const { return outcome_; }
 QString SynchronizationStatusController::stageKey() const { return stageKey_; }
 
@@ -35,17 +43,22 @@ int SynchronizationStatusController::percent() const {
 QString SynchronizationStatusController::message() const { return message_; }
 bool SynchronizationStatusController::visible() const { return visible_; }
 
+void SynchronizationStatusController::beginRoundIfHidden() {
+    if (visible_) return;
+    roundFailed_ = false;
+    failureMessage_.clear();
+    stageKey_.clear();
+    stageIndex_ = 0;
+    stageCount_ = 0;
+    processedItems_ = 0;
+    totalItems_ = -1;
+}
+
 void SynchronizationStatusController::HandleStarted(const SyncPartition partition) {
+    if (!isTracked(partition)) return;
     hideTimer_.stop();
-    if (activePartitions_.isEmpty()) {
-        roundFailed_ = false;
-        failureMessage_.clear();
-        stageKey_.clear();
-        stageIndex_ = 0;
-        stageCount_ = 0;
-        processedItems_ = 0;
-        totalItems_ = -1;
-    }
+    settleTimer_.stop();
+    beginRoundIfHidden();
     activePartitions_.insert(static_cast<int>(partition));
     visible_ = true;
     outcome_ = QStringLiteral("running");
@@ -65,25 +78,38 @@ void SynchronizationStatusController::HandleProgress(const SyncProgress &progres
 
 void SynchronizationStatusController::HandleCompleted(const SyncPartition partition) {
     if (!activePartitions_.remove(static_cast<int>(partition))) return;
-    finishRoundIfIdle();
+    settleIfIdle();
     emit changed();
 }
 
 void SynchronizationStatusController::HandleFailed(const SyncPartition partition, const QString &safeError) {
+    if (!isTracked(partition)) return;
+    hideTimer_.stop();
+    beginRoundIfHidden();
     activePartitions_.remove(static_cast<int>(partition));
     roundFailed_ = true;
     failureMessage_ = safeError.isEmpty() ? tr("A sincronização falhou.") : safeError;
     visible_ = true;
-    finishRoundIfIdle();
-    if (!activePartitions_.isEmpty()) message_ = failureMessage_;
+    outcome_ = QStringLiteral("running");
+    message_ = tr("Sincronizando…");
+    settleIfIdle();
     emit changed();
 }
 
-void SynchronizationStatusController::finishRoundIfIdle() {
+void SynchronizationStatusController::HandleInitializationFailed(const QString &safeError) {
+    HandleFailed(SyncPartition::UserList, safeError);
+}
+
+void SynchronizationStatusController::settleIfIdle() {
+    if (activePartitions_.isEmpty()) settleTimer_.start();
+}
+
+void SynchronizationStatusController::publishOutcome() {
     if (!activePartitions_.isEmpty()) return;
     outcome_ = roundFailed_ ? QStringLiteral("failed") : QStringLiteral("succeeded");
     message_ = roundFailed_ ? failureMessage_ : tr("Sincronização concluída.");
     hideTimer_.start();
+    emit changed();
 }
 
 void SynchronizationStatusController::hide() {

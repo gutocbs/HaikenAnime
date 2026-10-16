@@ -27,19 +27,25 @@ private slots:
     void unknownTotalHasNoKnownProgress();
     void percentIsBoundedTo100();
     void unknownStageHasEmptyLabel();
+    void pendingChangesStageHasLabel();
     void completedShowsSuccessThenHides();
     void failedShowsSafeErrorThenHides();
     void failedWithoutMessageUsesFallback();
-    void failureWithoutPriorStartStillShowsAndHides();
+    void initializationFailureAlwaysShows();
     void staysRunningWhileAnotherPartitionIsActive();
+    void staysRunningPastSettleAndHideDelays();
     void failureInRoundWinsOverLaterCompletion();
-    void newStartDuringHideDelayCancelsHiding();
+    void newStartDuringLingerCancelsHiding();
     void ignoresProgressForInactivePartition();
     void ignoresCompletionOfInactivePartition();
+    void ignoresUntrackedPartitions();
+    void doesNotPublishSuccessBetweenSequentialTasks();
+    void failureSurvivesLaterTaskStartedDuringSettle();
+    void startDuringLingerAfterFailureContinuesRound();
 };
 
 void SynchronizationStatusControllerTests::startsIdleAndHidden() {
-    SynchronizationStatusController controller(20);
+    SynchronizationStatusController controller(20, 20);
 
     QVERIFY(!controller.visible());
     QVERIFY(!controller.running());
@@ -48,7 +54,7 @@ void SynchronizationStatusControllerTests::startsIdleAndHidden() {
 }
 
 void SynchronizationStatusControllerTests::startedShowsRunningStatus() {
-    SynchronizationStatusController controller(20);
+    SynchronizationStatusController controller(20, 20);
     QSignalSpy changed(&controller, &SynchronizationStatusController::changed);
 
     controller.HandleStarted(SyncPartition::UserList);
@@ -61,7 +67,7 @@ void SynchronizationStatusControllerTests::startedShowsRunningStatus() {
 }
 
 void SynchronizationStatusControllerTests::progressExposesStageAndPercent() {
-    SynchronizationStatusController controller(20);
+    SynchronizationStatusController controller(20, 20);
     controller.HandleStarted(SyncPartition::UserList);
 
     controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 25, 100));
@@ -77,7 +83,7 @@ void SynchronizationStatusControllerTests::progressExposesStageAndPercent() {
 }
 
 void SynchronizationStatusControllerTests::unknownTotalHasNoKnownProgress() {
-    SynchronizationStatusController controller(20);
+    SynchronizationStatusController controller(20, 20);
     controller.HandleStarted(SyncPartition::UserList);
 
     controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("manga"), 12, -1));
@@ -88,7 +94,7 @@ void SynchronizationStatusControllerTests::unknownTotalHasNoKnownProgress() {
 }
 
 void SynchronizationStatusControllerTests::percentIsBoundedTo100() {
-    SynchronizationStatusController controller(20);
+    SynchronizationStatusController controller(20, 20);
     controller.HandleStarted(SyncPartition::UserList);
 
     controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("reconciliation"), 500, 100));
@@ -98,7 +104,7 @@ void SynchronizationStatusControllerTests::percentIsBoundedTo100() {
 }
 
 void SynchronizationStatusControllerTests::unknownStageHasEmptyLabel() {
-    SynchronizationStatusController controller(20);
+    SynchronizationStatusController controller(20, 20);
     controller.HandleStarted(SyncPartition::UserList);
 
     controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("other"), 1, 2));
@@ -106,13 +112,22 @@ void SynchronizationStatusControllerTests::unknownStageHasEmptyLabel() {
     QVERIFY(controller.stageLabel().isEmpty());
 }
 
+void SynchronizationStatusControllerTests::pendingChangesStageHasLabel() {
+    SynchronizationStatusController controller(20, 20);
+    controller.HandleStarted(SyncPartition::PendingChanges);
+
+    controller.HandleProgress(progress(SyncPartition::PendingChanges, QStringLiteral("pending_changes"), 1, 4));
+
+    QCOMPARE(controller.stageLabel(), QStringLiteral("Alterações pendentes"));
+}
+
 void SynchronizationStatusControllerTests::completedShowsSuccessThenHides() {
-    SynchronizationStatusController controller(20);
+    SynchronizationStatusController controller(400, 20);
     controller.HandleStarted(SyncPartition::UserList);
 
     controller.HandleCompleted(SyncPartition::UserList);
 
-    QCOMPARE(controller.outcome(), QStringLiteral("succeeded"));
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("succeeded"));
     QVERIFY(controller.visible());
     QVERIFY(!controller.running());
     QCOMPARE(controller.message(), QStringLiteral("Sincronização concluída."));
@@ -121,12 +136,12 @@ void SynchronizationStatusControllerTests::completedShowsSuccessThenHides() {
 }
 
 void SynchronizationStatusControllerTests::failedShowsSafeErrorThenHides() {
-    SynchronizationStatusController controller(20);
+    SynchronizationStatusController controller(400, 20);
     controller.HandleStarted(SyncPartition::UserList);
 
     controller.HandleFailed(SyncPartition::UserList, QStringLiteral("Sem conexão"));
 
-    QCOMPARE(controller.outcome(), QStringLiteral("failed"));
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("failed"));
     QCOMPARE(controller.message(), QStringLiteral("Sem conexão"));
     QVERIFY(controller.visible());
     QVERIFY(!controller.running());
@@ -135,58 +150,45 @@ void SynchronizationStatusControllerTests::failedShowsSafeErrorThenHides() {
 }
 
 void SynchronizationStatusControllerTests::failedWithoutMessageUsesFallback() {
-    SynchronizationStatusController controller(20);
+    SynchronizationStatusController controller(400, 20);
     controller.HandleStarted(SyncPartition::UserList);
 
     controller.HandleFailed(SyncPartition::UserList, QString());
 
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("failed"));
     QCOMPARE(controller.message(), QStringLiteral("A sincronização falhou."));
 }
 
-void SynchronizationStatusControllerTests::failureWithoutPriorStartStillShowsAndHides() {
-    SynchronizationStatusController controller(20);
+void SynchronizationStatusControllerTests::initializationFailureAlwaysShows() {
+    SynchronizationStatusController controller(400, 20);
 
-    controller.HandleFailed(SyncPartition::UserList, QStringLiteral("Falha ao iniciar"));
+    controller.HandleInitializationFailed(QStringLiteral("Agendamento indisponível"));
 
     QVERIFY(controller.visible());
-    QCOMPARE(controller.outcome(), QStringLiteral("failed"));
-    QCOMPARE(controller.message(), QStringLiteral("Falha ao iniciar"));
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("failed"));
+    QCOMPARE(controller.message(), QStringLiteral("Agendamento indisponível"));
     QTRY_VERIFY(!controller.visible());
 }
 
 void SynchronizationStatusControllerTests::staysRunningWhileAnotherPartitionIsActive() {
-    SynchronizationStatusController controller(20);
+    SynchronizationStatusController controller(400, 20);
     controller.HandleStarted(SyncPartition::UserList);
     controller.HandleStarted(SyncPartition::PendingChanges);
 
     controller.HandleCompleted(SyncPartition::UserList);
+    QTest::qWait(100);
 
     QVERIFY(controller.visible());
     QVERIFY(controller.running());
     QCOMPARE(controller.outcome(), QStringLiteral("running"));
     controller.HandleCompleted(SyncPartition::PendingChanges);
-    QCOMPARE(controller.outcome(), QStringLiteral("succeeded"));
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("succeeded"));
 }
 
-void SynchronizationStatusControllerTests::failureInRoundWinsOverLaterCompletion() {
-    SynchronizationStatusController controller(20);
+void SynchronizationStatusControllerTests::staysRunningPastSettleAndHideDelays() {
+    SynchronizationStatusController controller(20, 20);
     controller.HandleStarted(SyncPartition::UserList);
-    controller.HandleStarted(SyncPartition::PendingChanges);
 
-    controller.HandleFailed(SyncPartition::UserList, QStringLiteral("Erro de rede"));
-    QVERIFY(controller.running());
-    controller.HandleCompleted(SyncPartition::PendingChanges);
-
-    QCOMPARE(controller.outcome(), QStringLiteral("failed"));
-    QCOMPARE(controller.message(), QStringLiteral("Erro de rede"));
-}
-
-void SynchronizationStatusControllerTests::newStartDuringHideDelayCancelsHiding() {
-    SynchronizationStatusController controller(60);
-    controller.HandleStarted(SyncPartition::UserList);
-    controller.HandleCompleted(SyncPartition::UserList);
-
-    controller.HandleStarted(SyncPartition::UserList);
     QTest::qWait(120);
 
     QVERIFY(controller.visible());
@@ -194,8 +196,36 @@ void SynchronizationStatusControllerTests::newStartDuringHideDelayCancelsHiding(
     QCOMPARE(controller.outcome(), QStringLiteral("running"));
 }
 
+void SynchronizationStatusControllerTests::failureInRoundWinsOverLaterCompletion() {
+    SynchronizationStatusController controller(400, 20);
+    controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleStarted(SyncPartition::PendingChanges);
+
+    controller.HandleFailed(SyncPartition::UserList, QStringLiteral("Erro de rede"));
+    QVERIFY(controller.running());
+    QCOMPARE(controller.message(), QStringLiteral("Sincronizando…"));
+    controller.HandleCompleted(SyncPartition::PendingChanges);
+
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("failed"));
+    QCOMPARE(controller.message(), QStringLiteral("Erro de rede"));
+}
+
+void SynchronizationStatusControllerTests::newStartDuringLingerCancelsHiding() {
+    SynchronizationStatusController controller(60, 20);
+    controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleCompleted(SyncPartition::UserList);
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("succeeded"));
+
+    controller.HandleStarted(SyncPartition::UserList);
+    QTest::qWait(150);
+
+    QVERIFY(controller.visible());
+    QVERIFY(controller.running());
+    QCOMPARE(controller.outcome(), QStringLiteral("running"));
+}
+
 void SynchronizationStatusControllerTests::ignoresProgressForInactivePartition() {
-    SynchronizationStatusController controller(20);
+    SynchronizationStatusController controller(20, 20);
     controller.HandleStarted(SyncPartition::UserList);
     controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 10, 100));
     controller.HandleCompleted(SyncPartition::UserList);
@@ -207,16 +237,76 @@ void SynchronizationStatusControllerTests::ignoresProgressForInactivePartition()
     QCOMPARE(changed.count(), 0);
     QCOMPARE(controller.stageKey(), QStringLiteral("anime"));
     QCOMPARE(controller.processedItems(), 10);
-    QCOMPARE(controller.outcome(), QStringLiteral("succeeded"));
 }
 
 void SynchronizationStatusControllerTests::ignoresCompletionOfInactivePartition() {
-    SynchronizationStatusController controller(20);
+    SynchronizationStatusController controller(20, 20);
 
     controller.HandleCompleted(SyncPartition::UserList);
+    QTest::qWait(60);
 
     QVERIFY(!controller.visible());
     QCOMPARE(controller.outcome(), QStringLiteral("idle"));
+}
+
+void SynchronizationStatusControllerTests::ignoresUntrackedPartitions() {
+    SynchronizationStatusController controller(20, 20);
+
+    controller.HandleStarted(SyncPartition::Covers);
+    QVERIFY(!controller.visible());
+    controller.HandleFailed(SyncPartition::Covers, QStringLiteral("x"));
+    QVERIFY(!controller.visible());
+    controller.HandleStarted(SyncPartition::ActiveCatalog);
+    controller.HandleCompleted(SyncPartition::ActiveCatalog);
+    QTest::qWait(80);
+
+    QVERIFY(!controller.visible());
+    QVERIFY(!controller.running());
+    QCOMPARE(controller.outcome(), QStringLiteral("idle"));
+}
+
+void SynchronizationStatusControllerTests::doesNotPublishSuccessBetweenSequentialTasks() {
+    SynchronizationStatusController controller(400, 40);
+    QStringList outcomes;
+    connect(&controller, &SynchronizationStatusController::changed, this,
+            [&] { outcomes.append(controller.outcome()); });
+
+    controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleCompleted(SyncPartition::UserList);
+    QTest::qWait(10);
+    controller.HandleStarted(SyncPartition::PendingChanges);
+    controller.HandleCompleted(SyncPartition::PendingChanges);
+
+    QVERIFY(!outcomes.contains(QStringLiteral("succeeded")));
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("succeeded"));
+    QTRY_VERIFY(!controller.visible());
+    QCOMPARE(controller.outcome(), QStringLiteral("idle"));
+}
+
+void SynchronizationStatusControllerTests::failureSurvivesLaterTaskStartedDuringSettle() {
+    SynchronizationStatusController controller(400, 20);
+    controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleFailed(SyncPartition::UserList, QStringLiteral("Erro de rede"));
+
+    controller.HandleStarted(SyncPartition::PendingChanges);
+    controller.HandleCompleted(SyncPartition::PendingChanges);
+
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("failed"));
+    QCOMPARE(controller.message(), QStringLiteral("Erro de rede"));
+}
+
+void SynchronizationStatusControllerTests::startDuringLingerAfterFailureContinuesRound() {
+    SynchronizationStatusController controller(500, 10);
+    controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleFailed(SyncPartition::UserList, QStringLiteral("Erro de rede"));
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("failed"));
+
+    controller.HandleStarted(SyncPartition::PendingChanges);
+    QCOMPARE(controller.outcome(), QStringLiteral("running"));
+    controller.HandleCompleted(SyncPartition::PendingChanges);
+
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("failed"));
+    QCOMPARE(controller.message(), QStringLiteral("Erro de rede"));
 }
 
 QTEST_GUILESS_MAIN(SynchronizationStatusControllerTests)
