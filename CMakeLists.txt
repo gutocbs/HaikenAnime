@@ -1312,6 +1312,10 @@ add_executable(InitialSyncCoordinatorTests
         src/infrastructure/anilist/AniListMediaMapper.cpp
         src/application/anilist/AniListSyncService.h
         src/application/anilist/AniListSyncService.cpp
+        src/application/anilist/AniListPendingChangeReconciler.h
+        src/application/anilist/AniListPendingChangeReconciler.cpp
+        src/application/anilist/AniListMergeService.h
+        src/application/anilist/AniListMergeService.cpp
         src/application/anilist/AniListSyncErrorClassifier.h
         src/application/anilist/AniListSyncErrorClassifier.cpp
         src/application/anilist/AniListPendingChangeProcessor.h
