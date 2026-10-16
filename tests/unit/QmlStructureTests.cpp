@@ -1,3 +1,4 @@
+#include <QDir>
 #include <QFile>
 #include <QAccessible>
 #include <QQuickItem>
@@ -93,6 +94,7 @@ private slots:
     void seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated();
     void mainKeepsSeasonalCatalogAsSeparateNavigation();
     void localCacheCleanupStaysInLibrarySettingsAndUsesControllerState();
+    void implicitSignalParametersAreDeclared();
 
 private:
     static QString qmlSource(const QString &name);
@@ -117,6 +119,42 @@ void QmlStructureTests::localCacheCleanupStaysInLibrarySettingsAndUsesController
     QVERIFY(source.contains(QStringLiteral("controller.cacheCleanupStatusMessage")));
     QVERIFY(source.contains(QStringLiteral("controller.cacheCleanupErrorMessage")));
     QVERIFY(!source.contains(QStringLiteral("Logout")));
+}
+
+void QmlStructureTests::implicitSignalParametersAreDeclared() {
+    const QDir directory(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/resources/qml"));
+    const QRegularExpression handlerStart(QStringLiteral(R"(\bon(?:Toggled|Activated|Accepted)\s*:\s*)"));
+    const QRegularExpression implicitParameter(QStringLiteral(R"(\b(?:checked|index)\b)"));
+    QStringList violations;
+
+    for (const QString &fileName : directory.entryList({QStringLiteral("*.qml")}, QDir::Files)) {
+        const QString source = qmlSource(fileName);
+        QRegularExpressionMatchIterator matches = handlerStart.globalMatch(source);
+        while (matches.hasNext()) {
+            const QRegularExpressionMatch match = matches.next();
+            const qsizetype bodyStart = match.capturedEnd();
+            qsizetype bodyEnd = source.indexOf(QLatin1Char('\n'), bodyStart);
+            if (bodyEnd < 0) bodyEnd = source.size();
+            if (source.at(bodyStart) == QLatin1Char('{')) {
+                int depth = 0;
+                for (qsizetype position = bodyStart; position < source.size(); ++position) {
+                    if (source.at(position) == QLatin1Char('{')) ++depth;
+                    if (source.at(position) == QLatin1Char('}') && --depth == 0) {
+                        bodyEnd = position + 1;
+                        break;
+                    }
+                }
+            }
+            const QString body = source.mid(bodyStart, bodyEnd - bodyStart);
+            if (body.startsWith(QStringLiteral("function")) || body.contains(QStringLiteral("=>"))) continue;
+            if (!body.contains(implicitParameter)) continue;
+            const qsizetype line = source.left(match.capturedStart()).count(QLatin1Char('\n')) + 1;
+            violations << QStringLiteral("%1:%2").arg(fileName).arg(line);
+        }
+    }
+
+    QVERIFY2(violations.isEmpty(), qPrintable(QStringLiteral("Handlers using undeclared implicit parameters: ")
+                                              + violations.join(QStringLiteral(", "))));
 }
 
 QString QmlStructureTests::scanExtensionGridSource() {

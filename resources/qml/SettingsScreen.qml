@@ -424,7 +424,7 @@ Item {
             Label { Layout.fillWidth: true; text: settingSwitch.title; color: ink; font.pixelSize: 12; font.weight: Font.DemiBold; wrapMode: Text.Wrap }
             Label { Layout.fillWidth: true; text: settingSwitch.description; color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
         }
-        Switch { checked: settingSwitch.checked; onToggled: settingSwitch.toggled(checked) }
+        Switch { id: innerSwitch; checked: settingSwitch.checked; onToggled: function() { settingSwitch.toggled(innerSwitch.checked) } }
     }
 
     component SettingsButton: Basic.Button {
@@ -531,8 +531,9 @@ Item {
                         Label { Layout.fillWidth: true; text: qsTr("Atualizar a biblioteca em segundo plano quando o aplicativo for iniciado."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
                     }
                     Switch {
+                        id: synchronizationSwitch
                         checked: controller.synchronizationEnabled
-                        onToggled: controller.SetSynchronizationEnabled(checked)
+                        onToggled: function() { controller.SetSynchronizationEnabled(synchronizationSwitch.checked) }
                     }
                 }
                 RowLayout {
@@ -556,7 +557,7 @@ Item {
                         model: controller.scoreScaleOptions
                         textRole: "label"
                         currentIndex: settingsScreen.scoreScaleIndex(model)
-                        onActivated: {
+                        onActivated: function(index) {
                             const selected = model[index]
                             controller.SetScoreScale(selected.minimum, selected.maximum, selected.step)
                         }
@@ -568,7 +569,7 @@ Item {
                         model: controller.synchronizationIntervalOptions
                         textRole: "label"
                         currentIndex: settingsScreen.optionIndex(model, "value", controller.synchronizationIntervalMs)
-                        onActivated: controller.SetSynchronizationInterval(model[index].value)
+                        onActivated: function(index) { controller.SetSynchronizationInterval(model[index].value) }
                     }
                 }
             }
@@ -608,12 +609,13 @@ Item {
                     Repeater {
                         model: controller.availableScanExtensions
                         delegate: CheckBox {
+                            id: extensionCheckBox
                             required property string modelData
                             width: scanExtensionGrid.cellWidth
                             text: modelData
                             checked: controller.selectedScanExtensions.indexOf(modelData) >= 0
                             Accessible.name: qsTr("Incluir arquivos %1").arg(modelData)
-                            onToggled: controller.SetScanExtensionEnabled(modelData, checked)
+                            onToggled: function() { controller.SetScanExtensionEnabled(modelData, extensionCheckBox.checked) }
                         }
                     }
                 }
@@ -659,7 +661,7 @@ Item {
             }
             SectionCard {
                 Label { text: qsTr("Reconhecimento"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
-                SettingSwitch { title: qsTr("Reconhecer arquivos automaticamente"); description: qsTr("Verifica a biblioteca ao iniciar o aplicativo."); checked: controller.automaticLocalFileRecognition; onToggled: controller.SetAutomaticLocalFileRecognition(checked) }
+                SettingSwitch { title: qsTr("Reconhecer arquivos automaticamente"); description: qsTr("Verifica a biblioteca ao iniciar o aplicativo."); checked: controller.automaticLocalFileRecognition; onToggled: function(checked) { controller.SetAutomaticLocalFileRecognition(checked) } }
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
                 StaticField { label: qsTr("Reprodutor preferido"); value: qsTr("Padrão do Windows") }
             }
@@ -697,7 +699,7 @@ Item {
                         title: modelData.label
                         description: qsTr("Inclui mídias dessa lista na sincronização e no reconhecimento.")
                         checked: controller.enabledUserLists.indexOf(modelData.key) >= 0
-                        onToggled: controller.SetUserListEnabled(modelData.key, checked)
+                        onToggled: function(checked) { controller.SetUserListEnabled(modelData.key, checked) }
                     }
                 }
             }
@@ -708,7 +710,7 @@ Item {
                     title: qsTr("INCLUIR CONTEÚDO ADULTO")
                     description: qsTr("Permite títulos adultos no catálogo sazonal.")
                     checked: controller.includeAdultContent
-                    onToggled: controller.SetIncludeAdultContent(checked)
+                    onToggled: function(checked) { controller.SetIncludeAdultContent(checked) }
                 }
             }
         }
@@ -759,7 +761,7 @@ Item {
                         model: controller.languageOptions
                         textRole: "label"
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.languageKey)
-                        onActivated: controller.SetLanguage(model[index].key)
+                        onActivated: function(index) { controller.SetLanguage(model[index].key) }
                     }
 
                     SettingsComboBox {
@@ -769,7 +771,7 @@ Item {
                         model: controller.coverQualityOptions
                         textRole: "label"
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.coverQualityKey)
-                        onActivated: controller.SetCoverQuality(model[index].key)
+                        onActivated: function(index) { controller.SetCoverQuality(model[index].key) }
                     }
 
                     SettingsComboBox {
@@ -779,7 +781,7 @@ Item {
                         model: controller.preferredTitleOptions
                         textRole: "label"
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.preferredTitleKey)
-                        onActivated: controller.SetPreferredTitle(model[index].key)
+                        onActivated: function(index) { controller.SetPreferredTitle(model[index].key) }
                     }
                     SettingsComboBox {
                         Layout.fillWidth: true
@@ -788,7 +790,7 @@ Item {
                         model: controller.cardStatusPresentationOptions
                         textRole: "label"
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.cardStatusPresentationKey)
-                        onActivated: controller.SetCardStatusPresentation(model[index].key)
+                        onActivated: function(index) { controller.SetCardStatusPresentation(model[index].key) }
                     }
                 }
                 Label {
