@@ -272,8 +272,13 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             pendingChanges, credentials.userId, authenticatedUserList_.auditLogger, scopeError);
                         GraphQlQueryStore updateMutation(
                             QStringLiteral(":/anilist/mutations/update-media-list-entry.graphql"));
-                        AniListUpdateClient updateClient(client, updateMutation);
-                        AniListPendingChangeProcessor pendingProcessor(pendingChanges, updateClient);
+                        GraphQlQueryStore entryIdQuery(
+                            QStringLiteral(":/anilist/queries/media-list-entry-id.graphql"));
+                        GraphQlQueryStore deleteMutation(
+                            QStringLiteral(":/anilist/mutations/delete-list-entry.graphql"));
+                        AniListUpdateClient updateClient(client, updateMutation, entryIdQuery, deleteMutation);
+                        AniListPendingChangeProcessor pendingProcessor(
+                            pendingChanges, updateClient, credentials.userId);
                         AniListPendingChangeDrain drain(pendingChanges, pendingProcessor);
                         drain.setProgressReporter([&publish](const int processed, const int total) {
                             publish(QStringLiteral("pending_changes"), 1, 1, processed, total);

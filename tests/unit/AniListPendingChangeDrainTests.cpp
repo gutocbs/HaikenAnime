@@ -86,6 +86,11 @@ public:
         return true;
     }
 
+    bool deleteMediaListEntry(int, qint64, QString &error) override {
+        error.clear();
+        return true;
+    }
+
     QList<int> mediaIds;
 };
 }

@@ -449,10 +449,14 @@ set_source_files_properties(
 set_source_files_properties(
         resources/anilist/queries/user-media-list.graphql
         PROPERTIES QT_RESOURCE_ALIAS "user-media-list.graphql")
+set_source_files_properties(
+        resources/anilist/queries/media-list-entry-id.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "media-list-entry-id.graphql")
 qt_add_resources(HaikenAnime anilist_query_resource_bundle
         PREFIX "/anilist/queries"
         FILES resources/anilist/queries/seasonal-catalog.graphql resources/anilist/queries/viewer.graphql
-              resources/anilist/queries/user-media-list.graphql)
+              resources/anilist/queries/user-media-list.graphql
+              resources/anilist/queries/media-list-entry-id.graphql)
 
 qt_add_qml_module(HaikenAnime
         URI HaikenAnime

@@ -5,8 +5,49 @@
 #include <utility>
 
 AniListPendingChangeProcessor::AniListPendingChangeProcessor(
-    IPendingChangeRepository &repository, IAniListUpdateClient &updateClient)
-    : repository_(repository), updateClient_(updateClient) {
+    IPendingChangeRepository &repository, IAniListUpdateClient &updateClient, const qint64 userId)
+    : repository_(repository), updateClient_(updateClient), userId_(userId) {
+}
+
+bool AniListPendingChangeProcessor::processDeletion(const AniListPendingChange &deletion,
+                                                    const QList<AniListPendingChange> &changes,
+                                                    QString &error) {
+    auto processing = deletion;
+    processing.status = AniListPendingChangeStatus::Processing;
+    if (!repository_.updateStatus(processing, error)) {
+        return false;
+    }
+
+    QString operationError;
+    if (!updateClient_.deleteMediaListEntry(deletion.mediaId, userId_, operationError)) {
+        processing.status = AniListPendingChangeStatus::Failed;
+        processing.lastError = operationError;
+        ++processing.attempts;
+        QString statusError;
+        if (!repository_.updateStatus(processing, statusError)) {
+            error = statusError;
+            return false;
+        }
+        error = operationError;
+        return false;
+    }
+
+    processing.status = AniListPendingChangeStatus::Succeeded;
+    processing.lastError.clear();
+    if (!repository_.updateStatus(processing, error)) {
+        return false;
+    }
+    for (auto other : changes) {
+        if (other.id == deletion.id || other.status == AniListPendingChangeStatus::Succeeded
+            || other.status == AniListPendingChangeStatus::Superseded) {
+            continue;
+        }
+        other.status = AniListPendingChangeStatus::Superseded;
+        if (!repository_.updateStatus(other, error)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool AniListPendingChangeProcessor::process(const int mediaId, QString &error) {
@@ -17,6 +58,13 @@ bool AniListPendingChangeProcessor::process(const int mediaId, QString &error) {
     }
 
     changes = AniListPendingChangeCompactor::Compact(std::move(changes));
+    for (const auto &change : changes) {
+        if (change.field == AniListField::Deletion
+            && (change.status == AniListPendingChangeStatus::Pending
+                || change.status == AniListPendingChangeStatus::Failed)) {
+            return processDeletion(change, changes, error);
+        }
+    }
     QList<AniListPendingChange> activeChanges;
     for (auto change : changes) {
         if (change.status == AniListPendingChangeStatus::Superseded) {
@@ -31,6 +79,7 @@ bool AniListPendingChangeProcessor::process(const int mediaId, QString &error) {
             continue;
         }
         if (change.field == AniListField::Deletion) {
+            // Only unconfirmed deletions reach this point; park them until the user confirms.
             change.status = AniListPendingChangeStatus::RequiresConfirmation;
             if (!repository_.updateStatus(change, error)) {
                 return false;

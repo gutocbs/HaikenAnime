@@ -9,14 +9,22 @@ class AniListPendingChangeProcessor final {
 public:
     /** Creates a processor with the durable queue and update client. */
     AniListPendingChangeProcessor(IPendingChangeRepository &repository,
-                                  IAniListUpdateClient &updateClient);
+                                  IAniListUpdateClient &updateClient, qint64 userId = 0);
 
-    /** Processes sendable changes for mediaId; confirmation-gated deletions remain queued. */
+    /**
+     * Processes sendable changes for mediaId; confirmation-gated deletions remain queued.
+     * A sendable deletion replaces every other open change of the same media.
+     */
     [[nodiscard]] bool process(int mediaId, QString &error);
 
 private:
+    [[nodiscard]] bool processDeletion(const AniListPendingChange &deletion,
+                                       const QList<AniListPendingChange> &changes,
+                                       QString &error);
+
     IPendingChangeRepository &repository_;
     IAniListUpdateClient &updateClient_;
+    qint64 userId_;
 };
 
 #endif // HAIKENANIME_ANILISTPENDINGCHANGEPROCESSOR_H
