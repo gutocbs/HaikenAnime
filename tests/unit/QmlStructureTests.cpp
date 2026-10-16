@@ -95,6 +95,7 @@ private slots:
     void mainKeepsSeasonalCatalogAsSeparateNavigation();
     void localCacheCleanupStaysInLibrarySettingsAndUsesControllerState();
     void implicitSignalParametersAreDeclared();
+    void mainWindowStartsMaximized();
 
 private:
     static QString qmlSource(const QString &name);
@@ -155,6 +156,17 @@ void QmlStructureTests::implicitSignalParametersAreDeclared() {
 
     QVERIFY2(violations.isEmpty(), qPrintable(QStringLiteral("Handlers using undeclared implicit parameters: ")
                                               + violations.join(QStringLiteral(", "))));
+}
+
+void QmlStructureTests::mainWindowStartsMaximized() {
+    const QString source = qmlSource(QStringLiteral("Main.qml"));
+    QVERIFY(!source.isEmpty());
+    QVERIFY2(source.contains(QStringLiteral("import QtQuick.Window")),
+             "Main.qml must import QtQuick.Window to qualify Window.Maximized.");
+    QVERIFY2(source.contains(QStringLiteral("visibility: Window.Maximized")),
+             "The main window must always start maximized.");
+    QVERIFY(source.contains(QStringLiteral("width: 1440")));
+    QVERIFY(source.contains(QStringLiteral("height: 900")));
 }
 
 QString QmlStructureTests::scanExtensionGridSource() {
