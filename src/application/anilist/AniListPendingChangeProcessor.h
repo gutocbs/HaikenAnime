@@ -1,6 +1,8 @@
 #ifndef HAIKENANIME_ANILISTPENDINGCHANGEPROCESSOR_H
 #define HAIKENANIME_ANILISTPENDINGCHANGEPROCESSOR_H
 
+#include <functional>
+
 #include "IAniListUpdateClient.h"
 #include "IPendingChangeRepository.h"
 
@@ -9,7 +11,8 @@ class AniListPendingChangeProcessor final {
 public:
     /** Creates a processor with the durable queue and update client. */
     AniListPendingChangeProcessor(IPendingChangeRepository &repository,
-                                  IAniListUpdateClient &updateClient, qint64 userId = 0);
+                                  IAniListUpdateClient &updateClient, qint64 userId = 0,
+                                  std::function<void(const QString &)> auditLogger = {});
 
     /**
      * Processes sendable changes for mediaId; confirmation-gated deletions remain queued.
@@ -18,6 +21,7 @@ public:
     [[nodiscard]] bool process(int mediaId, QString &error);
 
 private:
+    void log(const QString &message) const;
     [[nodiscard]] bool processDeletion(const AniListPendingChange &deletion,
                                        const QList<AniListPendingChange> &changes,
                                        QString &error);
@@ -25,6 +29,7 @@ private:
     IPendingChangeRepository &repository_;
     IAniListUpdateClient &updateClient_;
     qint64 userId_;
+    std::function<void(const QString &)> auditLogger_;
 };
 
 #endif // HAIKENANIME_ANILISTPENDINGCHANGEPROCESSOR_H

@@ -1,5 +1,7 @@
 #include <QtTest>
 
+#include <optional>
+
 #include "../../src/application/anilist/AniListPendingChangeProcessor.h"
 #include "../../src/application/anilist/AniListPendingChangeCompactor.h"
 #include "../../src/application/anilist/AniListPendingChangeGrouper.h"
@@ -34,13 +36,17 @@ public:
     }
 
     bool updateStatus(const AniListPendingChange &change, QString &error) override {
-        Q_UNUSED(error)
+        if (failOnStatus.has_value() && change.status == *failOnStatus) {
+            error = QStringLiteral("status write failed");
+            return false;
+        }
         statuses.append(change.status);
         updates.append(change);
         return true;
     }
 
     QList<AniListPendingChange> changes;
+    std::optional<AniListPendingChangeStatus> failOnStatus;
     QList<AniListPendingChangeStatus> statuses;
     QList<AniListPendingChange> updates;
 };
@@ -92,6 +98,9 @@ private slots:
     void persistsCompactorSupersededRowsAfterDeletion();
     void resendsDeletionLeftInProcessing();
     void failedDeletionIsKeptFailedWithAttemptAndSendsNothingElse();
+    void deletionStaysResendableWhenSupersedingSiblingsFails();
+    void logsDeletionSentAndSupersededCountWithoutPayloads();
+    void logsDeletionFailureWithSafeError();
 };
 
 static AniListPendingChange progressChange(AniListPendingChangeStatus status =
@@ -284,6 +293,65 @@ void AniListPendingChangeProcessorTests::resendsDeletionLeftInProcessing() {
     QVERIFY2(processor.process(154587, error), qPrintable(error));
     QCOMPARE(client.deleteCalls.size(), 1);
     QCOMPARE(repository.statuses.last(), AniListPendingChangeStatus::Succeeded);
+}
+
+void AniListPendingChangeProcessorTests::deletionStaysResendableWhenSupersedingSiblingsFails() {
+    FakePendingRepository repository;
+    auto progress = progressChange();
+    progress.id = 1;
+    auto deletion = progressChange();
+    deletion.id = 2;
+    deletion.field = AniListField::Deletion;
+    repository.changes = {progress, deletion};
+    repository.failOnStatus = AniListPendingChangeStatus::Superseded;
+    FakeUpdateClient client;
+    AniListPendingChangeProcessor processor(repository, client, 42);
+    QString error;
+
+    QVERIFY(!processor.process(154587, error));
+    QCOMPARE(error, QStringLiteral("status write failed"));
+    // The deletion was never marked Succeeded, so the next drain resends it (idempotent).
+    QVERIFY(!repository.statuses.contains(AniListPendingChangeStatus::Succeeded));
+    QCOMPARE(repository.statuses.last(), AniListPendingChangeStatus::Processing);
+}
+
+void AniListPendingChangeProcessorTests::logsDeletionSentAndSupersededCountWithoutPayloads() {
+    FakePendingRepository repository;
+    auto progress = progressChange();
+    progress.id = 1;
+    progress.newValue = 987654;
+    auto deletion = progressChange();
+    deletion.id = 2;
+    deletion.field = AniListField::Deletion;
+    repository.changes = {progress, deletion};
+    FakeUpdateClient client;
+    QStringList logs;
+    AniListPendingChangeProcessor processor(repository, client, 42,
+                                            [&logs](const QString &line) { logs.append(line); });
+    QString error;
+
+    QVERIFY2(processor.process(154587, error), qPrintable(error));
+    QCOMPARE(logs, QStringList({
+        QStringLiteral("AniList list deletion sent for media 154587."),
+        QStringLiteral("Superseded 1 pending AniList changes for media 154587 after list deletion.")}));
+}
+
+void AniListPendingChangeProcessorTests::logsDeletionFailureWithSafeError() {
+    FakePendingRepository repository;
+    auto deletion = progressChange();
+    deletion.id = 2;
+    deletion.field = AniListField::Deletion;
+    repository.changes = {deletion};
+    FakeUpdateClient client;
+    client.deleteSucceeds = false;
+    QStringList logs;
+    AniListPendingChangeProcessor processor(repository, client, 42,
+                                            [&logs](const QString &line) { logs.append(line); });
+    QString error;
+
+    QVERIFY(!processor.process(154587, error));
+    QCOMPARE(logs, QStringList({
+        QStringLiteral("AniList list deletion failed for media 154587: delete failed.")}));
 }
 
 QTEST_MAIN(AniListPendingChangeProcessorTests)

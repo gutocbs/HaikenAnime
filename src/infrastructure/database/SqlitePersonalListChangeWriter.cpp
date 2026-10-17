@@ -165,6 +165,7 @@ bool SqlitePersonalListChangeWriter::save(const Media &media, const QList<AniLis
         database_.rollback();
         return false;
     }
+    const bool cancelledDeletion = supersede.numRowsAffected() > 0;
 
     QSqlQuery enqueue(database_);
     if (!enqueue.prepare(enqueueQuery)) {
@@ -184,6 +185,11 @@ bool SqlitePersonalListChangeWriter::save(const Media &media, const QList<AniLis
         error = database_.lastError().text();
         database_.rollback();
         return false;
+    }
+    if (cancelledDeletion && logger_) {
+        logger_->info(LogCategory::Database,
+                      QStringLiteral("Cancelled pending AniList list deletion for media %1 after re-add.")
+                          .arg(media.Id));
     }
     return true;
 }

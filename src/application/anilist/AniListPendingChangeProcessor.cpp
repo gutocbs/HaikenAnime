@@ -5,8 +5,14 @@
 #include <utility>
 
 AniListPendingChangeProcessor::AniListPendingChangeProcessor(
-    IPendingChangeRepository &repository, IAniListUpdateClient &updateClient, const qint64 userId)
-    : repository_(repository), updateClient_(updateClient), userId_(userId) {
+    IPendingChangeRepository &repository, IAniListUpdateClient &updateClient, const qint64 userId,
+    std::function<void(const QString &)> auditLogger)
+    : repository_(repository), updateClient_(updateClient), userId_(userId),
+      auditLogger_(std::move(auditLogger)) {
+}
+
+void AniListPendingChangeProcessor::log(const QString &message) const {
+    if (auditLogger_) auditLogger_(message);
 }
 
 bool AniListPendingChangeProcessor::processDeletion(const AniListPendingChange &deletion,
@@ -29,14 +35,16 @@ bool AniListPendingChangeProcessor::processDeletion(const AniListPendingChange &
             return false;
         }
         error = operationError;
+        log(QStringLiteral("AniList list deletion failed for media %1: %2.")
+                .arg(deletion.mediaId).arg(operationError));
         return false;
     }
+    log(QStringLiteral("AniList list deletion sent for media %1.").arg(deletion.mediaId));
 
-    processing.status = AniListPendingChangeStatus::Succeeded;
-    processing.lastError.clear();
-    if (!repository_.updateStatus(processing, error)) {
-        return false;
-    }
+    // Siblings are superseded before the deletion is acknowledged: if a write fails midway the deletion
+    // is still unacknowledged and the next drain resends it (idempotent), instead of leaving siblings
+    // that could recreate the entry.
+    int supersededCount = 0;
     for (auto other : changes) {
         // Includes rows the compactor only marked Superseded in memory: they must be
         // persisted too, otherwise a later drain would resend them and recreate the entry.
@@ -47,6 +55,16 @@ bool AniListPendingChangeProcessor::processDeletion(const AniListPendingChange &
         if (!repository_.updateStatus(other, error)) {
             return false;
         }
+        ++supersededCount;
+    }
+    processing.status = AniListPendingChangeStatus::Succeeded;
+    processing.lastError.clear();
+    if (!repository_.updateStatus(processing, error)) {
+        return false;
+    }
+    if (supersededCount > 0) {
+        log(QStringLiteral("Superseded %1 pending AniList changes for media %2 after list deletion.")
+                .arg(supersededCount).arg(deletion.mediaId));
     }
     return true;
 }
