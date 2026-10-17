@@ -886,6 +886,12 @@ void QmlStructureTests::settingsAccountSectionUsesAniListAuthenticationControlle
     QVERIFY(dialogStart >= 0);
     QVERIFY(!source.mid(dialogStart).contains(QStringLiteral("standardButtons")));
     QVERIFY(source.contains(QStringLiteral("readonly property color danger:")));
+    const qsizetype removeButton = source.indexOf(QStringLiteral("text: qsTr(\"Remover conta\")"));
+    const qsizetype connectButton = source.indexOf(QStringLiteral("qsTr(\"Conectar conta\")"));
+    QVERIFY(removeButton >= 0 && connectButton >= 0);
+    QVERIFY(removeButton < connectButton);
+    QVERIFY(source.mid(removeButton, connectButton - removeButton)
+                .contains(QStringLiteral("Item { Layout.fillWidth: true }")));
 }
 
 void QmlStructureTests::homeEditorOffersConfirmedRemovalFromPersonalList() {

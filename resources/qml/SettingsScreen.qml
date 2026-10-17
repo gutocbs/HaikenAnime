@@ -498,7 +498,6 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
-                    Item { Layout.fillWidth: true }
                     AppButton {
                         text: qsTr("Remover conta")
                         variant: "danger"
@@ -506,6 +505,7 @@ Item {
                         enabled: !controller.aniListRemovalInProgress
                         onClicked: removeAccountDialog.open()
                     }
+                    Item { Layout.fillWidth: true }
                     AppButton {
                         text: controller.aniListAuthenticationInProgress
                               ? qsTr("Conectando conta...") : qsTr("Conectar conta")
