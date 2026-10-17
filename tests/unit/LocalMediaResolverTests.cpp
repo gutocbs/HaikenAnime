@@ -55,6 +55,14 @@ private slots:
     void folderMatchIgnoresSeparatorStyleAndCaseOnWindows();
     void folderMatchWithoutValidEpisodeIsAmbiguous();
     void unrelatedFolderFallsBackToTitleMatching();
+    void season3MatchesOrdinalSeasonMedia();
+    void season3WithoutSeasonMediaIsAmbiguousNeverSeasonOne();
+    void season2MatchesSecondSeasonMedia();
+    void seasonKeysCoverCommonSeasonSuffixes_data();
+    void seasonKeysCoverCommonSeasonSuffixes();
+    void season1AndMissingSeasonKeepPlainTitleBehaviour();
+    void extractedTitleAlreadyContainingSeasonStillMatches();
+    void ordinalSuffixHandlesTeens();
 };
 
 void LocalMediaResolverTests::matchesPrimaryTitle() {
@@ -453,6 +461,88 @@ void LocalMediaResolverTests::unrelatedFolderFallsBackToTitleMatching() {
 
     QCOMPARE(match.state, LocalRecognitionState::Associated);
     QCOMPARE(match.mediaId, 8);
+}
+
+void LocalMediaResolverTests::season3MatchesOrdinalSeasonMedia() {
+    const auto match = LocalMediaResolver().resolve(
+        WithSeason(QStringLiteral("Kusuriya no Hitorigoto"), 3), KusuriyaCatalog());
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 195516);
+}
+
+void LocalMediaResolverTests::season3WithoutSeasonMediaIsAmbiguousNeverSeasonOne() {
+    const auto full = KusuriyaCatalog();
+    const QList<Media> catalog{full.at(0), full.at(1), full.at(2)};
+
+    const auto match = LocalMediaResolver().resolve(
+        WithSeason(QStringLiteral("Kusuriya no Hitorigoto"), 3), catalog);
+
+    QCOMPARE(match.state, LocalRecognitionState::Ambiguous);
+    QCOMPARE(match.mediaId, 0);
+    QCOMPARE(match.diagnostic, QStringLiteral("No catalog media matches the extracted title for season 3."));
+}
+
+void LocalMediaResolverTests::season2MatchesSecondSeasonMedia() {
+    const auto match = LocalMediaResolver().resolve(
+        WithSeason(QStringLiteral("Kusuriya no Hitorigoto"), 2), KusuriyaCatalog());
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 176301);
+}
+
+void LocalMediaResolverTests::seasonKeysCoverCommonSeasonSuffixes_data() {
+    QTest::addColumn<QString>("catalogName");
+    QTest::newRow("season n") << "Show Season 4";
+    QTest::newRow("bare number") << "Show 4";
+    QTest::newRow("s n") << "Show S4";
+    QTest::newRow("part n") << "Show Part 4";
+    QTest::newRow("ordinal") << "Show 4th Season";
+}
+
+void LocalMediaResolverTests::seasonKeysCoverCommonSeasonSuffixes() {
+    QFETCH(QString, catalogName);
+    const auto match = LocalMediaResolver().resolve(
+        WithSeason(QStringLiteral("Show"), 4),
+        {CatalogMedia(1, QStringLiteral("Show")), CatalogMedia(2, catalogName)});
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 2);
+}
+
+void LocalMediaResolverTests::season1AndMissingSeasonKeepPlainTitleBehaviour() {
+    const QList<Media> catalog{CatalogMedia(1, QStringLiteral("Show")),
+                               CatalogMedia(2, QStringLiteral("Show 2nd Season"))};
+
+    const auto missing = LocalMediaResolver().resolve(Recognized(QStringLiteral("Show")), catalog);
+    const auto first = LocalMediaResolver().resolve(WithSeason(QStringLiteral("Show"), 1), catalog);
+
+    QCOMPARE(missing.mediaId, 1);
+    QCOMPARE(first.mediaId, 1);
+    QCOMPARE(first.state, LocalRecognitionState::Associated);
+}
+
+void LocalMediaResolverTests::extractedTitleAlreadyContainingSeasonStillMatches() {
+    const auto match = LocalMediaResolver().resolve(
+        WithSeason(QStringLiteral("Kusuriya no Hitorigoto 3rd Season"), 3), KusuriyaCatalog());
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 195516);
+}
+
+void LocalMediaResolverTests::ordinalSuffixHandlesTeens() {
+    const QList<QPair<int, QString>> cases{{11, QStringLiteral("Show 11th Season")},
+                                           {12, QStringLiteral("Show 12th Season")},
+                                           {13, QStringLiteral("Show 13th Season")},
+                                           {21, QStringLiteral("Show 21st Season")},
+                                           {22, QStringLiteral("Show 22nd Season")},
+                                           {23, QStringLiteral("Show 23rd Season")}};
+    for (const auto &entry : cases) {
+        const auto match = LocalMediaResolver().resolve(
+            WithSeason(QStringLiteral("Show"), entry.first),
+            {CatalogMedia(1, QStringLiteral("Show")), CatalogMedia(2, entry.second)});
+        QCOMPARE(match.mediaId, 2);
+    }
 }
 
 QTEST_MAIN(LocalMediaResolverTests)
