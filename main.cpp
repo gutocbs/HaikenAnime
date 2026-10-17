@@ -368,6 +368,9 @@ int main(int argc, char *argv[]) {
                 if (logger) logger->warning(LogCategory::Application, message);
             });
         nowWatchingController->setPreferredTitleKey(context.userPreferences.preferredTitleKey);
+        nowWatchingController->setCoverSource([&homeController](const int mediaId) {
+            return homeController.fullMediaModel()->CoverSource(mediaId);
+        });
         QObject::connect(&settingsController, &SettingsController::preferencesApplied, nowWatchingController.get(),
                          [controller = nowWatchingController.get()](const UserPreferences &preferences) {
                              controller->setPreferredTitleKey(preferences.preferredTitleKey);

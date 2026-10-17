@@ -915,3 +915,7 @@ void HomeScreenController::setState(QString state) {
     state_ = std::move(state);
     emit stateChanged();
 }
+
+QString HomeMediaModel::CoverSource(const int mediaId) const {
+    return coverSources_.value(mediaId);
+}

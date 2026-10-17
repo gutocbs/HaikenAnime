@@ -8,6 +8,7 @@ Item {
 
     signal openSettingsRequested()
     signal openSeasonalCatalogRequested()
+    signal openNowWatchingRequested()
 
     onVisibleChanged: if (visible) {
         previewBrowseControls.synchronizeWithController()
@@ -116,6 +117,24 @@ Item {
                 font.pixelSize: 13
                 Layout.alignment: Qt.AlignVCenter
                 onClicked: home.openSettingsRequested()
+            }
+
+            Rectangle {
+                visible: nowWatchingButton.visible
+                Layout.preferredWidth: 1
+                Layout.preferredHeight: 28
+                color: line
+            }
+
+            AppButton {
+                id: nowWatchingButton
+                text: qsTr("Assistindo agora")
+                variant: "flat"
+                font.pixelSize: 13
+                Layout.alignment: Qt.AlignVCenter
+                // Only while something is being recognized; null when recognition is unavailable.
+                visible: nowWatchingController !== null && nowWatchingController.active
+                onClicked: home.openNowWatchingRequested()
             }
         }
 

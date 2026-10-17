@@ -60,6 +60,7 @@ private slots:
     void mediaReadFailureFallsBackToUnassociatedAndWarns();
     void emitsChangedWhenRegistryChanges();
     void destroyedControllerStopsListeningToRegistry();
+    void neverExposesRemoteCoverUrls();
 
 private:
     ActiveSessionRegistry registry;
@@ -85,6 +86,9 @@ void NowWatchingControllerTests::inactiveWithoutSessions() {
 void NowWatchingControllerTests::associatedSessionShowsAnimeFromDatabase() {
     registry.start(session(QStringLiteral("a"), Start), candidate(21));
     NowWatchingController controller(registry, library);
+    controller.setCoverSource([](const int mediaId) {
+        return mediaId == 21 ? QStringLiteral("file:///cache/21.jpg") : QString();
+    });
 
     controller.Refresh();
 
@@ -93,7 +97,7 @@ void NowWatchingControllerTests::associatedSessionShowsAnimeFromDatabase() {
     QVERIFY(current.value(QStringLiteral("associated")).toBool());
     QCOMPARE(current.value(QStringLiteral("animeTitle")).toString(), QStringLiteral("One Piece"));
     QCOMPARE(current.value(QStringLiteral("progress")).toString(), QStringLiteral("5/12"));
-    QCOMPARE(current.value(QStringLiteral("coverUrl")).toString(), QStringLiteral("https://img/one-piece-large.jpg"));
+    QCOMPARE(current.value(QStringLiteral("coverUrl")).toString(), QStringLiteral("file:///cache/21.jpg"));
     QCOMPARE(current.value(QStringLiteral("listStatus")).toString(), QStringLiteral("current"));
     QCOMPARE(current.value(QStringLiteral("season")).toInt(), 1);
     QCOMPARE(current.value(QStringLiteral("episode")).toInt(), 6);
@@ -213,6 +217,15 @@ void NowWatchingControllerTests::destroyedControllerStopsListeningToRegistry() {
     registry.stop(session(QStringLiteral("a"), Start).id);
 
     QCOMPARE(replacement, 1);
+}
+
+void NowWatchingControllerTests::neverExposesRemoteCoverUrls() {
+    registry.start(session(QStringLiteral("a"), Start), candidate(21));
+    NowWatchingController controller(registry, library);
+
+    controller.Refresh();
+
+    QVERIFY(!controller.current().contains(QStringLiteral("coverUrl")));
 }
 
 QTEST_MAIN(NowWatchingControllerTests)

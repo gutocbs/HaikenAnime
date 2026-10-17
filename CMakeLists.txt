@@ -503,6 +503,7 @@ qt_add_qml_module(HaikenAnime
         resources/qml/PluginSettingsScreen.qml
         resources/qml/PluginSettingField.qml
         resources/qml/EpisodeRecognitionScreen.qml
+        resources/qml/NowWatchingScreen.qml
         RESOURCES resources/images/cover-placeholder.svg
 )
 

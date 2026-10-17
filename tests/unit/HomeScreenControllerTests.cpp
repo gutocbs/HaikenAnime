@@ -1451,6 +1451,8 @@ void HomeScreenControllerTests::updatesOnlyOneCoverRowAndPreservesOldCoverOnFail
     QSignalSpy reset(&model, &QAbstractItemModel::modelReset);
     QVERIFY(model.UpdateCover(42, QStringLiteral("file:///covers/42.jpg"), CoverState::Available));
     QCOMPARE(changed.count(), 1); QCOMPARE(reset.count(), 0);
+    QCOMPARE(model.CoverSource(42), QStringLiteral("file:///covers/42.jpg"));
+    QVERIFY(model.CoverSource(7).isEmpty());
     model.UpdateCover(42, {}, CoverState::Failed);
     QCOMPARE(model.data(index, HomeMediaModel::CoverSourceRole).toString(), QStringLiteral("file:///covers/42.jpg"));
     model.UpdateCover(42, {}, CoverState::Missing);

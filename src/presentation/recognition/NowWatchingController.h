@@ -32,6 +32,8 @@ public:
     [[nodiscard]] QVariantMap current() const { return current_; }
 
     void setPreferredTitleKey(const QString &key);
+    /// Cached local cover per media id; remote cover URLs are never handed to QML.
+    void setCoverSource(std::function<QString(int mediaId)> coverSource);
     Q_INVOKABLE void SelectSession(const QString &key);
     /// Rebuilds sessions and the selected card from the registry and the library.
     void Refresh();
@@ -46,6 +48,7 @@ private:
     IMediaReader &media_;
     std::function<void(const QString &)> warning_;
     QString preferredTitleKey_;
+    std::function<QString(int)> coverSource_;
     QVariantList sessions_;
     QString selectedKey_;
     QVariantMap current_;

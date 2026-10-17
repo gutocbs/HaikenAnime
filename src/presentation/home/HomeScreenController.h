@@ -39,6 +39,8 @@ public:
 
     void setMedia(QList<Media> media);
     bool UpdateCover(int mediaId, QString source, CoverState state);
+    /// Locally cached cover of the media, empty when none was downloaded yet.
+    [[nodiscard]] QString CoverSource(int mediaId) const;
     QList<Media> media() const;
     void ClearCovers();
     void ConfigureCardPresentation(CardStatusPresentation presentation, double scoreMaximum);

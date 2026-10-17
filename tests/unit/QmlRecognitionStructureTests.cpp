@@ -82,6 +82,29 @@ private:
     QStringListModel model_;
 };
 
+class FakeNowWatchingController final : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(bool active READ active CONSTANT)
+    Q_PROPERTY(QVariantList sessions READ sessions CONSTANT)
+    Q_PROPERTY(QString selectedSessionKey READ selectedSessionKey CONSTANT)
+    Q_PROPERTY(QVariantMap current READ current CONSTANT)
+
+public:
+    bool active() const { return true; }
+    QVariantList sessions() const {
+        return {QVariantMap{{"key", "plex:a"}, {"label", "One Piece · owner · Plex"}},
+                QVariantMap{{"key", "mpv:b"}, {"label", "ep02.mkv · local · mpv"}}};
+    }
+    QString selectedSessionKey() const { return QStringLiteral("plex:a"); }
+    QVariantMap current() const {
+        return {{"associated", true}, {"animeTitle", "One Piece"}, {"progress", "5/12"}, {"listStatus", "current"},
+                {"season", 1}, {"episode", 6}, {"episodeTitle", "Romance Dawn"}, {"summary", "Luffy sets sail."},
+                {"duration", "24 min"}, {"airDate", "20/10/1999"}, {"source", "Plex"}, {"user", "owner"},
+                {"device", "TV"}, {"sourceTitle", "One Piece"}};
+    }
+    Q_INVOKABLE void SelectSession(const QString &) {}
+};
+
 QString source(const QString &name) {
     QFile file(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/resources/qml/") + name);
     return file.open(QIODevice::ReadOnly | QIODevice::Text) ? QString::fromUtf8(file.readAll()) : QString();
@@ -92,7 +115,7 @@ QUrl url(const QString &name) {
 }
 
 const QStringList RecognitionFiles{QStringLiteral("PluginSettingsScreen.qml"), QStringLiteral("PluginSettingField.qml"),
-                                   QStringLiteral("EpisodeRecognitionScreen.qml")};
+                                   QStringLiteral("EpisodeRecognitionScreen.qml"), QStringLiteral("NowWatchingScreen.qml")};
 }
 
 class QmlRecognitionStructureTests final : public QObject {
@@ -106,6 +129,10 @@ private slots:
     void secretInputIsPasswordAndStartsEmpty();
     void recognitionScreenIsNotAConfirmationQueue();
     void settingsScreenHostsPluginsAndHistory();
+    void nowWatchingScreenLoadsWithController();
+    void nowWatchingScreenShowsEmptyMessageAndUnassociatedLabel();
+    void homeButtonIsRightOfSettingsAndGuarded();
+    void mainHasNowWatchingPage();
 };
 
 void QmlRecognitionStructureTests::pluginSettingsScreenLoadsWithController() {
@@ -180,6 +207,46 @@ void QmlRecognitionStructureTests::settingsScreenHostsPluginsAndHistory() {
     QVERIFY(text.contains(QStringLiteral("PluginSettingsScreen {")));
     QVERIFY(text.contains(QStringLiteral("EpisodeRecognitionScreen {")));
     QVERIFY(!text.contains(QStringLiteral("O histórico será preenchido em uma etapa posterior.")));
+}
+
+void QmlRecognitionStructureTests::nowWatchingScreenLoadsWithController() {
+    QQmlEngine engine;
+    FakeNowWatchingController controller;
+    engine.rootContext()->setContextProperty(QStringLiteral("nowWatchingController"), &controller);
+    QQmlComponent component(&engine, url(QStringLiteral("NowWatchingScreen.qml")));
+
+    std::unique_ptr<QObject> object(component.create());
+
+    QVERIFY2(object, qPrintable(component.errorString()));
+}
+
+void QmlRecognitionStructureTests::nowWatchingScreenShowsEmptyMessageAndUnassociatedLabel() {
+    const auto text = source(QStringLiteral("NowWatchingScreen.qml"));
+
+    QVERIFY(text.contains(QStringLiteral("Nada sendo reproduzido no momento")));
+    QVERIFY(text.contains(QStringLiteral("não associado à biblioteca")));
+    QVERIFY(text.contains(QStringLiteral("signal backRequested()")));
+}
+
+void QmlRecognitionStructureTests::homeButtonIsRightOfSettingsAndGuarded() {
+    const auto text = source(QStringLiteral("Home.qml"));
+    const auto settings = text.indexOf(QStringLiteral("qsTr(\"Configurações\")"));
+    const auto watching = text.indexOf(QStringLiteral("qsTr(\"Assistindo agora\")"));
+
+    QVERIFY(settings >= 0);
+    QVERIFY(watching > settings);
+    const auto block = text.mid(watching, text.indexOf(QLatin1Char('}'), watching) - watching);
+    QVERIFY(block.contains(QStringLiteral("nowWatchingController !== null")));
+    QVERIFY(block.contains(QStringLiteral("openNowWatchingRequested()")));
+    QVERIFY(text.contains(QStringLiteral("signal openNowWatchingRequested()")));
+}
+
+void QmlRecognitionStructureTests::mainHasNowWatchingPage() {
+    const auto text = source(QStringLiteral("Main.qml"));
+
+    QVERIFY(text.contains(QStringLiteral("NowWatchingScreen {")));
+    QVERIFY(text.contains(QStringLiteral("root.page === \"nowWatching\"")));
+    QVERIFY(text.contains(QStringLiteral("onOpenNowWatchingRequested: root.page = \"nowWatching\"")));
 }
 
 QTEST_MAIN(QmlRecognitionStructureTests)

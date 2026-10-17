@@ -28,11 +28,18 @@ ApplicationWindow {
         visible: root.page === "home"
         onOpenSettingsRequested: root.page = "settings"
         onOpenSeasonalCatalogRequested: root.page = "seasonal"
+        onOpenNowWatchingRequested: root.page = "nowWatching"
     }
 
     SettingsScreen {
         anchors.fill: parent
         visible: root.page === "settings"
+        onBackRequested: root.page = "home"
+    }
+
+    NowWatchingScreen {
+        anchors.fill: parent
+        visible: root.page === "nowWatching"
         onBackRequested: root.page = "home"
     }
 

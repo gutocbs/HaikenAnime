@@ -25,13 +25,6 @@ QString SourceName(const QString &pluginId) {
     return pluginId == QStringLiteral("plex") ? QStringLiteral("Plex") : pluginId;
 }
 
-QString CoverOf(const Media &media) {
-    for (const auto *url : {&media.CoverLargeUrl, &media.CoverExtraLargeUrl, &media.CoverMediumUrl, &media.CoverUrl}) {
-        if (!url->isEmpty()) return *url;
-    }
-    return {};
-}
-
 void InsertText(QVariantMap &map, const QString &key, const QString &value) {
     if (!value.trimmed().isEmpty()) map.insert(key, value);
 }
@@ -51,6 +44,11 @@ NowWatchingController::~NowWatchingController() {
 
 void NowWatchingController::setPreferredTitleKey(const QString &key) {
     preferredTitleKey_ = key;
+    Refresh();
+}
+
+void NowWatchingController::setCoverSource(std::function<QString(int)> coverSource) {
+    coverSource_ = std::move(coverSource);
     Refresh();
 }
 
@@ -113,7 +111,7 @@ QVariantMap NowWatchingController::buildCurrent(const ActiveSession &entry, cons
         const auto &media = library.value(*mediaId);
         card.insert(QStringLiteral("animeTitle"), ResolveMediaTitle(media, preferredTitleKey_));
         card.insert(QStringLiteral("progress"), FormatProgress(media.ConsumedChapters, media.TotalChapters));
-        InsertText(card, QStringLiteral("coverUrl"), CoverOf(media));
+        if (coverSource_) InsertText(card, QStringLiteral("coverUrl"), coverSource_(media.Id));
         InsertText(card, QStringLiteral("listStatus"), ListStatusKey(media.ListStatus));
     }
     if (candidate.season()) card.insert(QStringLiteral("season"), *candidate.season());
