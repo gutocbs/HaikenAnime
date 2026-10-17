@@ -378,7 +378,12 @@ set(LIBRARY_SCAN_SQL_RESOURCES
         resources/sqlite/queries/read-next-local-episode.sql
         resources/sqlite/queries/read-available-episode-count.sql
 )
-foreach (QUERY_FILE IN LISTS LIBRARY_SCAN_SQL_RESOURCES)
+set(PLUGIN_SETTINGS_SQL_RESOURCES
+        resources/sqlite/queries/read-plugin-settings.sql
+        resources/sqlite/queries/upsert-plugin-settings.sql
+        resources/sqlite/queries/delete-plugin-settings.sql
+)
+foreach (QUERY_FILE IN LISTS LIBRARY_SCAN_SQL_RESOURCES PLUGIN_SETTINGS_SQL_RESOURCES)
     get_filename_component(QUERY_ALIAS "${QUERY_FILE}" NAME)
     set_source_files_properties("${QUERY_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${QUERY_ALIAS}")
 endforeach ()
@@ -400,6 +405,7 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
         FILES
         ${LIBRARY_SCAN_SQL_RESOURCES}
+        ${PLUGIN_SETTINGS_SQL_RESOURCES}
         resources/sqlite/sqlite-queries.json
         resources/sqlite/queries/upsert-media.sql
         resources/sqlite/queries/update-personal-list-media.sql
@@ -686,6 +692,27 @@ qt_add_resources(SqliteSyncTaskStateRepositoryTests sync_task_state_migration_re
         FILES ${SQLITE_MIGRATION_RESOURCES})
 target_link_libraries(SqliteSyncTaskStateRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
 add_test(NAME SqliteSyncTaskStateRepositoryTests COMMAND SqliteSyncTaskStateRepositoryTests)
+
+add_executable(SqlitePluginSettingsRepositoryTests
+        tests/unit/SqlitePluginSettingsRepositoryTests.cpp
+        src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/database/SqlitePluginSettingsRepository.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+qt_add_resources(SqlitePluginSettingsRepositoryTests plugin_settings_query_resources
+        PREFIX "/sqlite/queries"
+        FILES ${PLUGIN_SETTINGS_SQL_RESOURCES})
+target_link_libraries(SqlitePluginSettingsRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
+add_test(NAME SqlitePluginSettingsRepositoryTests COMMAND SqlitePluginSettingsRepositoryTests)
+
+add_executable(PluginSettingsServiceTests
+        tests/unit/PluginSettingsServiceTests.cpp
+        src/application/recognition/PluginSettingsSchema.cpp
+        src/application/recognition/PluginSettingsService.cpp
+)
+target_link_libraries(PluginSettingsServiceTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME PluginSettingsServiceTests COMMAND PluginSettingsServiceTests)
 
 add_executable(SqliteLocalFileRepositoryTests
         tests/unit/SqliteLocalFileRepositoryTests.cpp
@@ -1551,6 +1578,7 @@ foreach (SQLITE_MIGRATION_TEST_TARGET IN ITEMS
         SqliteRepositoryTests
         SqliteCoverCacheRepositoryTests
         SqliteSyncTaskStateRepositoryTests
+        SqlitePluginSettingsRepositoryTests
         SqliteLocalFileRepositoryTests
         LocalEpisodeReaderTests
         InitialSyncCoordinatorTests
@@ -1563,6 +1591,8 @@ endforeach ()
 set(HAIKENANIME_TESTS
         MediaDomainTests
         RecognitionDomainTests
+        PluginSettingsServiceTests
+        SqlitePluginSettingsRepositoryTests
         MediaTitleResolverTests
         SqliteDatabaseTests
         SqliteUserPreferencesRepositoryTests
