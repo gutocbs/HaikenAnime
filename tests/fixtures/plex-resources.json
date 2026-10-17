@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Living Room PMS",
+    "product": "Plex Media Server",
+    "clientIdentifier": "server-abc",
+    "provides": "server",
+    "owned": true,
+    "accessToken": "server-access-token-xyz",
+    "connections": [
+      {"protocol": "https", "address": "203.0.113.5", "port": 32400, "uri": "https://203-0-113-5.server-abc.plex.direct:32400", "local": false, "relay": false},
+      {"protocol": "https", "address": "10.0.0.20", "port": 32400, "uri": "https://10-0-0-20.server-abc.plex.direct:32400", "local": true, "relay": false},
+      {"protocol": "https", "address": "relay", "port": 443, "uri": "https://relay.server-abc.plex.direct:8443", "local": false, "relay": true}
+    ]
+  },
+  {
+    "name": "Phone",
+    "product": "Plex for Android",
+    "clientIdentifier": "phone-1",
+    "provides": "client,player",
+    "connections": []
+  },
+  {
+    "name": "Friend Server",
+    "clientIdentifier": "server-friend",
+    "provides": "server",
+    "owned": false,
+    "accessToken": "friend-token",
+    "connections": [
+      {"protocol": "https", "uri": "https://relay.server-friend.plex.direct:8443", "local": false, "relay": true}
+    ]
+  }
+]

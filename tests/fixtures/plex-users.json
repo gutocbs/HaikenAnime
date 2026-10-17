@@ -1,0 +1,10 @@
+{
+  "MediaContainer": {
+    "size": 3,
+    "Account": [
+      {"id": 0, "key": "/accounts/0", "name": ""},
+      {"id": 1, "key": "/accounts/1", "name": "owner"},
+      {"id": 7, "key": "/accounts/7", "name": "friend"}
+    ]
+  }
+}

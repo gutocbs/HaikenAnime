@@ -793,6 +793,42 @@ add_executable(MpvPluginTests
 target_link_libraries(MpvPluginTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME MpvPluginTests COMMAND MpvPluginTests)
 
+set(PLEX_RECOGNITION_SOURCES
+        src/infrastructure/recognition/plex/PlexHttp.cpp
+        src/infrastructure/recognition/plex/PlexApiClient.cpp
+        src/infrastructure/recognition/plex/PlexAuthentication.cpp
+)
+add_executable(PlexAuthenticationTests
+        tests/unit/PlexAuthenticationTests.cpp
+        tests/unit/PlexTestSupport.h
+        ${PLEX_RECOGNITION_SOURCES}
+)
+target_link_libraries(PlexAuthenticationTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+target_compile_definitions(PlexAuthenticationTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+add_test(NAME PlexAuthenticationTests COMMAND PlexAuthenticationTests)
+
+add_executable(PlexApiClientTests
+        tests/unit/PlexApiClientTests.cpp
+        tests/unit/PlexTestSupport.h
+        ${PLEX_RECOGNITION_SOURCES}
+)
+target_link_libraries(PlexApiClientTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+target_compile_definitions(PlexApiClientTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+add_test(NAME PlexApiClientTests COMMAND PlexApiClientTests)
+
+add_executable(PlexPluginTests
+        tests/unit/PlexPluginTests.cpp
+        tests/unit/PlexTestSupport.h
+        ${PLEX_RECOGNITION_SOURCES}
+        src/infrastructure/recognition/plex/PlexPlugin.cpp
+        src/application/recognition/PluginSettingsSchema.cpp
+        src/domain/recognition/PlaybackSession.cpp
+        src/domain/recognition/EpisodeCandidate.cpp
+)
+target_link_libraries(PlexPluginTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+target_compile_definitions(PlexPluginTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+add_test(NAME PlexPluginTests COMMAND PlexPluginTests)
+
 add_executable(SqliteLocalFileRepositoryTests
         tests/unit/SqliteLocalFileRepositoryTests.cpp
         src/infrastructure/database/SqliteLocalFileRepository.cpp
@@ -904,6 +940,14 @@ if (WIN32)
     )
     target_link_libraries(WindowsCredentialStoreTests PRIVATE Qt6::Core Qt6::Test Advapi32)
     add_test(NAME WindowsCredentialStoreTests COMMAND WindowsCredentialStoreTests)
+
+    add_executable(WindowsPluginSecretStoreTests
+            tests/unit/WindowsPluginSecretStoreTests.cpp
+            src/infrastructure/secrets/WindowsPluginSecretStore.h
+            src/infrastructure/secrets/WindowsPluginSecretStore.cpp
+    )
+    target_link_libraries(WindowsPluginSecretStoreTests PRIVATE Qt6::Core Qt6::Test Advapi32)
+    add_test(NAME WindowsPluginSecretStoreTests COMMAND WindowsPluginSecretStoreTests)
 endif()
 
 add_executable(JsonSettingsReaderTests
@@ -1679,6 +1723,9 @@ set(HAIKENANIME_TESTS
         SqliteRecognitionHistoryRepositoryTests
         MpvIpcClientTests
         MpvPluginTests
+        PlexAuthenticationTests
+        PlexApiClientTests
+        PlexPluginTests
         MediaTitleResolverTests
         SqliteDatabaseTests
         SqliteUserPreferencesRepositoryTests
@@ -1736,7 +1783,7 @@ set(HAIKENANIME_TESTS
         LocalLibraryRecognitionCoordinatorTests
 )
 if (WIN32)
-    list(APPEND HAIKENANIME_TESTS WindowsCredentialStoreTests)
+    list(APPEND HAIKENANIME_TESTS WindowsCredentialStoreTests WindowsPluginSecretStoreTests)
 endif()
 get_filename_component(MINGW_RUNTIME_DIRECTORY "${CMAKE_CXX_COMPILER}" DIRECTORY)
 set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES

@@ -1,0 +1,49 @@
+{
+  "MediaContainer": {
+    "size": 4,
+    "Metadata": [
+      {
+        "type": "episode",
+        "sessionKey": "12",
+        "ratingKey": "5001",
+        "guid": "plex://episode/abc",
+        "title": "Romance Dawn",
+        "grandparentTitle": "One Piece",
+        "parentIndex": 1,
+        "index": 1,
+        "duration": 1440000,
+        "viewOffset": 61500,
+        "User": {"id": "1", "title": "owner", "thumb": "https://plex.tv/users/1/avatar"},
+        "Player": {"machineIdentifier": "tv-1", "title": "Living Room TV", "product": "Plex for LG", "state": "playing", "local": true},
+        "Session": {"id": "sess-a", "bandwidth": 10000, "location": "lan"}
+      },
+      {
+        "type": "episode",
+        "sessionKey": "13",
+        "title": "Episode 5",
+        "grandparentTitle": "Frieren",
+        "parentIndex": 1,
+        "index": 5,
+        "viewOffset": 30000,
+        "User": {"id": "7", "title": "friend"},
+        "Player": {"machineIdentifier": "phone-2", "title": "Phone", "state": "paused"},
+        "Session": {"id": "sess-b"}
+      },
+      {
+        "type": "movie",
+        "sessionKey": "14",
+        "title": "Some Movie",
+        "viewOffset": 1000,
+        "User": {"id": "1", "title": "owner"},
+        "Player": {"machineIdentifier": "pc", "state": "playing"}
+      },
+      {
+        "type": "episode",
+        "title": "Broken entry without session key",
+        "grandparentTitle": "Nothing",
+        "index": 2,
+        "User": {"id": "1"}
+      }
+    ]
+  }
+}
