@@ -35,6 +35,7 @@ bool LocalLibraryRecognitionCoordinator::start(const QString &rootPath) {
         QString error;
         auto repository = factory_ ? factory_(error) : nullptr;
         qsizetype processed = 0, associated = 0, unrecognized = 0, ambiguous = 0;
+        bool cancelled = false;
         if (!repository) {
             if (error.isEmpty()) error = QStringLiteral("Cannot create local recognition repository.");
         } else {
@@ -46,10 +47,13 @@ bool LocalLibraryRecognitionCoordinator::start(const QString &rootPath) {
             } else {
                 AnitomyLocalFileRecognizer recognizer;
                 LocalMediaResolver resolver;
+                // Normalizing the catalog once keeps each file at one normalization plus one lookup.
+                const LocalMediaCatalogIndex catalogIndex(catalog);
                 QList<LocalFileRecognitionRecord> updates;
                 for (auto record : pending) {
+                    if (stopping_.load()) { cancelled = true; break; }
                     const auto recognition = recognizer.recognize(record.fileName);
-                    const auto match = resolver.resolve(recognition, catalog);
+                    const auto match = resolver.resolve(recognition, catalogIndex);
                     record.recognitionState = StateName(match.state);
                     record.extractedTitle = recognition.extractedTitle;
                     record.mediaKind = recognition.mediaKind == LocalMediaKind::Anime ? QStringLiteral("anime") : QStringLiteral("unsupported");
@@ -67,8 +71,9 @@ bool LocalLibraryRecognitionCoordinator::start(const QString &rootPath) {
                         updates.clear();
                     }
                 }
+                // On cancellation the batch already processed is still persisted before stopping.
                 if (error.isEmpty() && !updates.isEmpty()) {
-                    if (repository->saveRecognitionBatch(updates, error)) {
+                    if (repository->saveRecognitionBatch(updates, error) && !cancelled) {
                         QMetaObject::invokeMethod(this, [this] { emit batchPersisted(); }, Qt::QueuedConnection);
                     }
                 }
@@ -76,18 +81,20 @@ bool LocalLibraryRecognitionCoordinator::start(const QString &rootPath) {
         }
         if (logger_) {
             const auto summary = QStringLiteral("Local library recognition completed: processed=%1, associated=%2, "
-                                                "unrecognized=%3, ambiguous=%4, failed=%5")
+                                                "unrecognized=%3, ambiguous=%4, failed=%5, cancelled=%6")
                                      .arg(processed)
                                      .arg(associated)
                                      .arg(unrecognized)
                                      .arg(ambiguous)
-                                     .arg(error.isEmpty() ? 0 : 1);
+                                     .arg(error.isEmpty() ? 0 : 1)
+                                     .arg(cancelled ? 1 : 0);
             if (error.isEmpty()) logger_->info(LogCategory::LocalLibrary, summary);
             else logger_->error(LogCategory::LocalLibrary,
                                  QStringLiteral("%1, error=%2").arg(summary, error));
         }
-        QMetaObject::invokeMethod(this, [this, error, processed, associated, unrecognized, ambiguous] {
+        QMetaObject::invokeMethod(this, [this, error, processed, associated, unrecognized, ambiguous, cancelled] {
             active_ = false; delete thread_; thread_ = nullptr;
+            if (cancelled) return;
             if (error.isEmpty()) emit completed(processed, associated, unrecognized, ambiguous);
             else emit failed(error);
         }, Qt::QueuedConnection);

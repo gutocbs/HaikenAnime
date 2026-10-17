@@ -1455,6 +1455,27 @@ add_executable(LocalLibraryScanCoordinatorTests
 target_link_libraries(LocalLibraryScanCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME LocalLibraryScanCoordinatorTests COMMAND LocalLibraryScanCoordinatorTests)
 
+add_executable(LocalLibraryRecognitionCoordinatorTests
+        tests/unit/LocalLibraryRecognitionCoordinatorTests.cpp
+        src/app/LocalLibraryRecognitionCoordinator.h
+        src/app/LocalLibraryRecognitionCoordinator.cpp
+        src/application/library/LocalMediaCatalogIndex.cpp
+        src/application/library/LocalMediaResolver.cpp
+        src/infrastructure/library/AnitomyLocalFileRecognizer.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+        lib/anitomy/anitomy.cpp
+        lib/anitomy/element.cpp
+        lib/anitomy/keyword.cpp
+        lib/anitomy/parser.cpp
+        lib/anitomy/parser_helper.cpp
+        lib/anitomy/parser_number.cpp
+        lib/anitomy/string.cpp
+        lib/anitomy/token.cpp
+        lib/anitomy/tokenizer.cpp)
+target_include_directories(LocalLibraryRecognitionCoordinatorTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(LocalLibraryRecognitionCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME LocalLibraryRecognitionCoordinatorTests COMMAND LocalLibraryRecognitionCoordinatorTests)
+
 get_target_property(COMPOSITION_SOURCES HaikenAnime SOURCES)
 list(FILTER COMPOSITION_SOURCES INCLUDE REGEX "^src/")
 add_executable(LocalLibraryScanCompositionTests
@@ -1579,6 +1600,7 @@ set(HAIKENANIME_TESTS
         LocalLibraryScanCoordinatorTests
         LocalLibraryScanCompositionTests
         LocalLibraryRecognitionCompositionTests
+        LocalLibraryRecognitionCoordinatorTests
 )
 if (WIN32)
     list(APPEND HAIKENANIME_TESTS WindowsCredentialStoreTests)
