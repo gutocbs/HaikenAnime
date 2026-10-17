@@ -183,6 +183,8 @@ void SqliteLocalFileRepositoryTests::readsOnlyAvailableFilesUnderTheFolderRegard
     paths.sort();
     QCOMPARE(paths, (QStringList{QStringLiteral("Q:/Animes/Show/Season 2/ep2.mkv"),
                                  QStringLiteral("Q:/Animes/Show/ep1.mkv")}));
+    QVERIFY2(repository_->readFilesUnderFolder(QStringLiteral("Q:/Animes//./Show/"), records, error_), qPrintable(error_));
+    QCOMPARE(records.size(), 2);
     QVERIFY(repository_->readFilesUnderFolder(QStringLiteral("Q:/Animes/Missing"), records, error_));
     QVERIFY(records.isEmpty());
 }

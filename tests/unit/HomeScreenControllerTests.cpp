@@ -163,6 +163,8 @@ private slots:
     void requestsFolderRecognitionWhenTheLocalPathChanges();
     void requestsPendingRecognitionWhenOnlyAlternativeNamesChange();
     void requestsNoRecognitionWhenNothingRelevantChanged();
+    void requestsFolderRecognitionOnEverySaveWhenThePathIsUnchanged();
+    void requestsTheOldFolderWhenThePathIsClearedOrMoved();
     void exposesSelectedLocalPathAfterSavingAndReloading();
     void keepsModelsAndSelectionUnchangedWhenPersistingSelectedMediaFails();
     void removesSelectedMediaFromLibraryWithoutRestart();
@@ -1204,13 +1206,14 @@ void HomeScreenControllerTests::requestsFolderRecognitionWhenTheLocalPathChanges
                                                     QStringLiteral("D:/Anime/Frieren"), {}));
 
     QCOMPARE(requested.count(), 1);
-    QCOMPARE(requested.first().at(0).toString(), QStringLiteral("D:/Anime/Frieren"));
+    QCOMPARE(requested.first().at(0).toStringList(),
+             (QStringList{QStringLiteral("D:/Anime/Frieren"), QStringLiteral("D:/Old")}));
     QCOMPARE(requested.first().at(1).toBool(), false);
 }
 
 void HomeScreenControllerTests::requestsPendingRecognitionWhenOnlyAlternativeNamesChange() {
     FakeMediaReader reader;
-    reader.result = {RecognitionMedia(QStringLiteral("D:/Anime/Frieren"), {QStringLiteral("Old")})};
+    reader.result = {RecognitionMedia(QString(), {QStringLiteral("Old")})};
     FakePersonalListMediaWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
@@ -1219,16 +1222,36 @@ void HomeScreenControllerTests::requestsPendingRecognitionWhenOnlyAlternativeNam
     controller.SelectMedia(42);
     QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
 
-    QVERIFY(controller.SaveSelectedMediaFromEditor(0, QStringLiteral("current"), 0.0,
-                                                    QStringLiteral("D:/Anime/Frieren"),
+    QVERIFY(controller.SaveSelectedMediaFromEditor(0, QStringLiteral("current"), 0.0, QString(),
                                                     {QStringLiteral("New")}));
 
     QCOMPARE(requested.count(), 1);
-    QVERIFY(requested.first().at(0).toString().isEmpty());
+    QVERIFY(requested.first().at(0).toStringList().isEmpty());
     QCOMPARE(requested.first().at(1).toBool(), true);
 }
 
 void HomeScreenControllerTests::requestsNoRecognitionWhenNothingRelevantChanged() {
+    FakeMediaReader reader;
+    reader.result = {RecognitionMedia(QString(), {QStringLiteral("Same")})};
+    FakePersonalListMediaWriter writer;
+    HomeScreenController controller(reader);
+    controller.SetListFilter(QStringLiteral("all"));
+    controller.SetPersonalListMediaWriter(&writer);
+    controller.reload();
+    controller.SelectMedia(42);
+    QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
+
+    QVERIFY(controller.SaveSelectedMediaFromEditor(9, QStringLiteral("completed"), 8.0, QString(),
+                                                    {QStringLiteral("Same")}));
+    // A failed save never requests recognition.
+    writer.failure = QStringLiteral("disk unavailable");
+    QVERIFY(!controller.SaveSelectedMediaFromEditor(9, QStringLiteral("completed"), 8.0,
+                                                     QStringLiteral("D:/Other"), {QStringLiteral("Other")}));
+
+    QCOMPARE(requested.count(), 0);
+}
+
+void HomeScreenControllerTests::requestsFolderRecognitionOnEverySaveWhenThePathIsUnchanged() {
     FakeMediaReader reader;
     reader.result = {RecognitionMedia(QStringLiteral("D:/Anime/Frieren"), {QStringLiteral("Same")})};
     FakePersonalListMediaWriter writer;
@@ -1242,15 +1265,27 @@ void HomeScreenControllerTests::requestsNoRecognitionWhenNothingRelevantChanged(
     QVERIFY(controller.SaveSelectedMediaFromEditor(9, QStringLiteral("completed"), 8.0,
                                                     QStringLiteral("D:/Anime/Frieren"),
                                                     {QStringLiteral("Same")}));
-    // Clearing the path is a relevant change, but there is no folder to recognize.
-    QVERIFY(controller.SaveSelectedMediaFromEditor(9, QStringLiteral("completed"), 8.0, QString(),
-                                                    {QStringLiteral("Same")}));
-    // A failed save never requests recognition.
-    writer.failure = QStringLiteral("disk unavailable");
-    QVERIFY(!controller.SaveSelectedMediaFromEditor(9, QStringLiteral("completed"), 8.0,
-                                                     QStringLiteral("D:/Other"), {QStringLiteral("Other")}));
 
-    QCOMPARE(requested.count(), 0);
+    QCOMPARE(requested.count(), 1);
+    QCOMPARE(requested.first().at(0).toStringList(), QStringList{QStringLiteral("D:/Anime/Frieren")});
+    QCOMPARE(requested.first().at(1).toBool(), false);
+}
+
+void HomeScreenControllerTests::requestsTheOldFolderWhenThePathIsClearedOrMoved() {
+    FakeMediaReader reader;
+    reader.result = {RecognitionMedia(QStringLiteral("D:/Old"))};
+    FakePersonalListMediaWriter writer;
+    HomeScreenController controller(reader);
+    controller.SetListFilter(QStringLiteral("all"));
+    controller.SetPersonalListMediaWriter(&writer);
+    controller.reload();
+    controller.SelectMedia(42);
+    QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
+
+    QVERIFY(controller.SaveSelectedMediaFromEditor(0, QStringLiteral("current"), 0.0, QString(), {}));
+
+    QCOMPARE(requested.count(), 1);
+    QCOMPARE(requested.first().at(0).toStringList(), QStringList{QStringLiteral("D:/Old")});
 }
 
 void HomeScreenControllerTests::persistsSelectedMediaEditsToTheOfflineOutbox() {

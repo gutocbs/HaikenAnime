@@ -309,7 +309,7 @@ bool SeasonalCatalogController::SaveSelectedToPersonalList(const int progress, c
     emit selectionChanged();
     if (created) emit personalListSaved();
     if (recognitionRequest.isRequired()) {
-        emit localRecognitionRequested(recognitionRequest.folderPath, recognitionRequest.alternativeNamesChanged);
+        emit localRecognitionRequested(recognitionRequest.folderPaths, recognitionRequest.alternativeNamesChanged);
     }
     return true;
 }

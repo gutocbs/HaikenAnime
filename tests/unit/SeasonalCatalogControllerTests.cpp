@@ -117,6 +117,8 @@ private slots:
     void requestsFolderRecognitionWhenTheSavedPathChanges();
     void requestsPendingRecognitionWhenOnlyAlternativeNamesChange();
     void requestsNoRecognitionWhenNothingRelevantChanged();
+    void requestsFolderRecognitionOnEverySaveWhenThePathIsUnchanged();
+    void requestsTheOldFolderWhenThePathMoves();
     void Should_ShowQuestionMarkProgress_When_TotalChaptersIsUnknown();
 };
 
@@ -455,7 +457,7 @@ void SeasonalCatalogControllerTests::requestsFolderRecognitionWhenTheSavedPathCh
                                                   QStringLiteral("D:/Anime/Show"), {}));
 
     QCOMPARE(requested.count(), 1);
-    QCOMPARE(requested.first().at(0).toString(), QStringLiteral("D:/Anime/Show"));
+    QCOMPARE(requested.first().at(0).toStringList(), QStringList{QStringLiteral("D:/Anime/Show")});
     QCOMPARE(requested.first().at(1).toBool(), false);
 }
 
@@ -482,11 +484,36 @@ void SeasonalCatalogControllerTests::requestsPendingRecognitionWhenOnlyAlternati
                                                   {QStringLiteral("Another name")}));
 
     QCOMPARE(requested.count(), 1);
-    QVERIFY(requested.first().at(0).toString().isEmpty());
+    QCOMPARE(requested.first().at(0).toStringList(), QStringList{QStringLiteral("D:/Anime/Show")});
     QCOMPARE(requested.first().at(1).toBool(), true);
 }
 
 void SeasonalCatalogControllerTests::requestsNoRecognitionWhenNothingRelevantChanged() {
+    RecordingSource source;
+    Media selected = media(7);
+    source.responses.insert(1, page(1, {selected}));
+    InMemoryMediaRepository repository;
+    Media existing = selected;
+    existing.LocalPath = QStringLiteral("");
+    existing.AlternativeNames = {QStringLiteral("Same")};
+    existing.ListStatus = UserListStatus::Current;
+    repository.media.append(existing);
+    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
+                                         DefaultPreferredTitleKey(), nullptr, &personalLists);
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+    controller.SelectMedia(selected.Id);
+    QSignalSpy requested(&controller, &SeasonalCatalogController::localRecognitionRequested);
+
+    QVERIFY(controller.SaveSelectedToPersonalList(4, QStringLiteral("completed"), 6.0,
+                                                  QStringLiteral(""), {QStringLiteral("Same")}));
+
+    QCOMPARE(requested.count(), 0);
+}
+
+void SeasonalCatalogControllerTests::requestsFolderRecognitionOnEverySaveWhenThePathIsUnchanged() {
     RecordingSource source;
     Media selected = media(7);
     source.responses.insert(1, page(1, {selected}));
@@ -506,10 +533,38 @@ void SeasonalCatalogControllerTests::requestsNoRecognitionWhenNothingRelevantCha
     QSignalSpy requested(&controller, &SeasonalCatalogController::localRecognitionRequested);
 
     QVERIFY(controller.SaveSelectedToPersonalList(4, QStringLiteral("completed"), 6.0,
-                                                  QStringLiteral("D:/Anime/Show"),
-                                                  {QStringLiteral("Same")}));
+                                                  QStringLiteral("D:/Anime/Show"), {QStringLiteral("Same")}));
 
-    QCOMPARE(requested.count(), 0);
+    QCOMPARE(requested.count(), 1);
+    QCOMPARE(requested.first().at(0).toStringList(), QStringList{QStringLiteral("D:/Anime/Show")});
+    QCOMPARE(requested.first().at(1).toBool(), false);
+}
+
+void SeasonalCatalogControllerTests::requestsTheOldFolderWhenThePathMoves() {
+    RecordingSource source;
+    Media selected = media(7);
+    source.responses.insert(1, page(1, {selected}));
+    InMemoryMediaRepository repository;
+    Media existing = selected;
+    existing.LocalPath = QStringLiteral("D:/Old");
+    existing.AlternativeNames = {QStringLiteral("Same")};
+    existing.ListStatus = UserListStatus::Current;
+    repository.media.append(existing);
+    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
+                                         DefaultPreferredTitleKey(), nullptr, &personalLists);
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+    controller.SelectMedia(selected.Id);
+    QSignalSpy requested(&controller, &SeasonalCatalogController::localRecognitionRequested);
+
+    QVERIFY(controller.SaveSelectedToPersonalList(4, QStringLiteral("completed"), 6.0,
+                                                  QStringLiteral("D:/New"), {QStringLiteral("Same")}));
+
+    QCOMPARE(requested.count(), 1);
+    QCOMPARE(requested.first().at(0).toStringList(),
+             (QStringList{QStringLiteral("D:/New"), QStringLiteral("D:/Old")}));
 }
 
 QTEST_GUILESS_MAIN(SeasonalCatalogControllerTests)

@@ -678,7 +678,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
         emit selectionChanged();
     }
     if (recognitionRequest.isRequired()) {
-        emit localRecognitionRequested(recognitionRequest.folderPath, recognitionRequest.alternativeNamesChanged);
+        emit localRecognitionRequested(recognitionRequest.folderPaths, recognitionRequest.alternativeNamesChanged);
     }
     return true;
 }

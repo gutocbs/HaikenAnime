@@ -245,9 +245,9 @@ int main(int argc, char *argv[]) {
     if (context.localLibraryRecognition) {
         // Saving a folder or alternative names re-evaluates the local files in the background; the
         // coordinator queues overlapping requests and the Home refreshes on its batch signals.
-        const auto requestLocalRecognition = [&context](const QString &folderPath, bool alternativeNamesChanged) {
+        const auto requestLocalRecognition = [&context](const QStringList &folderPaths, bool alternativeNamesChanged) {
             auto *recognition = context.localLibraryRecognition.get();
-            if (!folderPath.isEmpty()) recognition->startForFolder(folderPath);
+            for (const auto &folderPath : folderPaths) recognition->startForFolder(folderPath);
             if (alternativeNamesChanged) recognition->startForPending(context.userPreferences.libraryRoot);
         };
         QObject::connect(&homeController, &HomeScreenController::localRecognitionRequested,

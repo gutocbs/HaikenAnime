@@ -1,5 +1,6 @@
 #include "SqliteLocalFileRepository.h"
 
+#include <QDir>
 #include <QSqlError>
 #include <QSqlQuery>
 
@@ -215,8 +216,10 @@ bool SqliteLocalFileRepository::readFilesUnderFolder(const QString &folderPath,
                                                      QList<LocalFileRecognitionRecord> &records,
                                                      QString &error) {
     records.clear(); error.clear();
+    // Same cleaning as LocalMediaCatalogIndex::NormalizeFolder, minus the case folding (SQL compares NOCASE).
     auto folder = folderPath.trimmed();
     folder.replace(QLatin1Char('\\'), QLatin1Char('/'));
+    if (!folder.isEmpty()) folder = QDir::cleanPath(folder);
     while (folder.endsWith(QLatin1Char('/'))) folder.chop(1);
     if (folder.isEmpty()) {
         error = QStringLiteral("Reading local files under a folder requires a folder path.");
