@@ -31,6 +31,7 @@
 #include "../application/anilist/AniListAuthManager.h"
 #include "../application/anilist/ISecretStore.h"
 #include "SeasonalCatalogCoordinator.h"
+#include "RecognitionComposition.h"
 
 
 struct ApplicationContext final {
@@ -64,7 +65,10 @@ struct ApplicationContext final {
     std::unique_ptr<GraphQlQueryStore> seasonalQueryStore;
     std::unique_ptr<GraphQlSeasonalCatalogDataSource> seasonalCatalogDataSource;
     std::unique_ptr<SeasonalCatalogCoordinator> seasonalCatalogCoordinator;
+    // Recognition depends on the repositories above and outlives the opener that launches mpv.
+    std::unique_ptr<RecognitionContext> recognition;
     std::unique_ptr<ILocalEpisodeReader> localEpisodeReader;
+    std::unique_ptr<ILocalFileOpener> defaultLocalFileOpener;
     std::unique_ptr<ILocalFileOpener> localFileOpener;
     QString initializationError;
     bool startupLibraryScanScheduled = false;

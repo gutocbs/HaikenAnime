@@ -620,7 +620,8 @@ void HomeScreenController::WatchNext() {
     if (!canWatch()) return;
 
     QString error;
-    if (fileOpener_->open(nextLocalEpisodePath_, error)) {
+    const LocalEpisode episode{.mediaId = selectedMedia_.Id, .episode = nextLocalEpisode_, .path = nextLocalEpisodePath_};
+    if (fileOpener_->openEpisode(episode, error)) {
         localLibraryErrorMessage_.clear();
         localLibraryStatusMessage_ = QStringLiteral("Abrindo episódio %1.").arg(nextLocalEpisode_);
     } else {

@@ -503,6 +503,36 @@ qt_add_qml_module(HaikenAnime
         RESOURCES resources/images/cover-placeholder.svg
 )
 
+# Automatic episode recognition (docs/superpowers/plans/2026-10-17-reconhecimento-episodios.md).
+target_sources(HaikenAnime PRIVATE
+        src/domain/recognition/PlaybackSession.cpp
+        src/domain/recognition/EpisodeCandidate.cpp
+        src/domain/recognition/RecognitionPolicy.cpp
+        src/domain/recognition/RecognitionRecord.cpp
+        src/application/recognition/EpisodeRecognitionService.cpp
+        src/application/recognition/PersonalListProgressWriter.cpp
+        src/application/recognition/PlaybackObservationService.cpp
+        src/application/recognition/PluginRegistry.cpp
+        src/application/recognition/PluginSettingsSchema.cpp
+        src/application/recognition/PluginSettingsService.cpp
+        src/application/recognition/ProgressDecisionService.cpp
+        src/application/recognition/RecognitionHistoryService.cpp
+        src/infrastructure/database/SqlitePluginSettingsRepository.cpp
+        src/infrastructure/database/SqliteRecognitionHistoryRepository.cpp
+        src/infrastructure/recognition/QtProcessLauncher.cpp
+        src/infrastructure/recognition/mpv/MpvIpcClient.cpp
+        src/infrastructure/recognition/mpv/MpvPlugin.cpp
+        src/infrastructure/recognition/mpv/QtLocalSocketMpvTransport.h
+        src/infrastructure/recognition/mpv/QtLocalSocketMpvTransport.cpp
+        src/infrastructure/recognition/plex/PlexHttp.cpp
+        src/infrastructure/recognition/plex/PlexApiClient.cpp
+        src/infrastructure/recognition/plex/PlexAuthentication.cpp
+        src/infrastructure/recognition/plex/PlexPlugin.cpp
+        src/infrastructure/secrets/WindowsPluginSecretStore.cpp
+        src/app/RecognitionComposition.cpp
+        src/app/MpvAwareLocalFileOpener.cpp
+)
+
 target_link_libraries(HaikenAnime
         PRIVATE
         Qt6::Core
@@ -828,6 +858,69 @@ add_executable(PlexPluginTests
 target_link_libraries(PlexPluginTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
 target_compile_definitions(PlexPluginTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 add_test(NAME PlexPluginTests COMMAND PlexPluginTests)
+
+add_executable(PluginRegistryTests
+        tests/unit/PluginRegistryTests.cpp
+        src/application/recognition/PluginRegistry.cpp
+)
+target_link_libraries(PluginRegistryTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME PluginRegistryTests COMMAND PluginRegistryTests)
+
+set(RECOGNITION_PIPELINE_SOURCES
+        src/application/recognition/EpisodeRecognitionService.cpp
+        src/application/recognition/PluginRegistry.cpp
+        src/application/recognition/PlaybackObservationService.cpp
+        src/application/recognition/ProgressDecisionService.cpp
+        src/application/recognition/RecognitionHistoryService.cpp
+        src/application/library/LocalMediaResolver.cpp
+        src/application/library/LocalMediaCatalogIndex.cpp
+        src/domain/recognition/PlaybackSession.cpp
+        src/domain/recognition/EpisodeCandidate.cpp
+        src/domain/recognition/RecognitionPolicy.cpp
+        src/domain/recognition/RecognitionRecord.cpp
+)
+add_executable(EpisodeRecognitionServiceTests
+        tests/unit/EpisodeRecognitionServiceTests.cpp
+        ${RECOGNITION_PIPELINE_SOURCES}
+)
+target_include_directories(EpisodeRecognitionServiceTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(EpisodeRecognitionServiceTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME EpisodeRecognitionServiceTests COMMAND EpisodeRecognitionServiceTests)
+
+set(RECOGNITION_COMPOSITION_SOURCES
+        src/app/RecognitionComposition.cpp
+        src/app/MpvAwareLocalFileOpener.cpp
+        ${RECOGNITION_PIPELINE_SOURCES}
+        ${PLEX_RECOGNITION_SOURCES}
+        src/application/recognition/PluginSettingsSchema.cpp
+        src/application/recognition/PluginSettingsService.cpp
+        src/application/recognition/PersonalListProgressWriter.cpp
+        src/application/media/PersonalListChangeService.cpp
+        src/application/anilist/AniListPendingChangeFactory.cpp
+        src/infrastructure/database/SqlitePluginSettingsRepository.cpp
+        src/infrastructure/database/SqliteRecognitionHistoryRepository.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
+        src/infrastructure/recognition/QtProcessLauncher.cpp
+        src/infrastructure/recognition/mpv/MpvIpcClient.cpp
+        src/infrastructure/recognition/mpv/MpvPlugin.cpp
+        src/infrastructure/recognition/mpv/QtLocalSocketMpvTransport.cpp
+        src/infrastructure/recognition/plex/PlexPlugin.cpp
+        src/infrastructure/secrets/WindowsPluginSecretStore.cpp
+)
+add_executable(RecognitionCompositionTests
+        tests/unit/RecognitionCompositionTests.cpp
+        tests/unit/PlexTestSupport.h
+        ${RECOGNITION_COMPOSITION_SOURCES}
+        src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+qt_add_resources(RecognitionCompositionTests recognition_composition_query_resources
+        PREFIX "/sqlite/queries"
+        FILES ${PLUGIN_SETTINGS_SQL_RESOURCES} ${RECOGNITION_HISTORY_SQL_RESOURCES})
+target_include_directories(RecognitionCompositionTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(RecognitionCompositionTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Sql Qt6::Test Advapi32)
+target_compile_definitions(RecognitionCompositionTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+add_test(NAME RecognitionCompositionTests COMMAND RecognitionCompositionTests)
 
 add_executable(SqliteLocalFileRepositoryTests
         tests/unit/SqliteLocalFileRepositoryTests.cpp
@@ -1708,7 +1801,8 @@ foreach (SQLITE_MIGRATION_TEST_TARGET IN ITEMS
         InitialSyncCoordinatorTests
         AdaptiveSyncCoordinatorTests
         LocalLibraryScanCompositionTests
-        LocalLibraryRecognitionCompositionTests)
+        LocalLibraryRecognitionCompositionTests
+        RecognitionCompositionTests)
     add_sqlite_migration_test_resources(${SQLITE_MIGRATION_TEST_TARGET})
 endforeach ()
 
@@ -1726,6 +1820,9 @@ set(HAIKENANIME_TESTS
         PlexAuthenticationTests
         PlexApiClientTests
         PlexPluginTests
+        PluginRegistryTests
+        EpisodeRecognitionServiceTests
+        RecognitionCompositionTests
         MediaTitleResolverTests
         SqliteDatabaseTests
         SqliteUserPreferencesRepositoryTests

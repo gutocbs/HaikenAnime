@@ -81,6 +81,11 @@ public:
 class FakeLocalFileOpener final : public ILocalFileOpener {
 public:
     bool open(const QString &path, QString &error) override { openedPath = path; error = failure; return failure.isEmpty(); }
+    bool openEpisode(const LocalEpisode &episode, QString &error) override {
+        openedEpisode = episode;
+        return open(episode.path, error);
+    }
+    LocalEpisode openedEpisode;
     QString failure;
     QString openedPath;
 };
@@ -1469,6 +1474,9 @@ void HomeScreenControllerTests::exposesAndOpensNextLocalEpisodeForSelectedAnime(
     QCOMPARE(episodes.requestedConsumedEpisode, 2);
     controller.WatchNext();
     QCOMPARE(opener.openedPath, QStringLiteral("Q:/Animes/Example/03.mkv"));
+    QCOMPARE(opener.openedEpisode.mediaId, 42);
+    QCOMPARE(opener.openedEpisode.episode, 3);
+    QCOMPARE(opener.openedEpisode.path, QStringLiteral("Q:/Animes/Example/03.mkv"));
 }
 
 void HomeScreenControllerTests::reportsLocalEpisodeLookupAndOpenFailures() {

@@ -4,11 +4,8 @@
 #include <QSqlDatabase>
 #include <QString>
 
-struct LocalEpisode final {
-    int mediaId = 0;
-    int episode = 0;
-    QString path;
-};
+#include "LocalEpisode.h"
+
 
 class ILocalEpisodeReader {
 public:

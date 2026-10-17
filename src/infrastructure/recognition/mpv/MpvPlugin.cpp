@@ -61,7 +61,13 @@ PluginCapabilities MpvPlugin::capabilities() const {
 PluginSettingsSchema MpvPlugin::settingsSchema() const {
     return {.pluginId = PluginId,
             .displayName = displayName(),
-            .fields = {{.key = QStringLiteral("executablePath"),
+            .fields = {{.key = QStringLiteral("enabled"),
+                        .type = PluginSettingType::Boolean,
+                        .label = QCoreApplication::translate("MpvPlugin", "Open episodes in mpv"),
+                        .description = QCoreApplication::translate(
+                            "MpvPlugin", "When disabled, episodes open in the default application without recognition."),
+                        .defaultValue = false},
+                       {.key = QStringLiteral("executablePath"),
                         .type = PluginSettingType::Text,
                         .label = QCoreApplication::translate("MpvPlugin", "mpv executable"),
                         .description = QCoreApplication::translate(

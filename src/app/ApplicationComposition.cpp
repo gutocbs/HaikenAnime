@@ -17,6 +17,7 @@
 #include "../infrastructure/covers/QtCoverDownloader.h"
 #include "../infrastructure/library/LocalLibraryScanner.h"
 #include "../infrastructure/library/QtLocalFileOpener.h"
+#include "MpvAwareLocalFileOpener.h"
 #include "../infrastructure/library/QtDirectoryEnumerator.h"
 #include "../infrastructure/database/SqliteLocalFileRepository.h"
 #include "../infrastructure/database/SqliteSyncTaskStateRepository.h"
@@ -215,7 +216,24 @@ void composeLocalEpisodeServices(ApplicationContext &context,
     context.localEpisodeReader = std::make_unique<LocalEpisodeReader>(
         context.database->connection(), configuration.readNextLocalEpisodePath,
         configuration.readAvailableEpisodeCountPath);
-    context.localFileOpener = std::make_unique<QtLocalFileOpener>();
+    context.defaultLocalFileOpener = std::make_unique<QtLocalFileOpener>();
+}
+
+void composeEpisodeRecognition(ApplicationContext &context) {
+    context.recognition = createRecognitionContext(
+        {.connection = context.database->connection(),
+         .mediaReader = context.mediaRepository.get(),
+         .changes = context.personalListChangeService.get(),
+         .diagnostics = [logger = context.logger.get()](const QString &message) {
+             if (logger) logger->warning(LogCategory::Application, message);
+         }});
+    for (const auto &warning : context.recognition->warnings) {
+        context.logger->warning(LogCategory::Application, warning);
+    }
+    if (context.defaultLocalFileOpener) {
+        context.localFileOpener = std::make_unique<MpvAwareLocalFileOpener>(*context.defaultLocalFileOpener,
+                                                                            *context.recognition);
+    }
 }
 }
 
@@ -291,6 +309,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     composeLibraryScanner(context, queryConfiguration);
     composeLibraryRecognition(context, queryConfiguration);
     composeLocalEpisodeServices(context, queryConfiguration);
+    composeEpisodeRecognition(context);
 
     {
         auto preferencesRepository = std::make_unique<SqliteUserPreferencesRepository>(
