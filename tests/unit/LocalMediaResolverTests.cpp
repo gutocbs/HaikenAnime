@@ -63,6 +63,10 @@ private slots:
     void season1AndMissingSeasonKeepPlainTitleBehaviour();
     void extractedTitleAlreadyContainingSeasonStillMatches();
     void ordinalSuffixHandlesTeens();
+    void firstSeasonKeyWithExactlyOneMatchWins();
+    void aKeyWithSeveralMatchesIsAmbiguous();
+    void romanNumeralSeasonKeysMatch();
+    void folderRuleRescuesSubtitleOnlySequel();
 };
 
 void LocalMediaResolverTests::matchesPrimaryTitle() {
@@ -543,6 +547,52 @@ void LocalMediaResolverTests::ordinalSuffixHandlesTeens() {
             {CatalogMedia(1, QStringLiteral("Show")), CatalogMedia(2, entry.second)});
         QCOMPARE(match.mediaId, 2);
     }
+}
+
+void LocalMediaResolverTests::firstSeasonKeyWithExactlyOneMatchWins() {
+    const auto match = LocalMediaResolver().resolve(
+        WithSeason(QStringLiteral("Show"), 2),
+        {CatalogMedia(1, QStringLiteral("Show")), CatalogMedia(2, QStringLiteral("Show 2")),
+         CatalogMedia(3, QStringLiteral("Show 2nd Season"))});
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 3);
+}
+
+void LocalMediaResolverTests::aKeyWithSeveralMatchesIsAmbiguous() {
+    const auto match = LocalMediaResolver().resolve(
+        WithSeason(QStringLiteral("Show"), 2),
+        {CatalogMedia(1, QStringLiteral("Show 2nd Season")), CatalogMedia(2, QStringLiteral("Show 2nd Season")),
+         CatalogMedia(3, QStringLiteral("Show 2"))});
+
+    QCOMPARE(match.state, LocalRecognitionState::Ambiguous);
+    QCOMPARE(match.mediaId, 0);
+}
+
+void LocalMediaResolverTests::romanNumeralSeasonKeysMatch() {
+    const auto match = LocalMediaResolver().resolve(
+        WithSeason(QStringLiteral("Overlord"), 3),
+        {CatalogMedia(1, QStringLiteral("Overlord")), CatalogMedia(2, QStringLiteral("Overlord III"))});
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 2);
+    const auto second = LocalMediaResolver().resolve(
+        WithSeason(QStringLiteral("Overlord"), 2),
+        {CatalogMedia(1, QStringLiteral("Overlord")), CatalogMedia(5, QStringLiteral("Overlord II"))});
+    QCOMPARE(second.mediaId, 5);
+}
+
+void LocalMediaResolverTests::folderRuleRescuesSubtitleOnlySequel() {
+    Media sequel = CatalogMedia(2, QStringLiteral("Dr. Stone New World"));
+    sequel.LocalPath = QStringLiteral("Q:/Animes/Dr Stone New World");
+    const LocalMediaCatalogIndex index({CatalogMedia(1, QStringLiteral("Dr. Stone")), sequel});
+
+    const auto match = LocalMediaResolver().resolve(
+        WithSeason(QStringLiteral("Dr. Stone"), 3), index,
+        QStringLiteral("Q:/Animes/Dr Stone New World/[Group] Dr. Stone S3 - 01.mkv"));
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 2);
 }
 
 QTEST_MAIN(LocalMediaResolverTests)

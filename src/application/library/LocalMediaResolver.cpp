@@ -11,13 +11,22 @@ QString OrdinalFor(const int number) {
     return QStringLiteral("%1th").arg(number);
 }
 
-// Season markers a catalog title can carry after the base title, already normalized.
+QString RomanFor(const int number) {
+    static const QStringList numerals{QStringLiteral("ii"), QStringLiteral("iii"), QStringLiteral("iv"),
+                                      QStringLiteral("v"), QStringLiteral("vi"), QStringLiteral("vii"),
+                                      QStringLiteral("viii"), QStringLiteral("ix"), QStringLiteral("x")};
+    return number >= 2 && number <= 10 ? numerals.at(number - 2) : QString();
+}
+
+// Season markers a catalog title can carry after the base title, already normalized, in priority order.
 QStringList SeasonSuffixes(const int season) {
-    return {QStringLiteral("%1 season").arg(OrdinalFor(season)),
-            QStringLiteral("season %1").arg(season),
-            QString::number(season),
-            QStringLiteral("s%1").arg(season),
-            QStringLiteral("part %1").arg(season)};
+    QStringList suffixes{QStringLiteral("%1 season").arg(OrdinalFor(season)),
+                         QStringLiteral("season %1").arg(season),
+                         QStringLiteral("s%1").arg(season),
+                         QStringLiteral("part %1").arg(season)};
+    if (!RomanFor(season).isEmpty()) suffixes.append(RomanFor(season));
+    suffixes.append(QString::number(season));
+    return suffixes;
 }
 
 bool TitleEndsWithSeasonMarker(const QString &normalizedTitle, const int season) {
@@ -87,10 +96,10 @@ LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognit
     const auto season = recognition.season.value_or(1);
     if (season > 1 && !TitleEndsWithSeasonMarker(title, season)) {
         // A later season never falls back to the plain title, which belongs to the first season.
+        // The first key that matches anything decides; one media wins, several are ambiguous.
         for (const auto &suffix : SeasonSuffixes(season)) {
-            for (const auto mediaId : index.find(LocalMediaCatalogIndex::NormalizeTitle(title + QLatin1Char(' ') + suffix))) {
-                if (!matches.contains(mediaId)) matches.append(mediaId);
-            }
+            matches = index.find(LocalMediaCatalogIndex::NormalizeTitle(title + QLatin1Char(' ') + suffix));
+            if (!matches.isEmpty()) break;
         }
         if (matches.isEmpty()) {
             result.state = LocalRecognitionState::Ambiguous;
