@@ -101,7 +101,7 @@ The media details panel has a remove-from-list action that asks for confirmation
 ### Progress display and synchronization status
 
 - Chapters, volumes or episodes whose total is unknown are shown as `?` (for example `12/?`), never as `0`.
-- A progress bar reports the current stage plus an item count. It is indeterminate when the total is unknown (the user list) and shows a percentage only when the total is known (pending changes). It disappears a few seconds after the synchronization succeeds or fails, and immediately when a synchronization is cancelled (for example when the account is removed). Synchronization errors are shown there only, not on unrelated screens.
+- A progress bar reports the current stage plus an item count. It is indeterminate when the total is unknown (the user list) and shows a percentage only when the total is known (pending changes). The bar stays hidden while nothing is happening (for example the periodic pending-changes check with nothing to send, or a synchronization skipped because no account is connected): it only appears while there is real progress or after a failure. It disappears a few seconds after the synchronization succeeds or fails, and immediately when a synchronization is cancelled (for example when the account is removed). Synchronization errors are shown there only, not on unrelated screens.
 - The main window starts maximized and the library opens on the in-progress (watching/reading) list.
 
 ## Development Notes

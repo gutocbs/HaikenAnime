@@ -125,7 +125,15 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                                                           readActiveMediaIdsQueryPath_, markSourceRemovedQueryPath_);
                     SqliteSyncTaskStateRepository taskRepository(
                         database.connection(), readTaskStatesQueryPath_, upsertTaskStateQueryPath_, deleteTaskStateQueryPath_);
-                    if (credentials.token.isEmpty() || credentials.username.isEmpty()) {
+                    if (!AniListAccountOwnership::CanSynchronizeUserList(credentials)) {
+                        // No account (or suspended during removal): nothing to synchronize, not a failure.
+                        result.succeeded = true;
+                        result.errorCategory = AniListSyncErrorCategory::None;
+                        if (authenticatedUserList_.auditLogger) {
+                            authenticatedUserList_.auditLogger(QStringLiteral(
+                                "AniList user-list synchronization skipped: not authenticated."));
+                        }
+                    } else if (credentials.username.isEmpty()) {
                         error = QStringLiteral("AniList user-list synchronization requires authentication.");
                         result.errorCategory = AniListSyncErrorCategory::Authentication;
                     } else {

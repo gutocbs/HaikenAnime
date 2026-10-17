@@ -13,6 +13,7 @@ private slots:
     void ownerIsLoadedAccountAfterStartupStep();
     void ownerFallsBackToLastAccountWhenDisconnected();
     void pendingChangesAreSkippedWithoutValidatedAccount();
+    void userListIsSkippedWithoutTokenOrAccount();
 };
 
 void AniListAccountOwnershipTests::remembersLoadedAccountWhenPreferenceIsUnset() {
@@ -43,6 +44,17 @@ void AniListAccountOwnershipTests::ownerFallsBackToLastAccountWhenDisconnected()
 void AniListAccountOwnershipTests::pendingChangesAreSkippedWithoutValidatedAccount() {
     QVERIFY(!CanProcessPendingChanges(0));
     QVERIFY(CanProcessPendingChanges(7));
+}
+
+void AniListAccountOwnershipTests::userListIsSkippedWithoutTokenOrAccount() {
+    AniListCredentials credentials;
+    QVERIFY(!CanSynchronizeUserList(credentials));
+    credentials.token = QStringLiteral("token");
+    QVERIFY(!CanSynchronizeUserList(credentials));
+    credentials.userId = 7;
+    QVERIFY(CanSynchronizeUserList(credentials));
+    credentials.token.clear();
+    QVERIFY(!CanSynchronizeUserList(credentials));
 }
 
 QTEST_MAIN(AniListAccountOwnershipTests)

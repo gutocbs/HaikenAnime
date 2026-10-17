@@ -1,6 +1,8 @@
 #ifndef HAIKENANIME_ANILISTACCOUNTOWNERSHIP_H
 #define HAIKENANIME_ANILISTACCOUNTOWNERSHIP_H
 
+#include "AniListCredentials.h"
+
 #include <QtGlobal>
 
 /** Decisions about which AniList account owns local edits and pending changes. */
@@ -19,6 +21,12 @@ namespace AniListAccountOwnership {
 /** Pending changes are only sent or adopted for a validated account (userId > 0). */
 [[nodiscard]] inline bool CanProcessPendingChanges(const qint64 userId) {
     return userId > 0;
+}
+
+
+/** The user-list sync only runs for a connected, validated account (token and userId > 0). */
+[[nodiscard]] inline bool CanSynchronizeUserList(const AniListCredentials &credentials) {
+    return !credentials.token.isEmpty() && credentials.userId > 0;
 }
 
 }

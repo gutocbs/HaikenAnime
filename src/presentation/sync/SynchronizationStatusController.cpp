@@ -47,6 +47,9 @@ void SynchronizationStatusController::beginRoundIfSettled() {
     // Only the settle window continues a round. Once an outcome was published (or the bar is hidden) the
     // next task starts a new round, so an earlier failure never taints a later successful retry.
     if (outcome_ == QLatin1String("running")) return;
+    // A new round never inherits a lingering bar: it only reappears with real progress or a failure.
+    visible_ = false;
+    message_.clear();
     roundFailed_ = false;
     roundHadOutcome_ = false;
     failureMessage_.clear();
@@ -63,7 +66,6 @@ void SynchronizationStatusController::HandleStarted(const SyncPartition partitio
     settleTimer_.stop();
     beginRoundIfSettled();
     activePartitions_.insert(static_cast<int>(partition));
-    visible_ = true;
     outcome_ = QStringLiteral("running");
     message_ = tr("Sincronizando…");
     emit changed();
@@ -76,6 +78,9 @@ void SynchronizationStatusController::HandleProgress(const SyncProgress &progres
     stageCount_ = progress.stageCount;
     processedItems_ = progress.processedItems;
     totalItems_ = progress.totalItems;
+    // The bar only appears once real work is reported.
+    visible_ = true;
+    message_ = tr("Sincronizando…");
     emit changed();
 }
 
@@ -125,6 +130,11 @@ void SynchronizationStatusController::settleIfIdle() {
 
 void SynchronizationStatusController::publishOutcome() {
     if (!activePartitions_.isEmpty()) return;
+    if (!visible_ && !roundFailed_) {
+        // Nothing was shown (no progress, no failure): finish silently without a success flash.
+        hide();
+        return;
+    }
     outcome_ = roundFailed_ ? QStringLiteral("failed") : QStringLiteral("succeeded");
     message_ = roundFailed_ ? failureMessage_ : tr("Sincronização concluída.");
     hideTimer_.start();

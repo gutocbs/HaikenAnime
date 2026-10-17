@@ -47,6 +47,11 @@ private slots:
     void cancelledWhileAnotherPartitionRunsKeepsRunning();
     void progressAfterCancellationIsIgnored();
     void ignoresCancellationOfInactivePartition();
+    void silentRoundWithoutProgressNeverBecomesVisible();
+    void roundWithProgressBecomesVisibleThenHides();
+    void failureWithoutProgressBecomesVisible();
+    void rerunAfterCancellationWithSuspendedCredentialsStaysSilent();
+    void silentRunKeepsRunningTrueWhileActive();
 };
 
 void SynchronizationStatusControllerTests::startsIdleAndHidden() {
@@ -64,9 +69,11 @@ void SynchronizationStatusControllerTests::startedShowsRunningStatus() {
 
     controller.HandleStarted(SyncPartition::UserList);
 
-    QVERIFY(controller.visible());
+    QVERIFY(!controller.visible());
     QVERIFY(controller.running());
     QCOMPARE(controller.outcome(), QStringLiteral("running"));
+    controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 0, -1));
+    QVERIFY(controller.visible());
     QCOMPARE(controller.message(), QStringLiteral("Sincronizando…"));
     QVERIFY(changed.count() >= 1);
 }
@@ -129,6 +136,7 @@ void SynchronizationStatusControllerTests::pendingChangesStageHasLabel() {
 void SynchronizationStatusControllerTests::completedShowsSuccessThenHides() {
     SynchronizationStatusController controller(400, 20);
     controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 1, 2));
 
     controller.HandleCompleted(SyncPartition::UserList);
 
@@ -179,6 +187,7 @@ void SynchronizationStatusControllerTests::staysRunningWhileAnotherPartitionIsAc
     SynchronizationStatusController controller(400, 20);
     controller.HandleStarted(SyncPartition::UserList);
     controller.HandleStarted(SyncPartition::PendingChanges);
+    controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 1, 2));
 
     controller.HandleCompleted(SyncPartition::UserList);
     QTest::qWait(100);
@@ -193,6 +202,7 @@ void SynchronizationStatusControllerTests::staysRunningWhileAnotherPartitionIsAc
 void SynchronizationStatusControllerTests::staysRunningPastSettleAndHideDelays() {
     SynchronizationStatusController controller(20, 20);
     controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 0, -1));
 
     QTest::qWait(120);
 
@@ -218,10 +228,12 @@ void SynchronizationStatusControllerTests::failureInRoundWinsOverLaterCompletion
 void SynchronizationStatusControllerTests::newStartDuringLingerCancelsHiding() {
     SynchronizationStatusController controller(60, 20);
     controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 1, 2));
     controller.HandleCompleted(SyncPartition::UserList);
     QTRY_COMPARE(controller.outcome(), QStringLiteral("succeeded"));
 
     controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 0, -1));
     QTest::qWait(150);
 
     QVERIFY(controller.visible());
@@ -277,6 +289,7 @@ void SynchronizationStatusControllerTests::doesNotPublishSuccessBetweenSequentia
             [&] { outcomes.append(controller.outcome()); });
 
     controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 1, 2));
     controller.HandleCompleted(SyncPartition::UserList);
     QTest::qWait(10);
     controller.HandleStarted(SyncPartition::PendingChanges);
@@ -308,6 +321,7 @@ void SynchronizationStatusControllerTests::startDuringLingerAfterFailureBeginsNe
 
     controller.HandleStarted(SyncPartition::UserList);
     QCOMPARE(controller.outcome(), QStringLiteral("running"));
+    controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 1, 2));
     controller.HandleCompleted(SyncPartition::UserList);
 
     QTRY_COMPARE(controller.outcome(), QStringLiteral("succeeded"));
@@ -336,6 +350,7 @@ void SynchronizationStatusControllerTests::cancelledPartitionDoesNotFailTheRound
     SynchronizationStatusController controller(400, 20);
     controller.HandleStarted(SyncPartition::UserList);
     controller.HandleStarted(SyncPartition::PendingChanges);
+    controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 1, 2));
     controller.HandleCompleted(SyncPartition::UserList);
 
     controller.HandleCancelled(SyncPartition::PendingChanges);
@@ -347,6 +362,7 @@ void SynchronizationStatusControllerTests::cancelledWhileAnotherPartitionRunsKee
     SynchronizationStatusController controller(400, 20);
     controller.HandleStarted(SyncPartition::UserList);
     controller.HandleStarted(SyncPartition::PendingChanges);
+    controller.HandleProgress(progress(SyncPartition::PendingChanges, QStringLiteral("pending_changes"), 0, 3));
 
     controller.HandleCancelled(SyncPartition::UserList);
     QTest::qWait(100);
@@ -374,6 +390,74 @@ void SynchronizationStatusControllerTests::ignoresCancellationOfInactivePartitio
     controller.HandleCancelled(SyncPartition::UserList);
 
     QCOMPARE(changed.count(), 0);
+    QVERIFY(!controller.visible());
+}
+
+void SynchronizationStatusControllerTests::silentRoundWithoutProgressNeverBecomesVisible() {
+    SynchronizationStatusController controller(400, 20);
+    bool everVisible = false;
+    connect(&controller, &SynchronizationStatusController::changed, this,
+            [&] { everVisible = everVisible || controller.visible(); });
+
+    controller.HandleStarted(SyncPartition::PendingChanges);
+    controller.HandleCompleted(SyncPartition::PendingChanges);
+
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("idle"));
+    QTest::qWait(50);
+    QVERIFY(!everVisible);
+    QVERIFY(!controller.visible());
+    QVERIFY(!controller.running());
+}
+
+void SynchronizationStatusControllerTests::roundWithProgressBecomesVisibleThenHides() {
+    SynchronizationStatusController controller(60, 20);
+    controller.HandleStarted(SyncPartition::PendingChanges);
+    controller.HandleProgress(progress(SyncPartition::PendingChanges, QStringLiteral("pending_changes"), 1, 2));
+    QVERIFY(controller.visible());
+
+    controller.HandleCompleted(SyncPartition::PendingChanges);
+
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("succeeded"));
+    QVERIFY(controller.visible());
+    QTRY_VERIFY(!controller.visible());
+    QCOMPARE(controller.outcome(), QStringLiteral("idle"));
+}
+
+void SynchronizationStatusControllerTests::failureWithoutProgressBecomesVisible() {
+    SynchronizationStatusController controller(400, 20);
+    controller.HandleStarted(SyncPartition::PendingChanges);
+
+    controller.HandleFailed(SyncPartition::PendingChanges, QStringLiteral("Sem conexão"));
+
+    QVERIFY(controller.visible());
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("failed"));
+    QCOMPARE(controller.message(), QStringLiteral("Sem conexão"));
+}
+
+void SynchronizationStatusControllerTests::rerunAfterCancellationWithSuspendedCredentialsStaysSilent() {
+    SynchronizationStatusController controller(400, 20);
+    bool everVisible = false;
+    connect(&controller, &SynchronizationStatusController::changed, this,
+            [&] { everVisible = everVisible || controller.visible(); });
+    controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleCancelled(SyncPartition::UserList);
+
+    // Re-run with suspended credentials: the executor skips it and reports a plain completion.
+    controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleCompleted(SyncPartition::UserList);
+
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("idle"));
+    QTest::qWait(50);
+    QVERIFY(!everVisible);
+}
+
+void SynchronizationStatusControllerTests::silentRunKeepsRunningTrueWhileActive() {
+    SynchronizationStatusController controller(400, 20);
+
+    controller.HandleStarted(SyncPartition::UserList);
+    QTest::qWait(80);
+
+    QVERIFY(controller.running());
     QVERIFY(!controller.visible());
 }
 
