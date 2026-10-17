@@ -167,7 +167,7 @@
     <message>
         <location filename="../resources/qml/Home.qml" line="158"/>
         <source>Minha lista</source>
-        <translation>Minha lista</translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="../resources/qml/Home.qml" line="165"/>
@@ -436,7 +436,7 @@
     <message>
         <location filename="../src/presentation/home/HomeScreenController.cpp" line="81"/>
         <source>Em andamento</source>
-        <translation>Em andamento</translation>
+        <translation>Assistindo</translation>
     </message>
     <message>
         <location filename="../src/presentation/home/HomeScreenController.cpp" line="83"/>
@@ -446,7 +446,7 @@
     <message>
         <location filename="../src/presentation/home/HomeScreenController.cpp" line="85"/>
         <source>Em pausa</source>
-        <translation>Em pausa</translation>
+        <translation>Pausado</translation>
     </message>
     <message>
         <location filename="../src/presentation/home/HomeScreenController.cpp" line="87"/>
