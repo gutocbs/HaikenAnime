@@ -37,6 +37,7 @@ public:
                                 AuthenticatedUserListConfiguration authenticatedUserList);
     ~ApplicationSyncTaskExecutor() override;
 
+    void SetProgressReporter(ProgressReporter reporter) override;
     void Execute(const SyncTaskState &state, qint64 generation, Completion completion) override;
     void Cancel(SyncPartition partition, CancellationAcknowledgement acknowledgement) override;
     void Shutdown(ShutdownAcknowledgement acknowledgement) override;
@@ -67,6 +68,7 @@ private:
     std::mutex mutex_;
     std::map<SyncPartition, std::shared_ptr<Job>> jobs_;
     ShutdownAcknowledgement shutdownAcknowledgement_;
+    ProgressReporter progressReporter_;
 };
 
 #endif // HAIKENANIME_APPLICATIONSYNCTASKEXECUTOR_H

@@ -5,6 +5,8 @@
     "readMedia": ":/sqlite/queries/read-media.sql",
     "readActiveMediaIds": ":/sqlite/queries/read-active-media-ids.sql",
     "markMediaSourceRemoved": ":/sqlite/queries/mark-media-source-removed.sql",
+    "markMediaPersonalListRemoved": ":/sqlite/queries/mark-media-personal-list-removed.sql",
+    "supersedePendingDeletion": ":/sqlite/queries/supersede-pending-deletion.sql",
     "enqueuePendingChange": ":/sqlite/queries/enqueue-pending-change.sql",
     "readPendingChanges": ":/sqlite/queries/read-pending-changes.sql",
     "updatePendingChange": ":/sqlite/queries/update-pending-change.sql",

@@ -8,6 +8,8 @@
 #include "AniListOAuthConfig.h"
 #include "IAniListViewerClient.h"
 
+#include <QMutex>
+
 #include <functional>
 
 enum class AniListAuthenticationState { Disconnected, Authorizing, AwaitingValidation, Authenticated, AuthenticationFailed };
@@ -42,14 +44,26 @@ public:
     /** Returns the state of the AniList integration session. */
     [[nodiscard]] AniListAuthenticationState state() const;
 
-    /** Returns the last successfully loaded or saved credentials. */
+    /** Returns the last successfully loaded or saved credentials (empty while suspended). Thread-safe. */
     [[nodiscard]] AniListCredentials credentials() const override;
+
+    /**
+     * While suspended, credentials() reports empty credentials so that no task started from now on can
+     * obtain the token. Used while the account is being removed. Thread-safe.
+     */
+    void suspendCredentials();
+    void resumeCredentials();
 
 private:
     void audit(const QString &event) const;
+    [[nodiscard]] AniListCredentials StoredCredentials() const;
+    void SetState(AniListAuthenticationState state);
+    void SetSession(const AniListCredentials &credentials, AniListAuthenticationState state);
     ISecretStore &secretStore_;
     AuditLogger auditLogger_;
+    mutable QMutex mutex_;
     AniListCredentials credentials_;
+    bool credentialsSuspended_ = false;
     AniListAuthenticationState state_ = AniListAuthenticationState::Disconnected;
 };
 

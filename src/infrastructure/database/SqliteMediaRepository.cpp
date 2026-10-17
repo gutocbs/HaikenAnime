@@ -171,7 +171,8 @@ bool SqliteMediaRepository::updatePersonalListMedia(const Media &media, QString 
 }
 
 bool SqliteMediaRepository::reconcileAuthoritativeSnapshot(
-    const QSet<int> &observedMediaIds, int &removedCount, QString &error) {
+    const QSet<int> &observedMediaIds, const QSet<int> &excludedMediaIds,
+    int &removedCount, QString &error) {
     removedCount = 0;
     error.clear();
     if (!database_.isOpen()) {
@@ -198,7 +199,7 @@ bool SqliteMediaRepository::reconcileAuthoritativeSnapshot(
     QList<int> missingIds;
     while (active.next()) {
         const int mediaId = active.value(0).toInt();
-        if (!observedMediaIds.contains(mediaId)) missingIds.append(mediaId);
+        if (!observedMediaIds.contains(mediaId) && !excludedMediaIds.contains(mediaId)) missingIds.append(mediaId);
     }
 
     QSqlQuery mark(database_);

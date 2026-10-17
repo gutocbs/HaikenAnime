@@ -13,6 +13,7 @@ QString SafeError(const QString &error, const QString &fallback) {
 
 AdaptiveSyncRuntime::AdaptiveSyncRuntime(RepositoryFactory repositoryFactory, ExecutorFactory executorFactory,
                                          std::map<SyncTaskKind, SyncSchedulePolicy> policies) {
+    qRegisterMetaType<SyncProgress>();
     owner_ = new QObject;
     owner_->moveToThread(&thread_);
     thread_.start(QThread::LowPriority);
@@ -71,6 +72,23 @@ void AdaptiveSyncRuntime::requestNow(const SyncPartition partition) {
     }
 }
 
+void AdaptiveSyncRuntime::cancel(const SyncPartition partition, std::function<void()> acknowledged) {
+    QObject *owner = nullptr;
+    {
+        QMutexLocker lock(&stateMutex_);
+        if (state_ == State::Ready && !stopRequested_) owner = owner_;
+    }
+    if (!owner) {
+        if (acknowledged) acknowledged();
+        return;
+    }
+    // The acknowledgement is queued onto the runtime object (created on the caller's/GUI thread), not onto
+    // the worker, so the caller's continuation always runs on its own thread.
+    QMetaObject::invokeMethod(owner, [this, partition, acknowledged = std::move(acknowledged)]() mutable {
+        CancelOnWorker(partition, std::move(acknowledged));
+    }, Qt::QueuedConnection);
+}
+
 bool AdaptiveSyncRuntime::isStopped() const {
     QMutexLocker lock(&stateMutex_);
     return (state_ == State::Stopped || state_ == State::Failed) && !thread_.isRunning();
@@ -102,10 +120,28 @@ void AdaptiveSyncRuntime::Initialize(RepositoryFactory repositoryFactory, Execut
     coordinator_ = std::make_unique<AdaptiveSyncCoordinator>(*repository_, *executor_,
                                                                AdaptiveSyncCoordinator::Clock{}, std::move(policies), true);
     connect(coordinator_.get(), &AdaptiveSyncCoordinator::Stopped, owner_, [this] { DisposeOnWorker(); });
+    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskStarted, owner_,
+            [this](const SyncPartition partition) {
+                QMetaObject::invokeMethod(this, [this, partition] {
+                    emit BackgroundTaskStarted(partition);
+                }, Qt::QueuedConnection);
+            });
+    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskProgress, owner_,
+            [this](const SyncProgress &progress) {
+                QMetaObject::invokeMethod(this, [this, progress] {
+                    emit BackgroundTaskProgress(progress);
+                }, Qt::QueuedConnection);
+            });
     connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskCompleted, owner_,
             [this](const SyncPartition partition) {
                 QMetaObject::invokeMethod(this, [this, partition] {
                     emit BackgroundTaskCompleted(partition);
+                }, Qt::QueuedConnection);
+            });
+    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskCancelled, owner_,
+            [this](const SyncPartition partition) {
+                QMetaObject::invokeMethod(this, [this, partition] {
+                    emit BackgroundTaskCancelled(partition);
                 }, Qt::QueuedConnection);
             });
     connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskFailed, owner_,
@@ -152,6 +188,19 @@ void AdaptiveSyncRuntime::StartOnWorker() {
 void AdaptiveSyncRuntime::RequestNowOnWorker(const SyncPartition partition) {
     StartOnWorker();
     if (!isStopRequested() && coordinator_ && coordinatorStarted_) coordinator_->RequestNow(partition);
+}
+
+void AdaptiveSyncRuntime::CancelOnWorker(const SyncPartition partition, std::function<void()> acknowledged) {
+    auto deliver = [this, acknowledged = std::move(acknowledged)]() mutable {
+        QMetaObject::invokeMethod(this, [acknowledged = std::move(acknowledged)] {
+            if (acknowledged) acknowledged();
+        }, Qt::QueuedConnection);
+    };
+    if (isStopRequested() || !coordinator_ || !coordinatorStarted_) {
+        deliver();
+        return;
+    }
+    coordinator_->Cancel(partition, std::move(deliver));
 }
 
 void AdaptiveSyncRuntime::StopOnWorker() {

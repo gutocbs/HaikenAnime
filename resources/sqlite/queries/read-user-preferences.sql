@@ -12,6 +12,7 @@ SELECT score_minimum,
        preferred_title_key,
        include_adult_content,
        automatic_local_file_recognition,
-       enabled_user_lists
+       enabled_user_lists,
+       last_anilist_user_id
 FROM user_preferences
 WHERE id = 1

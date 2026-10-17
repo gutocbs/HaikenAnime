@@ -99,13 +99,12 @@ bool GraphQlAniListDataSource::fetchPage(const AniListDataSourceRequest &request
         }
         if (!AniListGraphQlUserListParser::parse(response.data, result.page.media, error,
                                                   request.filter.acceptedListStatuses,
-                                                  acceptedMediaTypes)) return false;
+                                                  acceptedMediaTypes, &result.observedMediaIds)) return false;
         result.page.currentPage = qMax(1, request.filter.startingPage);
         result.page.hasNextPage = hasNextChunk.toBool();
         result.page.totalPages = result.page.hasNextPage ? result.page.currentPage + 1 : result.page.currentPage;
         result.isCompleteAuthoritativeSnapshot = request.filter.startingPage == 1
-            && request.filter.type.isEmpty() && request.filter.status.isEmpty()
-            && request.filter.list.isEmpty() && request.filter.acceptedListStatuses.isEmpty();
+            && request.filter.status.isEmpty() && request.filter.list.isEmpty();
         return true;
     }
 

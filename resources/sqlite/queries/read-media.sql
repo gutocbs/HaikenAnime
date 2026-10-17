@@ -5,4 +5,5 @@ SELECT id, name, english_name, original_name, alternative_names,
        season, season_year, next_airing_episode, next_airing_at, anilist_url, external_links
 FROM media
 WHERE source_removed_at IS NULL
+  AND personal_list_removed_at IS NULL
 ORDER BY status ASC, name COLLATE NOCASE ASC;

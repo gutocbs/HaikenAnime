@@ -6,6 +6,7 @@
 #include "../../application/anilist/IAniListUpdateClient.h"
 
 class AniListGraphQlClient;
+struct AniListGraphQlResponse;
 class GraphQlQueryStore;
 
 /** Implements AniList mutations using external GraphQL query files. */
@@ -13,18 +14,28 @@ class AniListUpdateClient final : public IAniListUpdateClient {
 public:
     /** Creates an update client that consolidates each media update into one mutation. */
     AniListUpdateClient(AniListGraphQlClient &graphQlClient,
-                        GraphQlQueryStore &updateQuery);
+                        GraphQlQueryStore &updateQuery,
+                        GraphQlQueryStore &entryIdQuery,
+                        GraphQlQueryStore &deleteMutation);
 
     /** Sends all changes for one media item through the update operation. */
     [[nodiscard]] bool updateMedia(const AniListMediaPendingChanges &changes,
                                    QString &error) override;
 
+    /** Resolves the list-entry id of mediaId for userId and deletes that entry. */
+    [[nodiscard]] bool deleteMediaListEntry(int mediaId, qint64 userId,
+                                            QString &error) override;
+
 private:
     [[nodiscard]] bool Execute(GraphQlQueryStore &queryStore, const QJsonObject &variables,
                                QString &error) const;
+    [[nodiscard]] bool Send(GraphQlQueryStore &queryStore, const QJsonObject &variables,
+                            AniListGraphQlResponse &response, QString &error) const;
 
     AniListGraphQlClient &graphQlClient_;
     GraphQlQueryStore &updateQuery_;
+    GraphQlQueryStore &entryIdQuery_;
+    GraphQlQueryStore &deleteMutation_;
 };
 
 #endif // HAIKENANIME_ANILISTUPDATECLIENT_H

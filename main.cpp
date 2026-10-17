@@ -10,12 +10,15 @@
 #include <utility>
 
 #include "src/app/ApplicationComposition.h"
+#include "src/application/anilist/AniListAccountOwnership.h"
+#include "src/application/anilist/RemoveAniListAccountUseCase.h"
 #include "src/app/AniListOAuthCallbackReceiver.h"
 #include "src/app/TranslationLoader.h"
 #include "src/infrastructure/anilist/WindowsUrlProtocolRegistrar.h"
 #include "src/presentation/home/HomeScreenController.h"
 #include "src/presentation/seasonal/SeasonalCatalogController.h"
 #include "src/presentation/settings/SettingsController.h"
+#include "src/presentation/sync/SynchronizationStatusController.h"
 #include "src/application/media/SeasonalPersonalListService.h"
 
 namespace {
@@ -31,6 +34,20 @@ bool persistHomeSortPreference(ApplicationContext &context, const QString &key, 
 
     UserPreferences updated = context.userPreferences;
     updated.homeSortKey = key;
+    if (!context.userPreferencesRepository->replace(updated, error)) return false;
+    context.userPreferences = std::move(updated);
+    return true;
+}
+
+bool persistLastAniListUserId(ApplicationContext &context, const qint64 userId, QString &error) {
+    error.clear();
+    if (!context.userPreferencesRepository) {
+        error = QStringLiteral("User preferences are unavailable.");
+        return false;
+    }
+
+    UserPreferences updated = context.userPreferences;
+    updated.lastAniListUserId = userId;
     if (!context.userPreferencesRepository->replace(updated, error)) return false;
     context.userPreferences = std::move(updated);
     return true;
@@ -150,21 +167,21 @@ int main(int argc, char *argv[]) {
     QObject::connect(&oauthCallbackReceiver, &AniListOAuthCallbackReceiver::callbackReceived,
                      &settingsController, &SettingsController::HandleAniListOAuthCallback);
     settingsController.SetScanCoordinator(context.localLibraryScan.get());
+    SynchronizationStatusController synchronizationStatus;
     if (context.adaptiveSync) {
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,
-                         &homeController, &HomeScreenController::notifySynchronizationFailed);
-        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::InitializationFailed,
-                         &settingsController, &SettingsController::notifySynchronizationFailed);
+                         &synchronizationStatus,
+                         &SynchronizationStatusController::HandleInitializationFailed);
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskStarted,
+                         &synchronizationStatus, &SynchronizationStatusController::HandleStarted);
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskProgress,
+                         &synchronizationStatus, &SynchronizationStatusController::HandleProgress);
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskFailed,
-                         &homeController,
-                         [&homeController](const SyncPartition, const QString &error) {
-                             homeController.notifySynchronizationFailed(error);
-                         });
-        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskFailed,
-                         &settingsController,
-                         [&settingsController](const SyncPartition, const QString &error) {
-                             settingsController.notifySynchronizationFailed(error);
-                         });
+                         &synchronizationStatus, &SynchronizationStatusController::HandleFailed);
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCancelled,
+                         &synchronizationStatus, &SynchronizationStatusController::HandleCancelled);
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCompleted,
+                         &synchronizationStatus, &SynchronizationStatusController::HandleCompleted);
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskFailed,
                          &app, [&context](const SyncPartition partition, const QString &error) {
                              if (context.logger) {
@@ -178,12 +195,6 @@ int main(int argc, char *argv[]) {
                              if (partition == SyncPartition::UserList) homeController.reload();
                          });
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCompleted,
-                         &settingsController, [&settingsController](const SyncPartition partition) {
-                             if (partition == SyncPartition::UserList) {
-                                 settingsController.notifySynchronizationCompleted();
-                             }
-                         });
-        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCompleted,
                          &app, [&context](const SyncPartition partition) {
                              if (context.logger) {
                                  context.logger->info(
@@ -193,7 +204,9 @@ int main(int argc, char *argv[]) {
                              }
                          });
         const auto schedulingError = context.schedulingInitializationError();
-        if (!schedulingError.isEmpty()) homeController.notifySynchronizationFailed(schedulingError);
+        if (!schedulingError.isEmpty()) {
+            synchronizationStatus.HandleInitializationFailed(schedulingError);
+        }
     }
     QObject::connect(&homeController, &HomeScreenController::sortPreferenceChanged,
                      [&context, &settingsController](const QString &key) {
@@ -220,13 +233,61 @@ int main(int argc, char *argv[]) {
     QObject::connect(&seasonalCatalogController, &SeasonalCatalogController::personalListSaved,
                      &homeController, &HomeScreenController::reload);
 
+    if (context.personalListChangeService) {
+        context.personalListChangeService->setOwnerProvider([&context]() -> qint64 {
+            const qint64 connectedUserId = context.aniListAuthManager
+                ? context.aniListAuthManager->credentials().userId : 0;
+            return AniListAccountOwnership::ResolveOwnerUserId(
+                connectedUserId, context.userPreferences.lastAniListUserId);
+        });
+    }
+    const auto rememberConnectedAniListAccount = [&context, &settingsController] {
+        const qint64 userId = AniListAccountOwnership::AccountToRemember(
+            context.aniListAuthManager ? context.aniListAuthManager->credentials().userId : 0,
+            context.userPreferences.lastAniListUserId);
+        if (userId <= 0) return;
+        QString error;
+        if (persistLastAniListUserId(context, userId, error)) {
+            settingsController.ApplyExternalLastAniListUserId(userId);
+        } else if (context.logger) {
+            context.logger->warning(LogCategory::Configuration, error);
+        }
+    };
+    QObject::connect(&settingsController, &SettingsController::aniListAuthenticationSucceeded,
+                     &app, rememberConnectedAniListAccount);
+    std::unique_ptr<RemoveAniListAccountUseCase> removeAniListAccount;
+    if (context.aniListAuthManager) {
+        removeAniListAccount = std::make_unique<RemoveAniListAccountUseCase>(
+            [&oauthCallbackReceiver] { oauthCallbackReceiver.stop(); },
+            [&context](const bool suspended) {
+                if (!context.aniListAuthManager) return;
+                if (suspended) context.aniListAuthManager->suspendCredentials();
+                else context.aniListAuthManager->resumeCredentials();
+            },
+            [&context](const SyncPartition partition, std::function<void()> acknowledged) {
+                // Without a runtime there is no running synchronization to wait for.
+                if (context.adaptiveSync) context.adaptiveSync->cancel(partition, std::move(acknowledged));
+                else if (acknowledged) acknowledged();
+            },
+            *context.aniListAuthManager,
+            [&context, &settingsController](const qint64 userId, QString &error) {
+                // Edits made offline after the removal still belong to the removed account.
+                if (!persistLastAniListUserId(context, userId, error)) return false;
+                settingsController.ApplyExternalLastAniListUserId(userId);
+                return true;
+            },
+            [logger = context.logger.get()](const QString &event) {
+                if (logger) logger->info(LogCategory::Application, event);
+            });
+        settingsController.SetAniListAccountRemoval(removeAniListAccount.get());
+    }
+    // Accounts connected before this release (or loaded from the secret store) must also be remembered.
+    rememberConnectedAniListAccount();
     if (context.adaptiveSync) {
-        const auto requestAniListSynchronization = [&context, &homeController, &settingsController] {
+        const auto requestAniListSynchronization = [&context] {
             if (!context.adaptiveSync) return;
             if (!context.aniListAuthManager
                 || context.aniListAuthManager->credentials().token.isEmpty()) return;
-            homeController.notifySynchronizationStarted();
-            settingsController.notifySynchronizationStarted();
             context.adaptiveSync->requestNow(SyncPartition::UserList);
             context.adaptiveSync->requestNow(SyncPartition::PendingChanges);
         };
@@ -259,6 +320,7 @@ int main(int argc, char *argv[]) {
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("homeController"), &homeController);
     engine.rootContext()->setContextProperty(QStringLiteral("settingsController"), &settingsController);
+    engine.rootContext()->setContextProperty(QStringLiteral("synchronizationStatus"), &synchronizationStatus);
     engine.rootContext()->setContextProperty(QStringLiteral("seasonalCatalogController"), &seasonalCatalogController);
 
     int exitCode = 0;

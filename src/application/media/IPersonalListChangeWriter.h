@@ -12,6 +12,10 @@ class IPersonalListChangeWriter {
 public:
     virtual ~IPersonalListChangeWriter() = default;
 
+    /** Hides the media from the personal list and queues its AniList deletion in one operation. */
+    [[nodiscard]] virtual bool remove(const Media &media, const AniListPendingChange &deletion,
+                                      QString &error) = 0;
+
     [[nodiscard]] virtual bool save(const Media &media, const QList<AniListPendingChange> &changes,
                                     QString &error) = 0;
 };

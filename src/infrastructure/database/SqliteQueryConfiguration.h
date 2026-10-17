@@ -10,6 +10,8 @@ struct SqliteQueryConfiguration final {
     QString readMediaPath;
     QString readActiveMediaIdsPath;
     QString markMediaSourceRemovedPath;
+    QString markMediaPersonalListRemovedPath;
+    QString supersedePendingDeletionPath;
     QString enqueuePendingChangePath;
     QString readPendingChangesPath;
     QString updatePendingChangePath;

@@ -2,6 +2,7 @@
 #include "../../application/covers/CoverSourceResolver.h"
 #include "../../application/library/ILocalFileOpener.h"
 #include "../../application/library/LocalEpisodeReader.h"
+#include "../../application/media/ProgressFormatter.h"
 #include "../../application/media/MediaDetailsPresentation.h"
 #include "../../application/media/IPersonalListMediaWriter.h"
 #include "../../application/media/PersonalListChangeService.h"
@@ -54,14 +55,12 @@ QString mediaTypeLabel(const MediaType type) {
 }
 
 QString mediaProgress(const Media &media) {
-    return QStringLiteral("%1/%2").arg(media.ConsumedChapters).arg(media.TotalChapters);
+    return FormatProgress(media.ConsumedChapters, media.TotalChapters);
 }
 
 QString cardProgress(const Media &media) {
-    if (media.TotalChapters <= 0)
-        return QCoreApplication::translate("HomeMediaModel", "Progresso —");
-    return QCoreApplication::translate("HomeMediaModel", "Progresso %1/%2")
-        .arg(media.ConsumedChapters).arg(media.TotalChapters);
+    return QCoreApplication::translate("HomeMediaModel", "Progresso %1")
+        .arg(FormatProgress(media.ConsumedChapters, media.TotalChapters));
 }
 
 QString personalScore(const Media &media) {
@@ -171,6 +170,8 @@ bool containsOptionKey(const QVariantList &options, const QString &key) {
 QString firstOptionKey(const QVariantList &options) {
     return options.first().toMap().value(QStringLiteral("key")).toString();
 }
+
+inline constexpr auto DefaultListFilterKey = "current";
 
 int seasonRank(const QString &season) {
     if (season.compare(QStringLiteral("WINTER"), Qt::CaseInsensitive) == 0) return 1;
@@ -332,12 +333,8 @@ QString HomeScreenController::errorMessage() const {
     return errorMessage_;
 }
 
-int HomeScreenController::synchronizationProgress() const {
-    return synchronizationProgress_;
-}
-
-bool HomeScreenController::synchronizationProgressKnown() const {
-    return synchronizationProgressKnown_;
+QString HomeScreenController::mediaOperationErrorMessage() const {
+    return mediaOperationErrorMessage_;
 }
 
 int HomeScreenController::mediaCount() const {
@@ -359,8 +356,12 @@ QVariantList HomeScreenController::availableSortOptions() const {
 QString HomeScreenController::activeListFilter() const { return activeListFilter_; }
 QString HomeScreenController::activeSort() const { return activeSort_; }
 QString HomeScreenController::searchQuery() const { return searchQuery_; }
+QString HomeScreenController::defaultListFilter() const {
+    const auto defaultKey = QString::fromLatin1(DefaultListFilterKey);
+    return containsOptionKey(listOptions_, defaultKey) ? defaultKey : firstOptionKey(listOptions_);
+}
 bool HomeScreenController::browseCriteriaActive() const {
-    return activeListFilter_ != firstOptionKey(listOptions_)
+    return activeListFilter_ != defaultListFilter()
         || activeSort_ != firstOptionKey(sortOptions_) || !searchQuery_.isEmpty();
 }
 bool HomeScreenController::hasSelection() const { return hasSelection_; }
@@ -500,7 +501,7 @@ void HomeScreenController::ConfigureBrowseOptions(QVariantList mediaTypeOptions,
     if (!containsOptionKey(mediaTypeOptions_, activeMediaType_))
         activeMediaType_ = firstOptionKey(mediaTypeOptions_);
     if (!containsOptionKey(listOptions_, activeListFilter_))
-        activeListFilter_ = firstOptionKey(listOptions_);
+        activeListFilter_ = defaultListFilter();
     if (!containsOptionKey(sortOptions_, activeSort_))
         activeSort_ = firstOptionKey(sortOptions_);
     usesDefaultBrowseOptions_ = false;
@@ -577,12 +578,12 @@ void HomeScreenController::SetSearchQuery(const QString &query) {
 }
 
 void HomeScreenController::ClearBrowseCriteria() {
-    const auto defaultListFilter = firstOptionKey(listOptions_);
+    const auto defaultFilter = defaultListFilter();
     const auto defaultSort = firstOptionKey(sortOptions_);
-    if (activeListFilter_ == defaultListFilter
+    if (activeListFilter_ == defaultFilter
         && activeSort_ == defaultSort && searchQuery_.isEmpty()) return;
     const bool sortChanged = activeSort_ != defaultSort;
-    activeListFilter_ = defaultListFilter;
+    activeListFilter_ = defaultFilter;
     activeSort_ = defaultSort;
     searchQuery_.clear();
     rebuildMediaModels();
@@ -598,6 +599,7 @@ void HomeScreenController::SelectMedia(const int mediaId) {
     if (match == allMedia_.cend() || mediaTypeKey(match->Type) != activeMediaType_) return;
     selectedMedia_ = *match;
     hasSelection_ = true;
+    mediaOperationErrorMessage_.clear();
     selectedCoverSource_ = CoverPlaceholder;
     const auto rows = fullModel_.media();
     for (int row = 0; row < rows.size(); ++row) {
@@ -630,10 +632,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
                                                         const QStringList &alternativeNames) {
     const auto setSaveError = [this](QString error) {
         if (error.isEmpty()) error = QStringLiteral("Não foi possível salvar as alterações da mídia.");
-        if (errorMessage_ != error) {
-            errorMessage_ = std::move(error);
-            emit errorMessageChanged();
-        }
+        setMediaOperationError(std::move(error));
         return false;
     };
     if (!hasSelection_ || (personalListWriter_ == nullptr && personalListChangeService_ == nullptr)) {
@@ -667,10 +666,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
     });
     *destination = updated;
     selectedMedia_ = updated;
-    if (!errorMessage_.isEmpty()) {
-        errorMessage_.clear();
-        emit errorMessageChanged();
-    }
+    mediaOperationErrorMessage_.clear();
     rebuildMediaModels();
     if (hasSelection_) {
         refreshNextLocalEpisode();
@@ -679,14 +675,50 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
     return true;
 }
 
+void HomeScreenController::setMediaOperationError(QString message) {
+    if (mediaOperationErrorMessage_ == message) return;
+    mediaOperationErrorMessage_ = std::move(message);
+    emit selectionChanged();
+}
+
+bool HomeScreenController::RemoveSelectedMedia() {
+    const auto fail = [this](QString error) {
+        if (error.isEmpty()) error = QStringLiteral("Não foi possível remover a mídia da lista.");
+        setMediaOperationError(std::move(error));
+        return false;
+    };
+    if (!hasSelection_ || personalListChangeService_ == nullptr) {
+        return fail(QStringLiteral("A lista local não está disponível."));
+    }
+    const auto current = std::find_if(allMedia_.cbegin(), allMedia_.cend(), [this](const Media &media) {
+        return media.Id == selectedMedia_.Id;
+    });
+    if (current == allMedia_.cend()) {
+        return fail(QStringLiteral("A mídia selecionada não está disponível."));
+    }
+
+    QString error;
+    if (!personalListChangeService_->remove(*current, error)) return fail(std::move(error));
+
+    allMedia_.erase(current);
+    mediaOperationErrorMessage_.clear();
+    rebuildMediaModels();
+    clearSelection();
+    emit selectionChanged();
+    emit mediaCountChanged();
+    if (allMedia_.isEmpty()) {
+        setState(QStringLiteral("empty"));
+        setStatusMessage(QStringLiteral("Nenhum dado disponível."));
+    }
+    return true;
+}
+
 QVariantMap HomeScreenController::PreviewCardMetadata(const int progress,
                                                        const QString &listStatusKey,
                                                        const double score) const {
     if (!hasSelection_) return {};
-    const auto progressLabel = selectedMedia_.TotalChapters <= 0
-        ? QCoreApplication::translate("HomeMediaModel", "Progresso —")
-        : QCoreApplication::translate("HomeMediaModel", "Progresso %1/%2")
-              .arg(progress).arg(selectedMedia_.TotalChapters);
+    const auto progressLabel = QCoreApplication::translate("HomeMediaModel", "Progresso %1")
+        .arg(FormatProgress(progress, selectedMedia_.TotalChapters));
     const auto scoreLabel = score <= 0.0
         ? QCoreApplication::translate("HomeMediaModel", "Nota —")
         : QCoreApplication::translate("HomeMediaModel", "Nota %1/%2")
@@ -702,7 +734,7 @@ QVariantMap HomeScreenController::PreviewCompactDetailMetadata(const int progres
                                                                 const QString &listStatusKey,
                                                                 const double score) const {
     if (!hasSelection_) return {};
-    const auto progressLabel = QStringLiteral("%1/%2").arg(progress).arg(selectedMedia_.TotalChapters);
+    const auto progressLabel = FormatProgress(progress, selectedMedia_.TotalChapters);
     const auto scoreLabel = score <= 0.0 ? QStringLiteral("—")
                                           : QString::number(score, 'g', 15);
     return {{QStringLiteral("status"), optionLabel(listOptions_, listStatusKey,
@@ -757,49 +789,6 @@ void HomeScreenController::reload() {
     setStatusMessage(allMedia_.isEmpty()
                          ? QStringLiteral("Nenhum dado disponível.")
                          : QStringLiteral("Dados locais carregados."));
-}
-
-void HomeScreenController::notifySynchronizationCompleted() {
-    synchronizationProgress_ = 100;
-    synchronizationProgressKnown_ = true;
-    emit synchronizationProgressChanged();
-    setStatusMessage(QStringLiteral("Sincronização concluída. Atualizando dados."));
-    reload();
-}
-
-void HomeScreenController::notifySynchronizationStarted() {
-    synchronizationProgress_ = 0;
-    synchronizationProgressKnown_ = false;
-    emit synchronizationProgressChanged();
-    setState(QStringLiteral("loading"));
-    setStatusMessage(QStringLiteral("Sincronizando dados em segundo plano..."));
-}
-
-void HomeScreenController::notifySynchronizationProgress(const int processedItems, const int totalItems) {
-    if (totalItems <= 0) {
-        if (synchronizationProgressKnown_) {
-            synchronizationProgressKnown_ = false;
-            emit synchronizationProgressChanged();
-        }
-        return;
-    }
-
-    const auto progress = qBound(0, (processedItems * 100) / totalItems, 100);
-    if (synchronizationProgress_ == progress && synchronizationProgressKnown_) {
-        return;
-    }
-    synchronizationProgress_ = progress;
-    synchronizationProgressKnown_ = true;
-    emit synchronizationProgressChanged();
-}
-
-void HomeScreenController::notifySynchronizationFailed(const QString &error) {
-    synchronizationProgressKnown_ = false;
-    emit synchronizationProgressChanged();
-    errorMessage_ = error;
-    emit errorMessageChanged();
-    setState(QStringLiteral("error"));
-    setStatusMessage(QStringLiteral("A sincronização falhou."));
 }
 
 void HomeScreenController::RequestCoverWindow(const QString &scope, int firstVisibleIndex,

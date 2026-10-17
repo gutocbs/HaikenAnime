@@ -9,7 +9,8 @@ public:
     virtual ~IMediaSnapshotReconciler() = default;
 
     [[nodiscard]] virtual bool reconcileAuthoritativeSnapshot(
-        const QSet<int> &observedMediaIds, int &removedCount, QString &error) = 0;
+        const QSet<int> &observedMediaIds, const QSet<int> &excludedMediaIds,
+        int &removedCount, QString &error) = 0;
 };
 
 #endif

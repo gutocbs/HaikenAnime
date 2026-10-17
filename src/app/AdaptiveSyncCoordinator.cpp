@@ -34,6 +34,21 @@ AdaptiveSyncCoordinator::AdaptiveSyncCoordinator(
       policies_(std::move(policies)), wakeUpTimer_(new QTimer(this)), seedMissingTasks_(seedMissingTasks) {
     wakeUpTimer_->setSingleShot(true);
     connect(wakeUpTimer_, &QTimer::timeout, this, &AdaptiveSyncCoordinator::ProcessDueTasks);
+    qRegisterMetaType<SyncProgress>();
+    // The executor reports from its worker thread; marshal each report onto this object's thread.
+    QPointer<AdaptiveSyncCoordinator> coordinator(this);
+    executor_.SetProgressReporter([coordinator](const SyncProgress &progress) {
+        if (!coordinator) return;
+        QMetaObject::invokeMethod(coordinator, [coordinator, progress] {
+            if (!coordinator || coordinator->stopping_ || coordinator->stopped_) return;
+            // A cancelled (or finished) partition may still have late reports queued; they are stale.
+            if (!coordinator->activeGenerations_.contains(progress.partition)
+                || coordinator->cancelling_.contains(progress.partition)) {
+                return;
+            }
+            emit coordinator->TaskProgress(progress);
+        }, Qt::QueuedConnection);
+    });
 }
 
 AdaptiveSyncCoordinator::~AdaptiveSyncCoordinator() {
@@ -116,6 +131,42 @@ void AdaptiveSyncCoordinator::RequestNow(const SyncPartition partition) {
 void AdaptiveSyncCoordinator::NotifyLocalChange(const SyncPartition partition) {
     Request(partition, partition == SyncPartition::CompletedCatalog
                            ? SyncTaskTrigger::CompletedToActive : SyncTaskTrigger::LocalChange);
+}
+
+void AdaptiveSyncCoordinator::Cancel(const SyncPartition partition, std::function<void()> acknowledged) {
+    const auto active = activeGenerations_.find(partition);
+    const auto state = states_.find(partition);
+    if (stopped_ || stopping_ || active == activeGenerations_.end() || state == states_.end()) {
+        if (acknowledged) acknowledged();
+        return;
+    }
+
+    const auto generation = active->second;
+    rerunRequested_.erase(partition);
+    cancelling_.insert(partition);
+    auto cancelled = state->second;
+    cancelled.generation = generation + 1;
+    cancelled.status = SyncTaskStatus::Idle;
+    // A failed write is already reported through SchedulingFailed; the in-memory generation still advances
+    // below so a late completion is ignored either way.
+    if (Persist(cancelled)) state->second = cancelled;
+    else state->second.generation = generation + 1;
+    QPointer<AdaptiveSyncCoordinator> coordinator(this);
+    executor_.Cancel(partition, [coordinator, partition, generation, acknowledged = std::move(acknowledged)] {
+        if (!coordinator) return;
+        QMetaObject::invokeMethod(coordinator, [coordinator, partition, generation, acknowledged] {
+            if (!coordinator) return;
+            coordinator->cancelling_.erase(partition);
+            const auto current = coordinator->activeGenerations_.find(partition);
+            if (current != coordinator->activeGenerations_.end() && current->second == generation) {
+                coordinator->activeGenerations_.erase(current);
+                emit coordinator->TaskCancelled(partition);
+            }
+            if (acknowledged) acknowledged();
+            // The slot is free again: let the remaining due work proceed.
+            coordinator->ProcessDueTasks();
+        }, Qt::QueuedConnection);
+    });
 }
 
 void AdaptiveSyncCoordinator::ProcessDueTasks() {

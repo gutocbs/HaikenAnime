@@ -60,8 +60,7 @@ class HomeScreenController final : public QObject {
     Q_PROPERTY(QString state READ state NOTIFY stateChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
-    Q_PROPERTY(int synchronizationProgress READ synchronizationProgress NOTIFY synchronizationProgressChanged)
-    Q_PROPERTY(bool synchronizationProgressKnown READ synchronizationProgressKnown NOTIFY synchronizationProgressChanged)
+    Q_PROPERTY(QString mediaOperationErrorMessage READ mediaOperationErrorMessage NOTIFY selectionChanged)
     Q_PROPERTY(int mediaCount READ mediaCount NOTIFY mediaCountChanged)
     Q_PROPERTY(int filteredMediaCount READ filteredMediaCount NOTIFY mediaCountChanged)
     Q_PROPERTY(QString activeMediaType READ activeMediaType NOTIFY activeMediaTypeChanged)
@@ -111,8 +110,7 @@ public:
     QString state() const;
     QString statusMessage() const;
     QString errorMessage() const;
-    int synchronizationProgress() const;
-    bool synchronizationProgressKnown() const;
+    QString mediaOperationErrorMessage() const;
     int mediaCount() const;
     int filteredMediaCount() const;
     QString activeMediaType() const;
@@ -164,10 +162,6 @@ public:
     void RefreshLocalEpisode();
 
     void reload();
-    void notifySynchronizationCompleted();
-    void notifySynchronizationStarted();
-    void notifySynchronizationProgress(int processedItems, int totalItems);
-    void notifySynchronizationFailed(const QString &error);
     Q_INVOKABLE void SetMediaType(const QString &typeKey);
     Q_INVOKABLE void SetListFilter(const QString &filterKey);
     Q_INVOKABLE void SetSort(const QString &sortKey);
@@ -175,6 +169,7 @@ public:
     Q_INVOKABLE void ClearBrowseCriteria();
     Q_INVOKABLE void SelectMedia(int mediaId);
     Q_INVOKABLE void WatchNext();
+    Q_INVOKABLE bool RemoveSelectedMedia();
     Q_INVOKABLE bool SaveSelectedMediaFromEditor(int progress, const QString &statusKey, double score,
                                                  const QString &path, const QStringList &alternativeNames);
     Q_INVOKABLE QVariantMap PreviewCardMetadata(int progress, const QString &listStatusKey,
@@ -191,7 +186,6 @@ signals:
     void stateChanged();
     void errorMessageChanged();
     void statusMessageChanged();
-    void synchronizationProgressChanged();
     void mediaCountChanged();
     void activeMediaTypeChanged();
     void browseOptionsChanged();
@@ -203,9 +197,11 @@ signals:
 private:
     void setState(QString state);
     void setStatusMessage(QString message);
+    void setMediaOperationError(QString message);
     void rebuildMediaModels();
     void clearSelection();
     void refreshNextLocalEpisode();
+    QString defaultListFilter() const;
 
     IMediaReader *reader_ = nullptr;
     HomeMediaModel model_;
@@ -216,10 +212,9 @@ private:
     QString state_ = QStringLiteral("idle");
     QString statusMessage_ = QStringLiteral("Aguardando sincronização.");
     QString errorMessage_;
-    int synchronizationProgress_ = 0;
-    bool synchronizationProgressKnown_ = false;
+    QString mediaOperationErrorMessage_;
     QString activeMediaType_ = QStringLiteral("anime");
-    QString activeListFilter_ = QStringLiteral("all");
+    QString activeListFilter_ = QStringLiteral("current");
     QString activeSort_ = QStringLiteral("title_asc");
     QString searchQuery_;
     QVariantList listOptions_;

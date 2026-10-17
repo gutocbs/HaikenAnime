@@ -22,7 +22,8 @@ public:
     /** Reads persisted media using the supplied ordered SELECT query. */
     [[nodiscard]] bool readAll(QList<Media> &media, QString &error) override;
     [[nodiscard]] bool reconcileAuthoritativeSnapshot(
-        const QSet<int> &observedMediaIds, int &removedCount, QString &error) override;
+        const QSet<int> &observedMediaIds, const QSet<int> &excludedMediaIds,
+        int &removedCount, QString &error) override;
 
 private:
     QSqlDatabase database_;

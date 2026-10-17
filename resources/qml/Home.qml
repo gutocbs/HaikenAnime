@@ -84,8 +84,10 @@ Item {
                     font.weight: Font.Bold
                 }
 
-                Button {
+                AppButton {
                     id: homeHeaderNavigationSpacer
+                    variant: "flat"
+                    font.pixelSize: 13
                     text: qsTr("‹  Biblioteca")
                     opacity: 0
                     enabled: false
@@ -94,9 +96,9 @@ Item {
                 }
             }
 
-            Button {
+            AppButton {
                 text: qsTr("Catálogo sazonal")
-                flat: true
+                variant: "flat"
                 font.pixelSize: 13
                 Layout.alignment: Qt.AlignVCenter
                 onClicked: home.openSeasonalCatalogRequested()
@@ -108,9 +110,9 @@ Item {
                 color: line
             }
 
-            Button {
+            AppButton {
                 text: qsTr("Configurações")
-                flat: true
+                variant: "flat"
                 font.pixelSize: 13
                 Layout.alignment: Qt.AlignVCenter
                 onClicked: home.openSettingsRequested()
@@ -204,10 +206,10 @@ Item {
                             }
                         }
 
-                        Button {
+                        AppButton {
                             text: qsTr("Ver lista completa")
                             enabled: controller.filteredMediaCount > 0
-                            flat: true
+                            variant: "flat"
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
                             onClicked: completeLibrary.open()
@@ -277,11 +279,11 @@ Item {
                         accentColor: accent
                     }
 
-                    Button {
+                    AppButton {
                         Layout.alignment: Qt.AlignHCenter
                         visible: controller.filteredMediaCount === 0 && controller.browseCriteriaActive
                         text: qsTr("Limpar filtros")
-                        flat: true
+                        variant: "secondary"
                         onClicked: controller.ClearBrowseCriteria()
                     }
                 }
@@ -312,17 +314,17 @@ Item {
                             font.weight: Font.DemiBold
                             font.letterSpacing: 1.5
                         }
-                        Button {
+                        AppButton {
                             id: detailsButton
                             text: qsTr("Ver detalhes")
-                            flat: true
+                            variant: "flat"
                             visible: controller.hasSelection
                             enabled: controller.hasSelection
                             onClicked: mediaDetailsPanel.openForItem(detailsButton)
                         }
-                        Button {
+                        AppButton {
                             text: qsTr("Editar")
-                            flat: true
+                            variant: "flat"
                             visible: controller.hasSelection
                             enabled: controller.hasSelection
                             onClicked: home.openEditor()
@@ -505,11 +507,12 @@ Item {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: controller.state === "error" ? 112
-                                  : controller.state === "loading" ? 102 : 72
-            color: controller.state === "error" ? "#fff0f0" : surfaceSoft
+            readonly property bool synchronizationFailed: synchronizationStatus.outcome === "failed"
+            Layout.preferredHeight: controller.state === "error" || synchronizationFailed ? 112
+                                  : synchronizationStatus.visible ? 102 : 72
+            color: controller.state === "error" || synchronizationFailed ? "#fff0f0" : surfaceSoft
             radius: 8
-            border.color: controller.state === "error" ? "#e6a6aa" : line
+            border.color: controller.state === "error" || synchronizationFailed ? "#e6a6aa" : line
             border.width: 1
 
             ColumnLayout {
@@ -533,7 +536,7 @@ Item {
                         accent: home.accent
                     }
 
-                    Basic.Button {
+                    AppButton {
                         id: watchNextButton
                         Layout.leftMargin: 8
                         Layout.preferredWidth: 104
@@ -541,26 +544,8 @@ Item {
                         text: qsTr("Assistir")
                         enabled: controller.canWatch
                         font.pixelSize: 12
-                        font.weight: Font.DemiBold
                         Accessible.name: qsTr("Assistir próximo episódio disponível")
                         onClicked: controller.WatchNext()
-
-                        contentItem: Text {
-                            text: watchNextButton.text
-                            color: watchNextButton.enabled ? "#ffffff" : muted
-                            font: watchNextButton.font
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                        }
-
-                        background: Rectangle {
-                            radius: 5
-                            color: watchNextButton.enabled ? accent : surface
-                            border.width: watchNextButton.activeFocus ? 2 : 1
-                            border.color: watchNextButton.enabled
-                                          ? accent
-                                          : (watchNextButton.activeFocus ? accent : line)
-                        }
                     }
 
                     Rectangle {
@@ -577,8 +562,10 @@ Item {
                         Label {
                             text: controller.state === "error" ? qsTr("ERRO")
                                   : home.hasLocalLibraryMessage ? qsTr("BIBLIOTECA LOCAL")
+                                  : synchronizationStatus.outcome === "failed" ? qsTr("ERRO DE SINCRONIZAÇÃO")
                                   : qsTr("SINCRONIZAÇÃO")
                             color: controller.state === "error" || controller.localLibraryErrorMessage.length > 0
+                                   || synchronizationStatus.outcome === "failed"
                                    ? "#b13b43" : accent
                             font.pixelSize: 10
                             font.weight: Font.DemiBold
@@ -596,29 +583,27 @@ Item {
                                     ? (controller.localLibraryErrorMessage.length > 0
                                        ? controller.localLibraryErrorMessage
                                        : controller.localLibraryStatusMessage)
-                                    : controller.state === "loading"
-                                      ? (controller.synchronizationProgressKnown
-                                         ? qsTr("Atualizando · %1%").arg(controller.synchronizationProgress)
-                                         : qsTr("Atualizando biblioteca"))
+                                    : synchronizationStatus.visible
+                                      ? (synchronizationStatus.outcome === "running" && synchronizationStatus.progressKnown
+                                         ? qsTr("%1 · %2%").arg(synchronizationStatus.stageLabel)
+                                               .arg(synchronizationStatus.percent)
+                                         : synchronizationStatus.message)
                                       : qsTr("Sincronização automática")
                             color: controller.state === "error" || controller.localLibraryErrorMessage.length > 0
+                                   || synchronizationStatus.outcome === "failed"
                                    ? "#b13b43" : ink
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
                             wrapMode: Text.Wrap
-                            maximumLineCount: controller.state === "error" ? 2 : 1
+                            maximumLineCount: controller.state === "error" || synchronizationStatus.outcome === "failed" ? 2 : 1
                             elide: Text.ElideRight
                         }
                     }
                 }
 
-                ProgressBar {
+                SyncProgressBar {
                     Layout.fillWidth: true
-                    visible: controller.state === "loading"
-                    from: 0
-                    to: 100
-                    value: controller.synchronizationProgress
-                    indeterminate: !controller.synchronizationProgressKnown
+                    status: synchronizationStatus
                 }
             }
         }
@@ -630,12 +615,20 @@ Item {
         controller: home.controller
         listOptions: home.controller.availableListOptions
         closeOnApply: false
+        allowsRemoval: true
+        operationErrorMessage: home.controller.mediaOperationErrorMessage
         ink: home.ink
         muted: home.muted
         line: home.line
         surface: home.surface
         surfaceSoft: home.surfaceSoft
         accent: home.accent
+        onRemoveRequested: function(mediaId) {
+            if (home.controller.RemoveSelectedMedia()) {
+                editMediaPanel.close()
+                mediaDetailsPanel.close()
+            }
+        }
         onApplyRequested: function(mediaId, progress, statusKey, score, path, alternativeNames) {
             const names = alternativeNames.split(";").map(function(name) { return name.trim() })
                                           .filter(function(name) { return name.length > 0 })
@@ -708,10 +701,10 @@ Item {
                         font.weight: Font.Bold
                     }
 
-                    Button {
+                    AppButton {
                         Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
                         text: qsTr("Fechar")
-                        flat: true
+                        variant: "flat"
                         onClicked: completeLibrary.close()
                     }
                 }

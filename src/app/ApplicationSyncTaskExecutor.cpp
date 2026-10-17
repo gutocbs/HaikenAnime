@@ -1,10 +1,12 @@
 #include "ApplicationSyncTaskExecutor.h"
 #include "SyncTaskRequest.h"
 
+#include "../application/anilist/AniListAccountOwnership.h"
 #include "../application/anilist/AniListSyncService.h"
 #include "../application/anilist/AniListPendingChangeProcessor.h"
 #include "../application/anilist/AniListPendingChangeDrain.h"
 #include "../application/anilist/AniListPendingChangeReconciler.h"
+#include "../application/anilist/AniListSnapshotReconciliation.h"
 #include "../application/anilist/AniListSyncErrorClassifier.h"
 #include "../application/anilist/IAniListAuthProvider.h"
 #include "../infrastructure/anilist/AniListGraphQlClient.h"
@@ -21,6 +23,7 @@
 #include <QThread>
 #include <QNetworkAccessManager>
 
+#include <functional>
 #include <utility>
 
 namespace {
@@ -34,6 +37,19 @@ public:
 private:
     AniListCredentials credentials_;
 };
+
+/** Scopes the outbox to the authenticated account and adopts ownerless legacy changes. */
+bool ScopePendingChangesToAccount(SqlitePendingChangeRepository &pendingChanges, const qint64 ownerUserId,
+                                  const std::function<void(const QString &)> &auditLogger, QString &error) {
+    pendingChanges.setOwnerUserId(ownerUserId);
+    if (ownerUserId <= 0) return true;
+    int adoptedCount = 0;
+    if (!pendingChanges.adoptOrphanChanges(ownerUserId, adoptedCount, error)) return false;
+    if (adoptedCount > 0 && auditLogger) {
+        auditLogger(QStringLiteral("Adopted %1 pending AniList changes without owner.").arg(adoptedCount));
+    }
+    return true;
+}
 }
 
 ApplicationSyncTaskExecutor::ApplicationSyncTaskExecutor(
@@ -69,11 +85,29 @@ ApplicationSyncTaskExecutor::~ApplicationSyncTaskExecutor() {
     }
 }
 
+void ApplicationSyncTaskExecutor::SetProgressReporter(ProgressReporter reporter) {
+    std::lock_guard lock(mutex_);
+    progressReporter_ = std::move(reporter);
+}
+
 void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint64 generation,
                                           Completion completion) {
     auto job = std::make_shared<Job>();
     const auto partition = state.partition;
-    job->thread = QThread::create([this, job, state, generation, partition, completion] {
+    ProgressReporter reportProgress;
+    {
+        std::lock_guard lock(mutex_);
+        reportProgress = progressReporter_;
+    }
+    job->thread = QThread::create([this, job, state, generation, partition, completion, reportProgress] {
+        const auto publish = [&reportProgress, partition](const QString &stageKey, const int stageIndex,
+                                                          const int stageCount, const int processedItems,
+                                                          const int totalItems) {
+            if (!reportProgress) return;
+            reportProgress({.partition = partition, .stageKey = stageKey, .stageIndex = stageIndex,
+                            .stageCount = stageCount, .processedItems = processedItems,
+                            .totalItems = totalItems});
+        };
         SyncTaskExecutionResult result;
         SyncTaskState checkpointState = state;
         checkpointState.generation = generation;
@@ -117,13 +151,15 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             QStringLiteral(":/sqlite/queries/update-pending-change.sql"));
                         AniListPendingChangeReconciler pendingReconciler(
                             pendingChanges, authenticatedUserList_.auditLogger);
-                        AniListSyncService service(userListSource, mediaRepository, &mediaRepository,
+                        AniListSyncService service(userListSource, mediaRepository, nullptr,
                                                     nullptr, timeoutMs_, &pendingReconciler);
                         UserPreferences preferences;
                         bool found = false;
                         SqliteUserPreferencesRepository preferencesRepository(
                             database.connection(), readUserPreferencesQueryPath_, upsertUserPreferencesQueryPath_);
-                        if (!preferencesRepository.read(preferences, found, error)) {
+                        if (!ScopePendingChangesToAccount(pendingChanges, credentials.userId,
+                                                          authenticatedUserList_.auditLogger, error)
+                            || !preferencesRepository.read(preferences, found, error)) {
                             result.succeeded = false;
                             result.errorCategory = AniListSyncErrorCategory::Persistence;
                         } else {
@@ -134,8 +170,18 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                                 authenticatedUserList_.auditLogger(
                                     QStringLiteral("AniList user-list synchronization skipped: no lists are enabled."));
                             }
+                            QList<AniListSyncOutcome> outcomes;
+                            auto snapshotErrorCategory = AniListSyncErrorCategory::None;
+                            int stageIndex = 0;
                             for (const auto &mediaType : {QStringLiteral("ANIME"), QStringLiteral("MANGA")}) {
                                 if (!result.succeeded || statuses.isEmpty()) break;
+                                ++stageIndex;
+                                const QString stageKey = stageIndex == 1 ? QStringLiteral("anime")
+                                                                         : QStringLiteral("manga");
+                                publish(stageKey, stageIndex, 3, 0, -1);
+                                service.setProgressReporter([&publish, &stageKey, stageIndex](const int processed) {
+                                    publish(stageKey, stageIndex, 3, processed, -1);
+                                });
                                 if (authenticatedUserList_.auditLogger) {
                                     authenticatedUserList_.auditLogger(
                                         QStringLiteral("AniList user-list request started: type=%1 statuses=%2.")
@@ -159,14 +205,32 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                                     }
                                     break;
                                 }
+                                outcomes.append(service.lastOutcome());
                                 if (authenticatedUserList_.auditLogger) {
                                     authenticatedUserList_.auditLogger(
                                         QStringLiteral("AniList user-list request completed: type=%1.")
                                             .arg(mediaType));
                                 }
                             }
+                            if (!statuses.isEmpty()) {
+                                publish(QStringLiteral("reconciliation"), 3, 3, 0, -1);
+                                int removedCount = 0;
+                                bool reconciled = false;
+                                if (!ReconcileCompleteAniListSnapshot(
+                                        outcomes, 2, result.succeeded && !job->cancelled.load(),
+                                        mediaRepository, pendingChanges, reconciled, removedCount, error,
+                                        authenticatedUserList_.auditLogger)) {
+                                    result.succeeded = false;
+                                    snapshotErrorCategory = AniListSyncErrorClassifier::Classify(error);
+                                } else if (reconciled && authenticatedUserList_.auditLogger) {
+                                    authenticatedUserList_.auditLogger(
+                                        QStringLiteral("AniList snapshot reconciliation marked %1 media as removed from source.")
+                                            .arg(removedCount));
+                                }
+                            }
                             result.errorCategory = result.succeeded ? AniListSyncErrorCategory::None
-                                : service.lastErrorCategory();
+                                : (snapshotErrorCategory != AniListSyncErrorCategory::None
+                                       ? snapshotErrorCategory : service.lastErrorCategory());
                         }
                         if (authenticatedUserList_.auditLogger) {
                             authenticatedUserList_.auditLogger(result.succeeded
@@ -178,6 +242,14 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                     if (credentials.token.isEmpty()) {
                         error = QStringLiteral("AniList pending-change synchronization requires authentication.");
                         result.errorCategory = AniListSyncErrorCategory::Authentication;
+                    } else if (!AniListAccountOwnership::CanProcessPendingChanges(credentials.userId)) {
+                        // Token not validated yet (no account id): nothing is sent or adopted until it is.
+                        result.succeeded = true;
+                        result.errorCategory = AniListSyncErrorCategory::None;
+                        if (authenticatedUserList_.auditLogger) {
+                            authenticatedUserList_.auditLogger(QStringLiteral(
+                                "AniList pending-change synchronization skipped: account not validated yet."));
+                        }
                     } else {
                         if (authenticatedUserList_.auditLogger) {
                             authenticatedUserList_.auditLogger(
@@ -196,15 +268,29 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             QStringLiteral(":/sqlite/queries/read-pending-changes.sql"),
                             QStringLiteral(":/sqlite/queries/read-pending-media-ids.sql"),
                             QStringLiteral(":/sqlite/queries/update-pending-change.sql"));
+                        QString scopeError;
+                        const bool scoped = ScopePendingChangesToAccount(
+                            pendingChanges, credentials.userId, authenticatedUserList_.auditLogger, scopeError);
                         GraphQlQueryStore updateMutation(
                             QStringLiteral(":/anilist/mutations/update-media-list-entry.graphql"));
-                        AniListUpdateClient updateClient(client, updateMutation);
-                        AniListPendingChangeProcessor pendingProcessor(pendingChanges, updateClient);
+                        GraphQlQueryStore entryIdQuery(
+                            QStringLiteral(":/anilist/queries/media-list-entry-id.graphql"));
+                        GraphQlQueryStore deleteMutation(
+                            QStringLiteral(":/anilist/mutations/delete-list-entry.graphql"));
+                        AniListUpdateClient updateClient(client, updateMutation, entryIdQuery, deleteMutation);
+                        AniListPendingChangeProcessor pendingProcessor(
+                            pendingChanges, updateClient, credentials.userId,
+                            authenticatedUserList_.auditLogger);
                         AniListPendingChangeDrain drain(pendingChanges, pendingProcessor);
-                        result.succeeded = drain.processAll(error,
+                        drain.setProgressReporter([&publish](const int processed, const int total) {
+                            publish(QStringLiteral("pending_changes"), 1, 1, processed, total);
+                        });
+                        result.succeeded = scoped && drain.processAll(error,
                             [job] { return job->cancelled.load(); });
+                        if (!scoped) error = scopeError;
                         result.errorCategory = result.succeeded ? AniListSyncErrorCategory::None
-                            : AniListSyncErrorClassifier::Classify(error);
+                            : (scoped ? AniListSyncErrorClassifier::Classify(error)
+                                      : AniListSyncErrorCategory::Persistence);
                         if (authenticatedUserList_.auditLogger) {
                             authenticatedUserList_.auditLogger(result.succeeded
                                 ? QStringLiteral("AniList pending-change synchronization completed.")

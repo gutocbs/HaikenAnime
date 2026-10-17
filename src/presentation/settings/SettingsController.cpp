@@ -2,6 +2,7 @@
 
 #include "../../application/cache/ClearLocalCacheUseCase.h"
 #include "../../application/anilist/AniListAuthManager.h"
+#include "../../application/anilist/RemoveAniListAccountUseCase.h"
 #include "../../application/configuration/UserPreferencesValidator.h"
 #include "../../app/LocalLibraryScanCoordinator.h"
 
@@ -27,7 +28,6 @@ QStringList SettingsController::availableScanExtensions() const {
 }
 QStringList SettingsController::selectedScanExtensions() const { return draft_.scanExtensions; }
 bool SettingsController::scanRunning() const { return scanRunning_; }
-bool SettingsController::synchronizationRunning() const { return synchronizationRunning_; }
 qsizetype SettingsController::scanCandidateCount() const { return scanCandidateCount_; }
 QString SettingsController::scanStatusMessage() const { return scanStatusMessage_; }
 QString SettingsController::scanErrorMessage() const { return scanErrorMessage_; }
@@ -42,6 +42,10 @@ bool SettingsController::aniListAuthenticationInProgress() const {
     return aniListAuthenticationState_ == QStringLiteral("authorizing")
         || aniListAuthenticationState_ == QStringLiteral("validating");
 }
+bool SettingsController::aniListConnected() const {
+    return aniListAuthenticationState_ == QStringLiteral("authenticated");
+}
+bool SettingsController::aniListRemovalInProgress() const { return aniListRemovalInProgress_; }
 QString SettingsController::aniListAuthenticationState() const { return aniListAuthenticationState_; }
 QString SettingsController::aniListUsername() const { return aniListUsername_; }
 QString SettingsController::aniListAuthenticationMessage() const { return aniListAuthenticationMessage_; }
@@ -110,6 +114,11 @@ void SettingsController::ApplyExternalHomeSortKey(QString key) {
     emit changed();
 }
 
+void SettingsController::ApplyExternalLastAniListUserId(const qint64 userId) {
+    persisted_.lastAniListUserId = userId;
+    draft_.lastAniListUserId = userId;
+}
+
 void SettingsController::SetLibraryRoot(const QString &root) {
     draft_.libraryRoot = root;
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
@@ -151,12 +160,14 @@ void SettingsController::ScanNow() {
 }
 
 void SettingsController::SynchronizeNow() {
-    if (synchronizationRunning_) return;
     emit synchronizationRequested();
 }
 
 void SettingsController::ConnectAniList() {
-    if (!aniListConnectionAvailable() || aniListAuthenticationInProgress()) return;
+    if (!aniListConnectionAvailable() || aniListAuthenticationInProgress() || aniListConnected()
+        || aniListRemovalInProgress_) {
+        return;
+    }
 
     QString error;
     if (aniListOAuthReceiverStarter_
@@ -215,6 +226,38 @@ void SettingsController::HandleAniListOAuthCallback(const QUrl &callback) {
     emit aniListAuthenticationSucceeded();
 }
 
+void SettingsController::SetAniListAccountRemoval(RemoveAniListAccountUseCase *useCase) {
+    aniListAccountRemoval_ = useCase;
+}
+
+void SettingsController::RemoveAniListAccount() {
+    if (aniListRemovalInProgress_ || !aniListConnected() || !aniListAccountRemoval_) return;
+
+    aniListRemovalInProgress_ = true;
+    aniListAuthenticationState_ = QStringLiteral("removing");
+    aniListAuthenticationMessage_.clear();
+    emit changed();
+    QPointer<SettingsController> self(this);
+    const bool started = aniListAccountRemoval_->Start([self](const bool succeeded, const QString &) {
+        if (!self) return;
+        self->aniListRemovalInProgress_ = false;
+        if (succeeded) {
+            self->aniListAuthenticationState_ = QStringLiteral("disconnected");
+            self->aniListUsername_.clear();
+            self->aniListAuthenticationMessage_ = tr("Conta AniList removida.");
+        } else {
+            self->aniListAuthenticationState_ = QStringLiteral("authenticated");
+            self->aniListAuthenticationMessage_ = tr("Não foi possível remover a conta AniList.");
+        }
+        emit self->changed();
+    });
+    if (!started && aniListRemovalInProgress_) {
+        aniListRemovalInProgress_ = false;
+        aniListAuthenticationState_ = QStringLiteral("authenticated");
+        emit changed();
+    }
+}
+
 void SettingsController::ClearLocalCache() {
     if (cacheCleanupRunning_) return;
     if (!cacheCleanup_) {
@@ -261,29 +304,6 @@ void SettingsController::ClearLocalCache() {
         emit cacheCleanupFailed(cacheCleanupErrorMessage_);
         emit cacheCleanupChanged();
     }
-}
-
-void SettingsController::notifySynchronizationStarted() {
-    synchronizationRunning_ = true;
-    statusMessage_ = tr("Sincronizando dados em segundo plano...");
-    errorMessage_.clear();
-    emit synchronizationChanged();
-    emit changed();
-}
-
-void SettingsController::notifySynchronizationCompleted() {
-    synchronizationRunning_ = false;
-    statusMessage_ = tr("Sincronização concluída.");
-    emit synchronizationChanged();
-    emit changed();
-}
-
-void SettingsController::notifySynchronizationFailed(const QString &error) {
-    synchronizationRunning_ = false;
-    errorMessage_ = error;
-    statusMessage_.clear();
-    emit synchronizationChanged();
-    emit changed();
 }
 
 namespace {

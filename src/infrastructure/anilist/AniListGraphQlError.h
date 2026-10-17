@@ -7,6 +7,8 @@
 struct AniListGraphQlError {
     QString message;
     QStringList path;
+    /** GraphQL error status code (for example 404); 0 when absent. */
+    int status = 0;
 };
 
 #endif // HAIKENANIME_ANILISTGRAPHQLERROR_H

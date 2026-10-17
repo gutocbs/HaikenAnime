@@ -314,6 +314,7 @@ void SqliteUserPreferencesRepositoryTests::readsMissingAndRoundTripsReplacement(
     expected.synchronizationEnabled = false;
     expected.synchronizationIntervalMs = 1800000;
     expected.enabledUserLists = {QStringLiteral("current"), QStringLiteral("completed")};
+    expected.lastAniListUserId = 4242;
     QVERIFY(repository.replace(expected, error));
     QVERIFY(repository.read(loaded, found, error));
     QVERIFY(found);

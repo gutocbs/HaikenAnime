@@ -92,6 +92,7 @@ private slots:
     void recordedFixtureCachesOnlyTheAffectedPartitionAndQueryIdentity();
     void recordedFixtureCacheSeparatesUsersAfterFilterMutation();
     void recordedUserListMarksAnUnfilteredFirstPageAuthoritativeBeforeTheTerminalPage();
+    void recordedUserListWithTypeAndStatusFiltersStaysAuthoritative();
     void recordedUserListRejectsMissingPaginationMetadata();
     void recordedSourceSelectsTheResponseShapeForTheRequestedPartition();
     void recordedCatalogSourceRetainsOnlyTheRequestedPartitionStatus();
@@ -494,6 +495,22 @@ void AniListGraphQlParsingTests::recordedUserListMarksAnUnfilteredFirstPageAutho
     QVERIFY(result.isCompleteAuthoritativeSnapshot);
 }
 
+void AniListGraphQlParsingTests::recordedUserListWithTypeAndStatusFiltersStaysAuthoritative() {
+    RecordedGraphQlAniListDataSource source(QStringLiteral(HAIKENANIME_GRAPHQL_USERLIST_FIXTURE));
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.username = QStringLiteral("fixture-user");
+    request.filter.type = QStringLiteral("ANIME");
+    request.filter.acceptedListStatuses = {QStringLiteral("NOT_A_REAL_STATUS")};
+    AniListDataSourceResult result;
+    QString error;
+
+    QVERIFY2(source.fetchPage(request, result, error), qPrintable(error));
+
+    QVERIFY(result.isCompleteAuthoritativeSnapshot);
+    QVERIFY(result.page.media.isEmpty());
+    QVERIFY(result.observedMediaIds.contains(21366));
+}
+
 void AniListGraphQlParsingTests::recordedUserListRejectsMissingPaginationMetadata() {
     QTemporaryFile malformedFixture;
     QVERIFY(malformedFixture.open());
@@ -625,7 +642,7 @@ void AniListGraphQlParsingTests::graphQlAdapterUsesAuthenticatedIdentityAndConfi
 
     QVERIFY2(userListSource.fetchPage(namedRequest, result, error), qPrintable(error));
     QCOMPARE(result.completedPartition, SyncPartition::UserList);
-    QVERIFY(!result.isCompleteAuthoritativeSnapshot);
+    QVERIFY(result.isCompleteAuthoritativeSnapshot);
     const auto variables = server.requestPayload().value(QStringLiteral("variables")).toObject();
     QCOMPARE(variables.value(QStringLiteral("userName")).toString(), QStringLiteral("authenticated-user"));
     QCOMPARE(variables.value(QStringLiteral("perChunk")).toInt(), 500);

@@ -2,6 +2,7 @@
 
 #include "../../app/SeasonalCatalogCoordinator.h"
 #include "../../application/covers/CoverSourceResolver.h"
+#include "../../application/media/ProgressFormatter.h"
 #include "../../application/media/MediaDetailsPresentation.h"
 #include "../../application/media/SeasonalPersonalListService.h"
 
@@ -169,8 +170,7 @@ QString SeasonalCatalogController::selectedStatusLabel() const { const auto *med
 QString SeasonalCatalogController::selectedProgress() const {
     if (!hasSelection()) return {};
     if (!selectedLocalMedia_) return QStringLiteral("—");
-    return QStringLiteral("%1/%2").arg(selectedLocalMedia_->ConsumedChapters)
-        .arg(selectedMedia()->TotalChapters);
+    return FormatProgress(selectedLocalMedia_->ConsumedChapters, selectedMedia()->TotalChapters);
 }
 QString SeasonalCatalogController::selectedScore() const {
     if (!hasSelection()) return {};

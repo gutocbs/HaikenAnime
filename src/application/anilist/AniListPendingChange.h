@@ -11,6 +11,8 @@
 /** Represents one local field change that may need to be sent to AniList. */
 struct AniListPendingChange {
     qint64 id = 0;
+    /** AniList account that owns the edit; 0 means created before accounts were tracked. */
+    qint64 ownerUserId = 0;
     int mediaId = 0;
     AniListField field = AniListField::ExternalId;
     AniListFieldValue previousValue = QString();

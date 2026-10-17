@@ -1,5 +1,7 @@
 #include <QtTest>
 
+#include <optional>
+
 #include "../../src/application/anilist/AniListPendingChangeProcessor.h"
 #include "../../src/application/anilist/AniListPendingChangeCompactor.h"
 #include "../../src/application/anilist/AniListPendingChangeGrouper.h"
@@ -22,6 +24,11 @@ public:
         return true;
     }
 
+    bool getMediaIdsWithUnsentChanges(QSet<int> &result, QString &error) override {
+        result.clear();
+        error.clear();
+        return true;
+    }
     bool getPendingMediaIds(QList<int> &result, QString &error) override {
         result.clear();
         error.clear();
@@ -29,13 +36,19 @@ public:
     }
 
     bool updateStatus(const AniListPendingChange &change, QString &error) override {
-        Q_UNUSED(error)
+        if (failOnStatus.has_value() && change.status == *failOnStatus) {
+            error = QStringLiteral("status write failed");
+            return false;
+        }
         statuses.append(change.status);
+        updates.append(change);
         return true;
     }
 
     QList<AniListPendingChange> changes;
+    std::optional<AniListPendingChangeStatus> failOnStatus;
     QList<AniListPendingChangeStatus> statuses;
+    QList<AniListPendingChange> updates;
 };
 
 class FakeUpdateClient final : public IAniListUpdateClient {
@@ -56,7 +69,17 @@ public:
         return succeeds;
     }
 
+    bool deleteMediaListEntry(int mediaId, qint64 userId, QString &error) override {
+        deleteCalls.append({mediaId, userId});
+        if (!deleteSucceeds) {
+            error = QStringLiteral("delete failed");
+        }
+        return deleteSucceeds;
+    }
+
     bool succeeds = true;
+    bool deleteSucceeds = true;
+    QList<QPair<int, qint64>> deleteCalls;
     int mediaCalls = 0;
     AniListMediaPendingChanges lastGroup;
 };
@@ -71,6 +94,13 @@ private slots:
     void preservesFailedMutationForRetry();
     void leavesUnconfirmedDeletionQueued();
     void successfulProcessingClearsPreviousError();
+    void sendsPendingDeletionAndSupersedesOtherChangesOfTheMedia();
+    void persistsCompactorSupersededRowsAfterDeletion();
+    void resendsDeletionLeftInProcessing();
+    void failedDeletionIsKeptFailedWithAttemptAndSendsNothingElse();
+    void deletionStaysResendableWhenSupersedingSiblingsFails();
+    void logsDeletionSentAndSupersededCountWithoutPayloads();
+    void logsDeletionFailureWithSafeError();
 };
 
 static AniListPendingChange progressChange(AniListPendingChangeStatus status =
@@ -155,18 +185,18 @@ void AniListPendingChangeProcessorTests::preservesFailedMutationForRetry() {
 
 void AniListPendingChangeProcessorTests::leavesUnconfirmedDeletionQueued() {
     FakePendingRepository repository;
-    auto change = progressChange();
+    auto change = progressChange(AniListPendingChangeStatus::RequiresConfirmation);
     change.field = AniListField::Deletion;
     repository.changes.append(change);
     FakeUpdateClient client;
-    AniListPendingChangeProcessor processor(repository, client);
+    AniListPendingChangeProcessor processor(repository, client, 7);
     QString error;
 
     QVERIFY(processor.process(154587, error));
     QVERIFY(error.isEmpty());
     QCOMPARE(client.mediaCalls, 0);
-    QCOMPARE(repository.statuses.size(), 1);
-    QCOMPARE(repository.statuses.last(), AniListPendingChangeStatus::RequiresConfirmation);
+    QCOMPARE(client.deleteCalls.size(), 0);
+    QCOMPARE(repository.statuses.size(), 0);
 }
 
 void AniListPendingChangeProcessorTests::successfulProcessingClearsPreviousError() {
@@ -177,6 +207,151 @@ void AniListPendingChangeProcessorTests::successfulProcessingClearsPreviousError
 
     QVERIFY(processor.process(154587, error));
     QVERIFY(error.isEmpty());
+}
+
+void AniListPendingChangeProcessorTests::sendsPendingDeletionAndSupersedesOtherChangesOfTheMedia() {
+    FakePendingRepository repository;
+    auto progress = progressChange();
+    progress.id = 1;
+    auto deletion = progressChange();
+    deletion.id = 2;
+    deletion.field = AniListField::Deletion;
+    repository.changes = {progress, deletion};
+    FakeUpdateClient client;
+    AniListPendingChangeProcessor processor(repository, client, 42);
+    QString error;
+
+    QVERIFY2(processor.process(154587, error), qPrintable(error));
+    QCOMPARE(client.mediaCalls, 0);
+    QCOMPARE(client.deleteCalls.size(), 1);
+    QCOMPARE(client.deleteCalls.first().first, 154587);
+    QCOMPARE(client.deleteCalls.first().second, qint64(42));
+    QVERIFY(repository.statuses.contains(AniListPendingChangeStatus::Succeeded));
+    QVERIFY(repository.statuses.contains(AniListPendingChangeStatus::Superseded));
+    QCOMPARE(repository.statuses.count(AniListPendingChangeStatus::Superseded), 1);
+}
+
+void AniListPendingChangeProcessorTests::failedDeletionIsKeptFailedWithAttemptAndSendsNothingElse() {
+    FakePendingRepository repository;
+    auto progress = progressChange();
+    progress.id = 1;
+    auto deletion = progressChange(AniListPendingChangeStatus::Failed);
+    deletion.id = 2;
+    deletion.field = AniListField::Deletion;
+    deletion.attempts = 1;
+    repository.changes = {progress, deletion};
+    FakeUpdateClient client;
+    client.deleteSucceeds = false;
+    AniListPendingChangeProcessor processor(repository, client, 42);
+    QString error;
+
+    QVERIFY(!processor.process(154587, error));
+    QCOMPARE(error, QStringLiteral("delete failed"));
+    QCOMPARE(client.mediaCalls, 0);
+    QCOMPARE(repository.statuses.last(), AniListPendingChangeStatus::Failed);
+    QCOMPARE(repository.updates.last().attempts, 2);
+    QCOMPARE(repository.updates.last().lastError, QStringLiteral("delete failed"));
+    QVERIFY(!repository.statuses.contains(AniListPendingChangeStatus::Superseded));
+}
+
+void AniListPendingChangeProcessorTests::persistsCompactorSupersededRowsAfterDeletion() {
+    FakePendingRepository repository;
+    auto first = progressChange();
+    first.id = 1;
+    first.localUpdatedAt = QDateTime::fromString(QStringLiteral("2026-09-23T10:00:00"), Qt::ISODate);
+    auto second = first;
+    second.id = 2;
+    second.newValue = 14;
+    second.localUpdatedAt = QDateTime::fromString(QStringLiteral("2026-09-23T11:00:00"), Qt::ISODate);
+    auto deletion = progressChange();
+    deletion.id = 3;
+    deletion.field = AniListField::Deletion;
+    deletion.localUpdatedAt = QDateTime::fromString(QStringLiteral("2026-09-23T12:00:00"), Qt::ISODate);
+    repository.changes = {first, second, deletion};
+    FakeUpdateClient client;
+    AniListPendingChangeProcessor processor(repository, client, 42);
+    QString error;
+
+    QVERIFY2(processor.process(154587, error), qPrintable(error));
+    QSet<qint64> supersededIds;
+    for (const auto &update : repository.updates) {
+        if (update.status == AniListPendingChangeStatus::Superseded) supersededIds.insert(update.id);
+    }
+    QCOMPARE(supersededIds, QSet<qint64>({1, 2}));
+}
+
+void AniListPendingChangeProcessorTests::resendsDeletionLeftInProcessing() {
+    FakePendingRepository repository;
+    auto deletion = progressChange(AniListPendingChangeStatus::Processing);
+    deletion.id = 5;
+    deletion.field = AniListField::Deletion;
+    repository.changes = {deletion};
+    FakeUpdateClient client;
+    AniListPendingChangeProcessor processor(repository, client, 42);
+    QString error;
+
+    QVERIFY2(processor.process(154587, error), qPrintable(error));
+    QCOMPARE(client.deleteCalls.size(), 1);
+    QCOMPARE(repository.statuses.last(), AniListPendingChangeStatus::Succeeded);
+}
+
+void AniListPendingChangeProcessorTests::deletionStaysResendableWhenSupersedingSiblingsFails() {
+    FakePendingRepository repository;
+    auto progress = progressChange();
+    progress.id = 1;
+    auto deletion = progressChange();
+    deletion.id = 2;
+    deletion.field = AniListField::Deletion;
+    repository.changes = {progress, deletion};
+    repository.failOnStatus = AniListPendingChangeStatus::Superseded;
+    FakeUpdateClient client;
+    AniListPendingChangeProcessor processor(repository, client, 42);
+    QString error;
+
+    QVERIFY(!processor.process(154587, error));
+    QCOMPARE(error, QStringLiteral("status write failed"));
+    // The deletion was never marked Succeeded, so the next drain resends it (idempotent).
+    QVERIFY(!repository.statuses.contains(AniListPendingChangeStatus::Succeeded));
+    QCOMPARE(repository.statuses.last(), AniListPendingChangeStatus::Processing);
+}
+
+void AniListPendingChangeProcessorTests::logsDeletionSentAndSupersededCountWithoutPayloads() {
+    FakePendingRepository repository;
+    auto progress = progressChange();
+    progress.id = 1;
+    progress.newValue = 987654;
+    auto deletion = progressChange();
+    deletion.id = 2;
+    deletion.field = AniListField::Deletion;
+    repository.changes = {progress, deletion};
+    FakeUpdateClient client;
+    QStringList logs;
+    AniListPendingChangeProcessor processor(repository, client, 42,
+                                            [&logs](const QString &line) { logs.append(line); });
+    QString error;
+
+    QVERIFY2(processor.process(154587, error), qPrintable(error));
+    QCOMPARE(logs, QStringList({
+        QStringLiteral("AniList list deletion sent for media 154587."),
+        QStringLiteral("Superseded 1 pending AniList changes for media 154587 after list deletion.")}));
+}
+
+void AniListPendingChangeProcessorTests::logsDeletionFailureWithSafeError() {
+    FakePendingRepository repository;
+    auto deletion = progressChange();
+    deletion.id = 2;
+    deletion.field = AniListField::Deletion;
+    repository.changes = {deletion};
+    FakeUpdateClient client;
+    client.deleteSucceeds = false;
+    QStringList logs;
+    AniListPendingChangeProcessor processor(repository, client, 42,
+                                            [&logs](const QString &line) { logs.append(line); });
+    QString error;
+
+    QVERIFY(!processor.process(154587, error));
+    QCOMPARE(logs, QStringList({
+        QStringLiteral("AniList list deletion failed for media 154587: delete failed.")}));
 }
 
 QTEST_MAIN(AniListPendingChangeProcessorTests)

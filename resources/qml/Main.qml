@@ -1,10 +1,12 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Window 2.15
 
 ApplicationWindow {
     id: root
 
     visible: true
+    visibility: Window.Maximized
     width: 1440
     height: 900
     minimumWidth: root.showingSettings ? 680 : 1100

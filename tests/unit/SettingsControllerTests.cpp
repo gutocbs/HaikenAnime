@@ -9,6 +9,7 @@
 #include "../../src/app/LocalLibraryScanCoordinator.h"
 #include "../../src/application/cache/ClearLocalCacheUseCase.h"
 #include "../../src/application/anilist/AniListAuthManager.h"
+#include "../../src/application/anilist/RemoveAniListAccountUseCase.h"
 #include "../../src/application/covers/CoverDownloadCoordinator.h"
 
 struct ScanFixture {
@@ -76,6 +77,7 @@ public:
         return true;
     }
     bool clearAniListCredentials(QString &error) override {
+        if (failClear) { error = QStringLiteral("store unavailable"); return false; }
         stored = {};
         hasCredentials = false;
         error.clear();
@@ -84,6 +86,7 @@ public:
 
     AniListCredentials stored;
     bool hasCredentials = false;
+    bool failClear = false;
 };
 
 class ViewerClientStub final : public IAniListViewerClient {
@@ -181,8 +184,12 @@ private slots:
     void scanSignalsUpdatePresentation();
     void coordinatorReplacementDisconnectsOldSignals();
     void requestsManualSynchronization();
+    void doesNotTrackSynchronizationState();
     void leavesAniListConnectionUnavailableWithoutServices();
     void launchesAniListAuthorizationWhenServicesAreAvailable();
+    void doesNotLaunchAuthorizationWhileAniListIsConnected();
+    void removesAniListAccountClearingUsernameAndKeepingErrorMessageEmpty();
+    void keepsAuthenticatedStateWhenAniListAccountRemovalFails();
     void validatesAniListCallbackAndPublishesUsername();
     void publishesAniListAuthenticationFailureWithoutToken();
     void clearsLocalCacheWithoutChangingUnsavedDraft();
@@ -553,11 +560,117 @@ void SettingsControllerTests::requestsManualSynchronization() {
     QCOMPARE(requested.count(), 1);
 }
 
+void SettingsControllerTests::doesNotTrackSynchronizationState() {
+    SettingsController controller(nullptr, {});
+    const QMetaObject *meta = controller.metaObject();
+    const auto errorBefore = controller.errorMessage();
+
+    QCOMPARE(meta->indexOfProperty("synchronizationRunning"), -1);
+    QCOMPARE(meta->indexOfSignal("synchronizationChanged()"), -1);
+    controller.SynchronizeNow();
+    controller.SynchronizeNow();
+
+    QCOMPARE(controller.errorMessage(), errorBefore);
+}
+
 void SettingsControllerTests::leavesAniListConnectionUnavailableWithoutServices() {
     SettingsController controller(nullptr, {});
 
     QVERIFY(!controller.aniListConnectionAvailable());
     QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("unavailable"));
+}
+
+namespace {
+struct ConnectedAccountFixture final {
+    MemorySecretStore secretStore;
+    AniListAuthManager authManager{secretStore};
+    ViewerClientStub viewer;
+    std::vector<std::function<void()>> pendingAcknowledgements;
+    int launches = 0;
+    qint64 remembered = 0;
+
+    ConnectedAccountFixture() {
+        QString error;
+        Q_ASSERT(authManager.save({.username = QStringLiteral("TestUser"), .token = QStringLiteral("secret-token"),
+                                   .userId = 42}, error));
+    }
+
+    void Configure(SettingsController &controller) {
+        controller.SetAniListAuthenticationServices(
+            &authManager,
+            AniListOAuthConfig(QStringLiteral("client-id"), QUrl(QStringLiteral("haikenanime://oauth/callback"))),
+            [this](const QUrl &, QString &error) { ++launches; error.clear(); return true; }, &viewer);
+    }
+
+    [[nodiscard]] RemoveAniListAccountUseCase MakeUseCase() {
+        return RemoveAniListAccountUseCase(
+            [] {}, [](bool) {},
+            [this](SyncPartition, std::function<void()> acknowledged) {
+                pendingAcknowledgements.push_back(std::move(acknowledged));
+            },
+            authManager,
+            [this](const qint64 userId, QString &error) { remembered = userId; error.clear(); return true; });
+    }
+};
+}
+
+void SettingsControllerTests::doesNotLaunchAuthorizationWhileAniListIsConnected() {
+    ConnectedAccountFixture fixture;
+    SettingsController controller(nullptr, {});
+    fixture.Configure(controller);
+
+    QVERIFY(controller.aniListConnected());
+    QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("authenticated"));
+    controller.ConnectAniList();
+
+    QCOMPARE(fixture.launches, 0);
+}
+
+void SettingsControllerTests::removesAniListAccountClearingUsernameAndKeepingErrorMessageEmpty() {
+    ConnectedAccountFixture fixture;
+    auto useCase = fixture.MakeUseCase();
+    SettingsController controller(nullptr, {});
+    fixture.Configure(controller);
+    controller.SetAniListAccountRemoval(&useCase);
+    QSignalSpy changed(&controller, &SettingsController::changed);
+
+    controller.RemoveAniListAccount();
+
+    QVERIFY(controller.aniListRemovalInProgress());
+    QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("removing"));
+    QVERIFY(!controller.aniListConnected());
+    controller.RemoveAniListAccount();
+    QCOMPARE(fixture.pendingAcknowledgements.size(), size_t{2});
+    for (auto &acknowledge : fixture.pendingAcknowledgements) acknowledge();
+
+    QVERIFY(!controller.aniListRemovalInProgress());
+    QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("disconnected"));
+    QCOMPARE(controller.aniListUsername(), QString());
+    QCOMPARE(controller.aniListAuthenticationMessage(), QStringLiteral("Conta AniList removida."));
+    QVERIFY(controller.errorMessage().isEmpty());
+    QVERIFY(!controller.aniListConnected());
+    QCOMPARE(fixture.remembered, qint64{42});
+    QVERIFY(changed.count() >= 2);
+}
+
+void SettingsControllerTests::keepsAuthenticatedStateWhenAniListAccountRemovalFails() {
+    ConnectedAccountFixture fixture;
+    fixture.secretStore.failClear = true;
+    auto useCase = fixture.MakeUseCase();
+    SettingsController controller(nullptr, {});
+    fixture.Configure(controller);
+    controller.SetAniListAccountRemoval(&useCase);
+
+    controller.RemoveAniListAccount();
+    for (auto &acknowledge : fixture.pendingAcknowledgements) acknowledge();
+
+    QVERIFY(!controller.aniListRemovalInProgress());
+    QCOMPARE(controller.aniListAuthenticationState(), QStringLiteral("authenticated"));
+    QVERIFY(controller.aniListConnected());
+    QCOMPARE(controller.aniListUsername(), QStringLiteral("TestUser"));
+    QCOMPARE(controller.aniListAuthenticationMessage(), QStringLiteral("Não foi possível remover a conta AniList."));
+    QVERIFY(controller.errorMessage().isEmpty());
+    QCOMPARE(fixture.remembered, qint64{0});
 }
 
 void SettingsControllerTests::launchesAniListAuthorizationWhenServicesAreAvailable() {

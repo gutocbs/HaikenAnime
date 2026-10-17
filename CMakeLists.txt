@@ -71,6 +71,8 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/application/media/MediaSyncFilter.h
         src/application/media/MediaTitleResolver.h
         src/application/media/MediaTitleResolver.cpp
+        src/application/media/ProgressFormatter.h
+        src/application/media/ProgressFormatter.cpp
         src/application/media/MediaDetailsPresentation.h
         src/application/media/MediaDetailsPresentation.cpp
         src/application/library/LocalFileRecognitionTypes.h
@@ -146,6 +148,8 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/application/configuration/ISettingsReader.h
         src/application/anilist/ISecretStore.h
         src/application/anilist/IAniListAuthProvider.h
+        src/application/anilist/RemoveAniListAccountUseCase.h
+        src/application/anilist/RemoveAniListAccountUseCase.cpp
         src/application/media/IMediaRepository.h
         src/application/media/IMediaReader.h
         src/application/media/IMediaWriter.h
@@ -177,6 +181,7 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/application/anilist/IPendingChangeRepository.h
         src/application/scheduling/ISyncTaskStateRepository.h
         src/application/scheduling/ISyncTaskExecutor.h
+        src/application/scheduling/SyncProgress.h
         src/application/scheduling/SyncTaskPolicy.cpp
         src/application/anilist/IAniListUpdateClient.h
         src/infrastructure/anilist/AniListUpdateClient.h
@@ -262,6 +267,8 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/presentation/seasonal/SeasonalCatalogController.cpp
         src/presentation/settings/SettingsController.h
         src/presentation/settings/SettingsController.cpp
+        src/presentation/sync/SynchronizationStatusController.h
+        src/presentation/sync/SynchronizationStatusController.cpp
 )
 
 set_source_files_properties(
@@ -283,6 +290,12 @@ set_source_files_properties(
         resources/sqlite/queries/mark-media-source-removed.sql
         PROPERTIES QT_RESOURCE_ALIAS "mark-media-source-removed.sql")
 set_source_files_properties(
+        resources/sqlite/queries/mark-media-personal-list-removed.sql
+        PROPERTIES QT_RESOURCE_ALIAS "mark-media-personal-list-removed.sql")
+set_source_files_properties(
+        resources/sqlite/queries/supersede-pending-deletion.sql
+        PROPERTIES QT_RESOURCE_ALIAS "supersede-pending-deletion.sql")
+set_source_files_properties(
         resources/sqlite/queries/enqueue-pending-change.sql
         PROPERTIES QT_RESOURCE_ALIAS "enqueue-pending-change.sql")
 set_source_files_properties(
@@ -292,8 +305,14 @@ set_source_files_properties(
         resources/sqlite/queries/read-pending-media-ids.sql
         PROPERTIES QT_RESOURCE_ALIAS "read-pending-media-ids.sql")
 set_source_files_properties(
+        resources/sqlite/queries/read-unsent-media-ids.sql
+        PROPERTIES QT_RESOURCE_ALIAS "read-unsent-media-ids.sql")
+set_source_files_properties(
         resources/sqlite/queries/update-pending-change.sql
         PROPERTIES QT_RESOURCE_ALIAS "update-pending-change.sql")
+set_source_files_properties(
+        resources/sqlite/queries/adopt-orphan-pending-changes.sql
+        PROPERTIES QT_RESOURCE_ALIAS "adopt-orphan-pending-changes.sql")
 set_source_files_properties(
         resources/sqlite/queries/read-cover-cache.sql
         PROPERTIES QT_RESOURCE_ALIAS "read-cover-cache.sql")
@@ -381,10 +400,14 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         resources/sqlite/queries/read-media.sql
         resources/sqlite/queries/read-active-media-ids.sql
         resources/sqlite/queries/mark-media-source-removed.sql
+        resources/sqlite/queries/mark-media-personal-list-removed.sql
+        resources/sqlite/queries/supersede-pending-deletion.sql
         resources/sqlite/queries/enqueue-pending-change.sql
         resources/sqlite/queries/read-pending-changes.sql
         resources/sqlite/queries/read-pending-media-ids.sql
+        resources/sqlite/queries/read-unsent-media-ids.sql
         resources/sqlite/queries/update-pending-change.sql
+        resources/sqlite/queries/adopt-orphan-pending-changes.sql
         resources/sqlite/queries/read-cover-cache.sql
         resources/sqlite/queries/upsert-cover-cache.sql
         resources/sqlite/queries/delete-cover-cache.sql
@@ -434,10 +457,14 @@ set_source_files_properties(
 set_source_files_properties(
         resources/anilist/queries/user-media-list.graphql
         PROPERTIES QT_RESOURCE_ALIAS "user-media-list.graphql")
+set_source_files_properties(
+        resources/anilist/queries/media-list-entry-id.graphql
+        PROPERTIES QT_RESOURCE_ALIAS "media-list-entry-id.graphql")
 qt_add_resources(HaikenAnime anilist_query_resource_bundle
         PREFIX "/anilist/queries"
         FILES resources/anilist/queries/seasonal-catalog.graphql resources/anilist/queries/viewer.graphql
-              resources/anilist/queries/user-media-list.graphql)
+              resources/anilist/queries/user-media-list.graphql
+              resources/anilist/queries/media-list-entry-id.graphql)
 
 qt_add_qml_module(HaikenAnime
         URI HaikenAnime
@@ -453,6 +480,8 @@ qt_add_qml_module(HaikenAnime
         resources/qml/EditMediaPanel.qml
         resources/qml/MediaCard.qml
         resources/qml/StatePanel.qml
+        resources/qml/AppButton.qml
+        resources/qml/SyncProgressBar.qml
         RESOURCES resources/images/cover-placeholder.svg
 )
 
@@ -483,6 +512,8 @@ qt_add_translations(HaikenAnime
 if (BUILD_TESTING)
 add_executable(MediaDomainTests
         tests/unit/MediaDomainTests.cpp
+        src/application/media/ProgressFormatter.h
+        src/application/media/ProgressFormatter.cpp
         src/domain/media/MediaLink.h
         src/domain/media/Media.h
         src/domain/media/MediaStatus.h
@@ -562,11 +593,15 @@ qt_add_resources(SqliteRepositoryTests repository_query_resources
               resources/sqlite/queries/read-media.sql
               resources/sqlite/queries/read-active-media-ids.sql
               resources/sqlite/queries/mark-media-source-removed.sql
+              resources/sqlite/queries/mark-media-personal-list-removed.sql
+              resources/sqlite/queries/supersede-pending-deletion.sql
               resources/sqlite/queries/update-personal-list-media.sql
               resources/sqlite/queries/enqueue-pending-change.sql
               resources/sqlite/queries/read-pending-changes.sql
               resources/sqlite/queries/read-pending-media-ids.sql
-              resources/sqlite/queries/update-pending-change.sql)
+              resources/sqlite/queries/read-unsent-media-ids.sql
+              resources/sqlite/queries/update-pending-change.sql
+              resources/sqlite/queries/adopt-orphan-pending-changes.sql)
 
 target_link_libraries(SqliteRepositoryTests
         PRIVATE
@@ -757,6 +792,7 @@ add_executable(SyncTaskPolicyTests
         src/application/scheduling/SyncTaskPolicy.h
         src/application/scheduling/SyncTaskPolicy.cpp
         src/application/scheduling/SyncTaskTypes.h
+        src/application/scheduling/SyncProgress.h
 )
 target_link_libraries(SyncTaskPolicyTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME SyncTaskPolicyTests COMMAND SyncTaskPolicyTests)
@@ -1069,6 +1105,7 @@ add_executable(SeasonalCatalogControllerTests
         src/app/SeasonalCatalogCoordinator.cpp
         src/application/covers/CoverSourceResolver.cpp
         src/application/media/MediaTitleResolver.cpp
+        src/application/media/ProgressFormatter.cpp
         src/application/media/MediaDetailsPresentation.cpp
         src/application/media/SeasonalPersonalListService.h
         src/application/media/SeasonalPersonalListService.cpp
@@ -1226,6 +1263,7 @@ add_executable(HomeScreenControllerTests
         src/application/covers/CoverDownloadCoordinator.cpp
         src/application/covers/CoverSourceResolver.cpp
         src/application/media/MediaTitleResolver.cpp
+        src/application/media/ProgressFormatter.cpp
         src/application/media/MediaDetailsPresentation.cpp
         src/infrastructure/logging/AsyncLogger.cpp
 )
@@ -1254,11 +1292,29 @@ add_executable(PersonalListChangeServiceTests
 target_link_libraries(PersonalListChangeServiceTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME PersonalListChangeServiceTests COMMAND PersonalListChangeServiceTests)
 
+add_executable(AniListAccountOwnershipTests
+        tests/unit/AniListAccountOwnershipTests.cpp
+        src/application/anilist/AniListAccountOwnership.h
+)
+target_link_libraries(AniListAccountOwnershipTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME AniListAccountOwnershipTests COMMAND AniListAccountOwnershipTests)
+
+add_executable(RemoveAniListAccountUseCaseTests
+        tests/unit/RemoveAniListAccountUseCaseTests.cpp
+        src/application/anilist/RemoveAniListAccountUseCase.h
+        src/application/anilist/RemoveAniListAccountUseCase.cpp
+        src/application/anilist/AniListAuthManager.cpp
+        src/application/anilist/AniListOAuthCallbackParser.cpp
+)
+target_link_libraries(RemoveAniListAccountUseCaseTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME RemoveAniListAccountUseCaseTests COMMAND RemoveAniListAccountUseCaseTests)
+
 add_executable(SettingsControllerTests
         tests/unit/SettingsControllerTests.cpp
         src/presentation/settings/SettingsController.cpp
         src/application/anilist/AniListAuthManager.cpp
         src/application/anilist/AniListOAuthCallbackParser.cpp
+        src/application/anilist/RemoveAniListAccountUseCase.cpp
         src/application/cache/ClearLocalCacheUseCase.cpp
         src/application/covers/CoverDownloadCoordinator.cpp
         src/application/configuration/UserPreferencesValidator.cpp
@@ -1270,6 +1326,14 @@ add_executable(SettingsControllerTests
 )
 target_link_libraries(SettingsControllerTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME SettingsControllerTests COMMAND SettingsControllerTests)
+
+add_executable(SynchronizationStatusControllerTests
+        tests/unit/SynchronizationStatusControllerTests.cpp
+        src/presentation/sync/SynchronizationStatusController.h
+        src/presentation/sync/SynchronizationStatusController.cpp
+)
+target_link_libraries(SynchronizationStatusControllerTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME SynchronizationStatusControllerTests COMMAND SynchronizationStatusControllerTests)
 
 add_executable(QmlStructureTests tests/unit/QmlStructureTests.cpp)
 target_link_libraries(QmlStructureTests PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Test)
@@ -1306,6 +1370,10 @@ add_executable(InitialSyncCoordinatorTests
         src/infrastructure/anilist/AniListMediaMapper.cpp
         src/application/anilist/AniListSyncService.h
         src/application/anilist/AniListSyncService.cpp
+        src/application/anilist/AniListPendingChangeReconciler.h
+        src/application/anilist/AniListPendingChangeReconciler.cpp
+        src/application/anilist/AniListMergeService.h
+        src/application/anilist/AniListMergeService.cpp
         src/application/anilist/AniListSyncErrorClassifier.h
         src/application/anilist/AniListSyncErrorClassifier.cpp
         src/application/anilist/AniListPendingChangeProcessor.h
@@ -1337,6 +1405,7 @@ add_executable(AdaptiveSyncCoordinatorTests
         src/app/AdaptiveSyncCoordinator.h
         src/app/AdaptiveSyncCoordinator.cpp
         src/application/scheduling/ISyncTaskExecutor.h
+        src/application/scheduling/SyncProgress.h
         src/application/scheduling/SyncTaskPolicy.h
         src/application/scheduling/SyncTaskPolicy.cpp
 )
@@ -1350,6 +1419,7 @@ add_executable(AdaptiveSyncRuntimeTests
         src/app/AdaptiveSyncCoordinator.h
         src/app/AdaptiveSyncCoordinator.cpp
         src/application/scheduling/ISyncTaskExecutor.h
+        src/application/scheduling/SyncProgress.h
         src/application/scheduling/SyncTaskPolicy.h
         src/application/scheduling/SyncTaskPolicy.cpp
 )
@@ -1462,6 +1532,7 @@ set(HAIKENANIME_TESTS
         ClearLocalCacheUseCaseTests
         QtCoverDownloaderTests
         AniListAuthManagerTests
+        RemoveAniListAccountUseCaseTests
         AniListOAuthCallbackParserTests
         WindowsAniListOAuthLauncherTests
         AniListFlowTests
@@ -1482,6 +1553,7 @@ set(HAIKENANIME_TESTS
         AniListUpdateClientTests
         HomeScreenControllerTests
         SettingsControllerTests
+        SynchronizationStatusControllerTests
         QmlStructureTests
         InitialSyncCoordinatorTests
         AdaptiveSyncCoordinatorTests

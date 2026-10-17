@@ -6,6 +6,7 @@
 #include <functional>
 #include <optional>
 
+#include "SyncProgress.h"
 #include "SyncTaskTypes.h"
 
 struct SyncTaskExecutionResult final {
@@ -23,8 +24,11 @@ public:
     using Completion = std::function<void(const SyncTaskExecutionResult &)>;
     using CancellationAcknowledgement = std::function<void()>;
     using ShutdownAcknowledgement = std::function<void()>;
+    using ProgressReporter = std::function<void(const SyncProgress &)>;
 
     virtual ~ISyncTaskExecutor() = default;
+    // The reporter may be invoked from the executor's worker thread while a task runs.
+    virtual void SetProgressReporter(ProgressReporter reporter) {}
     virtual void Execute(const SyncTaskState &state, qint64 generation, Completion completion) = 0;
     // Acknowledgement means the worker has accounted for the in-flight task
     // and will not later invoke its completion callback for this generation.

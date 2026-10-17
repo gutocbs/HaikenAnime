@@ -99,10 +99,10 @@ Item {
                     font.weight: Font.Bold
                 }
 
-                Button {
+                AppButton {
                     id: settingsHeaderNavigation
+                    variant: "flat"
                     text: qsTr("‹  Biblioteca")
-                    flat: true
                     font.pixelSize: 13
                     onClicked: settingsScreen.requestBack()
                 }
@@ -137,7 +137,7 @@ Item {
                     }
                 }
 
-                SettingsButton {
+                AppButton {
                     id: settingsSaveButton
                     Layout.alignment: Qt.AlignLeft
                     text: qsTr("Salvar alterações")
@@ -424,29 +424,7 @@ Item {
             Label { Layout.fillWidth: true; text: settingSwitch.title; color: ink; font.pixelSize: 12; font.weight: Font.DemiBold; wrapMode: Text.Wrap }
             Label { Layout.fillWidth: true; text: settingSwitch.description; color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
         }
-        Switch { checked: settingSwitch.checked; onToggled: settingSwitch.toggled(checked) }
-    }
-
-    component SettingsButton: Basic.Button {
-        id: settingsButton
-        implicitHeight: 34
-        leftPadding: 14
-        rightPadding: 14
-        contentItem: Text {
-            text: settingsButton.text
-            color: settingsButton.enabled ? surface : muted
-            font: settingsButton.font
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
-        background: Rectangle {
-            radius: 5
-            color: !settingsButton.enabled ? surfaceSoft
-                 : settingsButton.down ? "#24466d"
-                 : settingsButton.hovered ? "#3c6eaa" : accent
-            border.width: settingsButton.activeFocus ? 2 : 1
-            border.color: settingsButton.activeFocus ? ink : (settingsButton.enabled ? accent : line)
-        }
+        Switch { id: innerSwitch; checked: settingSwitch.checked; onToggled: function() { settingSwitch.toggled(innerSwitch.checked) } }
     }
 
     Component {
@@ -509,14 +487,31 @@ Item {
                                ? controller.aniListUsername : qsTr("Nenhuma conta conectada")
                     }
                 }
+                Label {
+                    Layout.fillWidth: true
+                    visible: controller.aniListAuthenticationMessage.length > 0
+                    text: controller.aniListAuthenticationMessage
+                    color: muted
+                    font.pixelSize: 11
+                    wrapMode: Text.Wrap
+                }
                 RowLayout {
                     Layout.fillWidth: true
+                    spacing: 8
                     Item { Layout.fillWidth: true }
-                    Button {
+                    AppButton {
+                        text: qsTr("Remover conta")
+                        variant: "danger"
+                        visible: controller.aniListConnected
+                        enabled: !controller.aniListRemovalInProgress
+                        onClicked: removeAccountDialog.open()
+                    }
+                    AppButton {
                         text: controller.aniListAuthenticationInProgress
                               ? qsTr("Conectando conta...") : qsTr("Conectar conta")
-                        enabled: controller.aniListConnectionAvailable
+                        enabled: controller.aniListConnectionAvailable && !controller.aniListConnected
                                  && !controller.aniListAuthenticationInProgress
+                                 && !controller.aniListRemovalInProgress
                         onClicked: controller.ConnectAniList()
                     }
                 }
@@ -531,8 +526,9 @@ Item {
                         Label { Layout.fillWidth: true; text: qsTr("Atualizar a biblioteca em segundo plano quando o aplicativo for iniciado."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
                     }
                     Switch {
+                        id: synchronizationSwitch
                         checked: controller.synchronizationEnabled
-                        onToggled: controller.SetSynchronizationEnabled(checked)
+                        onToggled: function() { controller.SetSynchronizationEnabled(synchronizationSwitch.checked) }
                     }
                 }
                 RowLayout {
@@ -542,11 +538,15 @@ Item {
                         Label { text: qsTr("Sincronização manual"); color: ink; font.pixelSize: 12; font.weight: Font.DemiBold }
                         Label { Layout.fillWidth: true; text: qsTr("Atualize agora os dados da sua lista, sem aguardar o próximo intervalo automático."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
                     }
-                    SettingsButton {
-                        text: controller.synchronizationRunning ? qsTr("Sincronizando…") : qsTr("Sincronizar agora")
-                        enabled: !controller.synchronizationRunning
+                    AppButton {
+                        text: synchronizationStatus.running ? qsTr("Sincronizando…") : qsTr("Sincronizar agora")
+                        enabled: !synchronizationStatus.running
                         onClicked: controller.SynchronizeNow()
                     }
+                }
+                SyncProgressBar {
+                    Layout.fillWidth: true
+                    status: synchronizationStatus
                 }
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
                 GridLayout { Layout.fillWidth: true; columns: 2; columnSpacing: 12; rowSpacing: 6
@@ -556,7 +556,7 @@ Item {
                         model: controller.scoreScaleOptions
                         textRole: "label"
                         currentIndex: settingsScreen.scoreScaleIndex(model)
-                        onActivated: {
+                        onActivated: function(index) {
                             const selected = model[index]
                             controller.SetScoreScale(selected.minimum, selected.maximum, selected.step)
                         }
@@ -568,7 +568,7 @@ Item {
                         model: controller.synchronizationIntervalOptions
                         textRole: "label"
                         currentIndex: settingsScreen.optionIndex(model, "value", controller.synchronizationIntervalMs)
-                        onActivated: controller.SetSynchronizationInterval(model[index].value)
+                        onActivated: function(index) { controller.SetSynchronizationInterval(model[index].value) }
                     }
                 }
             }
@@ -593,7 +593,7 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     Item { Layout.fillWidth: true }
-                    SettingsButton { text: qsTr("Selecionar pasta"); onClicked: libraryFolderDialog.open() }
+                    AppButton { text: qsTr("Selecionar pasta"); onClicked: libraryFolderDialog.open() }
                 }
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
                 FieldLabel { text: qsTr("EXTENSÕES INCLUÍDAS") }
@@ -608,16 +608,17 @@ Item {
                     Repeater {
                         model: controller.availableScanExtensions
                         delegate: CheckBox {
+                            id: extensionCheckBox
                             required property string modelData
                             width: scanExtensionGrid.cellWidth
                             text: modelData
                             checked: controller.selectedScanExtensions.indexOf(modelData) >= 0
                             Accessible.name: qsTr("Incluir arquivos %1").arg(modelData)
-                            onToggled: controller.SetScanExtensionEnabled(modelData, checked)
+                            onToggled: function() { controller.SetScanExtensionEnabled(modelData, extensionCheckBox.checked) }
                         }
                     }
                 }
-                SettingsButton {
+                AppButton {
                     id: scanNowButton
                     text: qsTr("Escanear agora")
                     enabled: !controller.dirty && !controller.scanRunning && controller.valid && !controller.saving
@@ -659,14 +660,14 @@ Item {
             }
             SectionCard {
                 Label { text: qsTr("Reconhecimento"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
-                SettingSwitch { title: qsTr("Reconhecer arquivos automaticamente"); description: qsTr("Verifica a biblioteca ao iniciar o aplicativo."); checked: controller.automaticLocalFileRecognition; onToggled: controller.SetAutomaticLocalFileRecognition(checked) }
+                SettingSwitch { title: qsTr("Reconhecer arquivos automaticamente"); description: qsTr("Verifica a biblioteca ao iniciar o aplicativo."); checked: controller.automaticLocalFileRecognition; onToggled: function(checked) { controller.SetAutomaticLocalFileRecognition(checked) } }
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
                 StaticField { label: qsTr("Reprodutor preferido"); value: qsTr("Padrão do Windows") }
             }
             SectionCard {
                 Label { text: qsTr("Cache local"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
                 Label { Layout.fillWidth: true; text: qsTr("Remove capas, arquivos temporários de capas e metadados derivados. Sua biblioteca, progresso e conta não são alterados."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
-                SettingsButton {
+                AppButton {
                     text: controller.cacheCleanupRunning ? qsTr("Limpando cache…") : qsTr("Limpar cache local")
                     enabled: !controller.cacheCleanupRunning
                     onClicked: controller.ClearLocalCache()
@@ -697,7 +698,7 @@ Item {
                         title: modelData.label
                         description: qsTr("Inclui mídias dessa lista na sincronização e no reconhecimento.")
                         checked: controller.enabledUserLists.indexOf(modelData.key) >= 0
-                        onToggled: controller.SetUserListEnabled(modelData.key, checked)
+                        onToggled: function(checked) { controller.SetUserListEnabled(modelData.key, checked) }
                     }
                 }
             }
@@ -708,7 +709,7 @@ Item {
                     title: qsTr("INCLUIR CONTEÚDO ADULTO")
                     description: qsTr("Permite títulos adultos no catálogo sazonal.")
                     checked: controller.includeAdultContent
-                    onToggled: controller.SetIncludeAdultContent(checked)
+                    onToggled: function(checked) { controller.SetIncludeAdultContent(checked) }
                 }
             }
         }
@@ -759,7 +760,7 @@ Item {
                         model: controller.languageOptions
                         textRole: "label"
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.languageKey)
-                        onActivated: controller.SetLanguage(model[index].key)
+                        onActivated: function(index) { controller.SetLanguage(model[index].key) }
                     }
 
                     SettingsComboBox {
@@ -769,7 +770,7 @@ Item {
                         model: controller.coverQualityOptions
                         textRole: "label"
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.coverQualityKey)
-                        onActivated: controller.SetCoverQuality(model[index].key)
+                        onActivated: function(index) { controller.SetCoverQuality(model[index].key) }
                     }
 
                     SettingsComboBox {
@@ -779,7 +780,7 @@ Item {
                         model: controller.preferredTitleOptions
                         textRole: "label"
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.preferredTitleKey)
-                        onActivated: controller.SetPreferredTitle(model[index].key)
+                        onActivated: function(index) { controller.SetPreferredTitle(model[index].key) }
                     }
                     SettingsComboBox {
                         Layout.fillWidth: true
@@ -788,7 +789,7 @@ Item {
                         model: controller.cardStatusPresentationOptions
                         textRole: "label"
                         currentIndex: settingsScreen.optionIndex(model, "key", controller.cardStatusPresentationKey)
-                        onActivated: controller.SetCardStatusPresentation(model[index].key)
+                        onActivated: function(index) { controller.SetCardStatusPresentation(model[index].key) }
                     }
                 }
                 Label {
@@ -849,6 +850,51 @@ Item {
             text: qsTr("Existem configurações alteradas que ainda não foram salvas.")
             color: ink
             wrapMode: Text.Wrap
+        }
+    }
+
+    Dialog {
+        id: removeAccountDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        width: Math.min(420, settingsScreen.width - 48)
+        title: qsTr("Remover conta AniList?")
+        closePolicy: Popup.CloseOnEscape
+        padding: 20
+
+        background: Rectangle { color: settingsScreen.surface; border.color: settingsScreen.line; radius: 8 }
+        header: Label {
+            text: removeAccountDialog.title
+            color: settingsScreen.ink
+            font.pixelSize: 16
+            font.weight: Font.DemiBold
+            leftPadding: 20; topPadding: 20; rightPadding: 20
+        }
+        contentItem: Label {
+            text: qsTr("A biblioteca local e as alterações não sincronizadas serão mantidas.")
+            color: settingsScreen.muted
+            font.pixelSize: 12
+            wrapMode: Text.Wrap
+        }
+        footer: Item {
+            implicitHeight: 64
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 16
+                spacing: 8
+                Item { Layout.fillWidth: true }
+                AppButton {
+                    text: qsTr("Cancelar")
+                    variant: "flat"
+                    onClicked: removeAccountDialog.close()
+                }
+                AppButton {
+                    text: qsTr("Remover conta")
+                    variant: "danger"
+                    onClicked: { removeAccountDialog.close(); controller.RemoveAniListAccount() }
+                }
+            }
         }
     }
 }

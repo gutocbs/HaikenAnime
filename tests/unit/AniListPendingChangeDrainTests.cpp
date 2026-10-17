@@ -38,6 +38,11 @@ public:
         return true;
     }
 
+    bool getMediaIdsWithUnsentChanges(QSet<int> &result, QString &error) override {
+        result.clear();
+        error.clear();
+        return true;
+    }
     bool getPendingMediaIds(QList<int> &result, QString &error) override {
         result.clear();
         for (const auto &change : changes) {
@@ -77,6 +82,11 @@ class RecordingUpdateClient final : public IAniListUpdateClient {
 public:
     bool updateMedia(const AniListMediaPendingChanges &changes, QString &error) override {
         mediaIds.append(changes.mediaId);
+        error.clear();
+        return true;
+    }
+
+    bool deleteMediaListEntry(int, qint64, QString &error) override {
         error.clear();
         return true;
     }

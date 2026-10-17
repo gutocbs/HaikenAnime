@@ -80,6 +80,8 @@ public:
         requests[state.partition] = {.state = state, .generation = generation, .completion = std::move(completion)};
     }
 
+    void SetProgressReporter(ProgressReporter reporter) override { progressReporter = std::move(reporter); }
+
     void Cancel(const SyncPartition partition, CancellationAcknowledgement acknowledgement) override {
         cancelled.append(partition);
         cancellationAcknowledgements[partition] = std::move(acknowledgement);
@@ -104,6 +106,7 @@ public:
     std::map<SyncPartition, Request> requests;
     std::map<SyncPartition, CancellationAcknowledgement> cancellationAcknowledgements;
     ShutdownAcknowledgement shutdownAcknowledgement;
+    ProgressReporter progressReporter;
 };
 
 SyncTaskState DueState(const SyncTaskKind kind, const SyncPartition partition) {
@@ -134,12 +137,17 @@ private slots:
     void schedulesRetryAtThePolicyDueTime();
     void promotesManualAndLocalChangeRequests();
     void stopCancelsWorkAndInvalidatesItsGeneration();
+    void cancelAcknowledgesOnlyAfterTheExecutorConfirmsTheActivePartition();
+    void cancelAcknowledgesImmediatelyForPartitionsWithoutActiveWork();
+    void cancelEmitsTaskCancelledAndReschedulesRemainingWork();
+    void dropsProgressReportedAfterCancellation();
     void ignoresExecutorCallbacksAfterTheCoordinatorIsDestroyed();
     void doesNotExecuteWhenRunningGenerationCannotBePersisted();
     void retainsExistingActivePartitionDuringCompletedPromotion();
     void forwardsRetryAfterToTheSchedulingPolicy();
     void waitsForCancellationAndExecutorShutdownAcknowledgements();
     void holdsPendingChangesUntilUserListSynchronizationSucceeds();
+    void republishesExecutorProgressInOrder();
 };
 
 void AdaptiveSyncCoordinatorTests::holdsPendingChangesUntilUserListSynchronizationSucceeds() {
@@ -471,6 +479,96 @@ void AdaptiveSyncCoordinatorTests::stopCancelsWorkAndInvalidatesItsGeneration() 
     QCOMPARE(completed.count(), 0);
 }
 
+void AdaptiveSyncCoordinatorTests::cancelAcknowledgesOnlyAfterTheExecutorConfirmsTheActivePartition() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList)};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
+    QSignalSpy completed(&coordinator, &AdaptiveSyncCoordinator::TaskCompleted);
+    int acknowledged = 0;
+
+    coordinator.Start();
+    const auto runningGeneration = repository.State(SyncPartition::UserList).generation;
+    coordinator.Cancel(SyncPartition::UserList, [&acknowledged] { ++acknowledged; });
+
+    QVERIFY(executor.cancelled.contains(SyncPartition::UserList));
+    QCoreApplication::processEvents();
+    QCOMPARE(acknowledged, 0);
+    QVERIFY(repository.State(SyncPartition::UserList).generation > runningGeneration);
+
+    const auto staleCompletion = executor.requests.at(SyncPartition::UserList).completion;
+    executor.AcknowledgeCancellation(SyncPartition::UserList);
+    QTRY_COMPARE(acknowledged, 1);
+    // The freed slot restarts the due partition; only the cancelled run's late completion must be ignored.
+    staleCompletion({.succeeded = true, .confirmedPage = 1});
+    QCoreApplication::processEvents();
+    QCOMPARE(completed.count(), 0);
+}
+
+void AdaptiveSyncCoordinatorTests::cancelEmitsTaskCancelledAndReschedulesRemainingWork() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList),
+                         DueState(SyncTaskKind::ActiveCatalog, SyncPartition::ActiveCatalog)};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
+    QSignalSpy cancelled(&coordinator, &AdaptiveSyncCoordinator::TaskCancelled);
+    QSignalSpy completed(&coordinator, &AdaptiveSyncCoordinator::TaskCompleted);
+    QSignalSpy failed(&coordinator, &AdaptiveSyncCoordinator::TaskFailed);
+
+    coordinator.Start();
+    QCOMPARE(executor.started.count(), 1);
+    const auto first = executor.started.constFirst();
+    coordinator.Cancel(first, {});
+    QCoreApplication::processEvents();
+    QCOMPARE(cancelled.count(), 0);
+
+    executor.AcknowledgeCancellation(first);
+
+    QTRY_COMPARE(cancelled.count(), 1);
+    QCOMPARE(cancelled.first().first().value<SyncPartition>(), first);
+    QCOMPARE(completed.count(), 0);
+    QCOMPARE(failed.count(), 0);
+    // The freed slot lets the other due partition run without waiting for another trigger.
+    QTRY_COMPARE(executor.started.count(), 2);
+}
+
+void AdaptiveSyncCoordinatorTests::dropsProgressReportedAfterCancellation() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList)};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
+    QSignalSpy progressSpy(&coordinator, &AdaptiveSyncCoordinator::TaskProgress);
+
+    coordinator.Start();
+    coordinator.Cancel(SyncPartition::UserList, {});
+    executor.progressReporter({.partition = SyncPartition::UserList, .stageKey = QStringLiteral("anime"),
+                               .stageIndex = 1, .stageCount = 3, .processedItems = 4});
+    QCoreApplication::processEvents();
+
+    QCOMPARE(progressSpy.count(), 0);
+    executor.AcknowledgeCancellation(SyncPartition::UserList);
+    QCoreApplication::processEvents();
+    QCOMPARE(progressSpy.count(), 0);
+}
+
+void AdaptiveSyncCoordinatorTests::cancelAcknowledgesImmediatelyForPartitionsWithoutActiveWork() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList)};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
+    int acknowledged = 0;
+
+    coordinator.Start();
+    coordinator.Cancel(SyncPartition::PendingChanges, [&acknowledged] { ++acknowledged; });
+
+    QCOMPARE(acknowledged, 1);
+    QVERIFY(!executor.cancelled.contains(SyncPartition::PendingChanges));
+}
+
 void AdaptiveSyncCoordinatorTests::ignoresExecutorCallbacksAfterTheCoordinatorIsDestroyed() {
     FakeClock clock;
     FakeTaskStateRepository repository;
@@ -561,3 +659,30 @@ void AdaptiveSyncCoordinatorTests::waitsForCancellationAndExecutorShutdownAcknow
 
 QTEST_MAIN(AdaptiveSyncCoordinatorTests)
 #include "AdaptiveSyncCoordinatorTests.moc"
+
+void AdaptiveSyncCoordinatorTests::republishesExecutorProgressInOrder() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList)};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor,
+        [&clock] { return clock.CurrentTime(); }, DefaultSyncTaskPolicies(), false);
+    QSignalSpy progressSpy(&coordinator, &AdaptiveSyncCoordinator::TaskProgress);
+    QVERIFY(coordinator.Start());
+    QVERIFY(executor.progressReporter);
+
+    executor.progressReporter({.partition = SyncPartition::UserList, .stageKey = QStringLiteral("anime"),
+                               .stageIndex = 1, .stageCount = 3, .processedItems = 10});
+    executor.progressReporter({.partition = SyncPartition::UserList, .stageKey = QStringLiteral("manga"),
+                               .stageIndex = 2, .stageCount = 3, .processedItems = 4});
+
+    QTRY_COMPARE(progressSpy.count(), 2);
+    const auto first = progressSpy.at(0).at(0).value<SyncProgress>();
+    const auto second = progressSpy.at(1).at(0).value<SyncProgress>();
+    QCOMPARE(first.partition, SyncPartition::UserList);
+    QCOMPARE(first.stageKey, QStringLiteral("anime"));
+    QCOMPARE(first.processedItems, 10);
+    QCOMPARE(second.stageKey, QStringLiteral("manga"));
+    QCOMPARE(second.stageIndex, 2);
+    QCOMPARE(second.totalItems, -1);
+}

@@ -27,6 +27,13 @@ public:
 
     void start();
     void requestNow(SyncPartition partition);
+    /**
+     * Cancels the partition's active task on the worker thread. `acknowledged` is delivered through a
+     * queued call on this runtime object, which lives on the thread that created it (the GUI thread), so
+     * the caller's continuation never runs on the worker. When the runtime is not ready or is stopping
+     * there is nothing to cancel and `acknowledged` runs immediately on the calling thread.
+     */
+    void cancel(SyncPartition partition, std::function<void()> acknowledged);
     void shutdown();
     [[nodiscard]] bool isReady() const;
     [[nodiscard]] bool isStopped() const;
@@ -35,7 +42,10 @@ public:
 signals:
     void Ready();
     void InitializationFailed(const QString &safeError);
+    void BackgroundTaskStarted(SyncPartition partition);
+    void BackgroundTaskProgress(SyncProgress progress);
     void BackgroundTaskCompleted(SyncPartition partition);
+    void BackgroundTaskCancelled(SyncPartition partition);
     void BackgroundTaskFailed(SyncPartition partition, const QString &safeError);
     void Stopped();
 
@@ -46,6 +56,7 @@ private:
                     std::map<SyncTaskKind, SyncSchedulePolicy> policies);
     void StartOnWorker();
     void RequestNowOnWorker(SyncPartition partition);
+    void CancelOnWorker(SyncPartition partition, std::function<void()> acknowledged);
     void StopOnWorker();
     void DisposeOnWorker(QString initializationFailure = {});
     [[nodiscard]] bool isStopRequested() const;

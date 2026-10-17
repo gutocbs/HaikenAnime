@@ -15,6 +15,7 @@ class LocalLibraryScanCoordinator;
 class ClearLocalCacheUseCase;
 class AniListAuthManager;
 class IAniListViewerClient;
+class RemoveAniListAccountUseCase;
 
 class SettingsController final : public QObject {
     Q_OBJECT
@@ -46,7 +47,6 @@ class SettingsController final : public QObject {
     Q_PROPERTY(QStringList availableScanExtensions READ availableScanExtensions NOTIFY changed)
     Q_PROPERTY(QStringList selectedScanExtensions READ selectedScanExtensions NOTIFY changed)
     Q_PROPERTY(bool scanRunning READ scanRunning NOTIFY scanChanged)
-    Q_PROPERTY(bool synchronizationRunning READ synchronizationRunning NOTIFY synchronizationChanged)
     Q_PROPERTY(qsizetype scanCandidateCount READ scanCandidateCount NOTIFY scanChanged)
     Q_PROPERTY(QString scanStatusMessage READ scanStatusMessage NOTIFY scanChanged)
     Q_PROPERTY(QString scanErrorMessage READ scanErrorMessage NOTIFY scanChanged)
@@ -55,6 +55,8 @@ class SettingsController final : public QObject {
     Q_PROPERTY(QString cacheCleanupErrorMessage READ cacheCleanupErrorMessage NOTIFY cacheCleanupChanged)
     Q_PROPERTY(bool aniListConnectionAvailable READ aniListConnectionAvailable NOTIFY changed)
     Q_PROPERTY(bool aniListAuthenticationInProgress READ aniListAuthenticationInProgress NOTIFY changed)
+    Q_PROPERTY(bool aniListConnected READ aniListConnected NOTIFY changed)
+    Q_PROPERTY(bool aniListRemovalInProgress READ aniListRemovalInProgress NOTIFY changed)
     Q_PROPERTY(QString aniListAuthenticationState READ aniListAuthenticationState NOTIFY changed)
     Q_PROPERTY(QString aniListUsername READ aniListUsername NOTIFY changed)
     Q_PROPERTY(QString aniListAuthenticationMessage READ aniListAuthenticationMessage NOTIFY changed)
@@ -95,7 +97,6 @@ public:
     QStringList availableScanExtensions() const;
     QStringList selectedScanExtensions() const;
     bool scanRunning() const;
-    bool synchronizationRunning() const;
     qsizetype scanCandidateCount() const;
     QString scanStatusMessage() const;
     QString scanErrorMessage() const;
@@ -104,6 +105,8 @@ public:
     QString cacheCleanupErrorMessage() const;
     bool aniListConnectionAvailable() const;
     bool aniListAuthenticationInProgress() const;
+    bool aniListConnected() const;
+    bool aniListRemovalInProgress() const;
     QString aniListAuthenticationState() const;
     QString aniListUsername() const;
     QString aniListAuthenticationMessage() const;
@@ -114,7 +117,11 @@ public:
                                            IAniListViewerClient *viewerClient,
                                            AniListOAuthReceiverStarter receiverStarter = {},
                                            AniListOAuthReceiverStopper receiverStopper = {});
+    /** Wires the account removal use case; the controller does not take ownership. */
+    void SetAniListAccountRemoval(RemoveAniListAccountUseCase *useCase);
     void ApplyExternalHomeSortKey(QString key);
+    /** Mirrors the last connected AniList account saved outside the settings draft. */
+    void ApplyExternalLastAniListUserId(qint64 userId);
 
     Q_INVOKABLE void SetScoreScale(double minimum, double maximum, double step);
     Q_INVOKABLE void SetCoverQuality(const QString &key);
@@ -135,9 +142,7 @@ public:
     Q_INVOKABLE void ClearLocalCache();
     Q_INVOKABLE void ConnectAniList();
     Q_INVOKABLE void HandleAniListOAuthCallback(const QUrl &callback);
-    void notifySynchronizationStarted();
-    void notifySynchronizationCompleted();
-    void notifySynchronizationFailed(const QString &error);
+    Q_INVOKABLE void RemoveAniListAccount();
 signals:
     void changed();
     void scanChanged();
@@ -145,7 +150,6 @@ signals:
     void cacheCleanupCompleted();
     void cacheCleanupPartialFailure(QString error);
     void cacheCleanupFailed(QString error);
-    void synchronizationChanged();
     void synchronizationRequested();
     void aniListAuthenticationSucceeded();
     void preferencesApplied(UserPreferences preferences);
@@ -171,7 +175,6 @@ private:
     QPointer<LocalLibraryScanCoordinator> scanCoordinator_;
     bool extensionInputValid_ = true;
     bool scanRunning_ = false;
-    bool synchronizationRunning_ = false;
     qsizetype scanCandidateCount_ = 0;
     QString scanStatusMessage_;
     QString scanErrorMessage_;
@@ -186,6 +189,8 @@ private:
     AniListOAuthReceiverStarter aniListOAuthReceiverStarter_;
     AniListOAuthReceiverStopper aniListOAuthReceiverStopper_;
     QString aniListAuthenticationState_ = QStringLiteral("unavailable");
+    RemoveAniListAccountUseCase *aniListAccountRemoval_ = nullptr;
+    bool aniListRemovalInProgress_ = false;
     QString aniListUsername_;
     QString aniListAuthenticationMessage_;
 };

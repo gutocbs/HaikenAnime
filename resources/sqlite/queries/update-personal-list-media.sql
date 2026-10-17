@@ -4,5 +4,6 @@ SET consumed_chapters = :consumed_chapters,
     user_list_status = :user_list_status,
     local_path = :local_path,
     alternative_names = :alternative_names,
-    source_removed_at = NULL
+    source_removed_at = NULL,
+    personal_list_removed_at = NULL
 WHERE id = :id;

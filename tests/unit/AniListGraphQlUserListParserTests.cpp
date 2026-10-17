@@ -13,6 +13,7 @@ private slots:
     void parsesFrierenProgressFromUserListFixture();
     void filtersEntriesByAcceptedListStatusesIncludingCustomLists();
     void keepsEveryNonNovelMangaFormatAndExcludesNovels();
+    void reportsObservedIdsBeforeStatusFiltersWithoutDuplicates();
     void rejectsMissingCollection();
 };
 
@@ -133,6 +134,54 @@ void AniListGraphQlUserListParserTests::keepsEveryNonNovelMangaFormatAndExcludes
     QCOMPARE(media.at(0).Type, MediaType::Manga);
     QCOMPARE(media.at(1).Id, 2);
     QCOMPARE(media.at(1).Type, MediaType::Manga);
+}
+
+void AniListGraphQlUserListParserTests::reportsObservedIdsBeforeStatusFiltersWithoutDuplicates() {
+    const auto entry = [](const int id, const QString &status) {
+        return QJsonObject{
+            {QStringLiteral("mediaId"), id},
+            {QStringLiteral("status"), status},
+            {QStringLiteral("progress"), 1},
+            {QStringLiteral("score"), 80},
+            {QStringLiteral("media"), QJsonObject{
+                {QStringLiteral("id"), id},
+                {QStringLiteral("type"), QStringLiteral("ANIME")},
+                {QStringLiteral("format"), QStringLiteral("TV")},
+                {QStringLiteral("status"), QStringLiteral("RELEASING")},
+                {QStringLiteral("title"), QJsonObject{
+                    {QStringLiteral("romaji"), QStringLiteral("Title %1").arg(id)}}}
+            }}
+        };
+    };
+    const QJsonObject entryWithoutMedia{
+        {QStringLiteral("mediaId"), 99},
+        {QStringLiteral("status"), QStringLiteral("CURRENT")}
+    };
+    const QJsonObject data{
+        {QStringLiteral("MediaListCollection"), QJsonObject{
+            {QStringLiteral("lists"), QJsonArray{
+                QJsonObject{{QStringLiteral("entries"), QJsonArray{
+                    entry(1, QStringLiteral("CURRENT")),
+                    entry(3, QStringLiteral("DROPPED")),
+                    entryWithoutMedia
+                }}},
+                QJsonObject{{QStringLiteral("entries"), QJsonArray{
+                    entry(1, QStringLiteral("CURRENT"))
+                }}}
+            }}
+        }}
+    };
+    QList<Media> media;
+    QSet<int> observedMediaIds;
+    QString error;
+
+    QVERIFY2(AniListGraphQlUserListParser::parse(
+                 data, media, error, {QStringLiteral("CURRENT")}, {}, &observedMediaIds),
+             qPrintable(error));
+
+    QCOMPARE(media.size(), 1);
+    QCOMPARE(media.first().Id, 1);
+    QCOMPARE(observedMediaIds, QSet<int>({1, 3}));
 }
 
 void AniListGraphQlUserListParserTests::rejectsMissingCollection() {

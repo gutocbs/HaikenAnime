@@ -1,3 +1,4 @@
+#include <QDir>
 #include <QFile>
 #include <QAccessible>
 #include <QQuickItem>
@@ -74,6 +75,7 @@ private slots:
     void browseControlsShowConfiguredLabelsAfterInitialization();
     void homeRestoresListFilterSelectionAfterReturningFromSettings();
     void homeErrorDetailStaysWithSynchronizationStatus();
+    void screensReadSynchronizationFromDedicatedStatusController();
     void mediaCardAndSettingsUseControllerPreparedCardPresentation();
     void previewCardsUseControllerPreparedMetadataInBothGrids();
     void compactDetailsUseSeparatePreviewMetadata();
@@ -91,8 +93,14 @@ private slots:
     void settingsHeaderReservesMessageSpaceAfterSaveAction();
     void settingsAccountSectionUsesAniListAuthenticationControllerState();
     void seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated();
+    void homeEditorOffersConfirmedRemovalFromPersonalList();
     void mainKeepsSeasonalCatalogAsSeparateNavigation();
     void localCacheCleanupStaysInLibrarySettingsAndUsesControllerState();
+    void implicitSignalParametersAreDeclared();
+    void nativeButtonsAreNotUsed();
+    void appButtonVariantsExist();
+    void syncProgressBarUsesAniListColor();
+    void mainWindowStartsMaximized();
 
 private:
     static QString qmlSource(const QString &name);
@@ -117,6 +125,120 @@ void QmlStructureTests::localCacheCleanupStaysInLibrarySettingsAndUsesController
     QVERIFY(source.contains(QStringLiteral("controller.cacheCleanupStatusMessage")));
     QVERIFY(source.contains(QStringLiteral("controller.cacheCleanupErrorMessage")));
     QVERIFY(!source.contains(QStringLiteral("Logout")));
+}
+
+void QmlStructureTests::implicitSignalParametersAreDeclared() {
+    const QDir directory(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/resources/qml"));
+    const QRegularExpression handlerStart(QStringLiteral(R"(\bon(?:Toggled|Activated|Accepted)\s*:\s*)"));
+    const QRegularExpression implicitParameter(QStringLiteral(R"(\b(?:checked|index)\b)"));
+    QStringList violations;
+
+    for (const QString &fileName : directory.entryList({QStringLiteral("*.qml")}, QDir::Files)) {
+        const QString source = qmlSource(fileName);
+        QRegularExpressionMatchIterator matches = handlerStart.globalMatch(source);
+        while (matches.hasNext()) {
+            const QRegularExpressionMatch match = matches.next();
+            const qsizetype bodyStart = match.capturedEnd();
+            qsizetype bodyEnd = source.indexOf(QLatin1Char('\n'), bodyStart);
+            if (bodyEnd < 0) bodyEnd = source.size();
+            if (source.at(bodyStart) == QLatin1Char('{')) {
+                int depth = 0;
+                for (qsizetype position = bodyStart; position < source.size(); ++position) {
+                    if (source.at(position) == QLatin1Char('{')) ++depth;
+                    if (source.at(position) == QLatin1Char('}') && --depth == 0) {
+                        bodyEnd = position + 1;
+                        break;
+                    }
+                }
+            }
+            const QString body = source.mid(bodyStart, bodyEnd - bodyStart);
+            if (body.startsWith(QStringLiteral("function")) || body.contains(QStringLiteral("=>"))) continue;
+            if (!body.contains(implicitParameter)) continue;
+            const qsizetype line = source.left(match.capturedStart()).count(QLatin1Char('\n')) + 1;
+            violations << QStringLiteral("%1:%2").arg(fileName).arg(line);
+        }
+    }
+
+    QVERIFY2(violations.isEmpty(), qPrintable(QStringLiteral("Handlers using undeclared implicit parameters: ")
+                                              + violations.join(QStringLiteral(", "))));
+}
+
+void QmlStructureTests::nativeButtonsAreNotUsed() {
+    const QRegularExpression nativeButton(QStringLiteral(R"((?:^|[^\w.])(?:Basic\.)?Button\s*\{)"),
+                                          QRegularExpression::MultilineOption);
+    const QRegularExpression delegateButton(QStringLiteral(R"(delegate\s*:\s*(?:Basic\.)?Button\s*\{)"));
+    QStringList violations;
+    for (const QString &fileName : {QStringLiteral("SettingsScreen.qml"), QStringLiteral("Home.qml"),
+                                    QStringLiteral("EditMediaPanel.qml"), QStringLiteral("MediaDetailsPanel.qml"),
+                                    QStringLiteral("SeasonalCatalogScreen.qml"), QStringLiteral("CoverPreview.qml")}) {
+        const QString source = qmlSource(fileName);
+        QVERIFY2(!source.isEmpty(), qPrintable(fileName));
+        QRegularExpressionMatchIterator matches = nativeButton.globalMatch(source);
+        while (matches.hasNext()) {
+            const qsizetype line = source.left(matches.next().capturedStart()).count(QLatin1Char('\n')) + 1;
+            violations << QStringLiteral("%1:%2").arg(fileName).arg(line);
+        }
+        if (delegateButton.match(source).hasMatch()) violations << fileName + QStringLiteral(":delegate");
+        QVERIFY2(!source.contains(QStringLiteral("component SettingsButton")), qPrintable(fileName));
+    }
+    QVERIFY2(violations.isEmpty(), qPrintable(QStringLiteral("Native buttons still in use: ")
+                                              + violations.join(QStringLiteral(", "))));
+}
+
+void QmlStructureTests::appButtonVariantsExist() {
+    const QString source = qmlSource(QStringLiteral("AppButton.qml"));
+    QVERIFY(!source.isEmpty());
+    QVERIFY(source.contains(QStringLiteral("Basic.Button")));
+    QVERIFY(source.contains(QRegularExpression(QStringLiteral(R"(property\s+string\s+variant\s*:\s*"primary")"))));
+    for (const QString &variant : {QStringLiteral("primary"), QStringLiteral("secondary"),
+                                   QStringLiteral("flat"), QStringLiteral("danger")}) {
+        QVERIFY2(source.contains(QStringLiteral("\"%1\"").arg(variant)) || variant == QStringLiteral("primary"),
+                 qPrintable(variant));
+    }
+    QVERIFY(source.contains(QStringLiteral("variant === \"flat\"")));
+    QVERIFY(source.contains(QStringLiteral("variant === \"secondary\"")));
+    QVERIFY(source.contains(QStringLiteral("variant === \"danger\"")));
+    QVERIFY(source.contains(QStringLiteral("implicitHeight: 34")));
+    QVERIFY(source.contains(QStringLiteral("Accessible.name: text")));
+    QVERIFY(source.contains(QStringLiteral("hovered")));
+    QVERIFY(source.contains(QStringLiteral("down")));
+    QVERIFY(source.contains(QStringLiteral("activeFocus")));
+    QVERIFY(source.contains(QStringLiteral("!enabled")));
+    QVERIFY(source.contains(QStringLiteral("#3c6eaa")));
+    QVERIFY(source.contains(QStringLiteral("#24466d")));
+
+    QFile cmake(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/CMakeLists.txt"));
+    QVERIFY(cmake.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString cmakeSource = QString::fromUtf8(cmake.readAll());
+    QVERIFY(cmakeSource.contains(QStringLiteral("resources/qml/AppButton.qml")));
+    QVERIFY(cmakeSource.contains(QStringLiteral("resources/qml/SyncProgressBar.qml")));
+}
+
+void QmlStructureTests::syncProgressBarUsesAniListColor() {
+    const QString source = qmlSource(QStringLiteral("SyncProgressBar.qml"));
+    QVERIFY(!source.isEmpty());
+    QVERIFY(source.contains(QStringLiteral("#02A9FF")));
+    QVERIFY(source.contains(QStringLiteral("visible: status.visible")));
+    QVERIFY(source.contains(QStringLiteral("required property var status")));
+    QVERIFY(source.contains(QStringLiteral("implicitHeight")));
+    QVERIFY(source.contains(QStringLiteral("itens")));
+
+    const QString home = qmlSource(QStringLiteral("Home.qml"));
+    const QString settings = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    QVERIFY(home.contains(QStringLiteral("SyncProgressBar {")));
+    QVERIFY(settings.contains(QStringLiteral("SyncProgressBar {")));
+    QVERIFY(!home.contains(QRegularExpression(QStringLiteral(R"((?<!Sync)ProgressBar\s*\{)"))));
+}
+
+void QmlStructureTests::mainWindowStartsMaximized() {
+    const QString source = qmlSource(QStringLiteral("Main.qml"));
+    QVERIFY(!source.isEmpty());
+    QVERIFY2(source.contains(QStringLiteral("import QtQuick.Window")),
+             "Main.qml must import QtQuick.Window to qualify Window.Maximized.");
+    QVERIFY2(source.contains(QStringLiteral("visibility: Window.Maximized")),
+             "The main window must always start maximized.");
+    QVERIFY(source.contains(QStringLiteral("width: 1440")));
+    QVERIFY(source.contains(QStringLiteral("height: 900")));
 }
 
 QString QmlStructureTests::scanExtensionGridSource() {
@@ -311,6 +433,31 @@ void QmlStructureTests::homeErrorDetailStaysWithSynchronizationStatus() {
     QVERIFY(!lowerStatusArea.contains(QStringLiteral("text: controller.errorMessage")));
 }
 
+void QmlStructureTests::screensReadSynchronizationFromDedicatedStatusController() {
+    const QString home = qmlSource(QStringLiteral("Home.qml"));
+    const QString settings = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    QFile mainFile(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/main.cpp"));
+    QVERIFY(mainFile.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString mainSource = QString::fromUtf8(mainFile.readAll());
+
+    QVERIFY(home.contains(QStringLiteral("synchronizationStatus.visible")));
+    QVERIFY(home.contains(QStringLiteral("synchronizationStatus.percent")));
+    QVERIFY(home.contains(QStringLiteral("synchronizationStatus.progressKnown")));
+    QVERIFY(!home.contains(QStringLiteral("controller.synchronizationProgress")));
+    const qsizetype statusStart = home.indexOf(QStringLiteral("id: homeSynchronizationStatus"));
+    QVERIFY(statusStart >= 0);
+    QVERIFY2(!home.mid(statusStart).contains(QStringLiteral("controller.state === \"loading\"")),
+             "The Home synchronization area must not derive progress from the library load state.");
+    QVERIFY(settings.contains(QStringLiteral("synchronizationStatus.running")));
+    QVERIFY(!settings.contains(QStringLiteral("controller.synchronizationRunning")));
+
+    const qsizetype registered = mainSource.indexOf(
+        QStringLiteral("QStringLiteral(\"synchronizationStatus\")"));
+    const qsizetype loaded = mainSource.indexOf(QStringLiteral("engine.loadFromModule"));
+    QVERIFY(registered >= 0);
+    QVERIFY(loaded > registered);
+}
+
 void QmlStructureTests::mediaCardAndSettingsUseControllerPreparedCardPresentation() {
     const QString cardSource = qmlSource(QStringLiteral("MediaCard.qml"));
     const QString settingsSource = qmlSource(QStringLiteral("SettingsScreen.qml"));
@@ -435,12 +582,16 @@ void QmlStructureTests::externalLinksUseVisibleInteractiveButtonStates() {
     const qsizetype buttonStart = source.indexOf(QStringLiteral("id: externalLinkButton"));
     QVERIFY(buttonStart >= 0);
     const QString button = source.mid(buttonStart, source.indexOf(QStringLiteral("}\n                            }"), buttonStart));
-    QVERIFY(button.contains(QStringLiteral("background: Rectangle")));
-    QVERIFY(button.contains(QStringLiteral("externalLinkButton.hovered")));
-    QVERIFY(button.contains(QStringLiteral("externalLinkButton.down")));
-    QVERIFY(button.contains(QStringLiteral("externalLinkButton.activeFocus")));
-    QVERIFY(button.contains(QStringLiteral("border.color")));
+    QVERIFY(button.contains(QStringLiteral("AppButton")) || source.contains(QStringLiteral("delegate: AppButton")));
+    QVERIFY(button.contains(QStringLiteral("baseColor: externalLinkButton.serviceColor")));
     QVERIFY(button.contains(QStringLiteral("Qt.openUrlExternally(modelData.url)")));
+
+    // Hover, pressed and focus states come from the shared AppButton.
+    const QString appButton = qmlSource(QStringLiteral("AppButton.qml"));
+    QVERIFY(appButton.contains(QStringLiteral("hovered")));
+    QVERIFY(appButton.contains(QStringLiteral("down")));
+    QVERIFY(appButton.contains(QStringLiteral("activeFocus")));
+    QVERIFY(appButton.contains(QStringLiteral("baseColor")));
 }
 
 void QmlStructureTests::completeLibraryAllowsInteractionWithDetailsActions() {
@@ -705,9 +856,8 @@ void QmlStructureTests::settingsHeaderReservesMessageSpaceAfterSaveAction() {
                                                source.indexOf(QStringLiteral("text: qsTr(\"Salvar alterações\")"), saveButton)
                                                - saveButton);
     QVERIFY(!saveButtonBlock.contains(QStringLiteral("Layout.leftMargin")));
-    QVERIFY(source.contains(QStringLiteral("SettingsButton {\n                    id: settingsSaveButton")));
-    QVERIFY(source.contains(QStringLiteral("component SettingsButton: Basic.Button")));
-    QVERIFY(source.contains(QStringLiteral("settingsButton.hovered ? \"#3c6eaa\" : accent")));
+    QVERIFY(source.contains(QStringLiteral("AppButton {\n                    id: settingsSaveButton")));
+    QVERIFY(!source.contains(QStringLiteral("component SettingsButton")));
     const qsizetype headerTitle = source.indexOf(QStringLiteral("id: settingsHeaderTitle"));
     const QString headerTitleBlock = source.mid(headerTitle, headerActions - headerTitle);
     QVERIFY(headerTitleBlock.contains(QStringLiteral("Layout.preferredWidth: 258")));
@@ -722,8 +872,48 @@ void QmlStructureTests::settingsAccountSectionUsesAniListAuthenticationControlle
     QVERIFY(source.contains(QStringLiteral("value: controller.aniListUsername")));
     QVERIFY(source.contains(QStringLiteral("enabled: controller.aniListConnectionAvailable")));
     QVERIFY(source.contains(QStringLiteral("onClicked: controller.ConnectAniList()")));
-    QVERIFY(!source.contains(QStringLiteral("controller.aniListAuthenticationMessage")));
+    QVERIFY(source.contains(QStringLiteral("controller.aniListAuthenticationMessage")));
+    QVERIFY(source.contains(QStringLiteral(
+        "enabled: controller.aniListConnectionAvailable && !controller.aniListConnected")));
+    QVERIFY(source.contains(QStringLiteral("!controller.aniListRemovalInProgress")));
+    QVERIFY(source.contains(QStringLiteral("visible: controller.aniListConnected")));
+    QVERIFY(source.contains(QStringLiteral("onClicked: removeAccountDialog.open()")));
+    QVERIFY(source.contains(QStringLiteral("onClicked: { removeAccountDialog.close(); controller.RemoveAniListAccount() }")));
+    QVERIFY(source.contains(QStringLiteral("qsTr(\"Remover conta AniList?\")")));
+    QVERIFY(source.contains(QStringLiteral(
+        "qsTr(\"A biblioteca local e as alterações não sincronizadas serão mantidas.\")")));
+    const qsizetype dialogStart = source.indexOf(QStringLiteral("id: removeAccountDialog"));
+    QVERIFY(dialogStart >= 0);
+    QVERIFY(!source.mid(dialogStart).contains(QStringLiteral("standardButtons")));
     QVERIFY(source.contains(QStringLiteral("readonly property color danger:")));
+}
+
+void QmlStructureTests::homeEditorOffersConfirmedRemovalFromPersonalList() {
+    const QString editor = qmlSource(QStringLiteral("EditMediaPanel.qml"));
+    const QString home = qmlSource(QStringLiteral("Home.qml"));
+    const QString seasonal = qmlSource(QStringLiteral("SeasonalCatalogScreen.qml"));
+    QVERIFY(!editor.isEmpty());
+
+    QVERIFY(editor.contains(QStringLiteral("signal removeRequested(int mediaId)")));
+    QVERIFY(editor.contains(QStringLiteral("property bool allowsRemoval: false")));
+    QVERIFY(editor.contains(QStringLiteral("property string operationErrorMessage")));
+    QVERIFY(editor.contains(QStringLiteral("qsTr(\"Remover da lista?\")")));
+    QVERIFY(editor.contains(QStringLiteral(
+        "qsTr(\"\\\"%1\\\" será removido da sua lista pessoal e da AniList.\").arg(panel.controller.selectedTitle)")));
+    QVERIFY(editor.contains(QStringLiteral("text: qsTr(\"Remover da lista\")")));
+    QVERIFY(editor.contains(QStringLiteral("variant: \"danger\"")));
+    const qsizetype dialogStart = editor.indexOf(QStringLiteral("id: removeConfirmationDialog"));
+    QVERIFY(dialogStart >= 0);
+    QVERIFY(!editor.mid(dialogStart).contains(QStringLiteral("standardButtons")));
+    QVERIFY(editor.contains(QStringLiteral("panel.removeRequested(panel.editingMediaId)")));
+
+    QVERIFY(home.contains(QStringLiteral("allowsRemoval: true")));
+    QVERIFY(home.contains(QStringLiteral("operationErrorMessage: home.controller.mediaOperationErrorMessage")));
+    QVERIFY(home.contains(QStringLiteral("onRemoveRequested: function(mediaId) {")));
+    QVERIFY(home.contains(QStringLiteral("home.controller.RemoveSelectedMedia()")));
+    QVERIFY(home.contains(QStringLiteral("mediaDetailsPanel.close()")));
+    QVERIFY(!seasonal.contains(QStringLiteral("allowsRemoval")));
+    QVERIFY(!home.contains(QStringLiteral("controller.mediaOperationErrorMessage.length > 0\n")));
 }
 
 void QmlStructureTests::seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated() {

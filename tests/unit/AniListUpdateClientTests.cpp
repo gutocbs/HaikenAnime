@@ -23,9 +23,15 @@ public:
                 if (headerEnd < 0 || replied_.contains(socket)) return;
                 replied_.insert(socket);
                 payloads_.append(QJsonDocument::fromJson(request.mid(headerEnd + 4)).object());
-                const QByteArray body = R"json({"data":{"SaveMediaListEntry":{"id":1}}})json";
-                const QByteArray response = QByteArrayLiteral(
-                    "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ")
+                QByteArray body = R"json({"data":{"SaveMediaListEntry":{"id":1}}})json";
+                QByteArray status = QByteArrayLiteral("200 OK");
+                if (!responses_.isEmpty()) {
+                    const auto next = responses_.takeFirst();
+                    body = next.body;
+                    status = next.status;
+                }
+                const QByteArray response = QByteArrayLiteral("HTTP/1.1 ") + status
+                    + QByteArrayLiteral("\r\nContent-Type: application/json\r\nContent-Length: ")
                     + QByteArray::number(body.size())
                     + QByteArrayLiteral("\r\nConnection: close\r\n\r\n") + body;
                 socket->write(response);
@@ -39,7 +45,13 @@ public:
         return QUrl(QStringLiteral("http://127.0.0.1:%1/graphql").arg(server_.serverPort()));
     }
 
+    struct Reply {
+        QByteArray body;
+        QByteArray status = QByteArrayLiteral("200 OK");
+    };
+
     QList<QJsonObject> payloads_;
+    QList<Reply> responses_;
 
 private:
     QTcpServer server_;
@@ -61,7 +73,34 @@ class AniListUpdateClientTests final : public QObject {
 
 private slots:
     void sendsOneMutationWithEveryChangedFieldForOneMedia();
+    void deletesTheResolvedListEntryId();
+    void treatsMissingListEntryAsAlreadyRemoved();
+    void treatsNotFoundGraphQlErrorAsAlreadyRemoved();
+    void failsWhenDeletionIsNotConfirmed();
+    void rejectsDeletionWithoutAccountId();
+    void doesNotTreatOtherNotFoundErrorsAsAlreadyRemoved();
 };
+
+namespace {
+struct DeletionHarness {
+    explicit DeletionHarness(QList<RecordingGraphQlServer::Reply> replies) {
+        server.responses_ = std::move(replies);
+        started = server.start();
+        queryFile.open();
+        queryFile.write("query Q($userId: Int!, $mediaId: Int!) { MediaList(userId: $userId, mediaId: $mediaId) { id } }");
+        queryFile.flush();
+        mutationFile.open();
+        mutationFile.write("mutation M($id: Int!) { DeleteMediaListEntry(id: $id) { deleted } }");
+        mutationFile.flush();
+    }
+
+    RecordingGraphQlServer server;
+    QTemporaryFile queryFile;
+    QTemporaryFile mutationFile;
+    bool started = false;
+};
+
+}
 
 void AniListUpdateClientTests::sendsOneMutationWithEveryChangedFieldForOneMedia() {
     RecordingGraphQlServer server;
@@ -78,7 +117,9 @@ void AniListUpdateClientTests::sendsOneMutationWithEveryChangedFieldForOneMedia(
     QNetworkAccessManager networkManager;
     AniListGraphQlClient graphQlClient(networkManager, nullptr, server.endpoint(), 1000);
     GraphQlQueryStore updateMutation(mutationFile.fileName());
-    AniListUpdateClient client(graphQlClient, updateMutation);
+    GraphQlQueryStore entryIdQuery(mutationFile.fileName());
+    GraphQlQueryStore deleteMutation(mutationFile.fileName());
+    AniListUpdateClient client(graphQlClient, updateMutation, entryIdQuery, deleteMutation);
     AniListMediaPendingChanges changes{
         .mediaId = 154587,
         .changes = {
@@ -94,6 +135,114 @@ void AniListUpdateClientTests::sendsOneMutationWithEveryChangedFieldForOneMedia(
     QCOMPARE(variables.value(QStringLiteral("progress")).toInt(), 12);
     QCOMPARE(variables.value(QStringLiteral("score")).toInt(), 9);
     QCOMPARE(variables.value(QStringLiteral("status")).toString(), QStringLiteral("COMPLETED"));
+}
+
+namespace {
+using Reply = RecordingGraphQlServer::Reply;
+const QByteArray kEntryFound = R"json({"data":{"MediaList":{"id":987}}})json";
+const QByteArray kDeleted = R"json({"data":{"DeleteMediaListEntry":{"deleted":true}}})json";
+}
+
+void AniListUpdateClientTests::deletesTheResolvedListEntryId() {
+    DeletionHarness harness({Reply{kEntryFound}, Reply{kDeleted}});
+    QVERIFY(harness.started);
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient graphQlClient(networkManager, nullptr, harness.server.endpoint(), 1000);
+    GraphQlQueryStore update(harness.queryFile.fileName());
+    GraphQlQueryStore entryIdQuery(harness.queryFile.fileName());
+    GraphQlQueryStore deleteMutation(harness.mutationFile.fileName());
+    AniListUpdateClient client(graphQlClient, update, entryIdQuery, deleteMutation);
+    QString error;
+
+    QVERIFY2(client.deleteMediaListEntry(154587, 42, error), qPrintable(error));
+    QCOMPARE(harness.server.payloads_.size(), 2);
+    const auto lookup = harness.server.payloads_.at(0).value(QStringLiteral("variables")).toObject();
+    QCOMPARE(lookup.value(QStringLiteral("userId")).toInt(), 42);
+    QCOMPARE(lookup.value(QStringLiteral("mediaId")).toInt(), 154587);
+    const auto removal = harness.server.payloads_.at(1).value(QStringLiteral("variables")).toObject();
+    QCOMPARE(removal.value(QStringLiteral("id")).toInt(), 987);
+}
+
+void AniListUpdateClientTests::treatsMissingListEntryAsAlreadyRemoved() {
+    DeletionHarness harness({Reply{R"json({"data":{"MediaList":null}})json"}});
+    QVERIFY(harness.started);
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient graphQlClient(networkManager, nullptr, harness.server.endpoint(), 1000);
+    GraphQlQueryStore update(harness.queryFile.fileName());
+    GraphQlQueryStore entryIdQuery(harness.queryFile.fileName());
+    GraphQlQueryStore deleteMutation(harness.mutationFile.fileName());
+    AniListUpdateClient client(graphQlClient, update, entryIdQuery, deleteMutation);
+    QString error;
+
+    QVERIFY2(client.deleteMediaListEntry(154587, 42, error), qPrintable(error));
+    QCOMPARE(harness.server.payloads_.size(), 1);
+}
+
+void AniListUpdateClientTests::treatsNotFoundGraphQlErrorAsAlreadyRemoved() {
+    DeletionHarness harness({Reply{
+        R"json({"errors":[{"message":"Not Found.","status":404}],"data":{"MediaList":null}})json",
+        QByteArrayLiteral("404 Not Found")}});
+    QVERIFY(harness.started);
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient graphQlClient(networkManager, nullptr, harness.server.endpoint(), 1000);
+    GraphQlQueryStore update(harness.queryFile.fileName());
+    GraphQlQueryStore entryIdQuery(harness.queryFile.fileName());
+    GraphQlQueryStore deleteMutation(harness.mutationFile.fileName());
+    AniListUpdateClient client(graphQlClient, update, entryIdQuery, deleteMutation);
+    QString error;
+
+    QVERIFY2(client.deleteMediaListEntry(154587, 42, error), qPrintable(error));
+    QVERIFY(error.isEmpty());
+    QCOMPARE(harness.server.payloads_.size(), 1);
+}
+
+void AniListUpdateClientTests::failsWhenDeletionIsNotConfirmed() {
+    DeletionHarness harness({Reply{kEntryFound},
+        Reply{R"json({"data":{"DeleteMediaListEntry":{"deleted":false}}})json"}});
+    QVERIFY(harness.started);
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient graphQlClient(networkManager, nullptr, harness.server.endpoint(), 1000);
+    GraphQlQueryStore update(harness.queryFile.fileName());
+    GraphQlQueryStore entryIdQuery(harness.queryFile.fileName());
+    GraphQlQueryStore deleteMutation(harness.mutationFile.fileName());
+    AniListUpdateClient client(graphQlClient, update, entryIdQuery, deleteMutation);
+    QString error;
+
+    QVERIFY(!client.deleteMediaListEntry(154587, 42, error));
+    QVERIFY(!error.isEmpty());
+    QCOMPARE(harness.server.payloads_.size(), 2);
+}
+
+void AniListUpdateClientTests::rejectsDeletionWithoutAccountId() {
+    DeletionHarness harness({});
+    QVERIFY(harness.started);
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient graphQlClient(networkManager, nullptr, harness.server.endpoint(), 1000);
+    GraphQlQueryStore update(harness.queryFile.fileName());
+    GraphQlQueryStore entryIdQuery(harness.queryFile.fileName());
+    GraphQlQueryStore deleteMutation(harness.mutationFile.fileName());
+    AniListUpdateClient client(graphQlClient, update, entryIdQuery, deleteMutation);
+    QString error;
+
+    QVERIFY(!client.deleteMediaListEntry(154587, 0, error));
+    QVERIFY(!error.isEmpty());
+    QCOMPARE(harness.server.payloads_.size(), 0);
+}
+
+void AniListUpdateClientTests::doesNotTreatOtherNotFoundErrorsAsAlreadyRemoved() {
+    DeletionHarness harness({Reply{
+        R"json({"errors":[{"message":"User not found."}],"data":{"MediaList":null}})json"}});
+    QVERIFY(harness.started);
+    QNetworkAccessManager networkManager;
+    AniListGraphQlClient graphQlClient(networkManager, nullptr, harness.server.endpoint(), 1000);
+    GraphQlQueryStore update(harness.queryFile.fileName());
+    GraphQlQueryStore entryIdQuery(harness.queryFile.fileName());
+    GraphQlQueryStore deleteMutation(harness.mutationFile.fileName());
+    AniListUpdateClient client(graphQlClient, update, entryIdQuery, deleteMutation);
+    QString error;
+
+    QVERIFY(!client.deleteMediaListEntry(154587, 42, error));
+    QVERIFY(!error.isEmpty());
 }
 
 QTEST_MAIN(AniListUpdateClientTests)

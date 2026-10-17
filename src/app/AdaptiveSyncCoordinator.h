@@ -31,13 +31,21 @@ public:
     void Stop();
     void RequestNow(SyncPartition partition);
     void NotifyLocalChange(SyncPartition partition);
+    /**
+     * Cancels the partition's active task, if any, and invalidates its generation so a late completion is
+     * ignored. `acknowledged` runs on this object's thread once the executor has accounted for the task;
+     * it runs immediately when the partition has no active task.
+     */
+    void Cancel(SyncPartition partition, std::function<void()> acknowledged);
 
 public slots:
     void ProcessDueTasks();
 
 signals:
     void TaskStarted(SyncPartition partition);
+    void TaskProgress(SyncProgress progress);
     void TaskCompleted(SyncPartition partition);
+    void TaskCancelled(SyncPartition partition);
     void TaskFailed(SyncPartition partition, const QString &safeError);
     void SchedulingFailed(const QString &safeError);
     void Stopped();
@@ -62,6 +70,7 @@ private:
     std::map<SyncPartition, SyncTaskState> states_;
     std::map<SyncPartition, qint64> activeGenerations_;
     std::set<SyncPartition> rerunRequested_;
+    std::set<SyncPartition> cancelling_;
     QTimer *wakeUpTimer_ = nullptr;
     bool started_ = false;
     bool stopped_ = false;

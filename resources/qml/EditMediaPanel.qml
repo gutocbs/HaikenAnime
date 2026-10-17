@@ -18,9 +18,12 @@ Popup {
     property var listOptions: []
     property bool requiresExplicitStatus: false
     property bool closeOnApply: true
+    property bool allowsRemoval: false
+    property string operationErrorMessage: ""
     property int scoreDecimals: controller.scoreStep < 0.1 ? 2 : controller.scoreStep < 1 ? 1 : 0
     property int scoreFactor: Math.pow(10, scoreDecimals)
 
+    signal removeRequested(int mediaId)
     signal applyRequested(int mediaId, int progress, string statusKey, real score,
                           string path, string alternativeNames)
 
@@ -74,7 +77,7 @@ Popup {
                 Label { text: panel.controller.selectedTitle; color: panel.muted; font.pixelSize: 12; elide: Text.ElideRight; Layout.fillWidth: true }
             }
 
-            Button { text: qsTr("Fechar"); flat: true; onClicked: panel.close() }
+            AppButton { text: qsTr("Fechar"); variant: "flat"; onClicked: panel.close() }
         }
 
         Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: panel.line }
@@ -183,7 +186,7 @@ Popup {
                     RowLayout {
                         Layout.fillWidth: true
                         Basic.TextField { id: pathField; Layout.fillWidth: true; placeholderText: qsTr("C:\\Mídias\\Título") }
-                        Button { text: qsTr("Selecionar pasta"); onClicked: folderDialog.open() }
+                        AppButton { text: qsTr("Selecionar pasta"); variant: "secondary"; onClicked: folderDialog.open() }
                     }
                 }
 
@@ -206,14 +209,31 @@ Popup {
 
         Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: panel.line }
 
+        Label {
+            Layout.fillWidth: true
+            Layout.leftMargin: 18
+            Layout.rightMargin: 18
+            Layout.topMargin: 10
+            visible: panel.operationErrorMessage.length > 0
+            text: panel.operationErrorMessage
+            color: "#b13b43"
+            font.pixelSize: 11
+            wrapMode: Text.Wrap
+        }
+
         RowLayout {
             Layout.fillWidth: true
             Layout.margins: 18
+            AppButton {
+                visible: panel.allowsRemoval
+                text: qsTr("Remover da lista")
+                variant: "danger"
+                onClicked: removeConfirmationDialog.open()
+            }
             Item { Layout.fillWidth: true }
-            Button { text: qsTr("Cancelar"); flat: true; onClicked: panel.close() }
-            Button {
+            AppButton { text: qsTr("Cancelar"); variant: "flat"; onClicked: panel.close() }
+            AppButton {
                 text: qsTr("Aplicar alterações")
-                highlighted: true
                 enabled: !panel.requiresExplicitStatus || statusField.currentIndex >= 0
                 onClicked: {
                     if (panel.requiresExplicitStatus && statusField.currentIndex < 0) return
@@ -222,6 +242,51 @@ Popup {
                                          scoreField.value / panel.scoreFactor,
                                          pathField.text.trim(), alternativeNamesField.text.trim())
                     if (panel.closeOnApply) panel.close()
+                }
+            }
+        }
+    }
+
+    Dialog {
+        id: removeConfirmationDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        width: Math.min(420, panel.width - 48)
+        title: qsTr("Remover da lista?")
+        closePolicy: Popup.CloseOnEscape
+        padding: 20
+
+        background: Rectangle { color: panel.surface; border.color: panel.line; radius: 8 }
+        header: Label {
+            text: removeConfirmationDialog.title
+            color: panel.ink
+            font.pixelSize: 16
+            font.weight: Font.DemiBold
+            leftPadding: 20; topPadding: 20; rightPadding: 20
+        }
+        contentItem: Label {
+            text: qsTr("\"%1\" será removido da sua lista pessoal e da AniList.").arg(panel.controller.selectedTitle)
+            color: panel.muted
+            font.pixelSize: 12
+            wrapMode: Text.Wrap
+        }
+        footer: Item {
+            implicitHeight: 64
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 16
+                spacing: 8
+                Item { Layout.fillWidth: true }
+                AppButton {
+                    text: qsTr("Cancelar")
+                    variant: "flat"
+                    onClicked: removeConfirmationDialog.close()
+                }
+                AppButton {
+                    text: qsTr("Remover da lista")
+                    variant: "danger"
+                    onClicked: { removeConfirmationDialog.close(); panel.removeRequested(panel.editingMediaId) }
                 }
             }
         }
