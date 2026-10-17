@@ -8,6 +8,8 @@
         "ratingKey": "5001",
         "guid": "plex://episode/abc",
         "title": "Romance Dawn",
+        "summary": "Luffy sets sail.",
+        "originallyAvailableAt": "1999-10-20",
         "grandparentTitle": "One Piece",
         "parentIndex": 1,
         "index": 1,

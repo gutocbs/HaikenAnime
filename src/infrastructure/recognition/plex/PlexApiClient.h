@@ -1,6 +1,7 @@
 #ifndef HAIKENANIME_PLEXAPICLIENT_H
 #define HAIKENANIME_PLEXAPICLIENT_H
 
+#include <QDate>
 #include <QList>
 #include <QString>
 #include <QUrl>
@@ -47,6 +48,8 @@ struct PlexSession final {
     QString type;
     QString showTitle;
     QString episodeTitle;
+    QString summary;
+    std::optional<QDate> airDate;
     std::optional<int> season;
     std::optional<int> episode;
     qint64 viewOffsetMs = 0;

@@ -32,6 +32,8 @@ private slots:
     void listSessionsAcceptsEmptyContainer();
     void listSessionsReportsUnavailableAndInvalidResponses();
     void listUsersSkipsSystemAccount();
+    void parsesEpisodeSummaryAndAirDate();
+    void missingEpisodeDetailsStayEmpty();
     void qtHttpTimesOutWithoutResponse();
     void qtHttpReturnsStatusAndBody();
 };
@@ -238,6 +240,37 @@ void PlexApiClientTests::qtHttpReturnsStatusAndBody() {
     QCOMPARE(response->status, 401);
     QCOMPARE(response->body, QByteArray("{}"));
     QVERIFY(receivedRequest.toLower().contains("x-plex-token: abc"));
+}
+
+void PlexApiClientTests::parsesEpisodeSummaryAndAirDate() {
+    FakePlexHttp http;
+    http.route(QStringLiteral("GET ") + ServerUri + QStringLiteral("/status/sessions"),
+               {.status = 200, .body = PlexFixture(QStringLiteral("plex-sessions.json"))});
+    PlexApiClient client(http, {.clientIdentifier = QStringLiteral("client-123")});
+    QList<PlexSession> sessions;
+
+    client.listSessions(livingRoom(), [&](PlexApiError, const QList<PlexSession> &found) { sessions = found; });
+
+    QCOMPARE(sessions.first().summary, QStringLiteral("Luffy sets sail."));
+    QCOMPARE(sessions.first().airDate, std::optional<QDate>(QDate(1999, 10, 20)));
+}
+
+void PlexApiClientTests::missingEpisodeDetailsStayEmpty() {
+    FakePlexHttp http;
+    http.route(QStringLiteral("GET ") + ServerUri + QStringLiteral("/status/sessions"),
+               {.status = 200, .body = R"({"MediaContainer":{"Metadata":[
+                   {"type":"episode","sessionKey":"1","index":2},
+                   {"type":"episode","sessionKey":"2","index":3,"summary":7,"originallyAvailableAt":42}]}})"});
+    PlexApiClient client(http, {.clientIdentifier = QStringLiteral("client-123")});
+    QList<PlexSession> sessions;
+
+    client.listSessions(livingRoom(), [&](PlexApiError, const QList<PlexSession> &found) { sessions = found; });
+
+    QCOMPARE(sessions.size(), 2);
+    for (const auto &session : sessions) {
+        QVERIFY(session.summary.isEmpty());
+        QVERIFY(!session.airDate.has_value());
+    }
 }
 
 QTEST_MAIN(PlexApiClientTests)

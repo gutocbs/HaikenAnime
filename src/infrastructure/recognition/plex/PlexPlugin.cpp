@@ -11,6 +11,15 @@ QString Translate(const char *text) {
     return QCoreApplication::translate("PlexPlugin", text);
 }
 
+EpisodeDetails DetailsOf(const PlexSession &session) {
+    return {.sourceTitle = session.showTitle,
+            .title = session.episodeTitle,
+            .summary = session.summary,
+            .durationSeconds = session.durationMs > 0 ? std::optional<int>(static_cast<int>(session.durationMs / 1000))
+                                                      : std::nullopt,
+            .airDate = session.airDate};
+}
+
 PlaybackState StateOf(const QString &plexState) {
     // Buffering is not watching: only "playing" accumulates time.
     return plexState == QStringLiteral("playing") ? PlaybackState::Playing : PlaybackState::Paused;
@@ -177,17 +186,23 @@ void PlexPlugin::applySessions(const QList<PlexSession> &sessions) {
         const auto key = sessionId->key();
         seen.insert(key);
 
-        const auto tracked = tracked_.constFind(key);
-        if (tracked == tracked_.cend() || tracked->episodeKey != candidate->episodeKey()) {
-            tracked_.insert(key, {.id = *sessionId, .episodeKey = candidate->episodeKey()});
+        const auto details = DetailsOf(plexSession);
+        const auto tracked = tracked_.find(key);
+        if (tracked == tracked_.end() || tracked->episodeKey != candidate->episodeKey()) {
+            tracked_.insert(key, {.id = *sessionId, .episodeKey = candidate->episodeKey(), .details = details});
             if (observer_) {
                 observer_->onSessionStarted({.id = *sessionId,
                                              .userId = plexSession.userId,
                                              .deviceId = plexSession.playerId,
                                              .title = plexSession.episodeTitle,
-                                             .startedAt = observedAt},
+                                             .startedAt = observedAt,
+                                             .details = details},
                                             *candidate);
             }
+        } else if (tracked->details != details) {
+            // Same session and episode: only the displayed metadata changed between polls.
+            tracked->details = details;
+            if (observer_) observer_->onSessionDetailsChanged(*sessionId, details);
         }
         if (observer_) {
             observer_->onSessionUpdated(*sessionId, {.position = std::chrono::seconds(plexSession.viewOffsetMs / 1000),

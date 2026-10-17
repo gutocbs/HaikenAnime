@@ -33,6 +33,11 @@ qint64 Milliseconds(const QJsonValue &value) {
     return value.isDouble() ? value.toInteger() : value.toString().toLongLong();
 }
 
+std::optional<QDate> AirDate(const QJsonValue &value) {
+    const auto date = QDate::fromString(value.toString(), Qt::ISODate);
+    return date.isValid() ? std::optional<QDate>(date) : std::nullopt;
+}
+
 std::optional<QJsonObject> MediaContainer(const QByteArray &body) {
     const auto document = QJsonDocument::fromJson(body);
     if (!document.isObject()) return std::nullopt;
@@ -166,6 +171,8 @@ void PlexApiClient::listSessions(const PlexServer &server,
                                         .type = item.value(QStringLiteral("type")).toString(),
                                         .showTitle = item.value(QStringLiteral("grandparentTitle")).toString(),
                                         .episodeTitle = item.value(QStringLiteral("title")).toString(),
+                                        .summary = item.value(QStringLiteral("summary")).toString(),
+                                        .airDate = AirDate(item.value(QStringLiteral("originallyAvailableAt"))),
                                         .season = OptionalIndex(item.value(QStringLiteral("parentIndex"))),
                                         .episode = OptionalIndex(item.value(QStringLiteral("index"))),
                                         .viewOffsetMs = Milliseconds(item.value(QStringLiteral("viewOffset"))),

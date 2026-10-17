@@ -55,6 +55,11 @@ public:
     void onSessionStopped(const PlaybackSessionId &id, const StopReason reason) override {
         stops.append({id.key(), reason});
     }
+    void onSessionDetailsChanged(const PlaybackSessionId &, const EpisodeDetails &value) override {
+        details.append(value);
+    }
+
+    QList<EpisodeDetails> details;
 
     QList<PlaybackSession> started;
     QList<EpisodeCandidate> candidates;
@@ -84,6 +89,9 @@ private slots:
     void selectServerRediscoversWithAccountToken();
     void testConnectionReportsMissingLogin();
     void serverTokenNeverAppearsInLogs();
+    void startedSessionCarriesEpisodeDetails();
+    void changedDetailsAreReportedOnce();
+    void newEpisodeCarriesItsOwnDetails();
 
 private:
     PlexPluginDependencies dependencies(std::function<void(int, std::function<void()>)> schedule = {});
@@ -363,6 +371,57 @@ void PlexPluginTests::serverTokenNeverAppearsInLogs() {
 
     QVERIFY(!logs.contains(QStringLiteral("server-access-token-xyz")));
     QVERIFY(!plugin.lastError().contains(QStringLiteral("server-access-token-xyz")));
+}
+
+void PlexPluginTests::startedSessionCarriesEpisodeDetails() {
+    http.route(SessionsKey, {.status = 200, .body = PlexFixture(QStringLiteral("plex-sessions.json"))});
+    PlexPlugin plugin(dependencies());
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+
+    plugin.observe(observer);
+
+    const auto &details = observer.started.first().details;
+    QCOMPARE(details.sourceTitle, QStringLiteral("One Piece"));
+    QCOMPARE(details.title, QStringLiteral("Romance Dawn"));
+    QCOMPARE(details.summary, QStringLiteral("Luffy sets sail."));
+    QCOMPARE(details.durationSeconds, std::optional<int>(1440));
+    QCOMPARE(details.airDate, std::optional<QDate>(QDate(1999, 10, 20)));
+}
+
+void PlexPluginTests::changedDetailsAreReportedOnce() {
+    auto first = episode(QStringLiteral("12"), QStringLiteral("1"), 1, 60);
+    first.insert(QStringLiteral("summary"), QStringLiteral("A"));
+    auto second = first;
+    second.insert(QStringLiteral("summary"), QStringLiteral("B"));
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({first})});
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({second})});
+    PlexPlugin plugin(dependencies());
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+
+    plugin.observe(observer);
+    plugin.pollSessions();
+    plugin.pollSessions();
+
+    QCOMPARE(observer.details.size(), 1);
+    QCOMPARE(observer.details.first().summary, QStringLiteral("B"));
+    QCOMPARE(observer.started.size(), 1);
+}
+
+void PlexPluginTests::newEpisodeCarriesItsOwnDetails() {
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("12"), QStringLiteral("1"), 1, 1400)})});
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("12"), QStringLiteral("1"), 2, 5)})});
+    PlexPlugin plugin(dependencies());
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+
+    plugin.observe(observer);
+    plugin.pollSessions();
+
+    QCOMPARE(observer.started.size(), 2);
+    QCOMPARE(observer.started.at(1).details.title, QStringLiteral("Episode 2"));
+    QVERIFY(observer.details.isEmpty());
 }
 
 QTEST_MAIN(PlexPluginTests)

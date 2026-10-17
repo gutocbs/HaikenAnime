@@ -53,6 +53,7 @@ private:
     struct TrackedSession {
         PlaybackSessionId id;
         QString episodeKey;
+        EpisodeDetails details;
     };
 
     void scheduleNextPoll(quint64 generation);
