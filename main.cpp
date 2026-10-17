@@ -348,8 +348,11 @@ int main(int argc, char *argv[]) {
         if (!waitForAdaptiveSyncStop()) {
             if (context.logger) {
                 context.logger->warning(LogCategory::Sync,
-                                        QStringLiteral("Adaptive synchronization did not stop before shutdown timeout."));
+                                        QStringLiteral("Adaptive synchronization did not stop before shutdown timeout "
+                                                       "(elapsed %1 ms).").arg(total.elapsed()));
             }
+            // Later services stay alive for the context destructor; still record the total before exit.
+            logShutdownStep(QStringLiteral("Application shutdown completed in %1 ms.").arg(total.elapsed()));
             return;
         }
         logShutdownStep(QStringLiteral("Adaptive synchronization stopped in %1 ms.").arg(total.elapsed()));

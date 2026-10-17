@@ -101,6 +101,8 @@ private slots:
     void deletionStaysResendableWhenSupersedingSiblingsFails();
     void logsDeletionSentAndSupersededCountWithoutPayloads();
     void logsDeletionFailureWithSafeError();
+    void cancelledUpdateLeavesChangeAsItWasWithoutCountingAnAttempt();
+    void cancelledDeletionLeavesChangeAsItWasWithoutCountingAnAttempt();
 };
 
 static AniListPendingChange progressChange(AniListPendingChangeStatus status =
@@ -352,6 +354,45 @@ void AniListPendingChangeProcessorTests::logsDeletionFailureWithSafeError() {
     QVERIFY(!processor.process(154587, error));
     QCOMPARE(logs, QStringList({
         QStringLiteral("AniList list deletion failed for media 154587: delete failed.")}));
+}
+
+void AniListPendingChangeProcessorTests::cancelledUpdateLeavesChangeAsItWasWithoutCountingAnAttempt() {
+    FakePendingRepository repository;
+    auto change = progressChange(AniListPendingChangeStatus::Failed);
+    change.attempts = 2;
+    change.lastError = QStringLiteral("earlier failure");
+    repository.changes.append(change);
+    FakeUpdateClient client;
+    client.succeeds = false;
+    AniListPendingChangeProcessor processor(repository, client, 0, {}, [] { return true; });
+    QString error;
+
+    QVERIFY(!processor.process(154587, error));
+
+    QVERIFY(!repository.updates.isEmpty());
+    const auto &last = repository.updates.last();
+    QCOMPARE(last.status, AniListPendingChangeStatus::Failed);
+    QCOMPARE(last.attempts, 2);
+    QCOMPARE(last.lastError, QStringLiteral("earlier failure"));
+}
+
+void AniListPendingChangeProcessorTests::cancelledDeletionLeavesChangeAsItWasWithoutCountingAnAttempt() {
+    FakePendingRepository repository;
+    auto change = progressChange(AniListPendingChangeStatus::Pending);
+    change.field = AniListField::Deletion;
+    repository.changes.append(change);
+    FakeUpdateClient client;
+    client.deleteSucceeds = false;
+    AniListPendingChangeProcessor processor(repository, client, 7, {}, [] { return true; });
+    QString error;
+
+    QVERIFY(!processor.process(154587, error));
+
+    QVERIFY(!repository.updates.isEmpty());
+    const auto &last = repository.updates.last();
+    QCOMPARE(last.status, AniListPendingChangeStatus::Pending);
+    QCOMPARE(last.attempts, 0);
+    QVERIFY(last.lastError.isEmpty());
 }
 
 QTEST_MAIN(AniListPendingChangeProcessorTests)

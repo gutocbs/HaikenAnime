@@ -286,7 +286,8 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                         AniListUpdateClient updateClient(client, updateMutation, entryIdQuery, deleteMutation);
                         AniListPendingChangeProcessor pendingProcessor(
                             pendingChanges, updateClient, credentials.userId,
-                            authenticatedUserList_.auditLogger);
+                            authenticatedUserList_.auditLogger,
+                            [job] { return job->cancelled.load(); });
                         AniListPendingChangeDrain drain(pendingChanges, pendingProcessor);
                         drain.setProgressReporter([&publish](const int processed, const int total) {
                             publish(QStringLiteral("pending_changes"), 1, 1, processed, total);

@@ -39,6 +39,11 @@ bool AniListGraphQlClient::ExecuteWithAttempt(const QString &query, const QJsonO
                                              const int attempt) const {
     response = {};
     error.clear();
+    if (IsCancelled()) {
+        error = QStringLiteral("AniList request cancelled.");
+        Log(QStringLiteral("AniList GraphQL request not sent: cancelled (attempt=%1).").arg(attempt + 1));
+        return false;
+    }
     Log(QStringLiteral("AniList GraphQL request started (attempt=%1, host=%2).")
             .arg(attempt + 1)
             .arg(endpoint_.host()));

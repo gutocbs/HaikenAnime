@@ -12,7 +12,8 @@ public:
     /** Creates a processor with the durable queue and update client. */
     AniListPendingChangeProcessor(IPendingChangeRepository &repository,
                                   IAniListUpdateClient &updateClient, qint64 userId = 0,
-                                  std::function<void(const QString &)> auditLogger = {});
+                                  std::function<void(const QString &)> auditLogger = {},
+                                  std::function<bool()> isCancelled = {});
 
     /**
      * Processes sendable changes for mediaId; confirmation-gated deletions remain queued.
@@ -30,6 +31,8 @@ private:
     IAniListUpdateClient &updateClient_;
     qint64 userId_;
     std::function<void(const QString &)> auditLogger_;
+    // A cancelled request is not a failed attempt: the change is restored and resent later.
+    std::function<bool()> isCancelled_;
 };
 
 #endif // HAIKENANIME_ANILISTPENDINGCHANGEPROCESSOR_H

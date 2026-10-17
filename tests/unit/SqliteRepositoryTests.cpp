@@ -878,7 +878,7 @@ void SqliteRepositoryTests::editedLocalPathSurvivesSynchronizationUpsertWithEmpt
     media.Name = QStringLiteral("Folder media");
     QString error;
     QVERIFY2(repository.upsert({media}, error), qPrintable(error));
-    media.LocalPath = QStringLiteral("D:\Anime\Folder media");
+    media.LocalPath = QStringLiteral("D:/Anime/Folder media");
     QVERIFY2(repository.updatePersonalListMedia(media, error), qPrintable(error));
 
     QList<Media> afterEdit;
@@ -892,7 +892,7 @@ void SqliteRepositoryTests::editedLocalPathSurvivesSynchronizationUpsertWithEmpt
     QVERIFY2(repository.upsert({synchronized}, error), qPrintable(error));
     QList<Media> afterSync;
     QVERIFY2(repository.readAll(afterSync, error), qPrintable(error));
-    QCOMPARE(afterSync.first().LocalPath, media.LocalPath);
+    QCOMPARE(afterSync.first().LocalPath, QStringLiteral("D:/Anime/Folder media"));
 }
 
 QTEST_MAIN(SqliteRepositoryTests)

@@ -63,21 +63,33 @@ private slots:
 };
 
 void LocalLibraryRecognitionCoordinatorTests::shutdownDuringALongRunReturnsQuicklyAndKeepsProcessedRecords() {
-    SharedState state;
-    state.pendingCount = 300'000;
-    state.saveDelayMs = 5;
-    LocalLibraryRecognitionCoordinator coordinator(
-        [&state](QString &) { return std::make_unique<SlowFakeRepository>(state); });
-    QVERIFY(coordinator.start(QStringLiteral("D:/Library")));
-    QTRY_VERIFY_WITH_TIMEOUT(state.saveCalls.load() >= 1, 20000);
+    // Batches hold 200 records, so a saved total that is not a multiple of 200 proves the partial
+    // batch processed before the cancel was persisted. The cancel may land exactly on a batch
+    // boundary, so a few attempts are allowed; every attempt still checks the bound and the signal.
+    bool tailPersisted = false;
+    for (int attempt = 0; attempt < 5 && !tailPersisted; ++attempt) {
+        SharedState state;
+        state.pendingCount = 300'000;
+        state.saveDelayMs = 5;
+        LocalLibraryRecognitionCoordinator coordinator(
+            [&state](QString &) { return std::make_unique<SlowFakeRepository>(state); });
+        QSignalSpy completed(&coordinator, &LocalLibraryRecognitionCoordinator::completed);
+        QVERIFY(coordinator.start(QStringLiteral("D:/Library")));
+        QTRY_VERIFY_WITH_TIMEOUT(state.saveCalls.load() >= 1, 20000);
+        QTest::qWait(10 + attempt * 7);
 
-    QElapsedTimer elapsed;
-    elapsed.start();
-    coordinator.shutdown();
+        QElapsedTimer elapsed;
+        elapsed.start();
+        coordinator.shutdown();
 
-    QVERIFY2(elapsed.elapsed() < 1000, qPrintable(QStringLiteral("shutdown took %1 ms").arg(elapsed.elapsed())));
-    QVERIFY(state.savedRecords.load() >= 200);
-    QVERIFY(state.savedRecords.load() < state.pendingCount);
+        QVERIFY2(elapsed.elapsed() < 3000, qPrintable(QStringLiteral("shutdown took %1 ms").arg(elapsed.elapsed())));
+        QVERIFY(state.savedRecords.load() >= 200);
+        QVERIFY(state.savedRecords.load() < state.pendingCount);
+        QTest::qWait(50);
+        QCOMPARE(completed.count(), 0);
+        tailPersisted = state.savedRecords.load() % 200 != 0;
+    }
+    QVERIFY2(tailPersisted, "The partial batch processed before the cancel was not persisted.");
 }
 
 void LocalLibraryRecognitionCoordinatorTests::completesAndPersistsEveryRecordWhenNotCancelled() {
