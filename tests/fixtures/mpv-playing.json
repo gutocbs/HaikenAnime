@@ -1,0 +1,6 @@
+{"error":"success","request_id":1}
+{"event":"property-change","id":1,"name":"pause","data":false}
+{"event":"property-change","id":3,"name":"path","data":"D:\\Anime\\One Piece\\[Group] One Piece - 01.mkv"}
+{"event":"playback-restart"}
+{"event":"property-change","id":2,"name":"time-pos","data":12.5}
+{"event":"property-change","id":1,"name":"pause","data":true,"extra":"ignored"}

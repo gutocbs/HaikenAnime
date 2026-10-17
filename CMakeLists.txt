@@ -768,6 +768,31 @@ add_executable(RecognitionHistoryServiceTests
 target_link_libraries(RecognitionHistoryServiceTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME RecognitionHistoryServiceTests COMMAND RecognitionHistoryServiceTests)
 
+add_executable(MpvIpcClientTests
+        tests/unit/MpvIpcClientTests.cpp
+        src/infrastructure/recognition/mpv/IMpvTransport.h
+        src/infrastructure/recognition/mpv/MpvIpcClient.cpp
+        src/infrastructure/recognition/mpv/QtLocalSocketMpvTransport.h
+        src/infrastructure/recognition/mpv/QtLocalSocketMpvTransport.cpp
+)
+target_link_libraries(MpvIpcClientTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+target_compile_definitions(MpvIpcClientTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+add_test(NAME MpvIpcClientTests COMMAND MpvIpcClientTests)
+
+add_executable(MpvPluginTests
+        tests/unit/MpvPluginTests.cpp
+        src/infrastructure/recognition/mpv/MpvIpcClient.cpp
+        src/infrastructure/recognition/mpv/MpvPlugin.cpp
+        src/infrastructure/recognition/QtProcessLauncher.cpp
+        src/application/recognition/PluginSettingsSchema.cpp
+        src/application/recognition/PlaybackObservationService.cpp
+        src/domain/recognition/PlaybackSession.cpp
+        src/domain/recognition/EpisodeCandidate.cpp
+        src/domain/recognition/RecognitionPolicy.cpp
+)
+target_link_libraries(MpvPluginTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME MpvPluginTests COMMAND MpvPluginTests)
+
 add_executable(SqliteLocalFileRepositoryTests
         tests/unit/SqliteLocalFileRepositoryTests.cpp
         src/infrastructure/database/SqliteLocalFileRepository.cpp
@@ -1652,6 +1677,8 @@ set(HAIKENANIME_TESTS
         ProgressDecisionServiceTests
         RecognitionHistoryServiceTests
         SqliteRecognitionHistoryRepositoryTests
+        MpvIpcClientTests
+        MpvPluginTests
         MediaTitleResolverTests
         SqliteDatabaseTests
         SqliteUserPreferencesRepositoryTests
