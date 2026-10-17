@@ -91,18 +91,28 @@ int main(int argc, char *argv[]) {
         context.logger->warning(LogCategory::Configuration, translationError);
     }
     bool servicesShutdown = false;
-    const auto shutdownServices = [&context, &servicesShutdown] {
+    const auto logShutdownStep = [&context](const QString &message) {
+        if (context.logger) context.logger->info(LogCategory::Application, message);
+    };
+    const auto shutdownServices = [&context, &servicesShutdown, &logShutdownStep](const QElapsedTimer &total) {
         if (servicesShutdown) return;
         servicesShutdown = true;
+        QElapsedTimer step;
         if (context.localLibraryScan) {
+            step.start();
             context.localLibraryScan->shutdown();
+            logShutdownStep(QStringLiteral("Local library scan stopped in %1 ms.").arg(step.elapsed()));
         }
         if (context.localLibraryRecognition) {
+            step.start();
             context.localLibraryRecognition->shutdown();
+            logShutdownStep(QStringLiteral("Local library recognition stopped in %1 ms.").arg(step.elapsed()));
         }
         if (context.coverCoordinator) {
             context.coverCoordinator->disconnect();
         }
+        // Logged before the logger stops, otherwise the last line would be dropped.
+        logShutdownStep(QStringLiteral("Application shutdown completed in %1 ms.").arg(total.elapsed()));
         if (context.logger) {
             context.logger->stop();
         }
@@ -332,6 +342,9 @@ int main(int argc, char *argv[]) {
         // This signal is the single exit path for QML failure, window close, and direct quit().
         // On a timeout, ApplicationContext destruction still owns the runtime and joins its thread;
         // dependent services intentionally remain alive until that has happened.
+        QElapsedTimer total;
+        total.start();
+        logShutdownStep(QStringLiteral("Application shutdown started."));
         if (!waitForAdaptiveSyncStop()) {
             if (context.logger) {
                 context.logger->warning(LogCategory::Sync,
@@ -339,7 +352,8 @@ int main(int argc, char *argv[]) {
             }
             return;
         }
-        shutdownServices();
+        logShutdownStep(QStringLiteral("Adaptive synchronization stopped in %1 ms.").arg(total.elapsed()));
+        shutdownServices(total);
     });
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed,
                      &app, [&requestShutdown] { requestShutdown(-1); }, Qt::QueuedConnection);
