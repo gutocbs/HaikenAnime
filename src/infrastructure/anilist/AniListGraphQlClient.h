@@ -18,6 +18,8 @@ class AniListGraphQlClient final {
 public:
     struct Diagnostics final {
         std::function<void(const QString &)> log;
+        // Polled while a request is pending and before each retry; true aborts without retrying.
+        std::function<bool()> isCancelled;
     };
 
     /** Creates a client using the supplied manager and optional authorization provider. */
@@ -45,6 +47,7 @@ private:
                                           AniListGraphQlResponse &response, QString &error,
                                           int attempt) const;
     void Log(QString message) const;
+    bool IsCancelled() const;
 
     QNetworkAccessManager &networkManager_;
     IAniListAuthProvider *authProvider_;

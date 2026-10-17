@@ -148,7 +148,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             authenticatedUserList_.endpoint, authenticatedUserList_.httpTimeoutMs,
                             authenticatedUserList_.httpMaxRetries,
                             authenticatedUserList_.httpRetryDelayMs,
-                            {.log = authenticatedUserList_.auditLogger});
+                            {.log = authenticatedUserList_.auditLogger, .isCancelled = [job] { return job->cancelled.load(); }});
                         GraphQlQueryStore queryStore(QStringLiteral(":/anilist/queries/user-media-list.graphql"));
                         GraphQlAniListDataSource userListSource(client, queryStore, &authProvider,
                                                                   authenticatedUserList_.perChunk);
@@ -268,7 +268,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             authenticatedUserList_.endpoint, authenticatedUserList_.httpTimeoutMs,
                             authenticatedUserList_.httpMaxRetries,
                             authenticatedUserList_.httpRetryDelayMs,
-                            {.log = authenticatedUserList_.auditLogger});
+                            {.log = authenticatedUserList_.auditLogger, .isCancelled = [job] { return job->cancelled.load(); }});
                         SqlitePendingChangeRepository pendingChanges(
                             database.connection(), QStringLiteral(":/sqlite/queries/enqueue-pending-change.sql"),
                             QStringLiteral(":/sqlite/queries/read-pending-changes.sql"),

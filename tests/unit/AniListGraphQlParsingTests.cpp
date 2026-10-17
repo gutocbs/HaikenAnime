@@ -1,4 +1,5 @@
 #include <QtTest>
+#include <QElapsedTimer>
 #include <QFile>
 #include <QDir>
 #include <QJsonDocument>
@@ -105,6 +106,7 @@ private slots:
     void graphQlClientLogsOnlySafeSuccessTelemetry();
     void graphQlClientDoesNotLogGraphQlErrorPayload();
     void graphQlClientPreservesGraphQlErrorWithoutLoggingPayload();
+    void graphQlClientAbortsPendingRequestWithoutRetryWhenCancelled();
 };
 
 void AniListGraphQlParsingTests::parsesDataEnvelopeAndMediaPage() {
@@ -816,6 +818,28 @@ void AniListGraphQlParsingTests::graphQlClientPreservesGraphQlErrorWithoutLoggin
     const auto log = diagnostics.join('\n');
     QVERIFY(log.contains(QStringLiteral("HTTP 400")));
     QVERIFY(!log.contains(QStringLiteral("http-secret-error")));
+}
+
+void AniListGraphQlParsingTests::graphQlClientAbortsPendingRequestWithoutRetryWhenCancelled() {
+    // The server accepts the connection backlog but never answers, so the request stays pending.
+    QTcpServer silentServer;
+    QVERIFY(silentServer.listen(QHostAddress::LocalHost));
+    bool cancelled = false;
+    AniListGraphQlClient::Diagnostics configuration;
+    configuration.isCancelled = [&cancelled] { return cancelled; };
+    QNetworkAccessManager networkManager;
+    const QUrl endpoint(QStringLiteral("http://127.0.0.1:%1/graphql").arg(silentServer.serverPort()));
+    AniListGraphQlClient client(networkManager, nullptr, endpoint, 30000, 2, 1000, configuration);
+    AniListGraphQlResponse response;
+    QString error;
+    QTimer::singleShot(200, [&cancelled] { cancelled = true; });
+    QElapsedTimer elapsed;
+    elapsed.start();
+
+    QVERIFY(!client.execute(QStringLiteral("query { Viewer { id } }"), QJsonObject{}, response, error));
+
+    QVERIFY2(elapsed.elapsed() < 3000, qPrintable(QStringLiteral("took %1 ms").arg(elapsed.elapsed())));
+    QVERIFY2(error.contains(QStringLiteral("cancel"), Qt::CaseInsensitive), qPrintable(error));
 }
 
 QTEST_MAIN(AniListGraphQlParsingTests)
