@@ -67,7 +67,10 @@ private slots:
     void aKeyWithSeveralMatchesIsAmbiguous();
     void romanNumeralSeasonKeysMatch();
     void folderRuleRescuesSubtitleOnlySequel();
+    void aoNoHakoSeason2FileInsideFolderResolvesToFolderMedia();
+    void aoNoHakoSeason2WithoutFolderMatchesSeasonMedia();
 };
+
 
 void LocalMediaResolverTests::matchesPrimaryTitle() {
     const auto match = LocalMediaResolver().resolve(
@@ -593,6 +596,34 @@ void LocalMediaResolverTests::folderRuleRescuesSubtitleOnlySequel() {
 
     QCOMPARE(match.state, LocalRecognitionState::Associated);
     QCOMPARE(match.mediaId, 2);
+}
+
+void LocalMediaResolverTests::aoNoHakoSeason2FileInsideFolderResolvesToFolderMedia() {
+    auto first = CatalogMedia(132182, QStringLiteral("Ao no Hako"));
+    auto other = CatalogMedia(170942, QStringLiteral("Ao no Hako"));
+    auto sequel = CatalogMedia(189123, QStringLiteral("Ao no Hako Season 2"));
+    sequel.AlternativeNames = {QStringLiteral("Ao no Hako 2nd Season")};
+    sequel.LocalPath = QStringLiteral("Q:\\Animes\\Ao no Hako Season 2");
+    const LocalMediaCatalogIndex index({first, other, sequel});
+
+    const auto match = LocalMediaResolver().resolve(
+        WithSeason(QStringLiteral("Ao no Hako"), 2, 1), index,
+        QStringLiteral("Q:\\Animes\\Ao no Hako Season 2\\[Erai-raws] Ao no Hako Season 2 - 01 [1080p].mkv"));
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 189123);
+}
+
+void LocalMediaResolverTests::aoNoHakoSeason2WithoutFolderMatchesSeasonMedia() {
+    auto sequel = CatalogMedia(189123, QStringLiteral("Ao no Hako Season 2"));
+    sequel.AlternativeNames = {QStringLiteral("Ao no Hako 2nd Season")};
+
+    const auto match = LocalMediaResolver().resolve(
+        WithSeason(QStringLiteral("Ao no Hako"), 2, 1),
+        {CatalogMedia(132182, QStringLiteral("Ao no Hako")), CatalogMedia(170942, QStringLiteral("Ao no Hako")), sequel});
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 189123);
 }
 
 QTEST_MAIN(LocalMediaResolverTests)
