@@ -86,6 +86,24 @@ The application stores local configuration, database data and downloaded media a
 
 AniList requests are defined as Qt resources under `qrc/Anilist` and are used by the C++ client in `src/clients`. Network availability and valid account authorization are required for synchronization; the local database remains the source for offline display when remote synchronization is unavailable.
 
+### Removing the AniList account
+
+Settings > Account offers a remove action for the connected AniList account. Removal cancels any running synchronization, then deletes the stored credentials. The local library and all changes that were not yet synchronized are kept. While an account is connected, a new connection cannot be started.
+
+### Pending changes belong to an account
+
+Every unsent change (progress, score, status, removal) is stamped with the AniList account that was active when it was made. A change is only ever sent to that same account: switching or removing the account never discards it, and it is sent once its owner reconnects.
+
+### Removing media from your list
+
+The media details panel has a remove-from-list action that asks for confirmation. Confirming hides the media from the library immediately and queues the deletion, which is sent to AniList on the next synchronization. Later synchronizations do not bring the media back; editing it again from the catalog adds it back to the list. Removal by the user is tracked separately from media that disappeared from AniList.
+
+### Progress display and synchronization status
+
+- Chapters, volumes or episodes whose total is unknown are shown as `?` (for example `12/?`), never as `0`.
+- A progress bar reports the current synchronization stage and percentage, and disappears a few seconds after the synchronization succeeds or fails. Synchronization errors are shown there only, not on unrelated screens.
+- The main window starts maximized and the library opens on the in-progress (watching/reading) list.
+
 ## Development Notes
 
 - Keep C++/QML contracts stable when changing signals, slots or context properties.
