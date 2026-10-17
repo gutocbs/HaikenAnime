@@ -214,6 +214,7 @@ private slots:
     void reconcilesPendingProgressBeforePersistingTheRemotePage();
     void completeAnimeAndMangaReconcileUnionExcludingUnsentMedia();
     void failedOrMissingTypeOutcomeNeverReconciles();
+    void emptySnapshotSkipsReconciliationAndWarns();
     void cancellationBetweenTypesNeverReconciles();
     void droppedMediaObservedWhileListDisabledIsNotReported();
     void cancellationBetweenChunksLeavesSnapshotIncomplete();
@@ -618,6 +619,26 @@ void AniListFlowTests::completeAnimeAndMangaReconcileUnionExcludingUnsentMedia()
     QCOMPARE(reconciler.calls, 1);
     QCOMPARE(reconciler.observedIds, QSet<int>({1, 2, 3}));
     QCOMPARE(reconciler.excludedIds, QSet<int>({9}));
+}
+
+void AniListFlowTests::emptySnapshotSkipsReconciliationAndWarns() {
+    RecordingSnapshotReconciler reconciler;
+    ReconciliationPendingRepository pending;
+    bool reconciled = true;
+    int removedCount = -1;
+    QString error;
+    QStringList logs;
+
+    QVERIFY2(ReconcileCompleteAniListSnapshot(
+                 {CompleteOutcome({}), CompleteOutcome({})}, 2, true, reconciler, pending,
+                 reconciled, removedCount, error,
+                 [&logs](const QString &line) { logs.append(line); }), qPrintable(error));
+
+    QVERIFY(!reconciled);
+    QCOMPARE(removedCount, 0);
+    QCOMPARE(reconciler.calls, 0);
+    QCOMPARE(logs, QStringList({QStringLiteral(
+        "AniList snapshot reconciliation skipped: snapshot contained no entries.")}));
 }
 
 void AniListFlowTests::failedOrMissingTypeOutcomeNeverReconciles() {

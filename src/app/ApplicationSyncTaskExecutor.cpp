@@ -218,7 +218,8 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                                 bool reconciled = false;
                                 if (!ReconcileCompleteAniListSnapshot(
                                         outcomes, 2, result.succeeded && !job->cancelled.load(),
-                                        mediaRepository, pendingChanges, reconciled, removedCount, error)) {
+                                        mediaRepository, pendingChanges, reconciled, removedCount, error,
+                                        authenticatedUserList_.auditLogger)) {
                                     result.succeeded = false;
                                     snapshotErrorCategory = AniListSyncErrorClassifier::Classify(error);
                                 } else if (reconciled && authenticatedUserList_.auditLogger) {
@@ -278,7 +279,8 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             QStringLiteral(":/anilist/mutations/delete-list-entry.graphql"));
                         AniListUpdateClient updateClient(client, updateMutation, entryIdQuery, deleteMutation);
                         AniListPendingChangeProcessor pendingProcessor(
-                            pendingChanges, updateClient, credentials.userId);
+                            pendingChanges, updateClient, credentials.userId,
+                            authenticatedUserList_.auditLogger);
                         AniListPendingChangeDrain drain(pendingChanges, pendingProcessor);
                         drain.setProgressReporter([&publish](const int processed, const int total) {
                             publish(QStringLiteral("pending_changes"), 1, 1, processed, total);
