@@ -64,6 +64,7 @@ private:
     void settleIfIdle();
     void publishOutcome();
     void hide();
+    void finishSilently();
 
     QTimer hideTimer_;
     QTimer settleTimer_;
@@ -71,6 +72,8 @@ private:
     bool roundFailed_ = false;
     bool roundHadOutcome_ = false;
     bool visible_ = false;
+    bool roundActive_ = false;
+    bool roundShown_ = false;
     QString outcome_ = QStringLiteral("idle");
     QString stageKey_;
     int stageIndex_ = 0;

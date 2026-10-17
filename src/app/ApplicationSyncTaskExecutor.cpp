@@ -125,7 +125,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                                                           readActiveMediaIdsQueryPath_, markSourceRemovedQueryPath_);
                     SqliteSyncTaskStateRepository taskRepository(
                         database.connection(), readTaskStatesQueryPath_, upsertTaskStateQueryPath_, deleteTaskStateQueryPath_);
-                    if (!AniListAccountOwnership::CanSynchronizeUserList(credentials)) {
+                    if (AniListAccountOwnership::ShouldSkipAniListPartition(partition, credentials)) {
                         // No account (or suspended during removal): nothing to synchronize, not a failure.
                         result.succeeded = true;
                         result.errorCategory = AniListSyncErrorCategory::None;
@@ -247,16 +247,14 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                         }
                     }
                 } else if (partition == SyncPartition::PendingChanges) {
-                    if (credentials.token.isEmpty()) {
-                        error = QStringLiteral("AniList pending-change synchronization requires authentication.");
-                        result.errorCategory = AniListSyncErrorCategory::Authentication;
-                    } else if (!AniListAccountOwnership::CanProcessPendingChanges(credentials.userId)) {
-                        // Token not validated yet (no account id): nothing is sent or adopted until it is.
+                    if (AniListAccountOwnership::ShouldSkipAniListPartition(partition, credentials)) {
+                        // No account, suspended during removal, or token not validated yet: nothing is sent or
+                        // adopted, and it is not a failure.
                         result.succeeded = true;
                         result.errorCategory = AniListSyncErrorCategory::None;
                         if (authenticatedUserList_.auditLogger) {
                             authenticatedUserList_.auditLogger(QStringLiteral(
-                                "AniList pending-change synchronization skipped: account not validated yet."));
+                                "AniList pending-change synchronization skipped: not authenticated."));
                         }
                     } else {
                         if (authenticatedUserList_.auditLogger) {

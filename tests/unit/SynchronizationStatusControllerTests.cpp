@@ -52,6 +52,8 @@ private slots:
     void failureWithoutProgressBecomesVisible();
     void rerunAfterCancellationWithSuspendedCredentialsStaysSilent();
     void silentRunKeepsRunningTrueWhileActive();
+    void silentRoundDuringLingerKeepsPublishedFailureVisible();
+    void silentUserListThenPendingChangesNeverShowsOrFails();
 };
 
 void SynchronizationStatusControllerTests::startsIdleAndHidden() {
@@ -320,8 +322,9 @@ void SynchronizationStatusControllerTests::startDuringLingerAfterFailureBeginsNe
     QTRY_COMPARE(controller.outcome(), QStringLiteral("failed"));
 
     controller.HandleStarted(SyncPartition::UserList);
-    QCOMPARE(controller.outcome(), QStringLiteral("running"));
+    QVERIFY(controller.running());
     controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 1, 2));
+    QCOMPARE(controller.outcome(), QStringLiteral("running"));
     controller.HandleCompleted(SyncPartition::UserList);
 
     QTRY_COMPARE(controller.outcome(), QStringLiteral("succeeded"));
@@ -459,6 +462,46 @@ void SynchronizationStatusControllerTests::silentRunKeepsRunningTrueWhileActive(
 
     QVERIFY(controller.running());
     QVERIFY(!controller.visible());
+}
+
+void SynchronizationStatusControllerTests::silentRoundDuringLingerKeepsPublishedFailureVisible() {
+    SynchronizationStatusController controller(300, 10);
+    controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleFailed(SyncPartition::UserList, QStringLiteral("Erro de rede"));
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("failed"));
+
+    controller.HandleStarted(SyncPartition::PendingChanges);
+    controller.HandleCompleted(SyncPartition::PendingChanges);
+    QTest::qWait(60);
+
+    QVERIFY(controller.visible());
+    QCOMPARE(controller.outcome(), QStringLiteral("failed"));
+    QCOMPARE(controller.message(), QStringLiteral("Erro de rede"));
+    QTRY_VERIFY_WITH_TIMEOUT(!controller.visible(), 1000);
+    QCOMPARE(controller.outcome(), QStringLiteral("idle"));
+}
+
+void SynchronizationStatusControllerTests::silentUserListThenPendingChangesNeverShowsOrFails() {
+    SynchronizationStatusController controller(400, 20);
+    bool everVisible = false;
+    QStringList outcomes;
+    connect(&controller, &SynchronizationStatusController::changed, this, [&] {
+        everVisible = everVisible || controller.visible();
+        outcomes.append(controller.outcome());
+    });
+
+    // No account: both partitions are skipped by the executor and complete without progress.
+    controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleCompleted(SyncPartition::UserList);
+    controller.HandleStarted(SyncPartition::PendingChanges);
+    controller.HandleCompleted(SyncPartition::PendingChanges);
+
+    QTRY_VERIFY(!controller.running());
+    QTest::qWait(60);
+    QVERIFY(!everVisible);
+    QVERIFY(!outcomes.contains(QStringLiteral("failed")));
+    QVERIFY(!outcomes.contains(QStringLiteral("succeeded")));
+    QCOMPARE(controller.outcome(), QStringLiteral("idle"));
 }
 
 QTEST_GUILESS_MAIN(SynchronizationStatusControllerTests)
