@@ -7,9 +7,13 @@ QString NormalizeTitle(const QString &value) {
     static const QRegularExpression separatorExpression(
         QStringLiteral(R"([\s._:/\\-]+|[\p{P}\p{S}]+)")
     );
+    static const QRegularExpression apostropheExpression(
+        QStringLiteral("['’ʼ＇]"));
     static const QRegularExpression whitespaceExpression(QStringLiteral("\\s+"));
 
     auto normalized = value.trimmed().toCaseFolded();
+    // Scene releases usually drop apostrophes, so remove them instead of splitting words.
+    normalized.remove(apostropheExpression);
     normalized.replace(separatorExpression, QStringLiteral(" "));
     normalized.replace(whitespaceExpression, QStringLiteral(" "));
     return normalized.trimmed();

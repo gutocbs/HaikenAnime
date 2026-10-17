@@ -39,6 +39,7 @@ private slots:
     void ignoresPunctuationWhenMatchingAlternativeName();
     void treatsColonAndSpaceAsEquivalent();
     void returnsAmbiguousWhenPunctuationOnlyDistinguishesMedia();
+    void dropsApostrophesInsteadOfSplittingWords();
     void stillMatchesNonLatinTitles();
     void rejectsUnsupportedKind();
     void rejectsInvalidEpisode_data();
@@ -236,6 +237,22 @@ void LocalMediaResolverTests::returnsAmbiguousWhenPunctuationOnlyDistinguishesMe
 
     QCOMPARE(match.state, LocalRecognitionState::Ambiguous);
     QCOMPARE(match.mediaId, 0);
+}
+
+void LocalMediaResolverTests::dropsApostrophesInsteadOfSplittingWords() {
+    const QList<Media> catalog{CatalogMedia(61, QStringLiteral("Frieren's Journey")),
+                               CatalogMedia(62, QStringLiteral("JoJo’s Bizarre Adventure"))};
+    for (const auto &title : {QStringLiteral("Frierens Journey"), QStringLiteral("Frieren’s Journey"),
+                              QStringLiteral("Frierenʼs Journey"), QStringLiteral("Frieren＇s Journey"),
+                              QStringLiteral("Frieren's Journey")}) {
+        const auto match = LocalMediaResolver().resolve(Recognized(title), catalog);
+        QCOMPARE(match.state, LocalRecognitionState::Associated);
+        QCOMPARE(match.mediaId, 61);
+    }
+    const auto jojo = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("JoJos.Bizarre.Adventure")), catalog);
+    QCOMPARE(jojo.state, LocalRecognitionState::Associated);
+    QCOMPARE(jojo.mediaId, 62);
 }
 
 void LocalMediaResolverTests::stillMatchesNonLatinTitles() {
