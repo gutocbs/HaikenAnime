@@ -28,6 +28,7 @@
     "readCatalogMediaForRecognition": ":/sqlite/queries/read-catalog-media-for-recognition.sql",
     "saveLocalFileRecognition": ":/sqlite/queries/save-local-file-recognition.sql",
     "readLocalFilesUnderFolder": ":/sqlite/queries/read-local-files-under-folder.sql",
+    "readLocalFileRoots": ":/sqlite/queries/read-local-file-roots.sql",
     "readNextLocalEpisode": ":/sqlite/queries/read-next-local-episode.sql",
     "readAvailableEpisodeCount": ":/sqlite/queries/read-available-episode-count.sql"
   }

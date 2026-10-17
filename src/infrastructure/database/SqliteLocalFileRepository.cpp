@@ -3,6 +3,7 @@
 #include <QDir>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QPair>
 
 #include "SqliteMediaMapper.h"
 #include "SqlQueryStore.h"
@@ -58,18 +59,32 @@ LocalFileRecognitionRecord MapRecognitionRecord(const QSqlQuery &query) {
     record.diagnostic = query.value(14).toString();
     return record;
 }
+// Same cleaning and case rule as LocalMediaCatalogIndex::NormalizeFolder.
+QString ComparablePath(const QString &path) {
+    auto normalized = path.trimmed();
+    normalized.replace(QLatin1Char('\\'), QLatin1Char('/'));
+    if (normalized.isEmpty()) return {};
+    normalized = QDir::cleanPath(normalized);
+    while (normalized.endsWith(QLatin1Char('/'))) normalized.chop(1);
+    if (normalized == QLatin1String(".")) return {};
+#ifdef Q_OS_WIN
+    normalized = normalized.toCaseFolded();
+#endif
+    return normalized;
+}
 }
 
 SqliteLocalFileRepository::SqliteLocalFileRepository(QSqlDatabase database, QString beginQuery,
     QString upsertQuery, QString completeQuery, QString failQuery, QString markUnavailableQuery,
     QString readPendingQuery, QString readCatalogQuery, QString saveRecognitionQuery,
-    QString readUnderFolderQuery)
+    QString readUnderFolderQuery, QString readRootsQuery)
     : database_(std::move(database)), beginQuery_(std::move(beginQuery)),
       upsertQuery_(std::move(upsertQuery)), completeQuery_(std::move(completeQuery)),
       failQuery_(std::move(failQuery)), markUnavailableQuery_(std::move(markUnavailableQuery)),
       readPendingQuery_(std::move(readPendingQuery)), readCatalogQuery_(std::move(readCatalogQuery)),
       saveRecognitionQuery_(std::move(saveRecognitionQuery)),
-      readUnderFolderQuery_(std::move(readUnderFolderQuery)) {}
+      readUnderFolderQuery_(std::move(readUnderFolderQuery)),
+      readRootsQuery_(std::move(readRootsQuery)) {}
 
 bool SqliteLocalFileRepository::beginScan(const QString &rootPath, qint64 &scanId, QString &error) {
     scanId = 0;
@@ -216,23 +231,38 @@ bool SqliteLocalFileRepository::readFilesUnderFolder(const QString &folderPath,
                                                      QList<LocalFileRecognitionRecord> &records,
                                                      QString &error) {
     records.clear(); error.clear();
-    // Same cleaning as LocalMediaCatalogIndex::NormalizeFolder, minus the case folding (SQL compares NOCASE).
-    auto folder = folderPath.trimmed();
-    folder.replace(QLatin1Char('\\'), QLatin1Char('/'));
-    if (!folder.isEmpty()) folder = QDir::cleanPath(folder);
-    while (folder.endsWith(QLatin1Char('/'))) folder.chop(1);
+    const auto folder = ComparablePath(folderPath);
     if (folder.isEmpty()) {
         error = QStringLiteral("Reading local files under a folder requires a folder path.");
         return false;
     }
+    QString readRootsQuery;
     QString readUnderFolderQuery;
-    if (!SqlQueryStore::loadSource(readUnderFolderQuery_, readUnderFolderQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(readRootsQuery_, readRootsQuery, error)
+        || !SqlQueryStore::loadSource(readUnderFolderQuery_, readUnderFolderQuery, error)) return false;
+    // Root and folder are compared in C++ because SQLite NOCASE only folds ASCII.
+    QSqlQuery rootsQuery(database_);
+    if (!rootsQuery.prepare(readRootsQuery) || !rootsQuery.exec()) { error = rootsQuery.lastError().text(); return false; }
+    QList<QPair<QString, QString>> matches;
+    while (rootsQuery.next()) {
+        const auto rootPath = rootsQuery.value(0).toString();
+        const auto root = ComparablePath(rootPath);
+        if (root.isEmpty()) continue;
+        if (folder == root) { matches.append({rootPath, QStringLiteral("")});  /* non-null: a null binds as SQL NULL */ continue; }
+        // The separator boundary keeps "Show" from matching "Show 2".
+        if (folder.startsWith(root + QLatin1Char('/'))) {
+            // normalized_relative_path is stored case-folded with '/' separators by the scanner.
+            matches.append({rootPath, folder.mid(root.size() + 1).toCaseFolded() + QLatin1Char('/')});
+        }
+    }
     QSqlQuery query(database_);
     if (!query.prepare(readUnderFolderQuery)) { error = query.lastError().text(); return false; }
-    // The trailing separator is what keeps "Show" from matching files under "Show 2".
-    query.bindValue(QStringLiteral(":folder_prefix"), folder + QLatin1Char('/'));
-    if (!query.exec()) { error = query.lastError().text(); return false; }
-    while (query.next()) records.append(MapRecognitionRecord(query));
+    for (const auto &match : matches) {
+        query.bindValue(QStringLiteral(":root_path"), match.first);
+        query.bindValue(QStringLiteral(":prefix"), match.second);
+        if (!query.exec()) { error = query.lastError().text(); return false; }
+        while (query.next()) records.append(MapRecognitionRecord(query));
+    }
     return true;
 }
 

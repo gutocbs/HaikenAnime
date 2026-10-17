@@ -11,7 +11,7 @@ public:
     SqliteLocalFileRepository(QSqlDatabase database, QString beginQuery, QString upsertQuery,
                              QString completeQuery, QString failQuery, QString markUnavailableQuery,
                              QString readPendingQuery = {}, QString readCatalogQuery = {}, QString saveRecognitionQuery = {},
-                             QString readUnderFolderQuery = {});
+                             QString readUnderFolderQuery = {}, QString readRootsQuery = {});
     bool beginScan(const QString &rootPath, qint64 &scanId, QString &error) override;
     bool upsertBatch(qint64 scanId, const QList<LocalFileObservation> &observations, QString &error) override;
     bool completeScan(qint64 scanId, qsizetype observedCount, QString &error) override;
@@ -34,6 +34,7 @@ private:
     QString readCatalogQuery_;
     QString saveRecognitionQuery_;
     QString readUnderFolderQuery_;
+    QString readRootsQuery_;
 };
 
 #endif

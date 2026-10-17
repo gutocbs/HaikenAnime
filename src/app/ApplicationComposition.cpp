@@ -72,7 +72,8 @@ public:
           queries.size() > 5 ? queries[5] : QString{},
           queries.size() > 6 ? queries[6] : QString{},
           queries.size() > 7 ? queries[7] : QString{},
-          queries.size() > 8 ? queries[8] : QString{}) {}
+          queries.size() > 8 ? queries[8] : QString{},
+          queries.size() > 9 ? queries[9] : QString{}) {}
     bool beginScan(const QString &root, qint64 &id, QString &error) override {
         return repository_.beginScan(root, id, error);
     }
@@ -138,7 +139,7 @@ void composeLibraryScanner(ApplicationContext &context, const SqliteQueryConfigu
          configuration.completeLibraryScanPath, configuration.failLibraryScanPath,
          configuration.markLocalFilesUnavailablePath, configuration.readPendingLocalFilesPath,
          configuration.readCatalogMediaForRecognitionPath, configuration.saveLocalFileRecognitionPath,
-         configuration.readLocalFilesUnderFolderPath}) {
+         configuration.readLocalFilesUnderFolderPath, configuration.readLocalFileRootsPath}) {
         if (path.isEmpty()) {
             scannerError = QStringLiteral("Local library scan query configuration is incomplete.");
             break;
@@ -168,7 +169,7 @@ void composeLibraryRecognition(ApplicationContext &context,
          configuration.completeLibraryScanPath, configuration.failLibraryScanPath,
          configuration.markLocalFilesUnavailablePath, configuration.readPendingLocalFilesPath,
          configuration.readCatalogMediaForRecognitionPath, configuration.saveLocalFileRecognitionPath,
-         configuration.readLocalFilesUnderFolderPath}) {
+         configuration.readLocalFilesUnderFolderPath, configuration.readLocalFileRootsPath}) {
         if (path.isEmpty()) {
             recognitionError = QStringLiteral("Local library recognition query configuration is incomplete.");
             break;
