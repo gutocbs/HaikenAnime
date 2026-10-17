@@ -45,6 +45,8 @@ public:
     static constexpr int PauseObserverId = 1;
     static constexpr int TimePositionObserverId = 2;
     static constexpr int PathObserverId = 3;
+    static constexpr int MediaTitleObserverId = 4;
+    static constexpr int DurationObserverId = 5;
 
     explicit MpvPlugin(MpvPluginDependencies dependencies);
     ~MpvPlugin() override;

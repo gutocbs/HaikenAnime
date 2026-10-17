@@ -128,7 +128,8 @@ std::optional<PlaybackSession> MpvPlugin::launchEpisode(const QString &filePath,
                             .deviceId = QStringLiteral("local-mpv"),
                             .title = QFileInfo(filePath).fileName(),
                             .filePath = filePath,
-                            .startedAt = now()};
+                            .startedAt = now(),
+                            .details = {.sourceTitle = QFileInfo(filePath).fileName()}};
     active_ = std::make_unique<ActiveSession>(session, *options.candidate, pipeName);
     auto *active = active_.get();
     active->transport = dependencies_.transportFactory();
@@ -183,6 +184,8 @@ void MpvPlugin::onConnected() {
     active->client->observeProperty(PauseObserverId, QStringLiteral("pause"));
     active->client->observeProperty(TimePositionObserverId, QStringLiteral("time-pos"));
     active->client->observeProperty(PathObserverId, QStringLiteral("path"));
+    active->client->observeProperty(MediaTitleObserverId, QStringLiteral("media-title"));
+    active->client->observeProperty(DurationObserverId, QStringLiteral("duration"));
     if (observer_) observer_->onSessionStarted(active->session, active->candidate);
 }
 
@@ -193,6 +196,17 @@ void MpvPlugin::onPropertyChanged(const QString &name, const QJsonValue &data) {
     if (name == QStringLiteral("path")) {
         const auto path = data.toString();
         if (!path.isEmpty() && !SameFile(path, active->session.filePath)) finishSession(StopReason::Replaced);
+        return;
+    }
+    if (name == QStringLiteral("media-title") || name == QStringLiteral("duration")) {
+        auto details = active->session.details;
+        if (name == QStringLiteral("media-title") && data.isString()) details.title = data.toString();
+        if (name == QStringLiteral("duration") && data.isDouble()) {
+            details.durationSeconds = static_cast<int>(data.toDouble());
+        }
+        if (details == active->session.details) return;
+        active->session.details = details;
+        if (observer_) observer_->onSessionDetailsChanged(active->session.id, details);
         return;
     }
     if (name == QStringLiteral("pause")) {

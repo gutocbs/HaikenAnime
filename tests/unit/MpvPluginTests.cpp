@@ -59,7 +59,11 @@ public:
         snapshots.append(snapshot);
     }
     void onSessionStopped(const PlaybackSessionId &, const StopReason reason) override { stops.append(reason); }
+    void onSessionDetailsChanged(const PlaybackSessionId &, const EpisodeDetails &value) override {
+        details.append(value);
+    }
 
+    QList<EpisodeDetails> details;
     QList<PlaybackSession> started;
     QList<int> episodes;
     QList<PlaybackSnapshot> snapshots;
@@ -98,7 +102,7 @@ private slots:
     void sessionStartsOnlyAfterIpcConnects();
     void sessionWithoutIpcIsNeverReported();
     void launchWithoutKnownEpisodeIsRejected();
-    void observesPauseTimeAndPathAfterConnecting();
+    void observesMediaTitleAndDurationAfterConnecting();
     void timeAndPauseChangesBecomeSnapshots();
     void endFileEofStopsSessionAsEnded();
     void shutdownAndDisconnectStopSessionOnce();
@@ -108,6 +112,10 @@ private slots:
     void playingThreeMinutesCompletesOnce();
     void testConnectionChecksExecutable();
     void qtLauncherRejectsMissingProgram();
+    void launchedSessionCarriesFileNameAsSourceTitle();
+    void mediaTitleAndDurationBecomeDetails();
+    void repeatedDetailsAreNotReported();
+    void detailsAfterSessionEndAreIgnored();
 
 private:
     MpvPluginDependencies dependencies();
@@ -224,7 +232,7 @@ void MpvPluginTests::launchWithoutKnownEpisodeIsRejected() {
     QVERIFY(launcher.program.isEmpty());
 }
 
-void MpvPluginTests::observesPauseTimeAndPathAfterConnecting() {
+void MpvPluginTests::observesMediaTitleAndDurationAfterConnecting() {
     MpvPlugin plugin(dependencies());
     plugin.observe(observer);
     QString error;
@@ -236,7 +244,8 @@ void MpvPluginTests::observesPauseTimeAndPathAfterConnecting() {
         const auto parts = command.value(QStringLiteral("command")).toArray();
         if (parts.at(0).toString() == QStringLiteral("observe_property")) observed.append(parts.at(2).toString());
     }
-    QCOMPARE(observed, QStringList({QStringLiteral("pause"), QStringLiteral("time-pos"), QStringLiteral("path")}));
+    QCOMPARE(observed, QStringList({QStringLiteral("pause"), QStringLiteral("time-pos"), QStringLiteral("path"),
+                                    QStringLiteral("media-title"), QStringLiteral("duration")}));
 }
 
 void MpvPluginTests::timeAndPauseChangesBecomeSnapshots() {
@@ -379,6 +388,57 @@ void MpvPluginTests::qtLauncherRejectsMissingProgram() {
     QVERIFY(!launcher.start(missing, {QStringLiteral("--version")}, error));
     QVERIFY(error.contains(QStringLiteral("mpv.exe")));
     QVERIFY(!error.contains(QStringLiteral("haikenanime-missing")));
+}
+
+void MpvPluginTests::launchedSessionCarriesFileNameAsSourceTitle() {
+    MpvPlugin plugin(dependencies());
+    plugin.observe(observer);
+    QString error;
+
+    const auto session = plugin.launchEpisode(QStringLiteral("D:/Anime/One Piece 01.mkv"), {.candidate = candidate()}, error);
+
+    QCOMPARE(session->details.sourceTitle, QStringLiteral("One Piece 01.mkv"));
+    QCOMPARE(observer.started.first().details.sourceTitle, QStringLiteral("One Piece 01.mkv"));
+}
+
+void MpvPluginTests::mediaTitleAndDurationBecomeDetails() {
+    MpvPlugin plugin(dependencies());
+    plugin.observe(observer);
+    QString error;
+    QVERIFY(plugin.launchEpisode(QStringLiteral("D:/Anime/ep01.mkv"), {.candidate = candidate()}, error));
+
+    transport->event(R"({"event":"property-change","id":4,"name":"media-title","data":"One Piece 01"})");
+    transport->event(R"({"event":"property-change","id":5,"name":"duration","data":1420.6})");
+
+    QCOMPARE(observer.details.size(), 2);
+    QCOMPARE(observer.details.last().title, QStringLiteral("One Piece 01"));
+    QCOMPARE(observer.details.last().durationSeconds, std::optional<int>(1420));
+    QCOMPARE(observer.details.last().sourceTitle, QStringLiteral("ep01.mkv"));
+}
+
+void MpvPluginTests::repeatedDetailsAreNotReported() {
+    MpvPlugin plugin(dependencies());
+    plugin.observe(observer);
+    QString error;
+    QVERIFY(plugin.launchEpisode(QStringLiteral("D:/Anime/ep01.mkv"), {.candidate = candidate()}, error));
+
+    transport->event(R"({"event":"property-change","id":4,"name":"media-title","data":"One Piece 01"})");
+    transport->event(R"({"event":"property-change","id":4,"name":"media-title","data":"One Piece 01"})");
+    transport->event(R"({"event":"property-change","id":5,"name":"duration","data":null})");
+
+    QCOMPARE(observer.details.size(), 1);
+}
+
+void MpvPluginTests::detailsAfterSessionEndAreIgnored() {
+    MpvPlugin plugin(dependencies());
+    plugin.observe(observer);
+    QString error;
+    QVERIFY(plugin.launchEpisode(QStringLiteral("D:/Anime/ep01.mkv"), {.candidate = candidate()}, error));
+    transport->event(R"({"event":"end-file","reason":"quit"})");
+
+    transport->event(R"({"event":"property-change","id":4,"name":"media-title","data":"Late"})");
+
+    QVERIFY(observer.details.isEmpty());
 }
 
 QTEST_MAIN(MpvPluginTests)
