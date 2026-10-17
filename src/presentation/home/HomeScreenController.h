@@ -60,6 +60,7 @@ class HomeScreenController final : public QObject {
     Q_PROPERTY(QString state READ state NOTIFY stateChanged)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
+    Q_PROPERTY(QString mediaOperationErrorMessage READ mediaOperationErrorMessage NOTIFY selectionChanged)
     Q_PROPERTY(int mediaCount READ mediaCount NOTIFY mediaCountChanged)
     Q_PROPERTY(int filteredMediaCount READ filteredMediaCount NOTIFY mediaCountChanged)
     Q_PROPERTY(QString activeMediaType READ activeMediaType NOTIFY activeMediaTypeChanged)
@@ -109,6 +110,7 @@ public:
     QString state() const;
     QString statusMessage() const;
     QString errorMessage() const;
+    QString mediaOperationErrorMessage() const;
     int mediaCount() const;
     int filteredMediaCount() const;
     QString activeMediaType() const;
@@ -167,6 +169,7 @@ public:
     Q_INVOKABLE void ClearBrowseCriteria();
     Q_INVOKABLE void SelectMedia(int mediaId);
     Q_INVOKABLE void WatchNext();
+    Q_INVOKABLE bool RemoveSelectedMedia();
     Q_INVOKABLE bool SaveSelectedMediaFromEditor(int progress, const QString &statusKey, double score,
                                                  const QString &path, const QStringList &alternativeNames);
     Q_INVOKABLE QVariantMap PreviewCardMetadata(int progress, const QString &listStatusKey,
@@ -194,6 +197,7 @@ signals:
 private:
     void setState(QString state);
     void setStatusMessage(QString message);
+    void setMediaOperationError(QString message);
     void rebuildMediaModels();
     void clearSelection();
     void refreshNextLocalEpisode();
@@ -208,6 +212,7 @@ private:
     QString state_ = QStringLiteral("idle");
     QString statusMessage_ = QStringLiteral("Aguardando sincronização.");
     QString errorMessage_;
+    QString mediaOperationErrorMessage_;
     QString activeMediaType_ = QStringLiteral("anime");
     QString activeListFilter_ = QStringLiteral("current");
     QString activeSort_ = QStringLiteral("title_asc");

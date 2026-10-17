@@ -93,6 +93,7 @@ private slots:
     void settingsHeaderReservesMessageSpaceAfterSaveAction();
     void settingsAccountSectionUsesAniListAuthenticationControllerState();
     void seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated();
+    void homeEditorOffersConfirmedRemovalFromPersonalList();
     void mainKeepsSeasonalCatalogAsSeparateNavigation();
     void localCacheCleanupStaysInLibrarySettingsAndUsesControllerState();
     void implicitSignalParametersAreDeclared();
@@ -885,6 +886,34 @@ void QmlStructureTests::settingsAccountSectionUsesAniListAuthenticationControlle
     QVERIFY(dialogStart >= 0);
     QVERIFY(!source.mid(dialogStart).contains(QStringLiteral("standardButtons")));
     QVERIFY(source.contains(QStringLiteral("readonly property color danger:")));
+}
+
+void QmlStructureTests::homeEditorOffersConfirmedRemovalFromPersonalList() {
+    const QString editor = qmlSource(QStringLiteral("EditMediaPanel.qml"));
+    const QString home = qmlSource(QStringLiteral("Home.qml"));
+    const QString seasonal = qmlSource(QStringLiteral("SeasonalCatalogScreen.qml"));
+    QVERIFY(!editor.isEmpty());
+
+    QVERIFY(editor.contains(QStringLiteral("signal removeRequested(int mediaId)")));
+    QVERIFY(editor.contains(QStringLiteral("property bool allowsRemoval: false")));
+    QVERIFY(editor.contains(QStringLiteral("property string operationErrorMessage")));
+    QVERIFY(editor.contains(QStringLiteral("qsTr(\"Remover da lista?\")")));
+    QVERIFY(editor.contains(QStringLiteral(
+        "qsTr(\"\\\"%1\\\" será removido da sua lista pessoal e da AniList.\").arg(panel.controller.selectedTitle)")));
+    QVERIFY(editor.contains(QStringLiteral("text: qsTr(\"Remover da lista\")")));
+    QVERIFY(editor.contains(QStringLiteral("variant: \"danger\"")));
+    const qsizetype dialogStart = editor.indexOf(QStringLiteral("id: removeConfirmationDialog"));
+    QVERIFY(dialogStart >= 0);
+    QVERIFY(!editor.mid(dialogStart).contains(QStringLiteral("standardButtons")));
+    QVERIFY(editor.contains(QStringLiteral("panel.removeRequested(panel.editingMediaId)")));
+
+    QVERIFY(home.contains(QStringLiteral("allowsRemoval: true")));
+    QVERIFY(home.contains(QStringLiteral("operationErrorMessage: home.controller.mediaOperationErrorMessage")));
+    QVERIFY(home.contains(QStringLiteral("onRemoveRequested: function(mediaId) {")));
+    QVERIFY(home.contains(QStringLiteral("home.controller.RemoveSelectedMedia()")));
+    QVERIFY(home.contains(QStringLiteral("mediaDetailsPanel.close()")));
+    QVERIFY(!seasonal.contains(QStringLiteral("allowsRemoval")));
+    QVERIFY(!home.contains(QStringLiteral("controller.mediaOperationErrorMessage.length > 0\n")));
 }
 
 void QmlStructureTests::seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated() {

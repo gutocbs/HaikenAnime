@@ -38,6 +38,18 @@ public:
 
 class RecordingPersonalListChangeWriter final : public IPersonalListChangeWriter {
 public:
+    bool remove(const Media &media, const AniListPendingChange &deletion, QString &error) override {
+        removedMedia = media;
+        removedDeletion = deletion;
+        ++removeCalls;
+        error = removeFailure;
+        return removeFailure.isEmpty();
+    }
+
+    Media removedMedia;
+    AniListPendingChange removedDeletion;
+    QString removeFailure;
+    int removeCalls = 0;
     bool save(const Media &media, const QList<AniListPendingChange> &changes,
               QString &error) override {
         savedMedia = media;
@@ -149,6 +161,8 @@ private slots:
     void persistsSelectedMediaEditsAndRefreshesBothModels();
     void persistsSelectedMediaEditsToTheOfflineOutbox();
     void keepsModelsAndSelectionUnchangedWhenPersistingSelectedMediaFails();
+    void removesSelectedMediaFromLibraryWithoutRestart();
+    void keepsMediaAndReportsOperationErrorWhenRemovalFails();
     void selectedCoverFallsBackWhenCachedFileIsMissing();
     void updatesOnlyOneCoverRowAndPreservesOldCoverOnFailure();
     void coverQualityChangesFutureRequestsWithoutClearingDisplayedCover();
@@ -1185,7 +1199,65 @@ void HomeScreenControllerTests::keepsModelsAndSelectionUnchangedWhenPersistingSe
     QCOMPARE(controller.selectedListStatusKey(), QStringLiteral("current"));
     QCOMPARE(controller.mediaModel()->rowCount(), 1);
     QCOMPARE(controller.fullMediaModel()->rowCount(), 1);
-    QCOMPARE(controller.errorMessage(), QStringLiteral("disk unavailable"));
+    QCOMPARE(controller.mediaOperationErrorMessage(), QStringLiteral("disk unavailable"));
+    QVERIFY(controller.errorMessage().isEmpty());
+}
+
+void HomeScreenControllerTests::removesSelectedMediaFromLibraryWithoutRestart() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    Media other = media;
+    other.Id = 43;
+    other.Name = QStringLiteral("Other");
+    reader.result = {media, other};
+    RecordingPersonalListChangeWriter writer;
+    PersonalListChangeService changes(writer);
+    HomeScreenController controller(reader);
+    controller.SetPersonalListChangeService(&changes);
+    controller.reload();
+    controller.SelectMedia(media.Id);
+    QCOMPARE(controller.mediaCount(), 2);
+    QSignalSpy countSpy(&controller, &HomeScreenController::mediaCountChanged);
+
+    QVERIFY(controller.RemoveSelectedMedia());
+
+    QCOMPARE(writer.removeCalls, 1);
+    QCOMPARE(writer.removedMedia.Id, 42);
+    QVERIFY(!controller.hasSelection());
+    QCOMPARE(controller.mediaCount(), 1);
+    QCOMPARE(controller.fullMediaModel()->rowCount(), 1);
+    QCOMPARE(controller.mediaModel()->rowCount(), 1);
+    QVERIFY(countSpy.count() >= 1);
+    QVERIFY(controller.errorMessage().isEmpty());
+    QVERIFY(controller.mediaOperationErrorMessage().isEmpty());
+}
+
+void HomeScreenControllerTests::keepsMediaAndReportsOperationErrorWhenRemovalFails() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    reader.result = {media};
+    RecordingPersonalListChangeWriter writer;
+    writer.removeFailure = QStringLiteral("disk unavailable");
+    PersonalListChangeService changes(writer);
+    HomeScreenController controller(reader);
+    controller.SetPersonalListChangeService(&changes);
+    controller.reload();
+    controller.SelectMedia(media.Id);
+
+    QVERIFY(!controller.RemoveSelectedMedia());
+
+    QVERIFY(controller.hasSelection());
+    QCOMPARE(controller.mediaCount(), 1);
+    QCOMPARE(controller.mediaOperationErrorMessage(), QStringLiteral("disk unavailable"));
+    QVERIFY(controller.errorMessage().isEmpty());
 }
 
 void HomeScreenControllerTests::selectedCoverFallsBackWhenCachedFileIsMissing() {

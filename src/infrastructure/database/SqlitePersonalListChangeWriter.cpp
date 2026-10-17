@@ -1,6 +1,7 @@
 #include "SqlitePersonalListChangeWriter.h"
 
 #include "SqlQueryStore.h"
+#include "../logging/AsyncLogger.h"
 
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -91,10 +92,12 @@ void bindPendingChange(QSqlQuery &query, const AniListPendingChange &change) {
 
 SqlitePersonalListChangeWriter::SqlitePersonalListChangeWriter(
     QSqlDatabase database, QString upsertMediaQuery, QString updatePersonalListQuery,
-    QString enqueuePendingChangeQuery)
+    QString enqueuePendingChangeQuery, QString markPersonalListRemovedQuery, QString supersedeDeletionQuery)
     : database_(std::move(database)), upsertMediaQuery_(std::move(upsertMediaQuery)),
       updatePersonalListQuery_(std::move(updatePersonalListQuery)),
-      enqueuePendingChangeQuery_(std::move(enqueuePendingChangeQuery)) {
+      enqueuePendingChangeQuery_(std::move(enqueuePendingChangeQuery)),
+      markPersonalListRemovedQuery_(std::move(markPersonalListRemovedQuery)),
+      supersedeDeletionQuery_(std::move(supersedeDeletionQuery)) {
 }
 
 bool SqlitePersonalListChangeWriter::save(const Media &media, const QList<AniListPendingChange> &changes,
@@ -142,6 +145,27 @@ bool SqlitePersonalListChangeWriter::save(const Media &media, const QList<AniLis
         }
     }
 
+    // Re-adding a media cancels any removal that has not reached AniList yet.
+    QString supersedeQuery;
+    if (!SqlQueryStore::loadSource(supersedeDeletionQuery_, supersedeQuery, error)) {
+        database_.rollback();
+        return false;
+    }
+    QSqlQuery supersede(database_);
+    if (!supersede.prepare(supersedeQuery)) {
+        error = supersede.lastError().text();
+        database_.rollback();
+        return false;
+    }
+    supersede.bindValue(QStringLiteral(":media_id"), media.Id);
+    supersede.bindValue(QStringLiteral(":local_updated_at"),
+                        QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+    if (!supersede.exec()) {
+        error = supersede.lastError().text();
+        database_.rollback();
+        return false;
+    }
+
     QSqlQuery enqueue(database_);
     if (!enqueue.prepare(enqueueQuery)) {
         error = enqueue.lastError().text();
@@ -160,6 +184,65 @@ bool SqlitePersonalListChangeWriter::save(const Media &media, const QList<AniLis
         error = database_.lastError().text();
         database_.rollback();
         return false;
+    }
+    return true;
+}
+
+void SqlitePersonalListChangeWriter::setLogger(AsyncLogger *logger) {
+    logger_ = logger;
+}
+
+bool SqlitePersonalListChangeWriter::remove(const Media &media, const AniListPendingChange &deletion,
+                                            QString &error) {
+    error.clear();
+    if (!database_.isOpen()) {
+        error = QStringLiteral("SQLite database is not open.");
+        return false;
+    }
+    QString markQuery;
+    QString enqueueQuery;
+    if (!SqlQueryStore::loadSource(markPersonalListRemovedQuery_, markQuery, error)
+        || !SqlQueryStore::loadSource(enqueuePendingChangeQuery_, enqueueQuery, error)) return false;
+    if (!database_.transaction()) {
+        error = database_.lastError().text();
+        return false;
+    }
+
+    QSqlQuery mark(database_);
+    if (!mark.prepare(markQuery)) {
+        error = mark.lastError().text();
+        database_.rollback();
+        return false;
+    }
+    mark.bindValue(QStringLiteral(":id"), media.Id);
+    mark.bindValue(QStringLiteral(":personal_list_removed_at"),
+                   QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
+    if (!mark.exec()) {
+        error = mark.lastError().text();
+        database_.rollback();
+        return false;
+    }
+
+    QSqlQuery enqueue(database_);
+    if (!enqueue.prepare(enqueueQuery)) {
+        error = enqueue.lastError().text();
+        database_.rollback();
+        return false;
+    }
+    bindPendingChange(enqueue, deletion);
+    if (!enqueue.exec()) {
+        error = enqueue.lastError().text();
+        database_.rollback();
+        return false;
+    }
+    if (!database_.commit()) {
+        error = database_.lastError().text();
+        database_.rollback();
+        return false;
+    }
+    if (logger_) {
+        logger_->info(LogCategory::Database,
+                      QStringLiteral("Media %1 removed from the personal list.").arg(media.Id));
     }
     return true;
 }

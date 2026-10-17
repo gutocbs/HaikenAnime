@@ -615,12 +615,20 @@ Item {
         controller: home.controller
         listOptions: home.controller.availableListOptions
         closeOnApply: false
+        allowsRemoval: true
+        operationErrorMessage: home.controller.mediaOperationErrorMessage
         ink: home.ink
         muted: home.muted
         line: home.line
         surface: home.surface
         surfaceSoft: home.surfaceSoft
         accent: home.accent
+        onRemoveRequested: function(mediaId) {
+            if (home.controller.RemoveSelectedMedia()) {
+                editMediaPanel.close()
+                mediaDetailsPanel.close()
+            }
+        }
         onApplyRequested: function(mediaId, progress, statusKey, score, path, alternativeNames) {
             const names = alternativeNames.split(";").map(function(name) { return name.trim() })
                                           .filter(function(name) { return name.length > 0 })

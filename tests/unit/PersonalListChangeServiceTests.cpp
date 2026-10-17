@@ -4,6 +4,17 @@
 
 class RecordingPersonalListChangeWriter final : public IPersonalListChangeWriter {
 public:
+    bool remove(const Media &media, const AniListPendingChange &deletion, QString &error) override {
+        removedMedia = media;
+        removedDeletion = deletion;
+        ++removeCalls;
+        error = failure;
+        return failure.isEmpty();
+    }
+
+    Media removedMedia;
+    AniListPendingChange removedDeletion;
+    int removeCalls = 0;
     bool save(const Media &media, const QList<AniListPendingChange> &changes,
               QString &error) override {
         savedMedia = media;
@@ -27,6 +38,9 @@ private slots:
     void requestsPendingSynchronizationOnlyAfterDurableOutboxWrite();
     void stampsPendingChangesWithOwnerFromProvider();
     void leavesOwnerUnsetWhenNoProviderIsConfigured();
+    void queuesConfirmedDeletionAsPendingStampedWithOwner();
+    void notifiesPendingChangesOnlyAfterRemovalIsDurable();
+    void rejectsRemovalOfMediaWithoutValidIdentifier();
 };
 
 void PersonalListChangeServiceTests::persistsLocalEditWithRemotePendingChanges() {
@@ -110,6 +124,56 @@ void PersonalListChangeServiceTests::leavesOwnerUnsetWhenNoProviderIsConfigured(
 
     QCOMPARE(writer.savedChanges.size(), 1);
     QCOMPARE(writer.savedChanges.first().ownerUserId, qint64(0));
+}
+
+void PersonalListChangeServiceTests::queuesConfirmedDeletionAsPendingStampedWithOwner() {
+    RecordingPersonalListChangeWriter writer;
+    PersonalListChangeService service(writer);
+    service.setOwnerProvider([] { return qint64(77); });
+    Media media;
+    media.Id = 42;
+    media.ListStatus = UserListStatus::Current;
+    QString error;
+
+    QVERIFY2(service.remove(media, error), qPrintable(error));
+
+    QCOMPARE(writer.removeCalls, 1);
+    QCOMPARE(writer.removedMedia.Id, 42);
+    QCOMPARE(writer.removedDeletion.mediaId, 42);
+    QCOMPARE(writer.removedDeletion.field, AniListField::Deletion);
+    QCOMPARE(writer.removedDeletion.status, AniListPendingChangeStatus::Pending);
+    QCOMPARE(writer.removedDeletion.ownerUserId, qint64(77));
+}
+
+void PersonalListChangeServiceTests::notifiesPendingChangesOnlyAfterRemovalIsDurable() {
+    RecordingPersonalListChangeWriter writer;
+    PersonalListChangeService service(writer);
+    int requests = 0;
+    service.setPendingChangesNotifier([&requests] { ++requests; });
+    Media media;
+    media.Id = 42;
+    QString error;
+
+    writer.failure = QStringLiteral("database write failed");
+    QVERIFY(!service.remove(media, error));
+    QCOMPARE(error, writer.failure);
+    QCOMPARE(requests, 0);
+
+    writer.failure.clear();
+    QVERIFY2(service.remove(media, error), qPrintable(error));
+    QCOMPARE(requests, 1);
+}
+
+void PersonalListChangeServiceTests::rejectsRemovalOfMediaWithoutValidIdentifier() {
+    RecordingPersonalListChangeWriter writer;
+    PersonalListChangeService service(writer);
+    Media media;
+    QString error;
+
+    QVERIFY(!service.remove(media, error));
+
+    QVERIFY(!error.isEmpty());
+    QCOMPARE(writer.removeCalls, 0);
 }
 
 QTEST_MAIN(PersonalListChangeServiceTests)

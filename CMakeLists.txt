@@ -290,6 +290,12 @@ set_source_files_properties(
         resources/sqlite/queries/mark-media-source-removed.sql
         PROPERTIES QT_RESOURCE_ALIAS "mark-media-source-removed.sql")
 set_source_files_properties(
+        resources/sqlite/queries/mark-media-personal-list-removed.sql
+        PROPERTIES QT_RESOURCE_ALIAS "mark-media-personal-list-removed.sql")
+set_source_files_properties(
+        resources/sqlite/queries/supersede-pending-deletion.sql
+        PROPERTIES QT_RESOURCE_ALIAS "supersede-pending-deletion.sql")
+set_source_files_properties(
         resources/sqlite/queries/enqueue-pending-change.sql
         PROPERTIES QT_RESOURCE_ALIAS "enqueue-pending-change.sql")
 set_source_files_properties(
@@ -394,6 +400,8 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         resources/sqlite/queries/read-media.sql
         resources/sqlite/queries/read-active-media-ids.sql
         resources/sqlite/queries/mark-media-source-removed.sql
+        resources/sqlite/queries/mark-media-personal-list-removed.sql
+        resources/sqlite/queries/supersede-pending-deletion.sql
         resources/sqlite/queries/enqueue-pending-change.sql
         resources/sqlite/queries/read-pending-changes.sql
         resources/sqlite/queries/read-pending-media-ids.sql
@@ -585,6 +593,8 @@ qt_add_resources(SqliteRepositoryTests repository_query_resources
               resources/sqlite/queries/read-media.sql
               resources/sqlite/queries/read-active-media-ids.sql
               resources/sqlite/queries/mark-media-source-removed.sql
+              resources/sqlite/queries/mark-media-personal-list-removed.sql
+              resources/sqlite/queries/supersede-pending-deletion.sql
               resources/sqlite/queries/update-personal-list-media.sql
               resources/sqlite/queries/enqueue-pending-change.sql
               resources/sqlite/queries/read-pending-changes.sql

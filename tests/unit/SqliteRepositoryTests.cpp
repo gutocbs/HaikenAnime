@@ -13,6 +13,8 @@ const auto ReadMedia = QStringLiteral(":/sqlite/queries/read-media.sql");
 const auto ReadActiveMediaIds = QStringLiteral(":/sqlite/queries/read-active-media-ids.sql");
 const auto MarkSourceRemoved = QStringLiteral(":/sqlite/queries/mark-media-source-removed.sql");
 const auto UpdatePersonalListMedia = QStringLiteral(":/sqlite/queries/update-personal-list-media.sql");
+const auto MarkPersonalListRemoved = QStringLiteral(":/sqlite/queries/mark-media-personal-list-removed.sql");
+const auto SupersedePendingDeletion = QStringLiteral(":/sqlite/queries/supersede-pending-deletion.sql");
 const auto EnqueueChange = QStringLiteral(":/sqlite/queries/enqueue-pending-change.sql");
 const auto ReadChanges = QStringLiteral(":/sqlite/queries/read-pending-changes.sql");
 const auto ReadPendingMediaIds = QStringLiteral(":/sqlite/queries/read-pending-media-ids.sql");
@@ -51,6 +53,10 @@ private slots:
     void pendingReadsAreScopedToCurrentOwnerAndKeepOtherOwnersQueued();
     void adoptingOrphanChangesAssignsOwnerAndReportsCount();
     void personalListWriterStoresOwnerOfPendingChanges();
+    void removalHidesMediaAndQueuesDeletionInOneTransaction();
+    void removalRollsBackMarkWhenDeletionCannotBeQueued();
+    void synchronizationUpsertDoesNotRestoreRemovedMedia();
+    void personalListUpdateRestoresRemovedMediaAndSupersedesPendingDeletion();
 };
 
 void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
@@ -296,7 +302,7 @@ void SqliteRepositoryTests::personalListChangePersistsMediaAndPendingChangesToge
     QVERIFY(database.migrate());
     QVERIFY(insertMedia(database.connection(), 154587));
     SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia,
-                                          EnqueueChange);
+                                          EnqueueChange, MarkPersonalListRemoved, SupersedePendingDeletion);
     Media media;
     media.Id = 154587;
     media.ConsumedChapters = 12;
@@ -642,7 +648,8 @@ void SqliteRepositoryTests::personalListWriterStoresOwnerOfPendingChanges() {
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     QVERIFY(insertMedia(database.connection(), 7));
-    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia, EnqueueChange);
+    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia, EnqueueChange,
+                                          MarkPersonalListRemoved, SupersedePendingDeletion);
     Media media;
     media.Id = 7;
     media.Name = QStringLiteral("Media");
@@ -654,6 +661,131 @@ void SqliteRepositoryTests::personalListWriterStoresOwnerOfPendingChanges() {
     QVERIFY(query.exec(QStringLiteral("SELECT owner_user_id FROM anilist_pending_changes WHERE media_id = 7")));
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toLongLong(), qint64(5));
+}
+
+namespace {
+AniListPendingChange deletionOf(int mediaId) {
+    AniListPendingChange change;
+    change.mediaId = mediaId;
+    change.field = AniListField::Deletion;
+    change.previousValue = QStringLiteral("CURRENT");
+    change.newValue = QStringLiteral("");
+    change.createdAt = QDateTime::fromString(QStringLiteral("2026-10-16T10:00:00Z"), Qt::ISODate);
+    change.localUpdatedAt = change.createdAt;
+    change.status = AniListPendingChangeStatus::Pending;
+    change.ownerUserId = 3;
+    return change;
+}
+
+int visibleMediaCount(QSqlDatabase database) {
+    SqliteMediaRepository repository(database, UpsertMedia, ReadMedia, ReadActiveMediaIds, MarkSourceRemoved);
+    QList<Media> media;
+    QString error;
+    return repository.readAll(media, error) ? media.size() : -1;
+}
+}
+
+void SqliteRepositoryTests::removalHidesMediaAndQueuesDeletionInOneTransaction() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    QVERIFY(insertMedia(database.connection(), 7));
+    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia,
+                                          EnqueueChange, MarkPersonalListRemoved, SupersedePendingDeletion);
+    Media media;
+    media.Id = 7;
+    QString error;
+
+    QVERIFY2(writer.remove(media, deletionOf(7), error), qPrintable(error));
+
+    QCOMPARE(visibleMediaCount(database.connection()), 0);
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("SELECT personal_list_removed_at FROM media WHERE id = 7")));
+    QVERIFY(query.next());
+    QVERIFY(!query.value(0).isNull());
+    QVERIFY(query.exec(QStringLiteral(
+        "SELECT field, status, owner_user_id FROM anilist_pending_changes WHERE media_id = 7")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), static_cast<int>(AniListField::Deletion));
+    QCOMPARE(query.value(1).toInt(), static_cast<int>(AniListPendingChangeStatus::Pending));
+    QCOMPARE(query.value(2).toLongLong(), qint64(3));
+    QVERIFY(!query.next());
+}
+
+void SqliteRepositoryTests::removalRollsBackMarkWhenDeletionCannotBeQueued() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    QVERIFY(insertMedia(database.connection(), 7));
+    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia,
+                                          EnqueueChange, MarkPersonalListRemoved, SupersedePendingDeletion);
+    Media media;
+    media.Id = 7;
+    QString error;
+
+    QVERIFY(!writer.remove(media, deletionOf(999), error));
+
+    QVERIFY(!error.isEmpty());
+    QCOMPARE(visibleMediaCount(database.connection()), 1);
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("SELECT personal_list_removed_at FROM media WHERE id = 7")));
+    QVERIFY(query.next());
+    QVERIFY(query.value(0).isNull());
+}
+
+void SqliteRepositoryTests::synchronizationUpsertDoesNotRestoreRemovedMedia() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    QVERIFY(insertMedia(database.connection(), 7));
+    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia,
+                                          EnqueueChange, MarkPersonalListRemoved, SupersedePendingDeletion);
+    Media media;
+    media.Id = 7;
+    QString error;
+    QVERIFY2(writer.remove(media, deletionOf(7), error), qPrintable(error));
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved);
+    media.Name = QStringLiteral("Synchronized again");
+
+    QVERIFY2(repository.upsert({media}, error), qPrintable(error));
+
+    QCOMPARE(visibleMediaCount(database.connection()), 0);
+}
+
+void SqliteRepositoryTests::personalListUpdateRestoresRemovedMediaAndSupersedesPendingDeletion() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    QVERIFY(insertMedia(database.connection(), 7));
+    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia,
+                                          EnqueueChange, MarkPersonalListRemoved, SupersedePendingDeletion);
+    Media media;
+    media.Id = 7;
+    QString error;
+    QVERIFY2(writer.remove(media, deletionOf(7), error), qPrintable(error));
+    AniListPendingChange readd = ownedChange(7, 3);
+    readd.field = AniListField::ListStatus;
+    readd.previousValue = QStringLiteral("");
+    readd.newValue = QStringLiteral("PLANNING");
+    media.ListStatus = UserListStatus::Planning;
+
+    QVERIFY2(writer.save(media, {readd}, error), qPrintable(error));
+
+    QCOMPARE(visibleMediaCount(database.connection()), 1);
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral(
+        "SELECT field, status FROM anilist_pending_changes WHERE media_id = 7 ORDER BY id")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), static_cast<int>(AniListField::Deletion));
+    QCOMPARE(query.value(1).toInt(), static_cast<int>(AniListPendingChangeStatus::Superseded));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), static_cast<int>(AniListField::ListStatus));
+    QCOMPARE(query.value(1).toInt(), static_cast<int>(AniListPendingChangeStatus::Pending));
 }
 
 QTEST_MAIN(SqliteRepositoryTests)

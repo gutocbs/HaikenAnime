@@ -14,6 +14,7 @@ private slots:
     void migrationCreatesMediaSchema();
     void migrationIsIdempotent();
     void ownerMigrationsPreserveExistingRowsWithDefaultOwner();
+    void personalListRemovalMigrationKeepsExistingMediaVisible();
     void migrationCreatesPendingChangesTable();
     void pendingChangesTableStoresVersionColumns();
     void enablesForeignKeyEnforcement();
@@ -92,7 +93,8 @@ void SqliteDatabaseTests::migrationCreatesMediaSchema() {
         QStringLiteral("source_removed_at"), QStringLiteral("season"),
         QStringLiteral("season_year"), QStringLiteral("next_airing_episode"),
         QStringLiteral("next_airing_at"), QStringLiteral("anilist_url"),
-        QStringLiteral("external_links")
+        QStringLiteral("external_links"),
+        QStringLiteral("personal_list_removed_at")
     };
 
     QCOMPARE(columns, expectedColumns);
@@ -110,7 +112,7 @@ void SqliteDatabaseTests::migrationIsIdempotent() {
     QSqlQuery query(database.connection());
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version")));
     QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 22);
+    QCOMPARE(query.value(0).toInt(), 23);
 }
 
 void SqliteDatabaseTests::ownerMigrationsPreserveExistingRowsWithDefaultOwner() {
@@ -141,6 +143,27 @@ void SqliteDatabaseTests::ownerMigrationsPreserveExistingRowsWithDefaultOwner() 
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toLongLong(), 0);
     QCOMPARE(query.value(1).toString(), QStringLiteral("R:/"));
+}
+
+void SqliteDatabaseTests::personalListRemovalMigrationKeepsExistingMediaVisible() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("INSERT INTO media (id, name, type, status) VALUES (31, 'Kept', 1, 1)")));
+    QVERIFY(query.exec(QStringLiteral("ALTER TABLE media DROP COLUMN personal_list_removed_at")));
+    QVERIFY(query.exec(QStringLiteral("DELETE FROM schema_version WHERE version = 23")));
+
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+
+    QVERIFY(query.exec(QStringLiteral("SELECT name, personal_list_removed_at FROM media WHERE id = 31")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("Kept"));
+    QVERIFY(query.value(1).isNull());
+    QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version WHERE version = 23")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 1);
 }
 
 void SqliteDatabaseTests::migrationCreatesPendingChangesTable() {
@@ -258,7 +281,7 @@ void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
     QVERIFY(versions.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
     QList<int> values;
     while (versions.next()) values.append(versions.value(0).toInt());
-    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22}));
+    QCOMPARE(values, QList<int>({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23}));
 }
 
 void SqliteDatabaseTests::migrationCreatesUserPreferencesVersionFive() {

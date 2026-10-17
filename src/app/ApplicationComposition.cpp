@@ -118,6 +118,7 @@ bool hasExistingQueries(const SqliteQueryConfiguration &queries) {
     return !queries.upsertMediaPath.isEmpty() && !queries.updatePersonalListMediaPath.isEmpty()
         && !queries.readMediaPath.isEmpty()
         && !queries.readActiveMediaIdsPath.isEmpty() && !queries.markMediaSourceRemovedPath.isEmpty()
+        && !queries.markMediaPersonalListRemovedPath.isEmpty() && !queries.supersedePendingDeletionPath.isEmpty()
         && !queries.enqueuePendingChangePath.isEmpty() && !queries.readPendingChangesPath.isEmpty()
         && !queries.updatePendingChangePath.isEmpty() && !queries.readCoverCachePath.isEmpty()
         && !queries.upsertCoverCachePath.isEmpty() && !queries.deleteCoverCachePath.isEmpty()
@@ -270,9 +271,12 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(
         context.database->connection(), queryConfiguration.enqueuePendingChangePath,
         queryConfiguration.readPendingChangesPath, queryConfiguration.updatePendingChangePath);
-    context.personalListChangeWriter = std::make_unique<SqlitePersonalListChangeWriter>(
+    auto personalListChangeWriter = std::make_unique<SqlitePersonalListChangeWriter>(
         context.database->connection(), queryConfiguration.upsertMediaPath,
-        queryConfiguration.updatePersonalListMediaPath, queryConfiguration.enqueuePendingChangePath);
+        queryConfiguration.updatePersonalListMediaPath, queryConfiguration.enqueuePendingChangePath,
+        queryConfiguration.markMediaPersonalListRemovedPath, queryConfiguration.supersedePendingDeletionPath);
+    personalListChangeWriter->setLogger(context.logger.get());
+    context.personalListChangeWriter = std::move(personalListChangeWriter);
     context.personalListChangeService = std::make_unique<PersonalListChangeService>(
         *context.personalListChangeWriter);
 

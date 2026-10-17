@@ -333,6 +333,10 @@ QString HomeScreenController::errorMessage() const {
     return errorMessage_;
 }
 
+QString HomeScreenController::mediaOperationErrorMessage() const {
+    return mediaOperationErrorMessage_;
+}
+
 int HomeScreenController::mediaCount() const {
     return allMedia_.size();
 }
@@ -595,6 +599,7 @@ void HomeScreenController::SelectMedia(const int mediaId) {
     if (match == allMedia_.cend() || mediaTypeKey(match->Type) != activeMediaType_) return;
     selectedMedia_ = *match;
     hasSelection_ = true;
+    mediaOperationErrorMessage_.clear();
     selectedCoverSource_ = CoverPlaceholder;
     const auto rows = fullModel_.media();
     for (int row = 0; row < rows.size(); ++row) {
@@ -627,10 +632,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
                                                         const QStringList &alternativeNames) {
     const auto setSaveError = [this](QString error) {
         if (error.isEmpty()) error = QStringLiteral("Não foi possível salvar as alterações da mídia.");
-        if (errorMessage_ != error) {
-            errorMessage_ = std::move(error);
-            emit errorMessageChanged();
-        }
+        setMediaOperationError(std::move(error));
         return false;
     };
     if (!hasSelection_ || (personalListWriter_ == nullptr && personalListChangeService_ == nullptr)) {
@@ -664,14 +666,49 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
     });
     *destination = updated;
     selectedMedia_ = updated;
-    if (!errorMessage_.isEmpty()) {
-        errorMessage_.clear();
-        emit errorMessageChanged();
-    }
+    mediaOperationErrorMessage_.clear();
     rebuildMediaModels();
     if (hasSelection_) {
         refreshNextLocalEpisode();
         emit selectionChanged();
+    }
+    return true;
+}
+
+void HomeScreenController::setMediaOperationError(QString message) {
+    if (mediaOperationErrorMessage_ == message) return;
+    mediaOperationErrorMessage_ = std::move(message);
+    emit selectionChanged();
+}
+
+bool HomeScreenController::RemoveSelectedMedia() {
+    const auto fail = [this](QString error) {
+        if (error.isEmpty()) error = QStringLiteral("Não foi possível remover a mídia da lista.");
+        setMediaOperationError(std::move(error));
+        return false;
+    };
+    if (!hasSelection_ || personalListChangeService_ == nullptr) {
+        return fail(QStringLiteral("A lista local não está disponível."));
+    }
+    const auto current = std::find_if(allMedia_.cbegin(), allMedia_.cend(), [this](const Media &media) {
+        return media.Id == selectedMedia_.Id;
+    });
+    if (current == allMedia_.cend()) {
+        return fail(QStringLiteral("A mídia selecionada não está disponível."));
+    }
+
+    QString error;
+    if (!personalListChangeService_->remove(*current, error)) return fail(std::move(error));
+
+    allMedia_.erase(current);
+    mediaOperationErrorMessage_.clear();
+    rebuildMediaModels();
+    clearSelection();
+    emit selectionChanged();
+    emit mediaCountChanged();
+    if (allMedia_.isEmpty()) {
+        setState(QStringLiteral("empty"));
+        setStatusMessage(QStringLiteral("Nenhum dado disponível."));
     }
     return true;
 }

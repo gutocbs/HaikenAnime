@@ -374,7 +374,16 @@ bool SqliteDatabase::migrate() {
         || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/022-add-last-anilist-user-id-preference.sql"), lastError_));
     const bool lastUserIdVersionInserted = lastUserIdReady && ExecuteMigrationScript(
         query, QStringLiteral(":/sqlite/migrations/022-mark-last-anilist-user-id-applied.sql"), lastError_);
-    const bool versionQueried = lastUserIdVersionInserted && ExecuteMigrationScript(
+    bool personalListRemovedExists = false;
+    if (lastUserIdVersionInserted && ExecuteMigrationScript(
+            query, QStringLiteral(":/sqlite/migrations/000-inspect-media-columns.sql"), lastError_)) {
+        while (query.next()) personalListRemovedExists |= query.value(1).toString() == QStringLiteral("personal_list_removed_at");
+    }
+    const bool personalListRemovedReady = lastUserIdVersionInserted && (personalListRemovedExists
+        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/023-add-personal-list-removed-at-to-media.sql"), lastError_));
+    const bool personalListRemovedVersionInserted = personalListRemovedReady && ExecuteMigrationScript(
+        query, QStringLiteral(":/sqlite/migrations/023-mark-personal-list-removed-at-applied.sql"), lastError_);
+    const bool versionQueried = personalListRemovedVersionInserted && ExecuteMigrationScript(
         query, QStringLiteral(":/sqlite/migrations/000-inspect-applied-schema-versions.sql"), lastError_);
     const bool legacyVersionsRecorded = versionQueried && query.next() && query.value(0).toBool()
         && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
@@ -384,9 +393,9 @@ bool SqliteDatabase::migrate() {
         && query.value(13).toBool() && query.value(14).toBool() && query.value(15).toBool()
         && query.value(16).toBool() && query.value(17).toBool()
         && query.value(18).toBool() && query.value(19).toBool()
-        && query.value(20).toBool() && query.value(21).toBool();
-    const bool versionRecorded = lastUserIdVersionInserted && legacyVersionsRecorded
-        && query.exec(QStringLiteral("SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 22)"))
+        && query.value(20).toBool() && query.value(21).toBool() && query.value(22).toBool();
+    const bool versionRecorded = personalListRemovedVersionInserted && legacyVersionsRecorded
+        && query.exec(QStringLiteral("SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 23)"))
         && query.next() && query.value(0).toBool();
 
     if (versionRecorded) {

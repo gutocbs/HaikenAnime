@@ -13,6 +13,8 @@ bool SqliteQueryConfiguration::load(QString &error, const QString &configuration
     readMediaPath.clear();
     readActiveMediaIdsPath.clear();
     markMediaSourceRemovedPath.clear();
+    markMediaPersonalListRemovedPath.clear();
+    supersedePendingDeletionPath.clear();
     enqueuePendingChangePath.clear();
     readPendingChangesPath.clear();
     updatePendingChangePath.clear();
@@ -59,6 +61,8 @@ bool SqliteQueryConfiguration::load(QString &error, const QString &configuration
     readMediaPath = queries.value(QStringLiteral("readMedia")).toString();
     readActiveMediaIdsPath = queries.value(QStringLiteral("readActiveMediaIds")).toString();
     markMediaSourceRemovedPath = queries.value(QStringLiteral("markMediaSourceRemoved")).toString();
+    markMediaPersonalListRemovedPath = queries.value(QStringLiteral("markMediaPersonalListRemoved")).toString();
+    supersedePendingDeletionPath = queries.value(QStringLiteral("supersedePendingDeletion")).toString();
     enqueuePendingChangePath = queries.value(QStringLiteral("enqueuePendingChange")).toString();
     readPendingChangesPath = queries.value(QStringLiteral("readPendingChanges")).toString();
     updatePendingChangePath = queries.value(QStringLiteral("updatePendingChange")).toString();
@@ -82,7 +86,8 @@ bool SqliteQueryConfiguration::load(QString &error, const QString &configuration
     readNextLocalEpisodePath = queries.value(QStringLiteral("readNextLocalEpisode")).toString();
     readAvailableEpisodeCountPath = queries.value(QStringLiteral("readAvailableEpisodeCount")).toString();
     if (upsertMediaPath.isEmpty() || updatePersonalListMediaPath.isEmpty() || readMediaPath.isEmpty() || readActiveMediaIdsPath.isEmpty()
-        || markMediaSourceRemovedPath.isEmpty() || enqueuePendingChangePath.isEmpty()
+        || markMediaSourceRemovedPath.isEmpty() || markMediaPersonalListRemovedPath.isEmpty()
+        || supersedePendingDeletionPath.isEmpty() || enqueuePendingChangePath.isEmpty()
         || readPendingChangesPath.isEmpty() || updatePendingChangePath.isEmpty()
         || readCoverCachePath.isEmpty() || upsertCoverCachePath.isEmpty()
         || deleteCoverCachePath.isEmpty() || clearCoverCachePath.isEmpty()

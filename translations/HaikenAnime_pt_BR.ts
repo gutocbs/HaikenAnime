@@ -68,6 +68,21 @@
         <translation>Editar mídia</translation>
     </message>
     <message>
+        <location filename="../resources/qml/EditMediaPanel.qml" line="229"/>
+        <source>Remover da lista</source>
+        <translation>Remover da lista</translation>
+    </message>
+    <message>
+        <location filename="../resources/qml/EditMediaPanel.qml" line="256"/>
+        <source>Remover da lista?</source>
+        <translation>Remover da lista?</translation>
+    </message>
+    <message>
+        <location filename="../resources/qml/EditMediaPanel.qml" line="269"/>
+        <source>&quot;%1&quot; será removido da sua lista pessoal e da AniList.</source>
+        <translation>&quot;%1&quot; será removido da sua lista pessoal e da AniList.</translation>
+    </message>
+    <message>
         <location filename="../resources/qml/EditMediaPanel.qml" line="74"/>
         <source>Fechar</source>
         <translation>Fechar</translation>

@@ -17,6 +17,9 @@ public:
 
     [[nodiscard]] bool save(const Media &previous, const Media &updated, QString &error) const;
 
+    /** Removes the media from the personal list locally and queues its confirmed AniList deletion. */
+    [[nodiscard]] bool remove(const Media &media, QString &error) const;
+
 private:
     IPersonalListChangeWriter &writer_;
     std::function<void()> pendingChangesNotifier_;
