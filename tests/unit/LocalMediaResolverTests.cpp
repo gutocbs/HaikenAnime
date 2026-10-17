@@ -34,6 +34,12 @@ private slots:
     void doesNotUseFuzzyMatching();
     void returnsAmbiguousForMultipleCatalogMatches();
     void doesNotTreatMultipleVariantsOfOneMediaAsAmbiguous();
+    void ignoresPunctuationWhenMatchingEnglishName();
+    void ignoresPunctuationWhenExtractedTitleIsDotted();
+    void ignoresPunctuationWhenMatchingAlternativeName();
+    void treatsColonAndSpaceAsEquivalent();
+    void returnsAmbiguousWhenPunctuationOnlyDistinguishesMedia();
+    void stillMatchesNonLatinTitles();
     void rejectsUnsupportedKind();
     void rejectsInvalidEpisode_data();
     void rejectsInvalidEpisode();
@@ -179,6 +185,71 @@ void LocalMediaResolverTests::rejectsInvalidEpisode() {
     QCOMPARE(match.state, LocalRecognitionState::Ambiguous);
     QCOMPARE(match.mediaId, 0);
     QVERIFY(!match.diagnostic.isEmpty());
+}
+
+void LocalMediaResolverTests::ignoresPunctuationWhenMatchingEnglishName() {
+    Media media = CatalogMedia(191656, QStringLiteral("Seitokai ni mo Ana wa Aru!"));
+    media.EnglishName = QStringLiteral("Even the Student Council Has Its Holes!");
+
+    const auto match = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("Even the Student Council Has Its Holes")), {media});
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 191656);
+}
+
+void LocalMediaResolverTests::ignoresPunctuationWhenExtractedTitleIsDotted() {
+    Media media = CatalogMedia(191656, QStringLiteral("Seitokai ni mo Ana wa Aru!"));
+    media.EnglishName = QStringLiteral("Even the Student Council Has Its Holes!");
+
+    const auto match = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("Even.the.Student.Council.Has.Its.Holes")), {media});
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 191656);
+}
+
+void LocalMediaResolverTests::ignoresPunctuationWhenMatchingAlternativeName() {
+    Media media = CatalogMedia(12, QStringLiteral("Primary"));
+    media.AlternativeNames = {QStringLiteral("Mob Psycho 100: “II” (Season 2) & Co.!?")};
+
+    const auto match = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("Mob Psycho 100 II Season 2 Co")), {media});
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 12);
+}
+
+void LocalMediaResolverTests::treatsColonAndSpaceAsEquivalent() {
+    const auto match = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("Re:Zero kara Hajimeru Isekai Seikatsu")),
+        {CatalogMedia(31, QStringLiteral("Re Zero kara Hajimeru Isekai Seikatsu"))});
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 31);
+}
+
+void LocalMediaResolverTests::returnsAmbiguousWhenPunctuationOnlyDistinguishesMedia() {
+    const auto match = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("Title")),
+        {CatalogMedia(1, QStringLiteral("Title!")), CatalogMedia(2, QStringLiteral("Title?"))});
+
+    QCOMPARE(match.state, LocalRecognitionState::Ambiguous);
+    QCOMPARE(match.mediaId, 0);
+}
+
+void LocalMediaResolverTests::stillMatchesNonLatinTitles() {
+    const auto japanese = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("葬送のフリーレン")),
+        {CatalogMedia(41, QStringLiteral("葬送のフリーレン"))});
+    QCOMPARE(japanese.state, LocalRecognitionState::Associated);
+    QCOMPARE(japanese.mediaId, 41);
+
+    const auto thai = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("ซันเดอร์")),
+        {CatalogMedia(42, QStringLiteral("ซันเดอร์"))});
+    QCOMPARE(thai.state, LocalRecognitionState::Associated);
+    QCOMPARE(thai.mediaId, 42);
 }
 
 QTEST_MAIN(LocalMediaResolverTests)

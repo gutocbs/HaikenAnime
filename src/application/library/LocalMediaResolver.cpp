@@ -5,7 +5,7 @@
 namespace {
 QString NormalizeTitle(const QString &value) {
     static const QRegularExpression separatorExpression(
-        QStringLiteral(R"([\s._:/\\-]+|\p{Pd}+)")
+        QStringLiteral(R"([\s._:/\\-]+|[\p{P}\p{S}]+)")
     );
     static const QRegularExpression whitespaceExpression(QStringLiteral("\\s+"));
 

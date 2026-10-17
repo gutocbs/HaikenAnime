@@ -7,6 +7,7 @@ class AnitomyLocalFileRecognizerTests final : public QObject {
 
 private slots:
     void recognizesTitleEpisodeAndSeason();
+    void recognizesDottedReleaseNameWithPunctuationFreeTitle();
     void rejectsMissingTitleOrEpisode();
     void rejectsRangesAndMultipleEpisodes();
     void rejectsUnsupportedKinds();
@@ -20,6 +21,16 @@ void AnitomyLocalFileRecognizerTests::recognizesTitleEpisodeAndSeason() {
     QCOMPARE(result.extractedTitle, QStringLiteral("Frieren"));
     QCOMPARE(result.episode, std::optional<int>(1));
     QVERIFY(!result.season.has_value());
+}
+
+void AnitomyLocalFileRecognizerTests::recognizesDottedReleaseNameWithPunctuationFreeTitle() {
+    AnitomyLocalFileRecognizer recognizer;
+    const auto result = recognizer.recognize(QStringLiteral(
+        "Even.the.Student.Council.Has.Its.Holes.S01E01.1080p.UNCENSORED.ADN.WEB-DL.JPN.AAC2.0.H.264.MSubs-ToonsHub.mkv"));
+    QCOMPARE(result.state, LocalRecognitionState::Recognized);
+    QCOMPARE(result.extractedTitle, QStringLiteral("Even the Student Council Has Its Holes"));
+    QCOMPARE(result.season, std::optional<int>(1));
+    QCOMPARE(result.episode, std::optional<int>(1));
 }
 
 void AnitomyLocalFileRecognizerTests::rejectsMissingTitleOrEpisode() {
