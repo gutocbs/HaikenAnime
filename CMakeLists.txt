@@ -535,6 +535,20 @@ target_link_libraries(MediaDomainTests
 
 add_test(NAME MediaDomainTests COMMAND MediaDomainTests)
 
+add_executable(RecognitionDomainTests
+        tests/unit/RecognitionDomainTests.cpp
+        src/domain/recognition/PlaybackSession.h
+        src/domain/recognition/PlaybackSession.cpp
+        src/domain/recognition/EpisodeCandidate.h
+        src/domain/recognition/EpisodeCandidate.cpp
+        src/domain/recognition/RecognitionRecord.h
+        src/domain/recognition/RecognitionRecord.cpp
+        src/domain/recognition/RecognitionPolicy.h
+        src/domain/recognition/RecognitionPolicy.cpp
+)
+target_link_libraries(RecognitionDomainTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME RecognitionDomainTests COMMAND RecognitionDomainTests)
+
 add_executable(AlternativeNamesTests
         tests/unit/AlternativeNamesTests.cpp
         src/application/media/AlternativeNames.h
@@ -1548,6 +1562,7 @@ endforeach ()
 
 set(HAIKENANIME_TESTS
         MediaDomainTests
+        RecognitionDomainTests
         MediaTitleResolverTests
         SqliteDatabaseTests
         SqliteUserPreferencesRepositoryTests
