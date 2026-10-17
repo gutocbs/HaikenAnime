@@ -77,6 +77,8 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/application/media/MediaDetailsPresentation.cpp
         src/application/library/LocalFileRecognitionTypes.h
         src/application/library/ILocalFileRecognizer.h
+        src/application/library/LocalMediaCatalogIndex.h
+        src/application/library/LocalMediaCatalogIndex.cpp
         src/application/library/LocalMediaResolver.h
         src/application/library/LocalMediaResolver.cpp
         src/application/library/ILocalFileOpener.h
@@ -712,6 +714,8 @@ add_test(NAME AnitomyLocalFileRecognizerTests COMMAND AnitomyLocalFileRecognizer
 add_executable(LocalMediaResolverTests
         tests/unit/LocalMediaResolverTests.cpp
         src/application/library/LocalFileRecognitionTypes.h
+        src/application/library/LocalMediaCatalogIndex.h
+        src/application/library/LocalMediaCatalogIndex.cpp
         src/application/library/LocalMediaResolver.h
         src/application/library/LocalMediaResolver.cpp)
 target_include_directories(LocalMediaResolverTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

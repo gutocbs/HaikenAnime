@@ -2,6 +2,7 @@
 #define HAIKENANIME_LOCALMEDIARESOLVER_H
 
 #include "LocalFileRecognitionTypes.h"
+#include "LocalMediaCatalogIndex.h"
 #include "../../domain/media/Media.h"
 
 #include <QList>
@@ -16,6 +17,9 @@ class LocalMediaResolver final {
 public:
     LocalMediaMatch resolve(const LocalFileRecognition &recognition,
                             const QList<Media> &catalog) const;
+    // Preferred for batches: build the index once per catalog and reuse it for every file.
+    LocalMediaMatch resolve(const LocalFileRecognition &recognition,
+                            const LocalMediaCatalogIndex &index) const;
 };
 
 #endif // HAIKENANIME_LOCALMEDIARESOLVER_H

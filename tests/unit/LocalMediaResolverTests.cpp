@@ -1,3 +1,4 @@
+#include <QElapsedTimer>
 #include <QtTest>
 
 #include "../../src/application/library/LocalMediaResolver.h"
@@ -44,6 +45,10 @@ private slots:
     void rejectsUnsupportedKind();
     void rejectsInvalidEpisode_data();
     void rejectsInvalidEpisode();
+    void indexedResolveMatchesCatalogResolveForEveryFixtureTitle_data();
+    void indexedResolveMatchesCatalogResolveForEveryFixtureTitle();
+    void indexCountsOneMediaOnceEvenWhenSeveralNamesCollapseToTheSameTitle();
+    void indexedResolveOfLargeCatalogStaysFast();
 };
 
 void LocalMediaResolverTests::matchesPrimaryTitle() {
@@ -267,6 +272,79 @@ void LocalMediaResolverTests::stillMatchesNonLatinTitles() {
         {CatalogMedia(42, QStringLiteral("ซันเดอร์"))});
     QCOMPARE(thai.state, LocalRecognitionState::Associated);
     QCOMPARE(thai.mediaId, 42);
+}
+
+namespace {
+QList<Media> FixtureCatalog() {
+    Media frieren = CatalogMedia(1, QStringLiteral("Sousou no Frieren"));
+    frieren.EnglishName = QStringLiteral("Frieren: Beyond Journey's End");
+    frieren.OriginalName = QStringLiteral("葬送のフリーレン");
+    frieren.AlternativeNames = {QStringLiteral("Frieren at the Funeral")};
+    Media jojoA = CatalogMedia(2, QStringLiteral("JoJo's Bizarre Adventure"));
+    Media jojoB = CatalogMedia(3, QStringLiteral("JoJos Bizarre Adventure"));
+    Media variants = CatalogMedia(4, QStringLiteral("Re:Zero"));
+    variants.EnglishName = QStringLiteral("Re Zero");
+    variants.AlternativeNames = {QStringLiteral("re-zero"), QStringLiteral("   ")};
+    return {frieren, jojoA, jojoB, variants, CatalogMedia(5, QStringLiteral("!!!"))};
+}
+}
+
+void LocalMediaResolverTests::indexedResolveMatchesCatalogResolveForEveryFixtureTitle_data() {
+    QTest::addColumn<QString>("title");
+    QTest::newRow("primary") << "sousou no frieren";
+    QTest::newRow("english apostrophe") << "Frieren Beyond Journeys End";
+    QTest::newRow("original") << "葬送のフリーレン";
+    QTest::newRow("alternative") << "Frieren.at.the.Funeral";
+    QTest::newRow("ambiguous after apostrophe removal") << "jojos bizarre adventure";
+    QTest::newRow("one media many names") << "RE ZERO";
+    QTest::newRow("punctuation only") << "!!!";
+    QTest::newRow("unknown") << "Something Else";
+    QTest::newRow("blank") << "   ";
+}
+
+void LocalMediaResolverTests::indexedResolveMatchesCatalogResolveForEveryFixtureTitle() {
+    QFETCH(QString, title);
+    const auto catalog = FixtureCatalog();
+    const LocalMediaCatalogIndex index(catalog);
+
+    const auto expected = LocalMediaResolver().resolve(Recognized(title), catalog);
+    const auto actual = LocalMediaResolver().resolve(Recognized(title), index);
+
+    QCOMPARE(actual.state, expected.state);
+    QCOMPARE(actual.mediaId, expected.mediaId);
+    QCOMPARE(actual.diagnostic, expected.diagnostic);
+}
+
+void LocalMediaResolverTests::indexCountsOneMediaOnceEvenWhenSeveralNamesCollapseToTheSameTitle() {
+    const LocalMediaCatalogIndex index(FixtureCatalog());
+
+    QCOMPARE(index.find(QStringLiteral("re zero")), QList<int>({4}));
+    QCOMPARE(index.find(QStringLiteral("jojos bizarre adventure")), QList<int>({2, 3}));
+    QVERIFY(index.find(QStringLiteral("missing")).isEmpty());
+}
+
+void LocalMediaResolverTests::indexedResolveOfLargeCatalogStaysFast() {
+    QList<Media> catalog;
+    for (int id = 1; id <= 2000; ++id) {
+        auto media = CatalogMedia(id, QStringLiteral("Anime Title %1").arg(id));
+        media.EnglishName = QStringLiteral("English Title %1").arg(id);
+        media.OriginalName = QStringLiteral("Original Title %1").arg(id);
+        media.AlternativeNames = {QStringLiteral("Alias %1 A").arg(id), QStringLiteral("Alias %1 B").arg(id)};
+        catalog.append(media);
+    }
+    QElapsedTimer timer;
+    timer.start();
+    const LocalMediaCatalogIndex index(catalog);
+    const LocalMediaResolver resolver;
+    int associated = 0;
+    for (int file = 0; file < 650; ++file) {
+        const auto match = resolver.resolve(Recognized(QStringLiteral("anime title %1").arg(file * 3 % 2000 + 1)), index);
+        if (match.state == LocalRecognitionState::Associated) ++associated;
+    }
+
+    QCOMPARE(associated, 650);
+    // The quadratic implementation needs minutes for this size; a generous bound keeps this stable.
+    QVERIFY2(timer.elapsed() < 10000, qPrintable(QStringLiteral("took %1 ms").arg(timer.elapsed())));
 }
 
 QTEST_MAIN(LocalMediaResolverTests)

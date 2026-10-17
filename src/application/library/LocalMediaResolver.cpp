@@ -1,31 +1,12 @@
 #include "LocalMediaResolver.h"
 
-#include <QRegularExpression>
-
-namespace {
-QString NormalizeTitle(const QString &value) {
-    static const QRegularExpression separatorExpression(
-        QStringLiteral(R"([\s._:/\\-]+|[\p{P}\p{S}]+)")
-    );
-    static const QRegularExpression apostropheExpression(
-        QStringLiteral("['’ʼ＇]"));
-    static const QRegularExpression whitespaceExpression(QStringLiteral("\\s+"));
-
-    auto normalized = value.trimmed().toCaseFolded();
-    // Scene releases usually drop apostrophes, so remove them instead of splitting words.
-    normalized.remove(apostropheExpression);
-    normalized.replace(separatorExpression, QStringLiteral(" "));
-    normalized.replace(whitespaceExpression, QStringLiteral(" "));
-    return normalized.trimmed();
-}
-
-bool Matches(const QString &candidate, const QString &title) {
-    return !candidate.trimmed().isEmpty() && NormalizeTitle(candidate) == title;
-}
+LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognition,
+                                            const QList<Media> &catalog) const {
+    return resolve(recognition, LocalMediaCatalogIndex(catalog));
 }
 
 LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognition,
-                                            const QList<Media> &catalog) const {
+                                            const LocalMediaCatalogIndex &index) const {
     LocalMediaMatch result;
     if (recognition.mediaKind != LocalMediaKind::Anime) {
         result.state = LocalRecognitionState::Unsupported;
@@ -47,26 +28,13 @@ LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognit
         return result;
     }
 
-    const auto title = NormalizeTitle(recognition.extractedTitle);
+    const auto title = LocalMediaCatalogIndex::NormalizeTitle(recognition.extractedTitle);
     if (title.isEmpty()) {
         result.state = LocalRecognitionState::Unrecognized;
         result.diagnostic = QStringLiteral("The recognized local title is empty.");
         return result;
     }
-    QList<int> matches;
-    for (const auto &media : catalog) {
-        if (Matches(media.Name, title) || Matches(media.EnglishName, title)
-            || Matches(media.OriginalName, title)) {
-            matches.append(media.Id);
-            continue;
-        }
-        for (const auto &alternative : media.AlternativeNames) {
-            if (Matches(alternative, title)) {
-                matches.append(media.Id);
-                break;
-            }
-        }
-    }
+    const auto matches = index.find(title);
     if (matches.isEmpty()) {
         result.state = LocalRecognitionState::Unrecognized;
         result.diagnostic = QStringLiteral("No catalog media matches the extracted local title.");
