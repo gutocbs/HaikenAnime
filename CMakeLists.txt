@@ -714,6 +714,25 @@ add_executable(PluginSettingsServiceTests
 target_link_libraries(PluginSettingsServiceTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME PluginSettingsServiceTests COMMAND PluginSettingsServiceTests)
 
+add_executable(PlaybackObservationServiceTests
+        tests/unit/PlaybackObservationServiceTests.cpp
+        src/application/recognition/PlaybackObservationService.cpp
+        src/domain/recognition/PlaybackSession.cpp
+        src/domain/recognition/EpisodeCandidate.cpp
+        src/domain/recognition/RecognitionPolicy.cpp
+)
+target_link_libraries(PlaybackObservationServiceTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME PlaybackObservationServiceTests COMMAND PlaybackObservationServiceTests)
+
+add_executable(ProgressDecisionServiceTests
+        tests/unit/ProgressDecisionServiceTests.cpp
+        src/application/recognition/ProgressDecisionService.cpp
+        src/domain/recognition/EpisodeCandidate.cpp
+        src/domain/recognition/RecognitionPolicy.cpp
+)
+target_link_libraries(ProgressDecisionServiceTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME ProgressDecisionServiceTests COMMAND ProgressDecisionServiceTests)
+
 add_executable(SqliteLocalFileRepositoryTests
         tests/unit/SqliteLocalFileRepositoryTests.cpp
         src/infrastructure/database/SqliteLocalFileRepository.cpp
@@ -1593,6 +1612,8 @@ set(HAIKENANIME_TESTS
         RecognitionDomainTests
         PluginSettingsServiceTests
         SqlitePluginSettingsRepositoryTests
+        PlaybackObservationServiceTests
+        ProgressDecisionServiceTests
         MediaTitleResolverTests
         SqliteDatabaseTests
         SqliteUserPreferencesRepositoryTests
