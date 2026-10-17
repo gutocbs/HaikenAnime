@@ -18,12 +18,21 @@ public:
     // Case-folded title without apostrophes, with punctuation and whitespace collapsed to one space.
     static QString NormalizeTitle(const QString &value);
 
+    // Folder key used to compare media folders with file paths: forward slashes, cleaned, no trailing
+    // slash, and case-folded on Windows where paths are case-insensitive.
+    static QString NormalizeFolder(const QString &path);
+
+    // Ids of the media whose LocalPath is the deepest folder containing the file (empty when none).
+    // Folder boundaries are respected, so "Foo" never contains "Foo 2/episode.mkv".
+    QList<int> findByFolder(const QString &absoluteFilePath) const;
+
     // Ids of the media entries (one per catalog entry, catalog order) matching the normalized title.
     QList<int> find(const QString &normalizedTitle) const;
     qsizetype titleCount() const { return titles_.size(); }
 
 private:
     QHash<QString, QList<int>> titles_;
+    QHash<QString, QList<int>> folders_;
 };
 
 #endif // HAIKENANIME_LOCALMEDIACATALOGINDEX_H

@@ -1,5 +1,6 @@
 #include "LocalMediaCatalogIndex.h"
 
+#include <QDir>
 #include <QRegularExpression>
 #include <QSet>
 
@@ -33,9 +34,39 @@ LocalMediaCatalogIndex::LocalMediaCatalogIndex(const QList<Media> &catalog) {
         for (const auto &alternative : media.AlternativeNames) add(alternative);
         // A media with several names mapping to one title is still a single candidate.
         for (const auto &title : mediaTitles) titles_[title].append(media.Id);
+        const auto folder = NormalizeFolder(media.LocalPath);
+        if (!folder.isEmpty()) {
+            auto &ids = folders_[folder];
+            if (!ids.contains(media.Id)) ids.append(media.Id);
+        }
     }
 }
 
 QList<int> LocalMediaCatalogIndex::find(const QString &normalizedTitle) const {
     return titles_.value(normalizedTitle);
+}
+
+QString LocalMediaCatalogIndex::NormalizeFolder(const QString &path) {
+    auto normalized = path.trimmed();
+    if (normalized.isEmpty()) return {};
+    normalized.replace(QLatin1Char('\\'),QLatin1Char('/'));
+    normalized = QDir::cleanPath(normalized);
+    while (normalized.endsWith(QLatin1Char('/'))) normalized.chop(1);
+    if (normalized.isEmpty() || normalized == QLatin1String(".")) return {};
+#ifdef Q_OS_WIN
+    normalized = normalized.toCaseFolded();
+#endif
+    return normalized;
+}
+
+QList<int> LocalMediaCatalogIndex::findByFolder(const QString &absoluteFilePath) const {
+    if (folders_.isEmpty()) return {};
+    const auto file = NormalizeFolder(absoluteFilePath);
+    // Walk the parents from the deepest one, so the first hit is the deepest media folder.
+    for (auto separator = file.lastIndexOf(QLatin1Char('/')); separator > 0;
+         separator = file.lastIndexOf(QLatin1Char('/'), separator - 1)) {
+        const auto found = folders_.constFind(file.left(separator));
+        if (found != folders_.constEnd()) return found.value();
+    }
+    return {};
 }

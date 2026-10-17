@@ -7,10 +7,31 @@ LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognit
 
 LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognition,
                                             const LocalMediaCatalogIndex &index) const {
+    return resolve(recognition, index, QString());
+}
+
+LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognition,
+                                            const LocalMediaCatalogIndex &index,
+                                            const QString &absoluteFilePath) const {
     LocalMediaMatch result;
     if (recognition.mediaKind != LocalMediaKind::Anime) {
         result.state = LocalRecognitionState::Unsupported;
         result.diagnostic = QStringLiteral("The local media kind is not supported yet.");
+        return result;
+    }
+    const auto hasValidEpisode = recognition.episode.has_value() && recognition.episode.value() > 0;
+    const auto folderMatches = absoluteFilePath.isEmpty() ? QList<int>() : index.findByFolder(absoluteFilePath);
+    if (!folderMatches.isEmpty()) {
+        if (!hasValidEpisode) {
+            result.state = LocalRecognitionState::Ambiguous;
+            result.diagnostic = QStringLiteral("The recognized local file does not contain one valid episode number.");
+        } else if (folderMatches.size() > 1) {
+            result.state = LocalRecognitionState::Ambiguous;
+            result.diagnostic = QStringLiteral("Multiple catalog media share the folder of the local file.");
+        } else {
+            result.state = LocalRecognitionState::Associated;
+            result.mediaId = folderMatches.first();
+        }
         return result;
     }
     if (recognition.state != LocalRecognitionState::Recognized) {
@@ -22,7 +43,7 @@ LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognit
         result.diagnostic = QStringLiteral("The local recognition result is not eligible for association.");
         return result;
     }
-    if (!recognition.episode.has_value() || recognition.episode.value() <= 0) {
+    if (!hasValidEpisode) {
         result.state = LocalRecognitionState::Ambiguous;
         result.diagnostic = QStringLiteral("The recognized local file does not contain one valid episode number.");
         return result;

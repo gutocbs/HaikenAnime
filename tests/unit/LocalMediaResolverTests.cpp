@@ -49,6 +49,12 @@ private slots:
     void indexedResolveMatchesCatalogResolveForEveryFixtureTitle();
     void indexCountsOneMediaOnceEvenWhenSeveralNamesCollapseToTheSameTitle();
     void indexedResolveOfLargeCatalogStaysFast();
+    void folderAssociationWinsOverTitleMatch();
+    void folderMatchRequiresFolderBoundary();
+    void deepestFolderWins();
+    void folderMatchIgnoresSeparatorStyleAndCaseOnWindows();
+    void folderMatchWithoutValidEpisodeIsAmbiguous();
+    void unrelatedFolderFallsBackToTitleMatching();
 };
 
 void LocalMediaResolverTests::matchesPrimaryTitle() {
@@ -345,6 +351,108 @@ void LocalMediaResolverTests::indexedResolveOfLargeCatalogStaysFast() {
     QCOMPARE(associated, 650);
     // The quadratic implementation needs minutes for this size; a generous bound keeps this stable.
     QVERIFY2(timer.elapsed() < 10000, qPrintable(QStringLiteral("took %1 ms").arg(timer.elapsed())));
+}
+
+namespace {
+LocalFileRecognition WithSeason(const QString &title, const int season, const std::optional<int> episode = 1) {
+    auto recognition = Recognized(title, episode);
+    recognition.season = season;
+    return recognition;
+}
+
+QList<Media> KusuriyaCatalog() {
+    return {CatalogMedia(99026, QStringLiteral("Kusuriya no Hitorigoto")),
+            CatalogMedia(161645, QStringLiteral("Kusuriya no Hitorigoto")),
+            CatalogMedia(176301, QStringLiteral("Kusuriya no Hitorigoto 2nd Season")),
+            CatalogMedia(195516, QStringLiteral("Kusuriya no Hitorigoto 3rd Season"))};
+}
+
+QList<Media> KusuriyaCatalogWithFolders() {
+    auto catalog = KusuriyaCatalog();
+    catalog[1].LocalPath = QStringLiteral("Q:\\Animes\\Kusuriya no Hitorigoto");
+    catalog[3].LocalPath = QStringLiteral("Q:\\Animes\\Kusuriya no Hitorigoto 3rd Season");
+    return catalog;
+}
+const QString KusuriyaFile = QStringLiteral(
+    "Q:\\Animes\\Kusuriya no Hitorigoto 3rd Season\\[Erai-raws] Kusuriya no Hitorigoto 3rd Season - 01 [1080p].mkv");
+}
+
+void LocalMediaResolverTests::folderAssociationWinsOverTitleMatch() {
+    const LocalMediaCatalogIndex index(KusuriyaCatalogWithFolders());
+    auto recognition = Recognized(QStringLiteral("Kusuriya no Hitorigoto"), 1);
+    recognition.season = 3;
+
+    const auto match = LocalMediaResolver().resolve(recognition, index, KusuriyaFile);
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 195516);
+}
+
+void LocalMediaResolverTests::folderMatchRequiresFolderBoundary() {
+    Media foo = CatalogMedia(1, QStringLiteral("Foo"));
+    foo.LocalPath = QStringLiteral("Q:/Animes/Foo");
+    const LocalMediaCatalogIndex index({foo, CatalogMedia(2, QStringLiteral("Other"))});
+
+    const auto sibling = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("Other")), index, QStringLiteral("Q:/Animes/Foo 2/Other - 01.mkv"));
+    const auto inside = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("Other")), index, QStringLiteral("Q:/Animes/Foo/Other - 01.mkv"));
+
+    QCOMPARE(sibling.mediaId, 2);
+    QCOMPARE(inside.mediaId, 1);
+}
+
+void LocalMediaResolverTests::deepestFolderWins() {
+    Media parent = CatalogMedia(1, QStringLiteral("Parent"));
+    parent.LocalPath = QStringLiteral("Q:/Animes");
+    Media child = CatalogMedia(2, QStringLiteral("Child"));
+    child.LocalPath = QStringLiteral("Q:/Animes/Child");
+    const LocalMediaCatalogIndex index({parent, child});
+
+    const auto match = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("Parent")), index, QStringLiteral("Q:/Animes/Child/Season 1/Parent - 01.mkv"));
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 2);
+}
+
+void LocalMediaResolverTests::folderMatchIgnoresSeparatorStyleAndCaseOnWindows() {
+#ifdef Q_OS_WIN
+    Media media = CatalogMedia(7, QStringLiteral("Anything"));
+    media.LocalPath = QStringLiteral("q:\\ANIMES\\Show\\");
+    const LocalMediaCatalogIndex index({media});
+
+    const auto match = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("Unrelated")), index, QStringLiteral("Q:/Animes/show/Episode - 01.mkv"));
+
+    QCOMPARE(match.mediaId, 7);
+#else
+    QSKIP("Case-insensitive folder comparison applies to Windows only.");
+#endif
+}
+
+void LocalMediaResolverTests::folderMatchWithoutValidEpisodeIsAmbiguous() {
+    Media media = CatalogMedia(7, QStringLiteral("Show"));
+    media.LocalPath = QStringLiteral("Q:/Animes/Show");
+    const LocalMediaCatalogIndex index({media});
+
+    const auto match = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("Show"), std::nullopt), index, QStringLiteral("Q:/Animes/Show/extras.mkv"));
+
+    QCOMPARE(match.state, LocalRecognitionState::Ambiguous);
+    QVERIFY(!match.diagnostic.isEmpty());
+}
+
+void LocalMediaResolverTests::unrelatedFolderFallsBackToTitleMatching() {
+    Media show = CatalogMedia(7, QStringLiteral("Show"));
+    show.LocalPath = QStringLiteral("Q:/Animes/Show");
+    const LocalMediaCatalogIndex index({show, CatalogMedia(8, QStringLiteral("Other"))});
+
+    const auto match = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("Other")), index, QStringLiteral("Q:/Animes/Elsewhere/Other - 01.mkv"));
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 8);
 }
 
 QTEST_MAIN(LocalMediaResolverTests)
