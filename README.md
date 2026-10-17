@@ -96,12 +96,12 @@ Every unsent change (progress, score, status, removal) is stamped with the AniLi
 
 ### Removing media from your list
 
-The media details panel has a remove-from-list action that asks for confirmation. Confirming hides the media from the library immediately and queues the deletion, which is sent to AniList on the next synchronization. Later synchronizations do not bring the media back; editing it again from the catalog adds it back to the list. Removal by the user is tracked separately from media that disappeared from AniList.
+The media details panel has a remove-from-list action that asks for confirmation. Confirming hides the media from the library immediately and queues the deletion, which is sent to AniList on the next synchronization. Later synchronizations do not bring the media back; editing it again from the catalog adds it back to the list. Removal by the user is tracked separately from media that disappeared from AniList. Media removed in the app stay hidden even if they are re-added on the AniList website; to restore one, re-add it in the app (seasonal catalog or editor).
 
 ### Progress display and synchronization status
 
 - Chapters, volumes or episodes whose total is unknown are shown as `?` (for example `12/?`), never as `0`.
-- A progress bar reports the current synchronization stage and percentage, and disappears a few seconds after the synchronization succeeds or fails. Synchronization errors are shown there only, not on unrelated screens.
+- A progress bar reports the current stage plus an item count. It is indeterminate when the total is unknown (the user list) and shows a percentage only when the total is known (pending changes). It disappears a few seconds after the synchronization succeeds or fails, and immediately when a synchronization is cancelled (for example when the account is removed). Synchronization errors are shown there only, not on unrelated screens.
 - The main window starts maximized and the library opens on the in-progress (watching/reading) list.
 
 ## Development Notes
