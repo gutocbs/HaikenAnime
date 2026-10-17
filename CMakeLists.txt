@@ -198,6 +198,8 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/infrastructure/database/SqliteDatabase.h
         src/infrastructure/database/SqliteDatabase.cpp
         src/infrastructure/database/SqliteMediaRepository.h
+        src/application/media/AlternativeNames.h
+        src/application/media/AlternativeNames.cpp
         src/infrastructure/database/SqliteMediaRepository.cpp
         src/infrastructure/database/SqlitePendingChangeRepository.h
         src/infrastructure/database/SqlitePendingChangeRepository.cpp
@@ -529,6 +531,14 @@ target_link_libraries(MediaDomainTests
 
 add_test(NAME MediaDomainTests COMMAND MediaDomainTests)
 
+add_executable(AlternativeNamesTests
+        tests/unit/AlternativeNamesTests.cpp
+        src/application/media/AlternativeNames.h
+        src/application/media/AlternativeNames.cpp
+)
+target_link_libraries(AlternativeNamesTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME AlternativeNamesTests COMMAND AlternativeNamesTests)
+
 add_executable(MediaTitleResolverTests
         tests/unit/MediaTitleResolverTests.cpp
         src/application/media/MediaTitleResolver.cpp
@@ -577,6 +587,8 @@ add_executable(SqliteRepositoryTests
         src/infrastructure/database/SqliteMediaMapper.h
         src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqliteMediaRepository.h
+        src/application/media/AlternativeNames.h
+        src/application/media/AlternativeNames.cpp
         src/infrastructure/database/SqliteMediaRepository.cpp
         src/infrastructure/database/SqlitePendingChangeRepository.h
         src/infrastructure/database/SqlitePendingChangeRepository.cpp
@@ -1353,6 +1365,8 @@ add_executable(InitialSyncCoordinatorTests
         src/infrastructure/database/SqliteMediaMapper.h
         src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqliteMediaRepository.h
+        src/application/media/AlternativeNames.h
+        src/application/media/AlternativeNames.cpp
         src/infrastructure/database/SqliteMediaRepository.cpp
         src/infrastructure/database/SqlQueryStore.h
         src/infrastructure/database/SqlQueryStore.cpp
