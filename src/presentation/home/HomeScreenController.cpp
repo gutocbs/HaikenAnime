@@ -420,6 +420,9 @@ QString HomeScreenController::selectedListStatusLabel() const {
 QStringList HomeScreenController::selectedAlternativeNames() const {
     return hasSelection_ ? selectedMedia_.AlternativeNames : QStringList{};
 }
+QString HomeScreenController::selectedLocalPath() const {
+    return hasSelection_ ? selectedMedia_.LocalPath : QString();
+}
 bool HomeScreenController::canWatch() const {
     return nextLocalEpisode_ > 0 && !nextLocalEpisodePath_.isEmpty() && fileOpener_ != nullptr;
 }

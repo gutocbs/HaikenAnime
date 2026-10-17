@@ -60,6 +60,7 @@ private slots:
     void synchronizationUpsertKeepsUserAlternativeNamesAndAppendsSourceNames();
     void synchronizationUpsertWithSameNamesLeavesAlternativeNamesUnchanged();
     void editorUpdateStillReplacesAndRemovesAlternativeNames();
+    void editedLocalPathSurvivesSynchronizationUpsertWithEmptyPath();
 };
 
 void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
@@ -863,6 +864,35 @@ void SqliteRepositoryTests::editorUpdateStillReplacesAndRemovesAlternativeNames(
     QList<Media> actual;
     QVERIFY2(repository.readAll(actual, error), qPrintable(error));
     QCOMPARE(actual.first().AlternativeNames, (QStringList{QStringLiteral("Keep")}));
+}
+
+void SqliteRepositoryTests::editedLocalPathSurvivesSynchronizationUpsertWithEmptyPath() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved, UpdatePersonalListMedia);
+    Media media;
+    media.Id = 81;
+    media.Name = QStringLiteral("Folder media");
+    QString error;
+    QVERIFY2(repository.upsert({media}, error), qPrintable(error));
+    media.LocalPath = QStringLiteral("D:\Anime\Folder media");
+    QVERIFY2(repository.updatePersonalListMedia(media, error), qPrintable(error));
+
+    QList<Media> afterEdit;
+    QVERIFY2(repository.readAll(afterEdit, error), qPrintable(error));
+    QCOMPARE(afterEdit.first().LocalPath, media.LocalPath);
+
+    Media synchronized;
+    synchronized.Id = 81;
+    synchronized.Name = QStringLiteral("Folder media");
+    synchronized.LocalPath = QString();
+    QVERIFY2(repository.upsert({synchronized}, error), qPrintable(error));
+    QList<Media> afterSync;
+    QVERIFY2(repository.readAll(afterSync, error), qPrintable(error));
+    QCOMPARE(afterSync.first().LocalPath, media.LocalPath);
 }
 
 QTEST_MAIN(SqliteRepositoryTests)

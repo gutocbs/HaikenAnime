@@ -160,6 +160,7 @@ private slots:
     void exposesConfigurableEditingOptions();
     void persistsSelectedMediaEditsAndRefreshesBothModels();
     void persistsSelectedMediaEditsToTheOfflineOutbox();
+    void exposesSelectedLocalPathAfterSavingAndReloading();
     void keepsModelsAndSelectionUnchangedWhenPersistingSelectedMediaFails();
     void removesSelectedMediaFromLibraryWithoutRestart();
     void keepsMediaAndReportsOperationErrorWhenRemovalFails();
@@ -1142,6 +1143,34 @@ void HomeScreenControllerTests::persistsSelectedMediaEditsAndRefreshesBothModels
     controller.SetListFilter(QStringLiteral("completed"));
     QCOMPARE(controller.mediaModel()->rowCount(), 1);
     QCOMPARE(controller.fullMediaModel()->rowCount(), 1);
+}
+
+void HomeScreenControllerTests::exposesSelectedLocalPathAfterSavingAndReloading() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    reader.result = {media};
+    FakePersonalListMediaWriter writer;
+    HomeScreenController controller(reader);
+    controller.SetListFilter(QStringLiteral("all"));
+    controller.SetPersonalListMediaWriter(&writer);
+    controller.reload();
+    QVERIFY(controller.selectedLocalPath().isEmpty());
+    controller.SelectMedia(media.Id);
+    QVERIFY(controller.selectedLocalPath().isEmpty());
+
+    QVERIFY(controller.SaveSelectedMediaFromEditor(
+        1, QStringLiteral("current"), 0.0, QStringLiteral("D:/Anime/Frieren"), {}));
+    QCOMPARE(controller.selectedLocalPath(), QStringLiteral("D:/Anime/Frieren"));
+
+    // Simulates a restart: the repository now returns the persisted path.
+    reader.result = {writer.received};
+    controller.reload();
+    controller.SelectMedia(media.Id);
+    QCOMPARE(controller.selectedLocalPath(), QStringLiteral("D:/Anime/Frieren"));
 }
 
 void HomeScreenControllerTests::persistsSelectedMediaEditsToTheOfflineOutbox() {

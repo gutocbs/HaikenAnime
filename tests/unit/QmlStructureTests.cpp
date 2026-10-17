@@ -482,6 +482,8 @@ void QmlStructureTests::previewCardsUseControllerPreparedMetadataInBothGrids() {
     QVERIFY(!source.isEmpty());
 
     QVERIFY(source.contains(QStringLiteral("controller.SaveSelectedMediaFromEditor(progress, statusKey, score, path, names)")));
+    QVERIFY2(source.contains(QStringLiteral("controller.selectedLocalPath,")),
+             "openEditor must pass the stored media folder to the editor.");
     QVERIFY(source.contains(QStringLiteral("closeOnApply: false")));
     QVERIFY(source.contains(QStringLiteral("editMediaPanel.close()")));
     QVERIFY(!source.contains(QStringLiteral("previewEdits")));
