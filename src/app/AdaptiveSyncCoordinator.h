@@ -45,6 +45,7 @@ signals:
     void TaskStarted(SyncPartition partition);
     void TaskProgress(SyncProgress progress);
     void TaskCompleted(SyncPartition partition);
+    void TaskCancelled(SyncPartition partition);
     void TaskFailed(SyncPartition partition, const QString &safeError);
     void SchedulingFailed(const QString &safeError);
     void Stopped();
@@ -69,6 +70,7 @@ private:
     std::map<SyncPartition, SyncTaskState> states_;
     std::map<SyncPartition, qint64> activeGenerations_;
     std::set<SyncPartition> rerunRequested_;
+    std::set<SyncPartition> cancelling_;
     QTimer *wakeUpTimer_ = nullptr;
     bool started_ = false;
     bool stopped_ = false;

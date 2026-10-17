@@ -131,6 +131,7 @@ private slots:
     void defersWorkerDestructionUntilCoordinatorStops();
     void cancelAcknowledgesOnTheCallerThreadAfterTheExecutorCancels();
     void cancelAcknowledgesImmediatelyWhenTheRuntimeIsNotReady();
+    void forwardsCancelledBackgroundTask();
     void destructorRetainsWorkerOwnershipPastLegacyTimeout();
 };
 
@@ -365,6 +366,25 @@ void AdaptiveSyncRuntimeTests::cancelAcknowledgesOnTheCallerThreadAfterTheExecut
     QTRY_VERIFY(acknowledged);
     QCOMPARE(executorState->cancellationCount.load(), 1);
     QCOMPARE(acknowledgedOn, QThread::currentThread());
+
+    runtime.shutdown();
+    QTRY_VERIFY(executorState->shutdownRequested.load());
+    executorState->shutdownAcknowledgement();
+    QTRY_VERIFY(runtime.isStopped());
+}
+
+void AdaptiveSyncRuntimeTests::forwardsCancelledBackgroundTask() {
+    const auto executorState = std::make_shared<ExecutorState>();
+    AdaptiveSyncRuntime runtime(dueRepository,
+                                [executorState] { return std::make_unique<FakeTaskExecutor>(executorState); }, {});
+    QSignalSpy cancelled(&runtime, &AdaptiveSyncRuntime::BackgroundTaskCancelled);
+    runtime.start();
+    QTRY_COMPARE(executorState->executionCount.load(), 1);
+
+    runtime.cancel(SyncPartition::UserList, {});
+
+    QTRY_COMPARE(cancelled.count(), 1);
+    QCOMPARE(cancelled.first().first().value<SyncPartition>(), SyncPartition::UserList);
 
     runtime.shutdown();
     QTRY_VERIFY(executorState->shutdownRequested.load());

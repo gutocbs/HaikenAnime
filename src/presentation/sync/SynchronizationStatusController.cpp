@@ -43,9 +43,12 @@ int SynchronizationStatusController::percent() const {
 QString SynchronizationStatusController::message() const { return message_; }
 bool SynchronizationStatusController::visible() const { return visible_; }
 
-void SynchronizationStatusController::beginRoundIfHidden() {
-    if (visible_) return;
+void SynchronizationStatusController::beginRoundIfSettled() {
+    // Only the settle window continues a round. Once an outcome was published (or the bar is hidden) the
+    // next task starts a new round, so an earlier failure never taints a later successful retry.
+    if (outcome_ == QLatin1String("running")) return;
     roundFailed_ = false;
+    roundHadOutcome_ = false;
     failureMessage_.clear();
     stageKey_.clear();
     stageIndex_ = 0;
@@ -58,7 +61,7 @@ void SynchronizationStatusController::HandleStarted(const SyncPartition partitio
     if (!isTracked(partition)) return;
     hideTimer_.stop();
     settleTimer_.stop();
-    beginRoundIfHidden();
+    beginRoundIfSettled();
     activePartitions_.insert(static_cast<int>(partition));
     visible_ = true;
     outcome_ = QStringLiteral("running");
@@ -78,6 +81,21 @@ void SynchronizationStatusController::HandleProgress(const SyncProgress &progres
 
 void SynchronizationStatusController::HandleCompleted(const SyncPartition partition) {
     if (!activePartitions_.remove(static_cast<int>(partition))) return;
+    roundHadOutcome_ = true;
+    settleIfIdle();
+    emit changed();
+}
+
+void SynchronizationStatusController::HandleCancelled(const SyncPartition partition) {
+    if (!activePartitions_.remove(static_cast<int>(partition))) return;
+    // A cancellation is neither a success nor a failure: when nothing else happened in the round, the bar
+    // simply disappears instead of announcing an outcome.
+    if (activePartitions_.isEmpty() && !roundHadOutcome_) {
+        settleTimer_.stop();
+        hideTimer_.stop();
+        hide();
+        return;
+    }
     settleIfIdle();
     emit changed();
 }
@@ -85,9 +103,10 @@ void SynchronizationStatusController::HandleCompleted(const SyncPartition partit
 void SynchronizationStatusController::HandleFailed(const SyncPartition partition, const QString &safeError) {
     if (!isTracked(partition)) return;
     hideTimer_.stop();
-    beginRoundIfHidden();
+    beginRoundIfSettled();
     activePartitions_.remove(static_cast<int>(partition));
     roundFailed_ = true;
+    roundHadOutcome_ = true;
     failureMessage_ = safeError.isEmpty() ? tr("A sincronização falhou.") : safeError;
     visible_ = true;
     outcome_ = QStringLiteral("running");

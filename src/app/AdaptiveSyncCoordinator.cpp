@@ -40,7 +40,13 @@ AdaptiveSyncCoordinator::AdaptiveSyncCoordinator(
     executor_.SetProgressReporter([coordinator](const SyncProgress &progress) {
         if (!coordinator) return;
         QMetaObject::invokeMethod(coordinator, [coordinator, progress] {
-            if (coordinator) emit coordinator->TaskProgress(progress);
+            if (!coordinator || coordinator->stopping_ || coordinator->stopped_) return;
+            // A cancelled (or finished) partition may still have late reports queued; they are stale.
+            if (!coordinator->activeGenerations_.contains(progress.partition)
+                || coordinator->cancelling_.contains(progress.partition)) {
+                return;
+            }
+            emit coordinator->TaskProgress(progress);
         }, Qt::QueuedConnection);
     });
 }
@@ -137,6 +143,7 @@ void AdaptiveSyncCoordinator::Cancel(const SyncPartition partition, std::functio
 
     const auto generation = active->second;
     rerunRequested_.erase(partition);
+    cancelling_.insert(partition);
     auto cancelled = state->second;
     cancelled.generation = generation + 1;
     cancelled.status = SyncTaskStatus::Idle;
@@ -149,11 +156,15 @@ void AdaptiveSyncCoordinator::Cancel(const SyncPartition partition, std::functio
         if (!coordinator) return;
         QMetaObject::invokeMethod(coordinator, [coordinator, partition, generation, acknowledged] {
             if (!coordinator) return;
+            coordinator->cancelling_.erase(partition);
             const auto current = coordinator->activeGenerations_.find(partition);
             if (current != coordinator->activeGenerations_.end() && current->second == generation) {
                 coordinator->activeGenerations_.erase(current);
+                emit coordinator->TaskCancelled(partition);
             }
             if (acknowledged) acknowledged();
+            // The slot is free again: let the remaining due work proceed.
+            coordinator->ProcessDueTasks();
         }, Qt::QueuedConnection);
     });
 }

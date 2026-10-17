@@ -51,6 +51,7 @@ public slots:
     void HandleStarted(SyncPartition partition);
     void HandleProgress(const SyncProgress &progress);
     void HandleCompleted(SyncPartition partition);
+    void HandleCancelled(SyncPartition partition);
     void HandleFailed(SyncPartition partition, const QString &safeError);
     void HandleInitializationFailed(const QString &safeError);
 
@@ -59,7 +60,7 @@ signals:
 
 private:
     static bool isTracked(SyncPartition partition);
-    void beginRoundIfHidden();
+    void beginRoundIfSettled();
     void settleIfIdle();
     void publishOutcome();
     void hide();
@@ -68,6 +69,7 @@ private:
     QTimer settleTimer_;
     QSet<int> activePartitions_;
     bool roundFailed_ = false;
+    bool roundHadOutcome_ = false;
     bool visible_ = false;
     QString outcome_ = QStringLiteral("idle");
     QString stageKey_;

@@ -41,7 +41,12 @@ private slots:
     void ignoresUntrackedPartitions();
     void doesNotPublishSuccessBetweenSequentialTasks();
     void failureSurvivesLaterTaskStartedDuringSettle();
-    void startDuringLingerAfterFailureContinuesRound();
+    void startDuringLingerAfterFailureBeginsNewRound();
+    void cancelledOnlyRoundHidesImmediatelyWithoutOutcome();
+    void cancelledPartitionDoesNotFailTheRound();
+    void cancelledWhileAnotherPartitionRunsKeepsRunning();
+    void progressAfterCancellationIsIgnored();
+    void ignoresCancellationOfInactivePartition();
 };
 
 void SynchronizationStatusControllerTests::startsIdleAndHidden() {
@@ -295,18 +300,81 @@ void SynchronizationStatusControllerTests::failureSurvivesLaterTaskStartedDuring
     QCOMPARE(controller.message(), QStringLiteral("Erro de rede"));
 }
 
-void SynchronizationStatusControllerTests::startDuringLingerAfterFailureContinuesRound() {
+void SynchronizationStatusControllerTests::startDuringLingerAfterFailureBeginsNewRound() {
     SynchronizationStatusController controller(500, 10);
     controller.HandleStarted(SyncPartition::UserList);
     controller.HandleFailed(SyncPartition::UserList, QStringLiteral("Erro de rede"));
     QTRY_COMPARE(controller.outcome(), QStringLiteral("failed"));
 
-    controller.HandleStarted(SyncPartition::PendingChanges);
+    controller.HandleStarted(SyncPartition::UserList);
     QCOMPARE(controller.outcome(), QStringLiteral("running"));
-    controller.HandleCompleted(SyncPartition::PendingChanges);
+    controller.HandleCompleted(SyncPartition::UserList);
 
-    QTRY_COMPARE(controller.outcome(), QStringLiteral("failed"));
-    QCOMPARE(controller.message(), QStringLiteral("Erro de rede"));
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("succeeded"));
+    QCOMPARE(controller.message(), QStringLiteral("Sincronização concluída."));
+}
+
+void SynchronizationStatusControllerTests::cancelledOnlyRoundHidesImmediatelyWithoutOutcome() {
+    SynchronizationStatusController controller(400, 200);
+    QStringList outcomes;
+    connect(&controller, &SynchronizationStatusController::changed, this,
+            [&] { outcomes.append(controller.outcome()); });
+    controller.HandleStarted(SyncPartition::UserList);
+
+    controller.HandleCancelled(SyncPartition::UserList);
+
+    QVERIFY(!controller.visible());
+    QVERIFY(!controller.running());
+    QCOMPARE(controller.outcome(), QStringLiteral("idle"));
+    QTest::qWait(300);
+    QVERIFY(!outcomes.contains(QStringLiteral("succeeded")));
+    QVERIFY(!outcomes.contains(QStringLiteral("failed")));
+    QVERIFY(!controller.visible());
+}
+
+void SynchronizationStatusControllerTests::cancelledPartitionDoesNotFailTheRound() {
+    SynchronizationStatusController controller(400, 20);
+    controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleStarted(SyncPartition::PendingChanges);
+    controller.HandleCompleted(SyncPartition::UserList);
+
+    controller.HandleCancelled(SyncPartition::PendingChanges);
+
+    QTRY_COMPARE(controller.outcome(), QStringLiteral("succeeded"));
+}
+
+void SynchronizationStatusControllerTests::cancelledWhileAnotherPartitionRunsKeepsRunning() {
+    SynchronizationStatusController controller(400, 20);
+    controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleStarted(SyncPartition::PendingChanges);
+
+    controller.HandleCancelled(SyncPartition::UserList);
+    QTest::qWait(100);
+
+    QVERIFY(controller.visible());
+    QVERIFY(controller.running());
+}
+
+void SynchronizationStatusControllerTests::progressAfterCancellationIsIgnored() {
+    SynchronizationStatusController controller(400, 20);
+    controller.HandleStarted(SyncPartition::UserList);
+    controller.HandleCancelled(SyncPartition::UserList);
+    QSignalSpy changed(&controller, &SynchronizationStatusController::changed);
+
+    controller.HandleProgress(progress(SyncPartition::UserList, QStringLiteral("anime"), 5, 10));
+
+    QCOMPARE(changed.count(), 0);
+    QVERIFY(!controller.visible());
+}
+
+void SynchronizationStatusControllerTests::ignoresCancellationOfInactivePartition() {
+    SynchronizationStatusController controller(400, 20);
+    QSignalSpy changed(&controller, &SynchronizationStatusController::changed);
+
+    controller.HandleCancelled(SyncPartition::UserList);
+
+    QCOMPARE(changed.count(), 0);
+    QVERIFY(!controller.visible());
 }
 
 QTEST_GUILESS_MAIN(SynchronizationStatusControllerTests)

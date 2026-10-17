@@ -178,6 +178,8 @@ int main(int argc, char *argv[]) {
                          &synchronizationStatus, &SynchronizationStatusController::HandleProgress);
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskFailed,
                          &synchronizationStatus, &SynchronizationStatusController::HandleFailed);
+        QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCancelled,
+                         &synchronizationStatus, &SynchronizationStatusController::HandleCancelled);
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCompleted,
                          &synchronizationStatus, &SynchronizationStatusController::HandleCompleted);
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskFailed,

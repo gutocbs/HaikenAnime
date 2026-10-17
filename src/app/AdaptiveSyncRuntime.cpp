@@ -138,6 +138,12 @@ void AdaptiveSyncRuntime::Initialize(RepositoryFactory repositoryFactory, Execut
                     emit BackgroundTaskCompleted(partition);
                 }, Qt::QueuedConnection);
             });
+    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskCancelled, owner_,
+            [this](const SyncPartition partition) {
+                QMetaObject::invokeMethod(this, [this, partition] {
+                    emit BackgroundTaskCancelled(partition);
+                }, Qt::QueuedConnection);
+            });
     connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskFailed, owner_,
             [this](const SyncPartition partition, const QString &error) {
                 QMetaObject::invokeMethod(this, [this, partition, error] {

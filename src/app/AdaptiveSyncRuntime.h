@@ -45,6 +45,7 @@ signals:
     void BackgroundTaskStarted(SyncPartition partition);
     void BackgroundTaskProgress(SyncProgress progress);
     void BackgroundTaskCompleted(SyncPartition partition);
+    void BackgroundTaskCancelled(SyncPartition partition);
     void BackgroundTaskFailed(SyncPartition partition, const QString &safeError);
     void Stopped();
 
