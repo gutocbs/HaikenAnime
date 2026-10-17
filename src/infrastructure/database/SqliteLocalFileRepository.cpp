@@ -42,16 +42,33 @@ bool ExecuteSingleRow(QSqlQuery &query, QString &error) {
     }
     return true;
 }
+
+LocalFileRecognitionRecord MapRecognitionRecord(const QSqlQuery &query) {
+    LocalFileRecognitionRecord record;
+    record.id = query.value(0).toLongLong(); record.rootPath = query.value(1).toString();
+    record.relativePath = query.value(2).toString(); record.normalizedRelativePath = query.value(3).toString();
+    record.fileName = query.value(4).toString(); record.sizeBytes = query.value(5).toLongLong();
+    record.modifiedAt = QDateTime::fromString(query.value(6).toString(), Qt::ISODateWithMs);
+    record.available = query.value(7).toBool(); record.recognitionState = query.value(8).toString();
+    record.extractedTitle = query.value(9).toString(); record.mediaKind = query.value(10).toString();
+    if (!query.value(11).isNull()) record.season = query.value(11).toInt();
+    if (!query.value(12).isNull()) record.episode = query.value(12).toInt();
+    if (!query.value(13).isNull()) record.mediaId = query.value(13).toInt();
+    record.diagnostic = query.value(14).toString();
+    return record;
+}
 }
 
 SqliteLocalFileRepository::SqliteLocalFileRepository(QSqlDatabase database, QString beginQuery,
     QString upsertQuery, QString completeQuery, QString failQuery, QString markUnavailableQuery,
-    QString readPendingQuery, QString readCatalogQuery, QString saveRecognitionQuery)
+    QString readPendingQuery, QString readCatalogQuery, QString saveRecognitionQuery,
+    QString readUnderFolderQuery)
     : database_(std::move(database)), beginQuery_(std::move(beginQuery)),
       upsertQuery_(std::move(upsertQuery)), completeQuery_(std::move(completeQuery)),
       failQuery_(std::move(failQuery)), markUnavailableQuery_(std::move(markUnavailableQuery)),
       readPendingQuery_(std::move(readPendingQuery)), readCatalogQuery_(std::move(readCatalogQuery)),
-      saveRecognitionQuery_(std::move(saveRecognitionQuery)) {}
+      saveRecognitionQuery_(std::move(saveRecognitionQuery)),
+      readUnderFolderQuery_(std::move(readUnderFolderQuery)) {}
 
 bool SqliteLocalFileRepository::beginScan(const QString &rootPath, qint64 &scanId, QString &error) {
     scanId = 0;
@@ -190,19 +207,29 @@ bool SqliteLocalFileRepository::readPendingRecognition(const QString &rootPath,
     if (!query.prepare(readPendingQuery)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":root_path"), rootPath);
     if (!query.exec()) { error = query.lastError().text(); return false; }
-    while (query.next()) {
-        LocalFileRecognitionRecord record;
-        record.id = query.value(0).toLongLong(); record.rootPath = query.value(1).toString();
-        record.relativePath = query.value(2).toString(); record.normalizedRelativePath = query.value(3).toString();
-        record.fileName = query.value(4).toString(); record.sizeBytes = query.value(5).toLongLong();
-        record.modifiedAt = QDateTime::fromString(query.value(6).toString(), Qt::ISODateWithMs);
-        record.available = query.value(7).toBool(); record.recognitionState = query.value(8).toString();
-        record.extractedTitle = query.value(9).toString(); record.mediaKind = query.value(10).toString();
-        if (!query.value(11).isNull()) record.season = query.value(11).toInt();
-        if (!query.value(12).isNull()) record.episode = query.value(12).toInt();
-        if (!query.value(13).isNull()) record.mediaId = query.value(13).toInt();
-        record.diagnostic = query.value(14).toString(); records.append(std::move(record));
+    while (query.next()) records.append(MapRecognitionRecord(query));
+    return true;
+}
+
+bool SqliteLocalFileRepository::readFilesUnderFolder(const QString &folderPath,
+                                                     QList<LocalFileRecognitionRecord> &records,
+                                                     QString &error) {
+    records.clear(); error.clear();
+    auto folder = folderPath.trimmed();
+    folder.replace(QLatin1Char('\\'), QLatin1Char('/'));
+    while (folder.endsWith(QLatin1Char('/'))) folder.chop(1);
+    if (folder.isEmpty()) {
+        error = QStringLiteral("Reading local files under a folder requires a folder path.");
+        return false;
     }
+    QString readUnderFolderQuery;
+    if (!SqlQueryStore::loadSource(readUnderFolderQuery_, readUnderFolderQuery, error)) return false;
+    QSqlQuery query(database_);
+    if (!query.prepare(readUnderFolderQuery)) { error = query.lastError().text(); return false; }
+    // The trailing separator is what keeps "Show" from matching files under "Show 2".
+    query.bindValue(QStringLiteral(":folder_prefix"), folder + QLatin1Char('/'));
+    if (!query.exec()) { error = query.lastError().text(); return false; }
+    while (query.next()) records.append(MapRecognitionRecord(query));
     return true;
 }
 

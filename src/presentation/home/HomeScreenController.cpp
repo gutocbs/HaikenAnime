@@ -2,6 +2,7 @@
 #include "../../application/covers/CoverSourceResolver.h"
 #include "../../application/library/ILocalFileOpener.h"
 #include "../../application/library/LocalEpisodeReader.h"
+#include "../../application/library/LocalRecognitionRequest.h"
 #include "../../application/media/ProgressFormatter.h"
 #include "../../application/media/MediaDetailsPresentation.h"
 #include "../../application/media/IPersonalListMediaWriter.h"
@@ -663,6 +664,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
         ? personalListChangeService_->save(*current, updated, error)
         : personalListWriter_->updatePersonalListMedia(updated, error);
     if (!saved) return setSaveError(std::move(error));
+    const auto recognitionRequest = LocalRecognitionRequest::Between(*current, updated);
 
     const auto destination = std::find_if(allMedia_.begin(), allMedia_.end(), [id = updated.Id](const Media &media) {
         return media.Id == id;
@@ -674,6 +676,9 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
     if (hasSelection_) {
         refreshNextLocalEpisode();
         emit selectionChanged();
+    }
+    if (recognitionRequest.isRequired()) {
+        emit localRecognitionRequested(recognitionRequest.folderPath, recognitionRequest.alternativeNamesChanged);
     }
     return true;
 }

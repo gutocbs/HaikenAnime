@@ -34,6 +34,7 @@ private slots:
     void rollsBackWhenCommitFails();
     void readsRecognitionQueueInPriorityOrder();
     void savesRecognitionBatch();
+    void readsOnlyAvailableFilesUnderTheFolderRegardlessOfRecognitionState();
 private:
     QVariant scalar(const QString &sql);
     QString statement(const QString &name);
@@ -64,7 +65,8 @@ void SqliteLocalFileRepositoryTests::init() {
         statement(QStringLiteral("mark-local-files-unavailable")),
         statement(QStringLiteral("read-pending-local-files")),
         statement(QStringLiteral("read-catalog-media-for-recognition")),
-        statement(QStringLiteral("save-local-file-recognition")));
+        statement(QStringLiteral("save-local-file-recognition")),
+        statement(QStringLiteral("read-local-files-under-folder")));
     error_.clear();
 }
 
@@ -153,6 +155,36 @@ void SqliteLocalFileRepositoryTests::savesRecognitionBatch() {
     QCOMPARE(scalar(QStringLiteral("SELECT extracted_title FROM local_files")).toString(), QStringLiteral("Example"));
     QCOMPARE(scalar(QStringLiteral("SELECT episode FROM local_files")).toInt(), 3);
     QCOMPARE(scalar(QStringLiteral("SELECT media_id FROM local_files")).toLongLong(), 42);
+}
+
+void SqliteLocalFileRepositoryTests::readsOnlyAvailableFilesUnderTheFolderRegardlessOfRecognitionState() {
+    qint64 scanId = 0;
+    QVERIFY(repository_->beginScan(QStringLiteral("Q:/"), scanId, error_));
+    QVERIFY(repository_->upsertBatch(scanId, {Observation(QStringLiteral("Animes/Show/ep1.mkv")),
+                                               Observation(QStringLiteral("Animes/Show/Season 2/ep2.mkv")),
+                                               Observation(QStringLiteral("Animes/Show 2/ep1.mkv")),
+                                               Observation(QStringLiteral("Animes/Showcase/ep1.mkv")),
+                                               Observation(QStringLiteral("Animes/Show/gone.mkv"))}, error_));
+    QVERIFY(repository_->completeScan(scanId, 4, error_));
+    qint64 otherScanId = 0;
+    QVERIFY(repository_->beginScan(QStringLiteral("R:/"), otherScanId, error_));
+    QVERIFY(repository_->upsertBatch(otherScanId, {Observation(QStringLiteral("Animes/Show/ep1.mkv"), QStringLiteral("R:/"))}, error_));
+    QSqlQuery query(database_->connection());
+    QVERIFY(query.exec(QStringLiteral("UPDATE local_files SET recognition_state = 'associated' "
+                                     "WHERE normalized_relative_path = 'animes/show/ep1.mkv' AND root_path = 'Q:/'")));
+    QVERIFY(query.exec(QStringLiteral("UPDATE local_files SET available = 0 "
+                                     "WHERE normalized_relative_path = 'animes/show/gone.mkv'")));
+
+    QList<LocalFileRecognitionRecord> records;
+    QVERIFY2(repository_->readFilesUnderFolder(QStringLiteral("q:\\animes\\Show\\"), records, error_), qPrintable(error_));
+
+    QStringList paths;
+    for (const auto &record : records) paths.append(record.rootPath + record.relativePath);
+    paths.sort();
+    QCOMPARE(paths, (QStringList{QStringLiteral("Q:/Animes/Show/Season 2/ep2.mkv"),
+                                 QStringLiteral("Q:/Animes/Show/ep1.mkv")}));
+    QVERIFY(repository_->readFilesUnderFolder(QStringLiteral("Q:/Animes/Missing"), records, error_));
+    QVERIFY(records.isEmpty());
 }
 
 void SqliteLocalFileRepositoryTests::completesAndReconcilesOnlyItsRoot() {

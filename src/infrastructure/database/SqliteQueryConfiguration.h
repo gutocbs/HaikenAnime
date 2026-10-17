@@ -33,6 +33,7 @@ struct SqliteQueryConfiguration final {
     QString readPendingLocalFilesPath;
     QString readCatalogMediaForRecognitionPath;
     QString saveLocalFileRecognitionPath;
+    QString readLocalFilesUnderFolderPath;
     QString readNextLocalEpisodePath;
     QString readAvailableEpisodeCountPath;
 

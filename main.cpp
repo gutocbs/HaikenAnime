@@ -242,6 +242,19 @@ int main(int argc, char *argv[]) {
     }
     QObject::connect(&seasonalCatalogController, &SeasonalCatalogController::personalListSaved,
                      &homeController, &HomeScreenController::reload);
+    if (context.localLibraryRecognition) {
+        // Saving a folder or alternative names re-evaluates the local files in the background; the
+        // coordinator queues overlapping requests and the Home refreshes on its batch signals.
+        const auto requestLocalRecognition = [&context](const QString &folderPath, bool alternativeNamesChanged) {
+            auto *recognition = context.localLibraryRecognition.get();
+            if (!folderPath.isEmpty()) recognition->startForFolder(folderPath);
+            if (alternativeNamesChanged) recognition->startForPending(context.userPreferences.libraryRoot);
+        };
+        QObject::connect(&homeController, &HomeScreenController::localRecognitionRequested,
+                         &homeController, requestLocalRecognition);
+        QObject::connect(&seasonalCatalogController, &SeasonalCatalogController::localRecognitionRequested,
+                         &homeController, requestLocalRecognition);
+    }
 
     if (context.personalListChangeService) {
         context.personalListChangeService->setOwnerProvider([&context]() -> qint64 {

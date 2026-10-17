@@ -140,6 +140,8 @@ signals:
     void selectionChanged();
     void personalListChanged();
     void personalListSaved();
+    // A saved edit changed the media folder (folderPath) and/or its alternative names.
+    void localRecognitionRequested(QString folderPath, bool alternativeNamesChanged);
     void editingOptionsChanged();
 
 private:

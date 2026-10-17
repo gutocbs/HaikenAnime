@@ -373,6 +373,7 @@ set(LIBRARY_SCAN_SQL_RESOURCES
         resources/sqlite/queries/read-pending-local-files.sql
         resources/sqlite/queries/read-catalog-media-for-recognition.sql
         resources/sqlite/queries/save-local-file-recognition.sql
+        resources/sqlite/queries/read-local-files-under-folder.sql
         resources/sqlite/queries/read-next-local-episode.sql
         resources/sqlite/queries/read-available-episode-count.sql
 )

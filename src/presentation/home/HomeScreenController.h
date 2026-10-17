@@ -195,6 +195,8 @@ signals:
     void sortPreferenceChanged(QString key);
     void editingOptionsChanged();
     void selectionChanged();
+    // A saved edit changed the media folder (folderPath) and/or its alternative names.
+    void localRecognitionRequested(QString folderPath, bool alternativeNamesChanged);
 
 private:
     void setState(QString state);
