@@ -542,6 +542,8 @@ target_sources(HaikenAnime PRIVATE
         src/presentation/recognition/EpisodeRecognitionController.cpp
         src/presentation/recognition/RecognitionListModel.h
         src/presentation/recognition/RecognitionListModel.cpp
+        src/presentation/recognition/NowWatchingController.h
+        src/presentation/recognition/NowWatchingController.cpp
 )
 
 target_link_libraries(HaikenAnime
@@ -982,6 +984,19 @@ add_executable(EpisodeRecognitionControllerTests
 target_include_directories(EpisodeRecognitionControllerTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(EpisodeRecognitionControllerTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME EpisodeRecognitionControllerTests COMMAND EpisodeRecognitionControllerTests)
+
+add_executable(NowWatchingControllerTests
+        tests/unit/NowWatchingControllerTests.cpp
+        src/presentation/recognition/NowWatchingController.h
+        src/presentation/recognition/NowWatchingController.cpp
+        src/application/recognition/ActiveSessionRegistry.cpp
+        src/application/media/ProgressFormatter.cpp
+        src/application/media/MediaTitleResolver.cpp
+        src/domain/recognition/PlaybackSession.cpp
+        src/domain/recognition/EpisodeCandidate.cpp
+)
+target_link_libraries(NowWatchingControllerTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME NowWatchingControllerTests COMMAND NowWatchingControllerTests)
 
 add_executable(SqliteLocalFileRepositoryTests
         tests/unit/SqliteLocalFileRepositoryTests.cpp
@@ -1898,6 +1913,7 @@ set(HAIKENANIME_TESTS
         RecognitionCompositionTests
         PluginSettingsControllerTests
         EpisodeRecognitionControllerTests
+        NowWatchingControllerTests
         MediaTitleResolverTests
         SqliteDatabaseTests
         SqliteUserPreferencesRepositoryTests

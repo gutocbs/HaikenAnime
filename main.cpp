@@ -20,6 +20,7 @@
 #include "src/presentation/settings/SettingsController.h"
 #include "src/presentation/sync/SynchronizationStatusController.h"
 #include "src/presentation/recognition/EpisodeRecognitionController.h"
+#include "src/presentation/recognition/NowWatchingController.h"
 #include "src/presentation/settings/PluginSettingsController.h"
 #include "src/application/media/SeasonalPersonalListService.h"
 
@@ -350,6 +351,7 @@ int main(int argc, char *argv[]) {
 
     std::unique_ptr<PluginSettingsController> pluginSettingsController;
     std::unique_ptr<EpisodeRecognitionController> recognitionController;
+    std::unique_ptr<NowWatchingController> nowWatchingController;
     if (context.recognition && context.recognition->recognition && context.mediaRepository) {
         auto &recognition = *context.recognition;
         pluginSettingsController = std::make_unique<PluginSettingsController>(
@@ -360,6 +362,16 @@ int main(int argc, char *argv[]) {
             [&recognition] { applyRecognitionSettings(recognition); });
         recognitionController = std::make_unique<EpisodeRecognitionController>(
             *recognition.history, *recognition.decisions, *context.mediaRepository);
+        nowWatchingController = std::make_unique<NowWatchingController>(
+            recognition.recognition->activeSessions(), *context.mediaRepository,
+            [logger = context.logger.get()](const QString &message) {
+                if (logger) logger->warning(LogCategory::Application, message);
+            });
+        nowWatchingController->setPreferredTitleKey(context.userPreferences.preferredTitleKey);
+        QObject::connect(&settingsController, &SettingsController::preferencesApplied, nowWatchingController.get(),
+                         [controller = nowWatchingController.get()](const UserPreferences &preferences) {
+                             controller->setPreferredTitleKey(preferences.preferredTitleKey);
+                         });
         // Automatic progress changes the library; the Home refreshes after the recognition callback returns.
         *context.recognitionProgressListener = [&homeController](const Media &) {
             QTimer::singleShot(0, &homeController, [&homeController] { homeController.reload(); });
@@ -374,6 +386,7 @@ int main(int argc, char *argv[]) {
     // Null when recognition could not be composed; the settings screen then hides those sections.
     engine.rootContext()->setContextProperty(QStringLiteral("pluginSettingsController"), pluginSettingsController.get());
     engine.rootContext()->setContextProperty(QStringLiteral("recognitionController"), recognitionController.get());
+    engine.rootContext()->setContextProperty(QStringLiteral("nowWatchingController"), nowWatchingController.get());
 
     int exitCode = 0;
     const auto requestShutdown = [&](int code) {
