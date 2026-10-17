@@ -53,6 +53,11 @@ private slots:
     void recordCanBeIgnoredAfterAnOutcome();
     void recordDeduplicationKeyMatchesSameSessionAndEpisode();
     void recordDeduplicationKeyDiffersByEpisodeAndSession();
+    void recordStartsWithoutIdAndSyncRequirement();
+    void recordTracksSyncStateAndSafeError();
+    void statusAndSyncStateNamesRoundTrip();
+    void restoreRebuildsStoredRecord();
+    void restoreRejectsInvalidStoredData();
 };
 
 void RecognitionDomainTests::policyDefaultsToThreeMinutes() {
@@ -227,6 +232,72 @@ void RecognitionDomainTests::recordDeduplicationKeyDiffersByEpisodeAndSession() 
 
     QVERIFY(first.deduplicationKey() != otherEpisode.deduplicationKey());
     QVERIFY(first.deduplicationKey() != otherSession.deduplicationKey());
+}
+
+void RecognitionDomainTests::recordStartsWithoutIdAndSyncRequirement() {
+    auto record = RecognitionRecord::create(session(), candidate(1), at(0));
+
+    QCOMPARE(record.id(), 0);
+    QCOMPARE(record.syncState(), RecognitionSyncState::NotRequired);
+    record.assignId(42);
+    QCOMPARE(record.id(), 42);
+}
+
+void RecognitionDomainTests::recordTracksSyncStateAndSafeError() {
+    auto record = RecognitionRecord::create(session(), candidate(1), at(0));
+    QVERIFY(record.transitionTo(RecognitionStatus::MarkedWatched, at(3)));
+
+    record.markSyncPending(at(3));
+    QCOMPARE(record.syncState(), RecognitionSyncState::Pending);
+    record.markSyncFailed(QStringLiteral("rate-limit"), at(4));
+    QCOMPARE(record.syncState(), RecognitionSyncState::Failed);
+    QCOMPARE(record.syncError(), QStringLiteral("rate-limit"));
+    QCOMPARE(record.updatedAt(), at(4));
+    record.markSynced(at(5));
+    QCOMPARE(record.syncState(), RecognitionSyncState::Synced);
+    QVERIFY(record.syncError().isEmpty());
+}
+
+void RecognitionDomainTests::statusAndSyncStateNamesRoundTrip() {
+    for (const auto status : {RecognitionStatus::Pending, RecognitionStatus::Incomplete, RecognitionStatus::MarkedWatched,
+                              RecognitionStatus::AlreadyWatched, RecognitionStatus::Uncertain,
+                              RecognitionStatus::Ignored, RecognitionStatus::Corrected}) {
+        QCOMPARE(RecognitionStatusFromString(ToString(status)), std::optional<RecognitionStatus>(status));
+    }
+    for (const auto state : {RecognitionSyncState::NotRequired, RecognitionSyncState::Pending,
+                             RecognitionSyncState::Failed, RecognitionSyncState::Synced}) {
+        QCOMPARE(RecognitionSyncStateFromString(ToString(state)), std::optional<RecognitionSyncState>(state));
+    }
+    QVERIFY(!RecognitionStatusFromString(QStringLiteral("bogus")).has_value());
+    QCOMPARE(ToString(RecognitionStatus::MarkedWatched), QStringLiteral("marked-watched"));
+}
+
+void RecognitionDomainTests::restoreRebuildsStoredRecord() {
+    RecognitionRecordData data{.id = 7, .pluginId = QStringLiteral("plex"), .sessionKey = QStringLiteral("abc"),
+                               .userId = QStringLiteral("1"), .deviceId = QStringLiteral("tv"),
+                               .candidate = candidate(4), .correction = candidate(5),
+                               .status = RecognitionStatus::Corrected, .diagnostic = QStringLiteral("manual"),
+                               .syncState = RecognitionSyncState::Failed, .syncError = QStringLiteral("network"),
+                               .createdAt = at(0), .updatedAt = at(9)};
+
+    const auto record = RecognitionRecord::restore(data);
+
+    QVERIFY(record.has_value());
+    QCOMPARE(record->id(), 7);
+    QCOMPARE(record->sessionId().key(), QStringLiteral("plex:abc"));
+    QCOMPARE(record->status(), RecognitionStatus::Corrected);
+    QCOMPARE(record->effectiveCandidate().episode(), 5);
+    QCOMPARE(record->diagnostic(), QStringLiteral("manual"));
+    QCOMPARE(record->syncState(), RecognitionSyncState::Failed);
+    QCOMPARE(record->syncError(), QStringLiteral("network"));
+    QCOMPARE(record->updatedAt(), at(9));
+}
+
+void RecognitionDomainTests::restoreRejectsInvalidStoredData() {
+    RecognitionRecordData data{.id = 7, .pluginId = QString(), .sessionKey = QStringLiteral("abc"),
+                               .candidate = candidate(4)};
+
+    QVERIFY(!RecognitionRecord::restore(data).has_value());
 }
 
 QTEST_MAIN(RecognitionDomainTests)

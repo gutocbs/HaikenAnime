@@ -1,0 +1,141 @@
+#include "RecognitionHistoryService.h"
+
+#include <utility>
+
+namespace {
+const auto ProgressWriteFailed = QStringLiteral("progress-write-failed");
+}
+
+RecognitionHistoryService::RecognitionHistoryService(IRecognitionHistoryRepository &repository,
+                                                     IRecognitionProgressWriter &progress,
+                                                     std::function<QDateTime()> clock)
+    : repository_(repository), progress_(progress), clock_(std::move(clock)) {}
+
+std::optional<RecognitionRecord> RecognitionHistoryService::record(const PlaybackSession &session,
+                                                                   const EpisodeCandidate &candidate,
+                                                                   const ProgressDecision &decision,
+                                                                   QString &error) {
+    error.clear();
+    auto record = RecognitionRecord::create(session, candidate, now());
+    QList<RecognitionRecord> existing;
+    if (!repository_.find({.deduplicationKey = record.deduplicationKey(), .limit = 1}, existing, error)) {
+        return std::nullopt;
+    }
+    // Pending means another call already reserved this session/episode; any outcome is final.
+    if (!existing.isEmpty() && existing.first().status() != RecognitionStatus::Incomplete) return existing.first();
+
+    // Reserve the deduplication key before touching progress so a retry can never apply it twice.
+    if (existing.isEmpty()) {
+        if (!repository_.insert(record, error)) return std::nullopt;
+    } else {
+        record.assignId(existing.first().id());
+        if (!repository_.update(record, error)) return std::nullopt;
+    }
+
+    switch (decision.kind) {
+    case ProgressDecisionKind::MarkWatched:
+        if (applyProgress(record, decision)) {
+            record.transitionTo(RecognitionStatus::MarkedWatched, now());
+            record.markSyncPending(now());
+        } else {
+            record.transitionTo(RecognitionStatus::Uncertain, now());
+        }
+        break;
+    case ProgressDecisionKind::AlreadyWatched:
+        record.transitionTo(RecognitionStatus::AlreadyWatched, now());
+        break;
+    case ProgressDecisionKind::Uncertain:
+    case ProgressDecisionKind::Ignored:
+        // Unknown media stays visible as uncertain so the user can pick the right anime.
+        record.transitionTo(RecognitionStatus::Uncertain, now());
+        record.setDiagnostic(decision.reason);
+        break;
+    }
+    if (!repository_.update(record, error)) return std::nullopt;
+    return record;
+}
+
+std::optional<RecognitionRecord> RecognitionHistoryService::recordIncomplete(const PlaybackSession &session,
+                                                                             const EpisodeCandidate &candidate,
+                                                                             QString &error) {
+    error.clear();
+    auto record = RecognitionRecord::create(session, candidate, now());
+    QList<RecognitionRecord> existing;
+    if (!repository_.find({.deduplicationKey = record.deduplicationKey(), .limit = 1}, existing, error)) {
+        return std::nullopt;
+    }
+    if (!existing.isEmpty()) return existing.first();
+    record.transitionTo(RecognitionStatus::Incomplete, now());
+    if (!repository_.insert(record, error)) return std::nullopt;
+    return record;
+}
+
+bool RecognitionHistoryService::list(const RecognitionHistoryFilter &filter, const RecognitionPage &page,
+                                     QList<RecognitionRecord> &records, QString &error) {
+    return repository_.find({.status = filter.status, .pluginId = filter.pluginId, .beforeId = page.beforeId,
+                             .limit = page.limit},
+                            records, error);
+}
+
+bool RecognitionHistoryService::correct(const qint64 recordId, const EpisodeCandidate &correction,
+                                        const ProgressDecision &decision, QString &error) {
+    auto record = load(recordId, error);
+    if (!record.has_value()) return false;
+    if (!record->correct(correction, now())) {
+        error = QStringLiteral("Recognition record %1 cannot be corrected yet.").arg(recordId);
+        return false;
+    }
+    if (decision.kind == ProgressDecisionKind::MarkWatched && applyProgress(*record, decision)) {
+        record->markSyncPending(now());
+    }
+    return repository_.update(*record, error);
+}
+
+bool RecognitionHistoryService::ignore(const qint64 recordId, QString &error) {
+    auto record = load(recordId, error);
+    if (!record.has_value()) return false;
+    if (!record->ignore(now())) {
+        error = QStringLiteral("Recognition record %1 is already ignored.").arg(recordId);
+        return false;
+    }
+    return repository_.update(*record, error);
+}
+
+bool RecognitionHistoryService::markSyncFailure(const qint64 recordId, const QString &safeError, QString &error) {
+    auto record = load(recordId, error);
+    if (!record.has_value()) return false;
+    record->markSyncFailed(safeError, now());
+    return repository_.update(*record, error);
+}
+
+bool RecognitionHistoryService::markSynced(const qint64 recordId, QString &error) {
+    auto record = load(recordId, error);
+    if (!record.has_value()) return false;
+    record->markSynced(now());
+    return repository_.update(*record, error);
+}
+
+QDateTime RecognitionHistoryService::now() const {
+    return clock_ ? clock_() : QDateTime::currentDateTimeUtc();
+}
+
+std::optional<RecognitionRecord> RecognitionHistoryService::load(const qint64 recordId, QString &error) {
+    error.clear();
+    QList<RecognitionRecord> records;
+    if (!repository_.find({.recordId = recordId, .limit = 1}, records, error)) return std::nullopt;
+    if (records.isEmpty()) {
+        error = QStringLiteral("Recognition record %1 does not exist.").arg(recordId);
+        return std::nullopt;
+    }
+    return records.first();
+}
+
+bool RecognitionHistoryService::applyProgress(RecognitionRecord &record, const ProgressDecision &decision) {
+    QString writeError;
+    if (!decision.previous.has_value() || !decision.updated.has_value()
+        || !progress_.apply(*decision.previous, *decision.updated, writeError)) {
+        record.setDiagnostic(ProgressWriteFailed);
+        return false;
+    }
+    return true;
+}

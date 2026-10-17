@@ -383,7 +383,12 @@ set(PLUGIN_SETTINGS_SQL_RESOURCES
         resources/sqlite/queries/upsert-plugin-settings.sql
         resources/sqlite/queries/delete-plugin-settings.sql
 )
-foreach (QUERY_FILE IN LISTS LIBRARY_SCAN_SQL_RESOURCES PLUGIN_SETTINGS_SQL_RESOURCES)
+set(RECOGNITION_HISTORY_SQL_RESOURCES
+        resources/sqlite/queries/read-recognition-history.sql
+        resources/sqlite/queries/insert-recognition-record.sql
+        resources/sqlite/queries/update-recognition-record.sql
+)
+foreach (QUERY_FILE IN LISTS LIBRARY_SCAN_SQL_RESOURCES PLUGIN_SETTINGS_SQL_RESOURCES RECOGNITION_HISTORY_SQL_RESOURCES)
     get_filename_component(QUERY_ALIAS "${QUERY_FILE}" NAME)
     set_source_files_properties("${QUERY_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${QUERY_ALIAS}")
 endforeach ()
@@ -406,6 +411,7 @@ qt_add_resources(HaikenAnime sqlite_resource_bundle
         FILES
         ${LIBRARY_SCAN_SQL_RESOURCES}
         ${PLUGIN_SETTINGS_SQL_RESOURCES}
+        ${RECOGNITION_HISTORY_SQL_RESOURCES}
         resources/sqlite/sqlite-queries.json
         resources/sqlite/queries/upsert-media.sql
         resources/sqlite/queries/update-personal-list-media.sql
@@ -706,6 +712,22 @@ qt_add_resources(SqlitePluginSettingsRepositoryTests plugin_settings_query_resou
 target_link_libraries(SqlitePluginSettingsRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
 add_test(NAME SqlitePluginSettingsRepositoryTests COMMAND SqlitePluginSettingsRepositoryTests)
 
+add_executable(SqliteRecognitionHistoryRepositoryTests
+        tests/unit/SqliteRecognitionHistoryRepositoryTests.cpp
+        src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/database/SqliteRecognitionHistoryRepository.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+        src/domain/recognition/PlaybackSession.cpp
+        src/domain/recognition/EpisodeCandidate.cpp
+        src/domain/recognition/RecognitionRecord.cpp
+)
+qt_add_resources(SqliteRecognitionHistoryRepositoryTests recognition_history_query_resources
+        PREFIX "/sqlite/queries"
+        FILES ${RECOGNITION_HISTORY_SQL_RESOURCES})
+target_link_libraries(SqliteRecognitionHistoryRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
+add_test(NAME SqliteRecognitionHistoryRepositoryTests COMMAND SqliteRecognitionHistoryRepositoryTests)
+
 add_executable(PluginSettingsServiceTests
         tests/unit/PluginSettingsServiceTests.cpp
         src/application/recognition/PluginSettingsSchema.cpp
@@ -732,6 +754,19 @@ add_executable(ProgressDecisionServiceTests
 )
 target_link_libraries(ProgressDecisionServiceTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME ProgressDecisionServiceTests COMMAND ProgressDecisionServiceTests)
+
+add_executable(RecognitionHistoryServiceTests
+        tests/unit/RecognitionHistoryServiceTests.cpp
+        src/application/recognition/RecognitionHistoryService.cpp
+        src/application/recognition/PersonalListProgressWriter.cpp
+        src/application/media/PersonalListChangeService.cpp
+        src/application/anilist/AniListPendingChangeFactory.cpp
+        src/domain/recognition/PlaybackSession.cpp
+        src/domain/recognition/EpisodeCandidate.cpp
+        src/domain/recognition/RecognitionRecord.cpp
+)
+target_link_libraries(RecognitionHistoryServiceTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME RecognitionHistoryServiceTests COMMAND RecognitionHistoryServiceTests)
 
 add_executable(SqliteLocalFileRepositoryTests
         tests/unit/SqliteLocalFileRepositoryTests.cpp
@@ -1598,6 +1633,7 @@ foreach (SQLITE_MIGRATION_TEST_TARGET IN ITEMS
         SqliteCoverCacheRepositoryTests
         SqliteSyncTaskStateRepositoryTests
         SqlitePluginSettingsRepositoryTests
+        SqliteRecognitionHistoryRepositoryTests
         SqliteLocalFileRepositoryTests
         LocalEpisodeReaderTests
         InitialSyncCoordinatorTests
@@ -1614,6 +1650,8 @@ set(HAIKENANIME_TESTS
         SqlitePluginSettingsRepositoryTests
         PlaybackObservationServiceTests
         ProgressDecisionServiceTests
+        RecognitionHistoryServiceTests
+        SqliteRecognitionHistoryRepositoryTests
         MediaTitleResolverTests
         SqliteDatabaseTests
         SqliteUserPreferencesRepositoryTests
