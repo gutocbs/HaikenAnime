@@ -498,13 +498,6 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     spacing: 8
-                    AppButton {
-                        text: qsTr("Remover conta")
-                        variant: "danger"
-                        visible: controller.aniListConnected
-                        enabled: !controller.aniListRemovalInProgress
-                        onClicked: removeAccountDialog.open()
-                    }
                     Item { Layout.fillWidth: true }
                     AppButton {
                         text: controller.aniListAuthenticationInProgress
@@ -513,6 +506,13 @@ Item {
                                  && !controller.aniListAuthenticationInProgress
                                  && !controller.aniListRemovalInProgress
                         onClicked: controller.ConnectAniList()
+                    }
+                    AppButton {
+                        text: qsTr("Remover conta")
+                        variant: "danger"
+                        visible: controller.aniListConnected
+                        enabled: !controller.aniListRemovalInProgress
+                        onClicked: removeAccountDialog.open()
                     }
                 }
             }

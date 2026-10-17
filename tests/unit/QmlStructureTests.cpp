@@ -889,9 +889,11 @@ void QmlStructureTests::settingsAccountSectionUsesAniListAuthenticationControlle
     const qsizetype removeButton = source.indexOf(QStringLiteral("text: qsTr(\"Remover conta\")"));
     const qsizetype connectButton = source.indexOf(QStringLiteral("qsTr(\"Conectar conta\")"));
     QVERIFY(removeButton >= 0 && connectButton >= 0);
-    QVERIFY(removeButton < connectButton);
-    QVERIFY(source.mid(removeButton, connectButton - removeButton)
-                .contains(QStringLiteral("Item { Layout.fillWidth: true }")));
+    const qsizetype spacer = source.lastIndexOf(QStringLiteral("Item { Layout.fillWidth: true }"), connectButton);
+    QVERIFY(spacer >= 0);
+    QVERIFY(spacer < connectButton);
+    QVERIFY(connectButton < removeButton);
+    QVERIFY(removeButton < dialogStart);
 }
 
 void QmlStructureTests::homeEditorOffersConfirmedRemovalFromPersonalList() {
