@@ -90,6 +90,7 @@ class HomeScreenController final : public QObject {
     Q_PROPERTY(QString selectedListStatusKey READ selectedListStatusKey NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedListStatusLabel READ selectedListStatusLabel NOTIFY selectionChanged)
     Q_PROPERTY(QStringList selectedAlternativeNames READ selectedAlternativeNames NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedLocalPath READ selectedLocalPath NOTIFY selectionChanged)
     Q_PROPERTY(bool canWatch READ canWatch NOTIFY selectionChanged)
     Q_PROPERTY(int nextLocalEpisode READ nextLocalEpisode NOTIFY selectionChanged)
     Q_PROPERTY(int availableLocalEpisodeCount READ availableLocalEpisodeCount NOTIFY selectionChanged)
@@ -140,6 +141,7 @@ public:
     QString selectedListStatusKey() const;
     QString selectedListStatusLabel() const;
     QStringList selectedAlternativeNames() const;
+    QString selectedLocalPath() const;
     bool canWatch() const;
     int nextLocalEpisode() const;
     int availableLocalEpisodeCount() const;
@@ -193,6 +195,8 @@ signals:
     void sortPreferenceChanged(QString key);
     void editingOptionsChanged();
     void selectionChanged();
+    // A saved edit asks to re-evaluate media folders (folderPaths) and/or its alternative names.
+    void localRecognitionRequested(QStringList folderPaths, bool alternativeNamesChanged);
 
 private:
     void setState(QString state);

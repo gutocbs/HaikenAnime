@@ -17,7 +17,7 @@ bool SynchronizationStatusController::isTracked(const SyncPartition partition) {
     return partition == SyncPartition::UserList || partition == SyncPartition::PendingChanges;
 }
 
-bool SynchronizationStatusController::running() const { return outcome_ == QLatin1String("running"); }
+bool SynchronizationStatusController::running() const { return roundActive_; }
 QString SynchronizationStatusController::outcome() const { return outcome_; }
 QString SynchronizationStatusController::stageKey() const { return stageKey_; }
 
@@ -46,7 +46,10 @@ bool SynchronizationStatusController::visible() const { return visible_; }
 void SynchronizationStatusController::beginRoundIfSettled() {
     // Only the settle window continues a round. Once an outcome was published (or the bar is hidden) the
     // next task starts a new round, so an earlier failure never taints a later successful retry.
-    if (outcome_ == QLatin1String("running")) return;
+    if (roundActive_) return;
+    // Bookkeeping starts at once, but a lingering outcome stays on screen until it expires or this round shows
+    // progress or fails.
+    roundShown_ = false;
     roundFailed_ = false;
     roundHadOutcome_ = false;
     failureMessage_.clear();
@@ -59,13 +62,14 @@ void SynchronizationStatusController::beginRoundIfSettled() {
 
 void SynchronizationStatusController::HandleStarted(const SyncPartition partition) {
     if (!isTracked(partition)) return;
-    hideTimer_.stop();
     settleTimer_.stop();
     beginRoundIfSettled();
+    roundActive_ = true;
     activePartitions_.insert(static_cast<int>(partition));
-    visible_ = true;
-    outcome_ = QStringLiteral("running");
-    message_ = tr("Sincronizando…");
+    if (!visible_) {
+        outcome_ = QStringLiteral("running");
+        message_ = tr("Sincronizando…");
+    }
     emit changed();
 }
 
@@ -76,6 +80,12 @@ void SynchronizationStatusController::HandleProgress(const SyncProgress &progres
     stageCount_ = progress.stageCount;
     processedItems_ = progress.processedItems;
     totalItems_ = progress.totalItems;
+    // The bar only appears once real work is reported.
+    roundShown_ = true;
+    hideTimer_.stop();
+    visible_ = true;
+    outcome_ = QStringLiteral("running");
+    message_ = tr("Sincronizando…");
     emit changed();
 }
 
@@ -92,8 +102,13 @@ void SynchronizationStatusController::HandleCancelled(const SyncPartition partit
     // simply disappears instead of announcing an outcome.
     if (activePartitions_.isEmpty() && !roundHadOutcome_) {
         settleTimer_.stop();
-        hideTimer_.stop();
-        hide();
+        roundActive_ = false;
+        if (roundShown_) {
+            hideTimer_.stop();
+            hide();
+        } else {
+            finishSilently();
+        }
         return;
     }
     settleIfIdle();
@@ -105,6 +120,8 @@ void SynchronizationStatusController::HandleFailed(const SyncPartition partition
     hideTimer_.stop();
     beginRoundIfSettled();
     activePartitions_.remove(static_cast<int>(partition));
+    roundActive_ = true;
+    roundShown_ = true;
     roundFailed_ = true;
     roundHadOutcome_ = true;
     failureMessage_ = safeError.isEmpty() ? tr("A sincronização falhou.") : safeError;
@@ -125,9 +142,24 @@ void SynchronizationStatusController::settleIfIdle() {
 
 void SynchronizationStatusController::publishOutcome() {
     if (!activePartitions_.isEmpty()) return;
+    roundActive_ = false;
+    if (!roundShown_ && !roundFailed_) {
+        // Nothing was shown (no progress, no failure): finish silently without a success flash.
+        finishSilently();
+        return;
+    }
     outcome_ = roundFailed_ ? QStringLiteral("failed") : QStringLiteral("succeeded");
     message_ = roundFailed_ ? failureMessage_ : tr("Sincronização concluída.");
     hideTimer_.start();
+    emit changed();
+}
+
+void SynchronizationStatusController::finishSilently() {
+    // Leave any lingering outcome of an earlier round untouched; only drop the internal "running" marker.
+    if (!visible_) {
+        outcome_ = QStringLiteral("idle");
+        message_.clear();
+    }
     emit changed();
 }
 

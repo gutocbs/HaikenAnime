@@ -77,6 +77,8 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/application/media/MediaDetailsPresentation.cpp
         src/application/library/LocalFileRecognitionTypes.h
         src/application/library/ILocalFileRecognizer.h
+        src/application/library/LocalMediaCatalogIndex.h
+        src/application/library/LocalMediaCatalogIndex.cpp
         src/application/library/LocalMediaResolver.h
         src/application/library/LocalMediaResolver.cpp
         src/application/library/ILocalFileOpener.h
@@ -198,6 +200,8 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/infrastructure/database/SqliteDatabase.h
         src/infrastructure/database/SqliteDatabase.cpp
         src/infrastructure/database/SqliteMediaRepository.h
+        src/application/media/AlternativeNames.h
+        src/application/media/AlternativeNames.cpp
         src/infrastructure/database/SqliteMediaRepository.cpp
         src/infrastructure/database/SqlitePendingChangeRepository.h
         src/infrastructure/database/SqlitePendingChangeRepository.cpp
@@ -369,6 +373,8 @@ set(LIBRARY_SCAN_SQL_RESOURCES
         resources/sqlite/queries/read-pending-local-files.sql
         resources/sqlite/queries/read-catalog-media-for-recognition.sql
         resources/sqlite/queries/save-local-file-recognition.sql
+        resources/sqlite/queries/read-local-files-under-folder.sql
+        resources/sqlite/queries/read-local-file-roots.sql
         resources/sqlite/queries/read-next-local-episode.sql
         resources/sqlite/queries/read-available-episode-count.sql
 )
@@ -529,6 +535,14 @@ target_link_libraries(MediaDomainTests
 
 add_test(NAME MediaDomainTests COMMAND MediaDomainTests)
 
+add_executable(AlternativeNamesTests
+        tests/unit/AlternativeNamesTests.cpp
+        src/application/media/AlternativeNames.h
+        src/application/media/AlternativeNames.cpp
+)
+target_link_libraries(AlternativeNamesTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME AlternativeNamesTests COMMAND AlternativeNamesTests)
+
 add_executable(MediaTitleResolverTests
         tests/unit/MediaTitleResolverTests.cpp
         src/application/media/MediaTitleResolver.cpp
@@ -577,6 +591,8 @@ add_executable(SqliteRepositoryTests
         src/infrastructure/database/SqliteMediaMapper.h
         src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqliteMediaRepository.h
+        src/application/media/AlternativeNames.h
+        src/application/media/AlternativeNames.cpp
         src/infrastructure/database/SqliteMediaRepository.cpp
         src/infrastructure/database/SqlitePendingChangeRepository.h
         src/infrastructure/database/SqlitePendingChangeRepository.cpp
@@ -700,6 +716,8 @@ add_test(NAME AnitomyLocalFileRecognizerTests COMMAND AnitomyLocalFileRecognizer
 add_executable(LocalMediaResolverTests
         tests/unit/LocalMediaResolverTests.cpp
         src/application/library/LocalFileRecognitionTypes.h
+        src/application/library/LocalMediaCatalogIndex.h
+        src/application/library/LocalMediaCatalogIndex.cpp
         src/application/library/LocalMediaResolver.h
         src/application/library/LocalMediaResolver.cpp)
 target_include_directories(LocalMediaResolverTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -1353,6 +1371,8 @@ add_executable(InitialSyncCoordinatorTests
         src/infrastructure/database/SqliteMediaMapper.h
         src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqliteMediaRepository.h
+        src/application/media/AlternativeNames.h
+        src/application/media/AlternativeNames.cpp
         src/infrastructure/database/SqliteMediaRepository.cpp
         src/infrastructure/database/SqlQueryStore.h
         src/infrastructure/database/SqlQueryStore.cpp
@@ -1436,6 +1456,27 @@ add_executable(LocalLibraryScanCoordinatorTests
         src/infrastructure/library/QtDirectoryEnumerator.cpp)
 target_link_libraries(LocalLibraryScanCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME LocalLibraryScanCoordinatorTests COMMAND LocalLibraryScanCoordinatorTests)
+
+add_executable(LocalLibraryRecognitionCoordinatorTests
+        tests/unit/LocalLibraryRecognitionCoordinatorTests.cpp
+        src/app/LocalLibraryRecognitionCoordinator.h
+        src/app/LocalLibraryRecognitionCoordinator.cpp
+        src/application/library/LocalMediaCatalogIndex.cpp
+        src/application/library/LocalMediaResolver.cpp
+        src/infrastructure/library/AnitomyLocalFileRecognizer.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+        lib/anitomy/anitomy.cpp
+        lib/anitomy/element.cpp
+        lib/anitomy/keyword.cpp
+        lib/anitomy/parser.cpp
+        lib/anitomy/parser_helper.cpp
+        lib/anitomy/parser_number.cpp
+        lib/anitomy/string.cpp
+        lib/anitomy/token.cpp
+        lib/anitomy/tokenizer.cpp)
+target_include_directories(LocalLibraryRecognitionCoordinatorTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(LocalLibraryRecognitionCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME LocalLibraryRecognitionCoordinatorTests COMMAND LocalLibraryRecognitionCoordinatorTests)
 
 get_target_property(COMPOSITION_SOURCES HaikenAnime SOURCES)
 list(FILTER COMPOSITION_SOURCES INCLUDE REGEX "^src/")
@@ -1561,6 +1602,7 @@ set(HAIKENANIME_TESTS
         LocalLibraryScanCoordinatorTests
         LocalLibraryScanCompositionTests
         LocalLibraryRecognitionCompositionTests
+        LocalLibraryRecognitionCoordinatorTests
 )
 if (WIN32)
     list(APPEND HAIKENANIME_TESTS WindowsCredentialStoreTests)

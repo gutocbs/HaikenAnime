@@ -45,7 +45,7 @@ Item {
                     controller.selectedProgressValue,
                     controller.selectedListStatusKey,
                     controller.selectedScoreValue,
-                    "",
+                    controller.selectedLocalPath,
                     controller.selectedAlternativeNames.join("; "))
     }
 

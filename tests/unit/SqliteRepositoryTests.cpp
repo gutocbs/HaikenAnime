@@ -57,6 +57,10 @@ private slots:
     void removalRollsBackMarkWhenDeletionCannotBeQueued();
     void synchronizationUpsertDoesNotRestoreRemovedMedia();
     void personalListUpdateRestoresRemovedMediaAndSupersedesPendingDeletion();
+    void synchronizationUpsertKeepsUserAlternativeNamesAndAppendsSourceNames();
+    void synchronizationUpsertWithSameNamesLeavesAlternativeNamesUnchanged();
+    void editorUpdateStillReplacesAndRemovesAlternativeNames();
+    void editedLocalPathSurvivesSynchronizationUpsertWithEmptyPath();
 };
 
 void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
@@ -786,6 +790,109 @@ void SqliteRepositoryTests::personalListUpdateRestoresRemovedMediaAndSupersedesP
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toInt(), static_cast<int>(AniListField::ListStatus));
     QCOMPARE(query.value(1).toInt(), static_cast<int>(AniListPendingChangeStatus::Pending));
+}
+
+
+void SqliteRepositoryTests::synchronizationUpsertKeepsUserAlternativeNamesAndAppendsSourceNames() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved);
+
+    Media stored;
+    stored.Id = 191656;
+    stored.Name = QStringLiteral("Seitokai ni mo Ana wa Aru!");
+    stored.AlternativeNames = {QStringLiteral("Even the Student Council Has Its Holes"),
+                               QStringLiteral("Source Alias")};
+    QString error;
+    QVERIFY2(repository.upsert({stored}, error), qPrintable(error));
+
+    Media synced = stored;
+    synced.AlternativeNames = {QStringLiteral("  source alias "), QStringLiteral("New Source Alias")};
+    QVERIFY2(repository.upsert({synced}, error), qPrintable(error));
+
+    QList<Media> actual;
+    QVERIFY2(repository.readAll(actual, error), qPrintable(error));
+    QCOMPARE(actual.size(), 1);
+    QCOMPARE(actual.first().AlternativeNames,
+             (QStringList{QStringLiteral("Even the Student Council Has Its Holes"),
+                          QStringLiteral("Source Alias"), QStringLiteral("New Source Alias")}));
+}
+
+void SqliteRepositoryTests::synchronizationUpsertWithSameNamesLeavesAlternativeNamesUnchanged() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved);
+
+    Media media;
+    media.Id = 5;
+    media.Name = QStringLiteral("Same");
+    media.AlternativeNames = {QStringLiteral("A"), QStringLiteral("B")};
+    QString error;
+    QVERIFY2(repository.upsert({media}, error), qPrintable(error));
+    QVERIFY2(repository.upsert({media, media}, error), qPrintable(error));
+
+    QList<Media> actual;
+    QVERIFY2(repository.readAll(actual, error), qPrintable(error));
+    QCOMPARE(actual.size(), 1);
+    QCOMPARE(actual.first().AlternativeNames, media.AlternativeNames);
+}
+
+void SqliteRepositoryTests::editorUpdateStillReplacesAndRemovesAlternativeNames() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved, UpdatePersonalListMedia);
+
+    Media media;
+    media.Id = 6;
+    media.Name = QStringLiteral("Editable");
+    media.AlternativeNames = {QStringLiteral("Keep"), QStringLiteral("Remove")};
+    QString error;
+    QVERIFY2(repository.upsert({media}, error), qPrintable(error));
+
+    media.AlternativeNames = {QStringLiteral("Keep")};
+    QVERIFY2(repository.updatePersonalListMedia(media, error), qPrintable(error));
+
+    QList<Media> actual;
+    QVERIFY2(repository.readAll(actual, error), qPrintable(error));
+    QCOMPARE(actual.first().AlternativeNames, (QStringList{QStringLiteral("Keep")}));
+}
+
+void SqliteRepositoryTests::editedLocalPathSurvivesSynchronizationUpsertWithEmptyPath() {
+    QTemporaryDir temporaryDirectory;
+    SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
+                                     ReadActiveMediaIds, MarkSourceRemoved, UpdatePersonalListMedia);
+    Media media;
+    media.Id = 81;
+    media.Name = QStringLiteral("Folder media");
+    QString error;
+    QVERIFY2(repository.upsert({media}, error), qPrintable(error));
+    media.LocalPath = QStringLiteral("D:/Anime/Folder media");
+    QVERIFY2(repository.updatePersonalListMedia(media, error), qPrintable(error));
+
+    QList<Media> afterEdit;
+    QVERIFY2(repository.readAll(afterEdit, error), qPrintable(error));
+    QCOMPARE(afterEdit.first().LocalPath, media.LocalPath);
+
+    Media synchronized;
+    synchronized.Id = 81;
+    synchronized.Name = QStringLiteral("Folder media");
+    synchronized.LocalPath = QString();
+    QVERIFY2(repository.upsert({synchronized}, error), qPrintable(error));
+    QList<Media> afterSync;
+    QVERIFY2(repository.readAll(afterSync, error), qPrintable(error));
+    QCOMPARE(afterSync.first().LocalPath, QStringLiteral("D:/Anime/Folder media"));
 }
 
 QTEST_MAIN(SqliteRepositoryTests)

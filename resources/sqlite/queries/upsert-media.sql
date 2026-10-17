@@ -10,6 +10,8 @@ ON CONFLICT(id) DO UPDATE SET
     name = excluded.name,
     english_name = excluded.english_name,
     original_name = excluded.original_name,
+    -- Callers must bind the result of MergeAlternativeNames (SqliteMediaRepository upsert),
+    -- so sync never erases names the user added.
     alternative_names = excluded.alternative_names,
     total_chapters = excluded.total_chapters,
     consumed_chapters = excluded.consumed_chapters,

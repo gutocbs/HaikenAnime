@@ -125,7 +125,15 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                                                           readActiveMediaIdsQueryPath_, markSourceRemovedQueryPath_);
                     SqliteSyncTaskStateRepository taskRepository(
                         database.connection(), readTaskStatesQueryPath_, upsertTaskStateQueryPath_, deleteTaskStateQueryPath_);
-                    if (credentials.token.isEmpty() || credentials.username.isEmpty()) {
+                    if (AniListAccountOwnership::ShouldSkipAniListPartition(partition, credentials)) {
+                        // No account (or suspended during removal): nothing to synchronize, not a failure.
+                        result.succeeded = true;
+                        result.errorCategory = AniListSyncErrorCategory::None;
+                        if (authenticatedUserList_.auditLogger) {
+                            authenticatedUserList_.auditLogger(QStringLiteral(
+                                "AniList user-list synchronization skipped: not authenticated."));
+                        }
+                    } else if (credentials.username.isEmpty()) {
                         error = QStringLiteral("AniList user-list synchronization requires authentication.");
                         result.errorCategory = AniListSyncErrorCategory::Authentication;
                     } else {
@@ -140,7 +148,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             authenticatedUserList_.endpoint, authenticatedUserList_.httpTimeoutMs,
                             authenticatedUserList_.httpMaxRetries,
                             authenticatedUserList_.httpRetryDelayMs,
-                            {.log = authenticatedUserList_.auditLogger});
+                            {.log = authenticatedUserList_.auditLogger, .isCancelled = [job] { return job->cancelled.load(); }});
                         GraphQlQueryStore queryStore(QStringLiteral(":/anilist/queries/user-media-list.graphql"));
                         GraphQlAniListDataSource userListSource(client, queryStore, &authProvider,
                                                                   authenticatedUserList_.perChunk);
@@ -239,16 +247,14 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                         }
                     }
                 } else if (partition == SyncPartition::PendingChanges) {
-                    if (credentials.token.isEmpty()) {
-                        error = QStringLiteral("AniList pending-change synchronization requires authentication.");
-                        result.errorCategory = AniListSyncErrorCategory::Authentication;
-                    } else if (!AniListAccountOwnership::CanProcessPendingChanges(credentials.userId)) {
-                        // Token not validated yet (no account id): nothing is sent or adopted until it is.
+                    if (AniListAccountOwnership::ShouldSkipAniListPartition(partition, credentials)) {
+                        // No account, suspended during removal, or token not validated yet: nothing is sent or
+                        // adopted, and it is not a failure.
                         result.succeeded = true;
                         result.errorCategory = AniListSyncErrorCategory::None;
                         if (authenticatedUserList_.auditLogger) {
                             authenticatedUserList_.auditLogger(QStringLiteral(
-                                "AniList pending-change synchronization skipped: account not validated yet."));
+                                "AniList pending-change synchronization skipped: not authenticated."));
                         }
                     } else {
                         if (authenticatedUserList_.auditLogger) {
@@ -262,7 +268,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             authenticatedUserList_.endpoint, authenticatedUserList_.httpTimeoutMs,
                             authenticatedUserList_.httpMaxRetries,
                             authenticatedUserList_.httpRetryDelayMs,
-                            {.log = authenticatedUserList_.auditLogger});
+                            {.log = authenticatedUserList_.auditLogger, .isCancelled = [job] { return job->cancelled.load(); }});
                         SqlitePendingChangeRepository pendingChanges(
                             database.connection(), QStringLiteral(":/sqlite/queries/enqueue-pending-change.sql"),
                             QStringLiteral(":/sqlite/queries/read-pending-changes.sql"),
@@ -280,7 +286,8 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                         AniListUpdateClient updateClient(client, updateMutation, entryIdQuery, deleteMutation);
                         AniListPendingChangeProcessor pendingProcessor(
                             pendingChanges, updateClient, credentials.userId,
-                            authenticatedUserList_.auditLogger);
+                            authenticatedUserList_.auditLogger,
+                            [job] { return job->cancelled.load(); });
                         AniListPendingChangeDrain drain(pendingChanges, pendingProcessor);
                         drain.setProgressReporter([&publish](const int processed, const int total) {
                             publish(QStringLiteral("pending_changes"), 1, 1, processed, total);

@@ -8,6 +8,7 @@
 #include <QSqlQuery>
 #include <QDateTime>
 
+#include "../../application/media/AlternativeNames.h"
 #include "SqliteMediaMapper.h"
 #include "SqlQueryStore.h"
 #include "../logging/AsyncLogger.h"
@@ -21,6 +22,18 @@ QVariant OptionalIntegerValue(const std::optional<int> &value) {
 
 QVariant OptionalInteger64Value(const std::optional<qint64> &value) {
     return value.has_value() ? QVariant::fromValue(value.value()) : QVariant();
+}
+
+QString SerializeNames(const QStringList &names) {
+    return QString::fromUtf8(QJsonDocument::fromVariant(names).toJson());
+}
+
+QStringList ParseNames(const QString &json) {
+    QStringList names;
+    for (const auto &value : QJsonDocument::fromJson(json.toUtf8()).array()) {
+        if (value.isString()) names.append(value.toString());
+    }
+    return names;
 }
 
 QString SerializeLinks(const QList<MediaLink> &links) {
@@ -94,13 +107,32 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
         return false;
     }
 
+    QSqlQuery readNames(database_);
+    if (!readNames.prepare(QStringLiteral("SELECT alternative_names FROM media WHERE id = :id"))) {
+        error = readNames.lastError().text();
+        database_.rollback();
+        return false;
+    }
+
     for (const auto &item : media) {
+        // The sync must never erase names the user added: merge instead of replacing.
+        QStringList existingNames;
+        readNames.bindValue(QStringLiteral(":id"), item.Id);
+        if (!readNames.exec()) {
+            error = readNames.lastError().text();
+            if (logger_) logger_->error(LogCategory::Database, error);
+            database_.rollback();
+            return false;
+        }
+        if (readNames.next()) existingNames = ParseNames(readNames.value(0).toString());
+        readNames.finish();
+
         query.bindValue(QStringLiteral(":id"), item.Id);
         query.bindValue(QStringLiteral(":name"), item.Name);
         query.bindValue(QStringLiteral(":english_name"), item.EnglishName);
         query.bindValue(QStringLiteral(":original_name"), item.OriginalName);
         query.bindValue(QStringLiteral(":alternative_names"),
-                        QString::fromUtf8(QJsonDocument::fromVariant(item.AlternativeNames).toJson()));
+                        SerializeNames(MergeAlternativeNames(existingNames, item.AlternativeNames)));
         query.bindValue(QStringLiteral(":total_chapters"), item.TotalChapters);
         query.bindValue(QStringLiteral(":consumed_chapters"), item.ConsumedChapters);
         query.bindValue(QStringLiteral(":average_score"), item.AverageScore);

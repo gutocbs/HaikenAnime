@@ -482,6 +482,8 @@ void QmlStructureTests::previewCardsUseControllerPreparedMetadataInBothGrids() {
     QVERIFY(!source.isEmpty());
 
     QVERIFY(source.contains(QStringLiteral("controller.SaveSelectedMediaFromEditor(progress, statusKey, score, path, names)")));
+    QVERIFY2(source.contains(QStringLiteral("controller.selectedLocalPath,")),
+             "openEditor must pass the stored media folder to the editor.");
     QVERIFY(source.contains(QStringLiteral("closeOnApply: false")));
     QVERIFY(source.contains(QStringLiteral("editMediaPanel.close()")));
     QVERIFY(!source.contains(QStringLiteral("previewEdits")));
@@ -886,6 +888,14 @@ void QmlStructureTests::settingsAccountSectionUsesAniListAuthenticationControlle
     QVERIFY(dialogStart >= 0);
     QVERIFY(!source.mid(dialogStart).contains(QStringLiteral("standardButtons")));
     QVERIFY(source.contains(QStringLiteral("readonly property color danger:")));
+    const qsizetype removeButton = source.indexOf(QStringLiteral("text: qsTr(\"Remover conta\")"));
+    const qsizetype connectButton = source.indexOf(QStringLiteral("qsTr(\"Conectar conta\")"));
+    QVERIFY(removeButton >= 0 && connectButton >= 0);
+    const qsizetype spacer = source.lastIndexOf(QStringLiteral("Item { Layout.fillWidth: true }"), connectButton);
+    QVERIFY(spacer >= 0);
+    QVERIFY(spacer < connectButton);
+    QVERIFY(connectButton < removeButton);
+    QVERIFY(removeButton < dialogStart);
 }
 
 void QmlStructureTests::homeEditorOffersConfirmedRemovalFromPersonalList() {

@@ -13,6 +13,8 @@ private slots:
     void ownerIsLoadedAccountAfterStartupStep();
     void ownerFallsBackToLastAccountWhenDisconnected();
     void pendingChangesAreSkippedWithoutValidatedAccount();
+    void userListIsSkippedWithoutTokenOrAccount();
+    void partitionsAreSkippedWithoutTokenOrAccount();
 };
 
 void AniListAccountOwnershipTests::remembersLoadedAccountWhenPreferenceIsUnset() {
@@ -43,6 +45,32 @@ void AniListAccountOwnershipTests::ownerFallsBackToLastAccountWhenDisconnected()
 void AniListAccountOwnershipTests::pendingChangesAreSkippedWithoutValidatedAccount() {
     QVERIFY(!CanProcessPendingChanges(0));
     QVERIFY(CanProcessPendingChanges(7));
+}
+
+void AniListAccountOwnershipTests::userListIsSkippedWithoutTokenOrAccount() {
+    AniListCredentials credentials;
+    QVERIFY(!CanSynchronizeUserList(credentials));
+    credentials.token = QStringLiteral("token");
+    QVERIFY(!CanSynchronizeUserList(credentials));
+    credentials.userId = 7;
+    QVERIFY(CanSynchronizeUserList(credentials));
+    credentials.token.clear();
+    QVERIFY(!CanSynchronizeUserList(credentials));
+}
+
+void AniListAccountOwnershipTests::partitionsAreSkippedWithoutTokenOrAccount() {
+    for (const auto partition : {SyncPartition::UserList, SyncPartition::PendingChanges}) {
+        AniListCredentials credentials;
+        QVERIFY(ShouldSkipAniListPartition(partition, credentials));
+        credentials.userId = 7;
+        QVERIFY2(ShouldSkipAniListPartition(partition, credentials), "empty token");
+        credentials.userId = 0;
+        credentials.token = QStringLiteral("token");
+        QVERIFY2(ShouldSkipAniListPartition(partition, credentials), "userId 0");
+        credentials.userId = 7;
+        QVERIFY(!ShouldSkipAniListPartition(partition, credentials));
+    }
+    QVERIFY(!ShouldSkipAniListPartition(SyncPartition::Covers, {}));
 }
 
 QTEST_MAIN(AniListAccountOwnershipTests)

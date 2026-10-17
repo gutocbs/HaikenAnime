@@ -2,6 +2,7 @@
 
 #include "../../app/SeasonalCatalogCoordinator.h"
 #include "../../application/covers/CoverSourceResolver.h"
+#include "../../application/library/LocalRecognitionRequest.h"
 #include "../../application/media/ProgressFormatter.h"
 #include "../../application/media/MediaDetailsPresentation.h"
 #include "../../application/media/SeasonalPersonalListService.h"
@@ -290,6 +291,7 @@ bool SeasonalCatalogController::SaveSelectedToPersonalList(const int progress, c
     Media saved;
     bool created = false;
     QString error;
+    const Media previous = selectedLocalMedia_.value_or(Media{});
     const UserListStatus requestedStatus = status == UserListStatus::Unknown && selectedLocalMedia_
         ? selectedLocalMedia_->ListStatus : status;
     PersonalListMediaEdit edit{qMax(0, progress), qRound(score), path.trimmed(), alternativeNames,
@@ -300,11 +302,15 @@ bool SeasonalCatalogController::SaveSelectedToPersonalList(const int progress, c
         return false;
     }
 
+    const auto recognitionRequest = LocalRecognitionRequest::Between(previous, saved);
     selectedLocalMedia_ = std::move(saved);
     personalListErrorMessage_.clear();
     emit personalListChanged();
     emit selectionChanged();
     if (created) emit personalListSaved();
+    if (recognitionRequest.isRequired()) {
+        emit localRecognitionRequested(recognitionRequest.folderPaths, recognitionRequest.alternativeNamesChanged);
+    }
     return true;
 }
 

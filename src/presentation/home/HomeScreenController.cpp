@@ -2,6 +2,7 @@
 #include "../../application/covers/CoverSourceResolver.h"
 #include "../../application/library/ILocalFileOpener.h"
 #include "../../application/library/LocalEpisodeReader.h"
+#include "../../application/library/LocalRecognitionRequest.h"
 #include "../../application/media/ProgressFormatter.h"
 #include "../../application/media/MediaDetailsPresentation.h"
 #include "../../application/media/IPersonalListMediaWriter.h"
@@ -420,6 +421,9 @@ QString HomeScreenController::selectedListStatusLabel() const {
 QStringList HomeScreenController::selectedAlternativeNames() const {
     return hasSelection_ ? selectedMedia_.AlternativeNames : QStringList{};
 }
+QString HomeScreenController::selectedLocalPath() const {
+    return hasSelection_ ? selectedMedia_.LocalPath : QString();
+}
 bool HomeScreenController::canWatch() const {
     return nextLocalEpisode_ > 0 && !nextLocalEpisodePath_.isEmpty() && fileOpener_ != nullptr;
 }
@@ -660,6 +664,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
         ? personalListChangeService_->save(*current, updated, error)
         : personalListWriter_->updatePersonalListMedia(updated, error);
     if (!saved) return setSaveError(std::move(error));
+    const auto recognitionRequest = LocalRecognitionRequest::Between(*current, updated);
 
     const auto destination = std::find_if(allMedia_.begin(), allMedia_.end(), [id = updated.Id](const Media &media) {
         return media.Id == id;
@@ -671,6 +676,9 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
     if (hasSelection_) {
         refreshNextLocalEpisode();
         emit selectionChanged();
+    }
+    if (recognitionRequest.isRequired()) {
+        emit localRecognitionRequested(recognitionRequest.folderPaths, recognitionRequest.alternativeNamesChanged);
     }
     return true;
 }

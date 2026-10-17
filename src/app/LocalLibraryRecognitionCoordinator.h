@@ -2,6 +2,7 @@
 #define HAIKENANIME_LOCALLIBRARYRECOGNITIONCOORDINATOR_H
 
 #include <QObject>
+#include <QList>
 #include <functional>
 #include <memory>
 #include <atomic>
@@ -20,17 +21,34 @@ public:
     LocalLibraryRecognitionCoordinator(RepositoryFactory factory, QObject *parent = nullptr);
     ~LocalLibraryRecognitionCoordinator() override;
     void setLogger(AsyncLogger *logger);
+    // Recognizes the pending files (unprocessed, unrecognized or ambiguous) of the library root.
+    bool startForPending(const QString &rootPath);
+    // Same as startForPending; kept for the scan-completed wiring.
     bool start(const QString &rootPath);
+    // Recognizes every available file under the folder, associated ones included, and re-associates them.
+    bool startForFolder(const QString &folderPath);
     void shutdown();
 signals:
     void batchPersisted();
     void completed(qsizetype processed, qsizetype associated, qsizetype unrecognized, qsizetype ambiguous);
     void failed(QString error);
 private:
+    struct Job {
+        bool isFolder = false;
+        QString path;
+        bool operator==(const Job &other) const { return isFolder == other.isFolder && path == other.path; }
+    };
+    // Runs now when idle; otherwise joins the single follow-up run, ignoring duplicates.
+    bool submit(Job job);
+    void launch(QList<Job> jobs);
+    void finishRun(bool cancelled, const QString &error, qsizetype processed, qsizetype associated,
+                   qsizetype unrecognized, qsizetype ambiguous);
+
     RepositoryFactory factory_;
     QThread *thread_ = nullptr;
     std::atomic_bool stopping_ = false;
     bool active_ = false;
+    QList<Job> queued_;
     AsyncLogger *logger_ = nullptr;
 };
 

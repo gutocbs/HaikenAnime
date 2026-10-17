@@ -10,7 +10,8 @@ class SqliteLocalFileRepository final : public ILocalFileRepository {
 public:
     SqliteLocalFileRepository(QSqlDatabase database, QString beginQuery, QString upsertQuery,
                              QString completeQuery, QString failQuery, QString markUnavailableQuery,
-                             QString readPendingQuery = {}, QString readCatalogQuery = {}, QString saveRecognitionQuery = {});
+                             QString readPendingQuery = {}, QString readCatalogQuery = {}, QString saveRecognitionQuery = {},
+                             QString readUnderFolderQuery = {}, QString readRootsQuery = {});
     bool beginScan(const QString &rootPath, qint64 &scanId, QString &error) override;
     bool upsertBatch(qint64 scanId, const QList<LocalFileObservation> &observations, QString &error) override;
     bool completeScan(qint64 scanId, qsizetype observedCount, QString &error) override;
@@ -18,6 +19,8 @@ public:
                   const QString &diagnostic, QString &error) override;
     bool readPendingRecognition(const QString &rootPath, QList<LocalFileRecognitionRecord> &records,
                                 QString &error) override;
+    bool readFilesUnderFolder(const QString &folderPath, QList<LocalFileRecognitionRecord> &records,
+                              QString &error) override;
     bool readRecognitionCatalog(QList<Media> &media, QString &error) override;
     bool saveRecognitionBatch(const QList<LocalFileRecognitionRecord> &records, QString &error) override;
 private:
@@ -30,6 +33,8 @@ private:
     QString readPendingQuery_;
     QString readCatalogQuery_;
     QString saveRecognitionQuery_;
+    QString readUnderFolderQuery_;
+    QString readRootsQuery_;
 };
 
 #endif

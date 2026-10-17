@@ -11,6 +11,10 @@
 
 #include <utility>
 
+namespace {
+constexpr int CancellationPollIntervalMs = 100;
+}
+
 AniListGraphQlClient::AniListGraphQlClient(QNetworkAccessManager &networkManager,
                                            IAniListAuthProvider *authProvider, QUrl endpoint,
                                            int timeoutMs, int maxRetries, int retryDelayMs,
@@ -35,6 +39,11 @@ bool AniListGraphQlClient::ExecuteWithAttempt(const QString &query, const QJsonO
                                              const int attempt) const {
     response = {};
     error.clear();
+    if (IsCancelled()) {
+        error = QStringLiteral("AniList request cancelled.");
+        Log(QStringLiteral("AniList GraphQL request not sent: cancelled (attempt=%1).").arg(attempt + 1));
+        return false;
+    }
     Log(QStringLiteral("AniList GraphQL request started (attempt=%1, host=%2).")
             .arg(attempt + 1)
             .arg(endpoint_.host()));
@@ -60,15 +69,31 @@ bool AniListGraphQlClient::ExecuteWithAttempt(const QString &query, const QJsonO
     timeout.setInterval(timeoutMs_);
     QObject::connect(reply, &QNetworkReply::finished, &eventLoop, &QEventLoop::quit);
     QObject::connect(&timeout, &QTimer::timeout, &eventLoop, &QEventLoop::quit);
+    // Lets a shutdown or user cancellation interrupt a pending request instead of waiting out the timeout.
+    QTimer cancellationPoll;
+    if (diagnostics_.isCancelled) {
+        cancellationPoll.setInterval(CancellationPollIntervalMs);
+        QObject::connect(&cancellationPoll, &QTimer::timeout, &eventLoop, [this, &eventLoop] {
+            if (diagnostics_.isCancelled()) eventLoop.quit();
+        });
+        cancellationPoll.start();
+    }
     timeout.start();
     eventLoop.exec();
 
+    if (!reply->isFinished() && IsCancelled()) {
+        reply->abort();
+        reply->deleteLater();
+        error = QStringLiteral("AniList request cancelled.");
+        Log(QStringLiteral("AniList GraphQL request cancelled (attempt=%1).").arg(attempt + 1));
+        return false;
+    }
     if (!reply->isFinished()) {
         reply->abort();
         error = QStringLiteral("AniList request timed out.");
         Log(QStringLiteral("AniList GraphQL request timed out (attempt=%1).").arg(attempt + 1));
         reply->deleteLater();
-        if (attempt < maxRetries_) {
+        if (attempt < maxRetries_ && !IsCancelled()) {
             QThread::msleep(static_cast<unsigned long>(retryDelayMs_));
             return ExecuteWithAttempt(query, variables, response, error, attempt + 1);
         }
@@ -102,7 +127,7 @@ bool AniListGraphQlClient::ExecuteWithAttempt(const QString &query, const QJsonO
                 .arg(attempt + 1)
                 .arg(statusCode)
                 .arg(static_cast<int>(networkError)));
-        if (attempt < maxRetries_) {
+        if (attempt < maxRetries_ && !IsCancelled()) {
             QThread::msleep(static_cast<unsigned long>(retryDelayMs_));
             return ExecuteWithAttempt(query, variables, response, error, attempt + 1);
         }
@@ -118,6 +143,10 @@ bool AniListGraphQlClient::ExecuteWithAttempt(const QString &query, const QJsonO
         Log(QStringLiteral("AniList GraphQL request succeeded."));
     }
     return parsed;
+}
+
+bool AniListGraphQlClient::IsCancelled() const {
+    return diagnostics_.isCancelled && diagnostics_.isCancelled();
 }
 
 void AniListGraphQlClient::Log(QString message) const {

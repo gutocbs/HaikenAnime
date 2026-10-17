@@ -1,6 +1,9 @@
 #ifndef HAIKENANIME_ANILISTACCOUNTOWNERSHIP_H
 #define HAIKENANIME_ANILISTACCOUNTOWNERSHIP_H
 
+#include "AniListCredentials.h"
+#include "../scheduling/SyncTaskTypes.h"
+
 #include <QtGlobal>
 
 /** Decisions about which AniList account owns local edits and pending changes. */
@@ -19,6 +22,24 @@ namespace AniListAccountOwnership {
 /** Pending changes are only sent or adopted for a validated account (userId > 0). */
 [[nodiscard]] inline bool CanProcessPendingChanges(const qint64 userId) {
     return userId > 0;
+}
+
+/** The user-list sync only runs for a connected, validated account (token and userId > 0). */
+[[nodiscard]] inline bool CanSynchronizeUserList(const AniListCredentials &credentials) {
+    return !credentials.token.isEmpty() && credentials.userId > 0;
+}
+
+/**
+ * True when a partition has nothing to do for these credentials (no account, suspended during removal, or token not
+ * validated yet). The task then finishes as a silent success instead of failing with an authentication error.
+ */
+[[nodiscard]] inline bool ShouldSkipAniListPartition(const SyncPartition partition,
+                                                     const AniListCredentials &credentials) {
+    if (partition == SyncPartition::UserList) return !CanSynchronizeUserList(credentials);
+    if (partition == SyncPartition::PendingChanges) {
+        return credentials.token.isEmpty() || !CanProcessPendingChanges(credentials.userId);
+    }
+    return false;
 }
 
 }

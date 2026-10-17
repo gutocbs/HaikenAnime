@@ -500,19 +500,19 @@ Item {
                     spacing: 8
                     Item { Layout.fillWidth: true }
                     AppButton {
-                        text: qsTr("Remover conta")
-                        variant: "danger"
-                        visible: controller.aniListConnected
-                        enabled: !controller.aniListRemovalInProgress
-                        onClicked: removeAccountDialog.open()
-                    }
-                    AppButton {
                         text: controller.aniListAuthenticationInProgress
                               ? qsTr("Conectando conta...") : qsTr("Conectar conta")
                         enabled: controller.aniListConnectionAvailable && !controller.aniListConnected
                                  && !controller.aniListAuthenticationInProgress
                                  && !controller.aniListRemovalInProgress
                         onClicked: controller.ConnectAniList()
+                    }
+                    AppButton {
+                        text: qsTr("Remover conta")
+                        variant: "danger"
+                        visible: controller.aniListConnected
+                        enabled: !controller.aniListRemovalInProgress
+                        onClicked: removeAccountDialog.open()
                     }
                 }
             }

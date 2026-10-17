@@ -6,9 +6,9 @@
 
 AniListPendingChangeProcessor::AniListPendingChangeProcessor(
     IPendingChangeRepository &repository, IAniListUpdateClient &updateClient, const qint64 userId,
-    std::function<void(const QString &)> auditLogger)
+    std::function<void(const QString &)> auditLogger, std::function<bool()> isCancelled)
     : repository_(repository), updateClient_(updateClient), userId_(userId),
-      auditLogger_(std::move(auditLogger)) {
+      auditLogger_(std::move(auditLogger)), isCancelled_(std::move(isCancelled)) {
 }
 
 void AniListPendingChangeProcessor::log(const QString &message) const {
@@ -26,6 +26,13 @@ bool AniListPendingChangeProcessor::processDeletion(const AniListPendingChange &
 
     QString operationError;
     if (!updateClient_.deleteMediaListEntry(deletion.mediaId, userId_, operationError)) {
+        if (isCancelled_ && isCancelled_()) {
+            // Restore the prior state (no attempt, no lastError) so the deletion is resent.
+            QString restoreError;
+            if (!repository_.updateStatus(deletion, restoreError)) operationError = restoreError;
+            error = operationError;
+            return false;
+        }
         processing.status = AniListPendingChangeStatus::Failed;
         processing.lastError = operationError;
         ++processing.attempts;
@@ -132,6 +139,17 @@ bool AniListPendingChangeProcessor::process(const int mediaId, QString &error) {
                     return false;
                 }
             }
+        } else if (isCancelled_ && isCancelled_()) {
+            // Cancellation is not a failed attempt: put each change back exactly as it was.
+            for (const auto &original : group.changes) {
+                QString statusError;
+                if (!repository_.updateStatus(original, statusError)) {
+                    error = statusError;
+                    return false;
+                }
+            }
+            error = operationError;
+            return false;
         } else {
             for (auto change : processingChanges) {
                 change.status = AniListPendingChangeStatus::Failed;

@@ -22,6 +22,10 @@ public:
     virtual bool readPendingRecognition(const QString &, QList<LocalFileRecognitionRecord> &, QString &error) {
         error = QStringLiteral("Local recognition is not supported by this repository."); return false;
     }
+    // Every available file whose absolute path is inside the folder (already associated ones included).
+    virtual bool readFilesUnderFolder(const QString &, QList<LocalFileRecognitionRecord> &, QString &error) {
+        error = QStringLiteral("Local recognition is not supported by this repository."); return false;
+    }
     virtual bool readRecognitionCatalog(QList<Media> &, QString &error) {
         error = QStringLiteral("Local recognition is not supported by this repository."); return false;
     }
