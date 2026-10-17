@@ -129,6 +129,7 @@ private slots:
     void correctingUnknownRecordFails();
     void listForwardsFilterAndCursor();
     void personalListWriterQueuesAniListProgressChange();
+    void personalListWriterNotifiesOnlyAfterSuccessfulApply();
 
 private:
     FakeHistoryRepository repository;
@@ -320,6 +321,21 @@ void RecognitionHistoryServiceTests::personalListWriterQueuesAniListProgressChan
     QCOMPARE(changes.savedChanges.size(), 1);
     QCOMPARE(changes.savedChanges.first().field, AniListField::Progress);
     QCOMPARE(changes.savedChanges.first().newValue, AniListFieldValue(6));
+}
+
+void RecognitionHistoryServiceTests::personalListWriterNotifiesOnlyAfterSuccessfulApply() {
+    RecordingChangeWriter changes;
+    const PersonalListChangeService changeService(changes);
+    QList<int> notified;
+    PersonalListProgressWriter writer(changeService, [&notified](const Media &media) { notified.append(media.Id); });
+    QString error;
+    Media invalid = media(6);
+    invalid.Id = 0;
+
+    QVERIFY(writer.apply(media(5), media(6), error));
+    QVERIFY(!writer.apply(media(5), invalid, error));
+
+    QCOMPARE(notified, QList<int>({21}));
 }
 
 QTEST_MAIN(RecognitionHistoryServiceTests)

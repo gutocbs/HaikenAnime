@@ -226,6 +226,9 @@ void composeEpisodeRecognition(ApplicationContext &context) {
          .changes = context.personalListChangeService.get(),
          .diagnostics = [logger = context.logger.get()](const QString &message) {
              if (logger) logger->warning(LogCategory::Application, message);
+         },
+         .progressApplied = [listener = context.recognitionProgressListener](const Media &media) {
+             if (*listener) (*listener)(media);
          }});
     for (const auto &warning : context.recognition->warnings) {
         context.logger->warning(LogCategory::Application, warning);

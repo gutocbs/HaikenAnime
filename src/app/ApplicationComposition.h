@@ -67,6 +67,9 @@ struct ApplicationContext final {
     std::unique_ptr<SeasonalCatalogCoordinator> seasonalCatalogCoordinator;
     // Recognition depends on the repositories above and outlives the opener that launches mpv.
     std::unique_ptr<RecognitionContext> recognition;
+    /// Set by the UI after composition; shared so it survives moving the context.
+    std::shared_ptr<std::function<void(const Media &)>> recognitionProgressListener =
+        std::make_shared<std::function<void(const Media &)>>();
     std::unique_ptr<ILocalEpisodeReader> localEpisodeReader;
     std::unique_ptr<ILocalFileOpener> defaultLocalFileOpener;
     std::unique_ptr<ILocalFileOpener> localFileOpener;

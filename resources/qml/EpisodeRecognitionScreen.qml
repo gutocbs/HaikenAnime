@@ -1,0 +1,191 @@
+import QtQuick 2.15
+import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
+
+// History of automatic recognitions. Progress was already applied by the application; this
+// panel only shows what happened and lets the user correct or ignore a wrong recognition.
+ColumnLayout {
+    id: recognitionScreen
+
+    property var controller: recognitionController
+    property var correctingRecordId: 0
+
+    readonly property color ink: "#172033"
+    readonly property color muted: "#68758a"
+    readonly property color line: "#d7dee8"
+    readonly property color surfaceSoft: "#f6f8fb"
+    readonly property color danger: "#b42318"
+
+    function statusLabel(key) {
+        switch (key) {
+        case "pending": return qsTr("Em observação")
+        case "incomplete": return qsTr("Encerrado antes do tempo mínimo")
+        case "marked-watched": return qsTr("Marcado como assistido")
+        case "already-watched": return qsTr("Já estava assistido")
+        case "uncertain": return qsTr("Reconhecimento incerto")
+        case "ignored": return qsTr("Ignorado")
+        case "corrected": return qsTr("Corrigido")
+        }
+        return key
+    }
+
+    function syncLabel(state, error) {
+        if (state === "pending") return qsTr("Sincronização com o AniList pendente")
+        if (state === "failed") return qsTr("Falha ao sincronizar com o AniList: %1").arg(error)
+        if (state === "synced") return qsTr("Sincronizado com o AniList")
+        return ""
+    }
+
+    spacing: 12
+    Component.onCompleted: if (controller) controller.Reload()
+
+    RowLayout {
+        Layout.fillWidth: true
+        Label {
+            text: qsTr("Reconhecimentos recentes")
+            color: recognitionScreen.ink
+            font.pixelSize: 14
+            font.weight: Font.DemiBold
+            Layout.fillWidth: true
+        }
+        AppButton {
+            text: qsTr("Atualizar")
+            variant: "secondary"
+            onClicked: recognitionScreen.controller.Reload()
+        }
+    }
+
+    Label {
+        visible: recognitionScreen.controller.errorMessage.length > 0
+        text: recognitionScreen.controller.errorMessage
+        color: recognitionScreen.danger
+        font.pixelSize: 11
+        wrapMode: Text.Wrap
+        Layout.fillWidth: true
+    }
+
+    Label {
+        visible: historyList.count === 0
+        text: qsTr("Nenhum episódio reconhecido ainda. Reproduza um episódio pelo mpv ou pelo Plex.")
+        color: recognitionScreen.muted
+        font.pixelSize: 11
+        wrapMode: Text.Wrap
+        Layout.fillWidth: true
+    }
+
+    ListView {
+        id: historyList
+        Layout.fillWidth: true
+        Layout.preferredHeight: Math.min(contentHeight, 520)
+        clip: true
+        spacing: 8
+        model: recognitionScreen.controller.records
+        delegate: Rectangle {
+            id: row
+            required property var recordId
+            required property string title
+            required property var season
+            required property int episode
+            required property string statusKey
+            required property string pluginId
+            required property string userId
+            required property string diagnostic
+            required property string syncState
+            required property string syncError
+            required property string updatedAt
+            required property bool correctable
+
+            width: ListView.view.width
+            implicitHeight: rowLayout.implicitHeight + 24
+            color: recognitionScreen.surfaceSoft
+            radius: 6
+            border.color: recognitionScreen.line
+
+            RowLayout {
+                id: rowLayout
+                anchors.fill: parent
+                anchors.margins: 12
+                spacing: 12
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 3
+                    Label {
+                        text: row.season !== undefined && row.season !== null
+                              ? qsTr("%1 — T%2 E%3").arg(row.title).arg(row.season).arg(row.episode)
+                              : qsTr("%1 — Episódio %2").arg(row.title).arg(row.episode)
+                        color: recognitionScreen.ink
+                        font.pixelSize: 12
+                        font.weight: Font.DemiBold
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
+                    Label {
+                        text: recognitionScreen.statusLabel(row.statusKey) + " · " + row.pluginId + " · " + row.updatedAt
+                        color: recognitionScreen.muted
+                        font.pixelSize: 11
+                    }
+                    Label {
+                        visible: text.length > 0
+                        text: recognitionScreen.syncLabel(row.syncState, row.syncError)
+                        color: row.syncState === "failed" ? recognitionScreen.danger : recognitionScreen.muted
+                        font.pixelSize: 11
+                    }
+                }
+                AppButton {
+                    visible: row.correctable
+                    text: qsTr("Corrigir")
+                    variant: "secondary"
+                    onClicked: {
+                        recognitionScreen.correctingRecordId = row.recordId
+                        episodeInput.value = row.episode
+                        correctionDialog.open()
+                    }
+                }
+                AppButton {
+                    visible: row.correctable && row.statusKey !== "ignored"
+                    text: qsTr("Ignorar")
+                    variant: "flat"
+                    onClicked: recognitionScreen.controller.Ignore(row.recordId)
+                }
+            }
+        }
+    }
+
+    AppButton {
+        visible: recognitionScreen.controller.hasMore
+        text: qsTr("Carregar mais")
+        variant: "flat"
+        onClicked: recognitionScreen.controller.LoadMore()
+    }
+
+    Dialog {
+        id: correctionDialog
+        parent: Overlay.overlay
+        anchors.centerIn: parent
+        modal: true
+        title: qsTr("Corrigir reconhecimento")
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        onAccepted: recognitionScreen.controller.Correct(recognitionScreen.correctingRecordId,
+                                                         mediaInput.currentValue, episodeInput.value)
+
+        ColumnLayout {
+            spacing: 10
+            ComboBox {
+                id: mediaInput
+                Layout.preferredWidth: 320
+                model: recognitionScreen.controller.mediaChoices
+                textRole: "title"
+                valueRole: "id"
+                Accessible.name: qsTr("Anime")
+            }
+            SpinBox {
+                id: episodeInput
+                from: 1
+                to: 100000
+                editable: true
+                Accessible.name: qsTr("Episódio")
+            }
+        }
+    }
+}

@@ -95,7 +95,7 @@ std::unique_ptr<RecognitionContext> createRecognitionContext(RecognitionComposit
         dependencies.connection, QStringLiteral(":/sqlite/queries/read-recognition-history.sql"),
         QStringLiteral(":/sqlite/queries/insert-recognition-record.sql"),
         QStringLiteral(":/sqlite/queries/update-recognition-record.sql"));
-    ctx.progressWriter = std::make_unique<PersonalListProgressWriter>(*dependencies.changes);
+    ctx.progressWriter = std::make_unique<PersonalListProgressWriter>(*dependencies.changes, dependencies.progressApplied);
     ctx.history = std::make_unique<RecognitionHistoryService>(*ctx.historyRepository, *ctx.progressWriter);
     ctx.progressReader = std::make_unique<MediaReaderProgressReader>(*dependencies.mediaReader);
     ctx.decisions = std::make_unique<ProgressDecisionService>(*ctx.progressReader, RecognitionPolicy());

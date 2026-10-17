@@ -147,3 +147,15 @@ bool PluginSettingsService::clearSecret(const QString &pluginId, const QString &
     found->pendingSecrets.remove(key);
     return true;
 }
+
+void PluginSettingsService::discard(const QString &pluginId) {
+    const auto found = plugins_.find(pluginId);
+    if (found == plugins_.end()) return;
+    found->draft.clear();
+    found->pendingSecrets.clear();
+}
+
+bool PluginSettingsService::hasUnsavedChanges(const QString &pluginId) const {
+    const auto found = plugins_.constFind(pluginId);
+    return found != plugins_.cend() && (!found->draft.isEmpty() || !found->pendingSecrets.isEmpty());
+}

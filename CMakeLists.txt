@@ -500,6 +500,9 @@ qt_add_qml_module(HaikenAnime
         resources/qml/StatePanel.qml
         resources/qml/AppButton.qml
         resources/qml/SyncProgressBar.qml
+        resources/qml/PluginSettingsScreen.qml
+        resources/qml/PluginSettingField.qml
+        resources/qml/EpisodeRecognitionScreen.qml
         RESOURCES resources/images/cover-placeholder.svg
 )
 
@@ -531,6 +534,12 @@ target_sources(HaikenAnime PRIVATE
         src/infrastructure/secrets/WindowsPluginSecretStore.cpp
         src/app/RecognitionComposition.cpp
         src/app/MpvAwareLocalFileOpener.cpp
+        src/presentation/settings/PluginSettingsController.h
+        src/presentation/settings/PluginSettingsController.cpp
+        src/presentation/recognition/EpisodeRecognitionController.h
+        src/presentation/recognition/EpisodeRecognitionController.cpp
+        src/presentation/recognition/RecognitionListModel.h
+        src/presentation/recognition/RecognitionListModel.cpp
 )
 
 target_link_libraries(HaikenAnime
@@ -921,6 +930,35 @@ target_include_directories(RecognitionCompositionTests PRIVATE ${CMAKE_CURRENT_S
 target_link_libraries(RecognitionCompositionTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Sql Qt6::Test Advapi32)
 target_compile_definitions(RecognitionCompositionTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 add_test(NAME RecognitionCompositionTests COMMAND RecognitionCompositionTests)
+
+add_executable(PluginSettingsControllerTests
+        tests/unit/PluginSettingsControllerTests.cpp
+        tests/unit/PlexTestSupport.h
+        src/presentation/settings/PluginSettingsController.h
+        src/presentation/settings/PluginSettingsController.cpp
+        src/application/recognition/PluginRegistry.cpp
+        src/application/recognition/PluginSettingsSchema.cpp
+        src/application/recognition/PluginSettingsService.cpp
+        ${PLEX_RECOGNITION_SOURCES}
+        src/infrastructure/recognition/plex/PlexPlugin.cpp
+        src/domain/recognition/PlaybackSession.cpp
+        src/domain/recognition/EpisodeCandidate.cpp
+)
+target_link_libraries(PluginSettingsControllerTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
+target_compile_definitions(PluginSettingsControllerTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+add_test(NAME PluginSettingsControllerTests COMMAND PluginSettingsControllerTests)
+
+add_executable(EpisodeRecognitionControllerTests
+        tests/unit/EpisodeRecognitionControllerTests.cpp
+        src/presentation/recognition/EpisodeRecognitionController.h
+        src/presentation/recognition/EpisodeRecognitionController.cpp
+        src/presentation/recognition/RecognitionListModel.h
+        src/presentation/recognition/RecognitionListModel.cpp
+        ${RECOGNITION_PIPELINE_SOURCES}
+)
+target_include_directories(EpisodeRecognitionControllerTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(EpisodeRecognitionControllerTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME EpisodeRecognitionControllerTests COMMAND EpisodeRecognitionControllerTests)
 
 add_executable(SqliteLocalFileRepositoryTests
         tests/unit/SqliteLocalFileRepositoryTests.cpp
@@ -1617,6 +1655,13 @@ target_compile_definitions(QmlStructureTests PRIVATE
 )
 add_test(NAME QmlStructureTests COMMAND QmlStructureTests)
 
+add_executable(QmlRecognitionStructureTests tests/unit/QmlRecognitionStructureTests.cpp)
+target_link_libraries(QmlRecognitionStructureTests PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Test)
+target_compile_definitions(QmlRecognitionStructureTests PRIVATE
+        HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+add_test(NAME QmlRecognitionStructureTests COMMAND QmlRecognitionStructureTests)
+
 add_executable(InitialSyncCoordinatorTests
         tests/unit/InitialSyncCoordinatorTests.cpp
         src/app/InitialSyncCoordinator.h
@@ -1823,6 +1868,8 @@ set(HAIKENANIME_TESTS
         PluginRegistryTests
         EpisodeRecognitionServiceTests
         RecognitionCompositionTests
+        PluginSettingsControllerTests
+        EpisodeRecognitionControllerTests
         MediaTitleResolverTests
         SqliteDatabaseTests
         SqliteUserPreferencesRepositoryTests
@@ -1887,7 +1934,7 @@ set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}"
         TIMEOUT 30
 )
-set_tests_properties(QmlStructureTests PROPERTIES
+set_tests_properties(QmlStructureTests QmlRecognitionStructureTests PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}\\;QT_QUICK_BACKEND=software"
 )
 endif ()

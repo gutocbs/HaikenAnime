@@ -35,6 +35,8 @@ struct RecognitionCompositionDependencies final {
     /// Defaults to QTimer::singleShot bound to the context lifetime.
     std::function<void(int delayMs, std::function<void()>)> schedule;
     std::function<void(const QString &)> diagnostics;
+    /// Called after automatic progress was saved locally (e.g. to refresh the Home screen).
+    std::function<void(const Media &)> progressApplied;
 };
 
 /// Everything the episode recognition feature owns. Members are destroyed in reverse order, so the

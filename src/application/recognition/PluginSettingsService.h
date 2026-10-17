@@ -29,6 +29,9 @@ public:
     /// Validates required fields, then persists non-secret values and pending secrets.
     bool save(const QString &pluginId, QString &error);
     bool clearSecret(const QString &pluginId, const QString &key, QString &error);
+    /// Drops unsaved values and secrets of the plugin.
+    void discard(const QString &pluginId);
+    [[nodiscard]] bool hasUnsavedChanges(const QString &pluginId) const;
 
 private:
     struct PluginState {

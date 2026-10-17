@@ -113,6 +113,8 @@ private slots:
     void clearSecretRemovesStoredSecret();
     void saveFailureDoesNotLeakSecretValue();
     void failedSaveKeepsPreviouslyStoredValues();
+    void discardDropsDraftsAndPendingSecrets();
+    void reportsUnsavedChanges();
 
 private:
     std::unique_ptr<FakePluginSettingsRepository> repository;
@@ -320,6 +322,30 @@ void PluginSettingsServiceTests::failedSaveKeepsPreviouslyStoredValues() {
 
     QCOMPARE(repository->stored.value(QStringLiteral("plex")).value(QStringLiteral("serverUrl")).toString(),
              QStringLiteral("http://old:32400"));
+}
+
+void PluginSettingsServiceTests::discardDropsDraftsAndPendingSecrets() {
+    repository->stored.insert(QStringLiteral("plex"), {{QStringLiteral("pollSeconds"), 30}});
+    registerPlex();
+    QString error;
+    QVERIFY(service->setValue(QStringLiteral("plex"), QStringLiteral("pollSeconds"), 60, error));
+    QVERIFY(service->setValue(QStringLiteral("plex"), QStringLiteral("token"), PlexToken, error));
+
+    service->discard(QStringLiteral("plex"));
+
+    QCOMPARE(service->values(QStringLiteral("plex")).value(QStringLiteral("pollSeconds")).toInt(), 30);
+    QVERIFY(!service->hasSecret(QStringLiteral("plex"), QStringLiteral("token")));
+    QVERIFY(!service->hasUnsavedChanges(QStringLiteral("plex")));
+}
+
+void PluginSettingsServiceTests::reportsUnsavedChanges() {
+    registerPlex();
+    QString error;
+    QVERIFY(!service->hasUnsavedChanges(QStringLiteral("plex")));
+
+    QVERIFY(service->setValue(QStringLiteral("plex"), QStringLiteral("serverUrl"), QStringLiteral("http://nas"), error));
+
+    QVERIFY(service->hasUnsavedChanges(QStringLiteral("plex")));
 }
 
 QTEST_MAIN(PluginSettingsServiceTests)

@@ -29,6 +29,8 @@ Item {
           title: qsTr("Conta e sincronização"), description: qsTr("Conecte seu serviço de listas e defina como notas e atualizações serão sincronizadas.") },
         { key: "library", label: qsTr("Biblioteca e reconhecimento"), eyebrow: qsTr("BIBLIOTECA"),
           title: qsTr("Biblioteca e reconhecimento"), description: qsTr("Defina pastas, reprodutores e regras usadas para reconhecer arquivos locais.") },
+        { key: "plugins", label: qsTr("Reprodutores e plugins"), eyebrow: qsTr("RECONHECIMENTO"),
+          title: qsTr("Reprodutores e plugins"), description: qsTr("Configure o mpv e o Plex para reconhecer automaticamente os episódios assistidos.") },
         { key: "filters", label: qsTr("Filtros e listas"), eyebrow: qsTr("ORGANIZAÇÃO"),
           title: qsTr("Filtros e listas"), description: qsTr("Escolha quais estados participam das visualizações e automações da biblioteca.") },
         { key: "downloads", label: qsTr("Downloads"), eyebrow: qsTr("DOWNLOADS"),
@@ -289,6 +291,7 @@ Item {
                             sourceComponent: activeSection === "overview" ? overviewContent
                                            : activeSection === "account" ? accountContent
                                            : activeSection === "library" ? libraryContent
+                                           : activeSection === "plugins" ? pluginsContent
                                            : activeSection === "filters" ? filtersContent
                                            : activeSection === "downloads" ? downloadsContent
                                            : activeSection === "appearance" ? appearanceContent
@@ -805,20 +808,19 @@ Item {
     }
 
     Component {
+        id: pluginsContent
+        Loader {
+            // pluginSettingsController is null when recognition could not start.
+            active: pluginSettingsController !== null
+            sourceComponent: Component { PluginSettingsScreen {} }
+        }
+    }
+
+    Component {
         id: historyContent
-        ColumnLayout {
-            spacing: 16
-            SectionCard {
-                Label { text: qsTr("Histórico local"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
-                Label { Layout.fillWidth: true; text: qsTr("Quando o histórico estiver conectado, atividades de reprodução, reconhecimento e sincronização aparecerão aqui."); color: muted; font.pixelSize: 11; wrapMode: Text.Wrap }
-                Rectangle {
-                    Layout.fillWidth: true; Layout.preferredHeight: 120; color: surface; radius: 5; border.color: line
-                    ColumnLayout { anchors.centerIn: parent; spacing: 5
-                        Label { Layout.alignment: Qt.AlignHCenter; text: qsTr("Nenhuma atividade disponível"); color: ink; font.pixelSize: 12; font.weight: Font.DemiBold }
-                        Label { Layout.alignment: Qt.AlignHCenter; text: qsTr("O histórico será preenchido em uma etapa posterior."); color: muted; font.pixelSize: 10 }
-                    }
-                }
-            }
+        Loader {
+            active: recognitionController !== null
+            sourceComponent: Component { EpisodeRecognitionScreen {} }
         }
     }
 

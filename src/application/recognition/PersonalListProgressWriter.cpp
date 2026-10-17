@@ -1,8 +1,13 @@
 #include "PersonalListProgressWriter.h"
 
-PersonalListProgressWriter::PersonalListProgressWriter(const PersonalListChangeService &changes)
-    : changes_(changes) {}
+#include <utility>
+
+PersonalListProgressWriter::PersonalListProgressWriter(const PersonalListChangeService &changes,
+                                                       std::function<void(const Media &)> applied)
+    : changes_(changes), applied_(std::move(applied)) {}
 
 bool PersonalListProgressWriter::apply(const Media &previous, const Media &updated, QString &error) {
-    return changes_.save(previous, updated, error);
+    if (!changes_.save(previous, updated, error)) return false;
+    if (applied_) applied_(updated);
+    return true;
 }

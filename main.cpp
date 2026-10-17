@@ -19,6 +19,8 @@
 #include "src/presentation/seasonal/SeasonalCatalogController.h"
 #include "src/presentation/settings/SettingsController.h"
 #include "src/presentation/sync/SynchronizationStatusController.h"
+#include "src/presentation/recognition/EpisodeRecognitionController.h"
+#include "src/presentation/settings/PluginSettingsController.h"
 #include "src/application/media/SeasonalPersonalListService.h"
 
 namespace {
@@ -107,6 +109,12 @@ int main(int argc, char *argv[]) {
             step.start();
             context.localLibraryRecognition->shutdown();
             logShutdownStep(QStringLiteral("Local library recognition stopped in %1 ms.").arg(step.elapsed()));
+        }
+        if (context.recognition && context.recognition->recognition) {
+            step.start();
+            context.recognition->recognition->stop();
+            *context.recognitionProgressListener = {};
+            logShutdownStep(QStringLiteral("Episode recognition stopped in %1 ms.").arg(step.elapsed()));
         }
         if (context.coverCoordinator) {
             context.coverCoordinator->disconnect();
@@ -340,11 +348,32 @@ int main(int argc, char *argv[]) {
                                                       preferences.scoreStep);
     });
 
+    std::unique_ptr<PluginSettingsController> pluginSettingsController;
+    std::unique_ptr<EpisodeRecognitionController> recognitionController;
+    if (context.recognition && context.recognition->recognition && context.mediaRepository) {
+        auto &recognition = *context.recognition;
+        pluginSettingsController = std::make_unique<PluginSettingsController>(
+            *recognition.settings, recognition.registry,
+            PlexAccountServices{.authentication = recognition.plexAuthentication.get(),
+                                .api = recognition.plexApi.get(),
+                                .plugin = recognition.plex},
+            [&recognition] { applyRecognitionSettings(recognition); });
+        recognitionController = std::make_unique<EpisodeRecognitionController>(
+            *recognition.history, *recognition.decisions, *context.mediaRepository);
+        // Automatic progress changes the library; the Home refreshes after the recognition callback returns.
+        *context.recognitionProgressListener = [&homeController](const Media &) {
+            QTimer::singleShot(0, &homeController, [&homeController] { homeController.reload(); });
+        };
+    }
+
     QQmlApplicationEngine engine;
     engine.rootContext()->setContextProperty(QStringLiteral("homeController"), &homeController);
     engine.rootContext()->setContextProperty(QStringLiteral("settingsController"), &settingsController);
     engine.rootContext()->setContextProperty(QStringLiteral("synchronizationStatus"), &synchronizationStatus);
     engine.rootContext()->setContextProperty(QStringLiteral("seasonalCatalogController"), &seasonalCatalogController);
+    // Null when recognition could not be composed; the settings screen then hides those sections.
+    engine.rootContext()->setContextProperty(QStringLiteral("pluginSettingsController"), pluginSettingsController.get());
+    engine.rootContext()->setContextProperty(QStringLiteral("recognitionController"), recognitionController.get());
 
     int exitCode = 0;
     const auto requestShutdown = [&](int code) {
