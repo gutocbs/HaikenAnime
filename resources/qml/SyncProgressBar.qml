@@ -13,6 +13,7 @@ Item {
     readonly property color trackColor: "#d7dee8"
     readonly property color fillColor: status.outcome === "failed" ? "#b42318" : "#02A9FF"
     readonly property bool indeterminate: !status.progressKnown && status.running
+                                          && status.outcome === "running"
     readonly property real fraction: status.outcome === "succeeded"
                                      ? 1 : Math.max(0, Math.min(1, status.percent / 100))
     readonly property string labelText: status.outcome === "succeeded" || status.outcome === "failed"
