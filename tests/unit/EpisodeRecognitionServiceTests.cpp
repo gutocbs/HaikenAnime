@@ -130,6 +130,10 @@ private slots:
     void configuredPolicyChangesThreshold();
     void stopStopsPluginsAndIgnoresLateEvents();
     void catalogResolverMatchesTitleToMedia();
+    void startedSessionsAppearWithResolvedCandidate();
+    void detailsChangesReachRegistry();
+    void stoppedSessionLeavesRegistry();
+    void stopClearsActiveSessions();
     void catalogResolverKeepsUnknownTitlesUnresolved();
 
 private:
@@ -294,6 +298,50 @@ void EpisodeRecognitionServiceTests::catalogResolverKeepsUnknownTitlesUnresolved
 
     QVERIFY(!resolved.mediaId().has_value());
     QCOMPARE(resolved.title(), QStringLiteral("Unknown Show"));
+}
+
+void EpisodeRecognitionServiceTests::startedSessionsAppearWithResolvedCandidate() {
+    auto service = makeService();
+    service->start();
+
+    plex->play(QStringLiteral("srv:12"), onePiece(6), 10);
+
+    const auto sessions = service->activeSessions().sessions();
+    QCOMPARE(sessions.size(), 1);
+    QCOMPARE(sessions.first().candidate.mediaId(), std::optional<int>(21));
+    QCOMPARE(sessions.first().session.userId, QStringLiteral("1"));
+}
+
+void EpisodeRecognitionServiceTests::detailsChangesReachRegistry() {
+    auto service = makeService();
+    service->start();
+    plex->play(QStringLiteral("srv:12"), onePiece(6), 10);
+
+    plex->observer->onSessionDetailsChanged(PlaybackSessionId::create(QStringLiteral("plex"), QStringLiteral("srv:12")).value(),
+                                            {.title = QStringLiteral("Romance Dawn")});
+
+    QCOMPARE(service->activeSessions().sessions().first().session.details.title, QStringLiteral("Romance Dawn"));
+}
+
+void EpisodeRecognitionServiceTests::stoppedSessionLeavesRegistry() {
+    auto service = makeService();
+    service->start();
+    plex->play(QStringLiteral("srv:12"), onePiece(6), 10);
+
+    plex->close(QStringLiteral("srv:12"));
+
+    QVERIFY(service->activeSessions().sessions().isEmpty());
+}
+
+void EpisodeRecognitionServiceTests::stopClearsActiveSessions() {
+    auto service = makeService();
+    service->start();
+    plex->play(QStringLiteral("srv:12"), onePiece(6), 10);
+
+    service->stop();
+    plex->play(QStringLiteral("srv:13"), onePiece(7), 10);
+
+    QVERIFY(service->activeSessions().sessions().isEmpty());
 }
 
 QTEST_MAIN(EpisodeRecognitionServiceTests)

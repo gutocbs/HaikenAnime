@@ -513,6 +513,7 @@ target_sources(HaikenAnime PRIVATE
         src/domain/recognition/RecognitionPolicy.cpp
         src/domain/recognition/RecognitionRecord.cpp
         src/application/recognition/EpisodeRecognitionService.cpp
+        src/application/recognition/ActiveSessionRegistry.cpp
         src/application/recognition/PersonalListProgressWriter.cpp
         src/application/recognition/PlaybackObservationService.cpp
         src/application/recognition/PluginRegistry.cpp
@@ -887,8 +888,18 @@ add_executable(PluginRegistryTests
 target_link_libraries(PluginRegistryTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME PluginRegistryTests COMMAND PluginRegistryTests)
 
+add_executable(ActiveSessionRegistryTests
+        tests/unit/ActiveSessionRegistryTests.cpp
+        src/application/recognition/ActiveSessionRegistry.cpp
+        src/domain/recognition/PlaybackSession.cpp
+        src/domain/recognition/EpisodeCandidate.cpp
+)
+target_link_libraries(ActiveSessionRegistryTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME ActiveSessionRegistryTests COMMAND ActiveSessionRegistryTests)
+
 set(RECOGNITION_PIPELINE_SOURCES
         src/application/recognition/EpisodeRecognitionService.cpp
+        src/application/recognition/ActiveSessionRegistry.cpp
         src/application/recognition/PluginRegistry.cpp
         src/application/recognition/PlaybackObservationService.cpp
         src/application/recognition/ProgressDecisionService.cpp
@@ -1882,6 +1893,7 @@ set(HAIKENANIME_TESTS
         PlexApiClientTests
         PlexPluginTests
         PluginRegistryTests
+        ActiveSessionRegistryTests
         EpisodeRecognitionServiceTests
         RecognitionCompositionTests
         PluginSettingsControllerTests

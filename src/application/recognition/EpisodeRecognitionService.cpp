@@ -72,6 +72,7 @@ void EpisodeRecognitionService::stop() {
     // Plugins report their last stop events while running_ is still true, then late events are dropped.
     for (auto *plugin : registry_.plugins()) plugin->stop();
     running_ = false;
+    activeSessions_.clear();
 }
 
 void EpisodeRecognitionService::setPolicy(const RecognitionPolicy &policy) {
@@ -81,7 +82,9 @@ void EpisodeRecognitionService::setPolicy(const RecognitionPolicy &policy) {
 
 void EpisodeRecognitionService::onSessionStarted(const PlaybackSession &session, const EpisodeCandidate &candidate) {
     if (!running_) return;
-    observation_->start(session, resolver_.resolve(candidate));
+    const auto resolved = resolver_.resolve(candidate);
+    observation_->start(session, resolved);
+    activeSessions_.start(session, resolved);
 }
 
 void EpisodeRecognitionService::onSessionUpdated(const PlaybackSessionId &sessionId, const PlaybackSnapshot &snapshot) {
@@ -89,7 +92,9 @@ void EpisodeRecognitionService::onSessionUpdated(const PlaybackSessionId &sessio
 }
 
 void EpisodeRecognitionService::onSessionStopped(const PlaybackSessionId &sessionId, const StopReason reason) {
-    if (running_) observation_->stop(sessionId, reason);
+    if (!running_) return;
+    observation_->stop(sessionId, reason);
+    activeSessions_.stop(sessionId);
 }
 
 void EpisodeRecognitionService::complete(const PlaybackSession &session, const EpisodeCandidate &candidate) {
@@ -109,4 +114,9 @@ void EpisodeRecognitionService::incomplete(const PlaybackSession &session, const
 
 void EpisodeRecognitionService::report(const QString &message) const {
     if (diagnostics_) diagnostics_(message);
+}
+
+void EpisodeRecognitionService::onSessionDetailsChanged(const PlaybackSessionId &sessionId,
+                                                        const EpisodeDetails &details) {
+    if (running_) activeSessions_.updateDetails(sessionId, details);
 }

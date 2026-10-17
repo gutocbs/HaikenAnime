@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "../media/IMediaReader.h"
+#include "ActiveSessionRegistry.h"
 #include "IPlaybackPlugin.h"
 #include "PlaybackObservationService.h"
 #include "PluginRegistry.h"
@@ -57,10 +58,13 @@ public:
     void stop();
     void setPolicy(const RecognitionPolicy &policy);
     [[nodiscard]] bool isRunning() const { return running_; }
+    [[nodiscard]] const ActiveSessionRegistry &activeSessions() const { return activeSessions_; }
+    [[nodiscard]] ActiveSessionRegistry &activeSessions() { return activeSessions_; }
 
     void onSessionStarted(const PlaybackSession &session, const EpisodeCandidate &candidate) override;
     void onSessionUpdated(const PlaybackSessionId &sessionId, const PlaybackSnapshot &snapshot) override;
     void onSessionStopped(const PlaybackSessionId &sessionId, StopReason reason) override;
+    void onSessionDetailsChanged(const PlaybackSessionId &sessionId, const EpisodeDetails &details) override;
 
 private:
     void complete(const PlaybackSession &session, const EpisodeCandidate &candidate);
@@ -73,6 +77,7 @@ private:
     RecognitionHistoryService &history_;
     std::function<void(const QString &)> diagnostics_;
     std::unique_ptr<PlaybackObservationService> observation_;
+    ActiveSessionRegistry activeSessions_;
     bool running_ = false;
 };
 
