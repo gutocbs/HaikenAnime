@@ -9,6 +9,9 @@
 #include "../application/anilist/AniListSnapshotReconciliation.h"
 #include "../application/anilist/AniListSyncErrorClassifier.h"
 #include "../application/anilist/IAniListAuthProvider.h"
+#include "../application/recognition/IRecognitionProgressWriter.h"
+#include "../application/recognition/RecognitionHistoryService.h"
+#include "../application/recognition/RecognitionSyncFeedback.h"
 #include "../infrastructure/anilist/AniListGraphQlClient.h"
 #include "../infrastructure/anilist/GraphQlAniListDataSource.h"
 #include "../infrastructure/anilist/GraphQlQueryStore.h"
@@ -17,6 +20,7 @@
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "../infrastructure/database/SqliteMediaRepository.h"
 #include "../infrastructure/database/SqlitePendingChangeRepository.h"
+#include "../infrastructure/database/SqliteRecognitionHistoryRepository.h"
 #include "../infrastructure/database/SqliteSyncTaskStateRepository.h"
 #include "../infrastructure/database/SqliteUserPreferencesRepository.h"
 
@@ -36,6 +40,15 @@ public:
 
 private:
     AniListCredentials credentials_;
+};
+
+/** The drain only reports sync outcomes to the history; it never applies recognition progress. */
+class NoRecognitionProgressWriter final : public IRecognitionProgressWriter {
+public:
+    bool apply(const Media &, const Media &, QString &error) override {
+        error = QStringLiteral("Recognition progress cannot be applied while draining AniList changes.");
+        return false;
+    }
 };
 
 /** Scopes the outbox to the authenticated account and adopts ownerless legacy changes. */
@@ -288,6 +301,17 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             pendingChanges, updateClient, credentials.userId,
                             authenticatedUserList_.auditLogger,
                             [job] { return job->cancelled.load(); });
+                        // Reports each Progress outcome to the recognition history (Synced / Failed).
+                        SqliteRecognitionHistoryRepository recognitionHistoryRepository(
+                            database.connection(), QStringLiteral(":/sqlite/queries/read-recognition-history.sql"),
+                            QStringLiteral(":/sqlite/queries/insert-recognition-record.sql"),
+                            QStringLiteral(":/sqlite/queries/update-recognition-record.sql"));
+                        NoRecognitionProgressWriter noRecognitionProgress;
+                        RecognitionHistoryService recognitionHistory(recognitionHistoryRepository,
+                                                                     noRecognitionProgress);
+                        RecognitionSyncFeedback recognitionSyncFeedback(recognitionHistory,
+                                                                        authenticatedUserList_.auditLogger);
+                        pendingProcessor.setObserver(&recognitionSyncFeedback);
                         AniListPendingChangeDrain drain(pendingChanges, pendingProcessor);
                         drain.setProgressReporter([&publish](const int processed, const int total) {
                             publish(QStringLiteral("pending_changes"), 1, 1, processed, total);

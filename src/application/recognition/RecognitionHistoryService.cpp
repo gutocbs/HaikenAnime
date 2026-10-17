@@ -4,6 +4,8 @@
 
 namespace {
 const auto ProgressWriteFailed = QStringLiteral("progress-write-failed");
+// Records of one media still awaiting AniList are few (one per unsynced episode); the cap only bounds a query.
+constexpr int AwaitingSyncLimit = 500;
 }
 
 RecognitionHistoryService::RecognitionHistoryService(IRecognitionHistoryRepository &repository,
@@ -113,6 +115,23 @@ bool RecognitionHistoryService::markSynced(const qint64 recordId, QString &error
     if (!record.has_value()) return false;
     record->markSynced(now());
     return repository_.update(*record, error);
+}
+
+bool RecognitionHistoryService::findAwaitingSync(const int mediaId, const int upToEpisode,
+                                                 QList<RecognitionRecord> &records, QString &error) {
+    records.clear();
+    QList<RecognitionRecord> found;
+    if (!repository_.find({.mediaId = mediaId, .maxEpisode = upToEpisode, .awaitingSync = true,
+                           .limit = AwaitingSyncLimit},
+                          found, error)) {
+        return false;
+    }
+    for (auto &record : found) {
+        if (record.status() == RecognitionStatus::MarkedWatched || record.status() == RecognitionStatus::Corrected) {
+            records.append(std::move(record));
+        }
+    }
+    return true;
 }
 
 QDateTime RecognitionHistoryService::now() const {

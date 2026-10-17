@@ -14,6 +14,12 @@ struct RecognitionHistoryQuery final {
     QString deduplicationKey;
     std::optional<RecognitionStatus> status;
     QString pluginId;
+    /// Effective media id: the correction's when the record was corrected, otherwise the candidate's.
+    std::optional<int> mediaId;
+    /// Only records whose effective episode is at most this value.
+    std::optional<int> maxEpisode;
+    /// Only records whose AniList synchronization is still pending or failed.
+    bool awaitingSync = false;
     /// Cursor: only records with an id lower than this one.
     std::optional<qint64> beforeId;
     int limit = 50;

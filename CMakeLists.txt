@@ -520,6 +520,7 @@ target_sources(HaikenAnime PRIVATE
         src/application/recognition/PluginSettingsService.cpp
         src/application/recognition/ProgressDecisionService.cpp
         src/application/recognition/RecognitionHistoryService.cpp
+        src/application/recognition/RecognitionSyncFeedback.cpp
         src/infrastructure/database/SqlitePluginSettingsRepository.cpp
         src/infrastructure/database/SqliteRecognitionHistoryRepository.cpp
         src/infrastructure/recognition/QtProcessLauncher.cpp
@@ -806,6 +807,17 @@ add_executable(RecognitionHistoryServiceTests
 )
 target_link_libraries(RecognitionHistoryServiceTests PRIVATE Qt6::Core Qt6::Test)
 add_test(NAME RecognitionHistoryServiceTests COMMAND RecognitionHistoryServiceTests)
+
+add_executable(RecognitionSyncFeedbackTests
+        tests/unit/RecognitionSyncFeedbackTests.cpp
+        src/application/recognition/RecognitionSyncFeedback.cpp
+        src/application/recognition/RecognitionHistoryService.cpp
+        src/domain/recognition/PlaybackSession.cpp
+        src/domain/recognition/EpisodeCandidate.cpp
+        src/domain/recognition/RecognitionRecord.cpp
+)
+target_link_libraries(RecognitionSyncFeedbackTests PRIVATE Qt6::Core Qt6::Test)
+add_test(NAME RecognitionSyncFeedbackTests COMMAND RecognitionSyncFeedbackTests)
 
 add_executable(MpvIpcClientTests
         tests/unit/MpvIpcClientTests.cpp
@@ -1516,6 +1528,8 @@ add_executable(AniListPendingChangeProcessorTests
         tests/unit/AniListPendingChangeProcessorTests.cpp
         src/application/anilist/AniListPendingChangeProcessor.h
         src/application/anilist/AniListPendingChangeProcessor.cpp
+        src/application/anilist/IAniListPendingChangeObserver.h
+        src/application/anilist/AniListSyncErrorClassifier.cpp
         src/application/anilist/AniListPendingChangeCompactor.h
         src/application/anilist/AniListPendingChangeCompactor.cpp
         src/application/anilist/AniListMergePolicyResolver.h
@@ -1539,6 +1553,7 @@ add_executable(AniListPendingChangeDrainTests
         src/application/anilist/AniListPendingChangeDrain.cpp
         src/application/anilist/AniListPendingChangeProcessor.h
         src/application/anilist/AniListPendingChangeProcessor.cpp
+        src/application/anilist/AniListSyncErrorClassifier.cpp
         src/application/anilist/AniListPendingChangeCompactor.h
         src/application/anilist/AniListPendingChangeCompactor.cpp
         src/application/anilist/AniListPendingChangeGrouper.h
@@ -1859,6 +1874,7 @@ set(HAIKENANIME_TESTS
         PlaybackObservationServiceTests
         ProgressDecisionServiceTests
         RecognitionHistoryServiceTests
+        RecognitionSyncFeedbackTests
         SqliteRecognitionHistoryRepositoryTests
         MpvIpcClientTests
         MpvPluginTests

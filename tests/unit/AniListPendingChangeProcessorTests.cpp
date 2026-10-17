@@ -5,6 +5,7 @@
 #include "../../src/application/anilist/AniListPendingChangeProcessor.h"
 #include "../../src/application/anilist/AniListPendingChangeCompactor.h"
 #include "../../src/application/anilist/AniListPendingChangeGrouper.h"
+#include "../../src/application/anilist/IAniListPendingChangeObserver.h"
 
 class FakePendingRepository final : public IPendingChangeRepository {
 public:
@@ -64,7 +65,7 @@ public:
             }
         }
         if (!succeeds) {
-            error = QStringLiteral("update failed");
+            error = failureMessage;
         }
         return succeeds;
     }
@@ -78,10 +79,40 @@ public:
     }
 
     bool succeeds = true;
+    QString failureMessage = QStringLiteral("update failed");
     bool deleteSucceeds = true;
     QList<QPair<int, qint64>> deleteCalls;
     int mediaCalls = 0;
     AniListMediaPendingChanges lastGroup;
+};
+
+class RecordingObserver final : public IAniListPendingChangeObserver {
+public:
+    void changesSent(const QList<AniListPendingChange> &changes) override { sent.append(changes); }
+    void changesFailed(const QList<AniListPendingChange> &changes,
+                       const AniListSyncErrorCategory category) override {
+        failed.append(changes);
+        categories.append(category);
+    }
+
+    QList<QList<AniListPendingChange>> sent;
+    QList<QList<AniListPendingChange>> failed;
+    QList<AniListSyncErrorCategory> categories;
+};
+
+/** Records which outbox status was already persisted when the observer was notified. */
+class OrderingObserver final : public IAniListPendingChangeObserver {
+public:
+    explicit OrderingObserver(const FakePendingRepository &repository) : repository_(repository) {}
+    void changesSent(const QList<AniListPendingChange> &) override { lastStatus = repository_.statuses.last(); }
+    void changesFailed(const QList<AniListPendingChange> &, AniListSyncErrorCategory) override {
+        lastStatus = repository_.statuses.last();
+    }
+
+    std::optional<AniListPendingChangeStatus> lastStatus;
+
+private:
+    const FakePendingRepository &repository_;
 };
 
 class AniListPendingChangeProcessorTests : public QObject {
@@ -103,6 +134,12 @@ private slots:
     void logsDeletionFailureWithSafeError();
     void cancelledUpdateLeavesChangeAsItWasWithoutCountingAnAttempt();
     void cancelledDeletionLeavesChangeAsItWasWithoutCountingAnAttempt();
+    void notifiesObserverAfterSentChangesArePersisted();
+    void notifiesObserverOfRetryableFailureAfterFailedStatusIsPersisted();
+    void notifiesObserverOfDefinitiveFailureWithCategoryOnly();
+    void doesNotNotifyObserverWhenUpdateIsCancelled();
+    void doesNotNotifyObserverWhenSucceededStatusCannotBePersisted();
+    void observerDoesNotChangeOutboxStatuses();
 };
 
 static AniListPendingChange progressChange(AniListPendingChangeStatus status =
@@ -393,6 +430,144 @@ void AniListPendingChangeProcessorTests::cancelledDeletionLeavesChangeAsItWasWit
     QCOMPARE(last.status, AniListPendingChangeStatus::Pending);
     QCOMPARE(last.attempts, 0);
     QVERIFY(last.lastError.isEmpty());
+}
+
+void AniListPendingChangeProcessorTests::notifiesObserverAfterSentChangesArePersisted() {
+    // Arrange
+    FakePendingRepository repository;
+    repository.changes.append(progressChange());
+    FakeUpdateClient client;
+    AniListPendingChangeProcessor processor(repository, client);
+    RecordingObserver observer;
+    OrderingObserver ordering(repository);
+    processor.setObserver(&observer);
+    QString error;
+
+    // Act
+    QVERIFY(processor.process(154587, error));
+    processor.setObserver(&ordering);
+    QVERIFY(processor.process(154587, error));
+
+    // Assert
+    QCOMPARE(observer.sent.size(), 1);
+    QCOMPARE(observer.sent.first().size(), 1);
+    QCOMPARE(observer.sent.first().first().field, AniListField::Progress);
+    QCOMPARE(std::get<int>(observer.sent.first().first().newValue), 13);
+    QVERIFY(observer.failed.isEmpty());
+    QCOMPARE(ordering.lastStatus, std::optional(AniListPendingChangeStatus::Succeeded));
+}
+
+void AniListPendingChangeProcessorTests::notifiesObserverOfRetryableFailureAfterFailedStatusIsPersisted() {
+    // Arrange
+    FakePendingRepository repository;
+    repository.changes.append(progressChange());
+    FakeUpdateClient client;
+    client.succeeds = false;
+    client.failureMessage = QStringLiteral("AniList network connection refused");
+    AniListPendingChangeProcessor processor(repository, client);
+    RecordingObserver observer;
+    OrderingObserver ordering(repository);
+    processor.setObserver(&observer);
+    QString error;
+
+    // Act
+    QVERIFY(!processor.process(154587, error));
+    processor.setObserver(&ordering);
+    QVERIFY(!processor.process(154587, error));
+
+    // Assert
+    QCOMPARE(observer.failed.size(), 1);
+    QCOMPARE(observer.failed.first().first().mediaId, 154587);
+    QCOMPARE(observer.categories, QList{AniListSyncErrorCategory::Network});
+    QVERIFY(IsRetryable(observer.categories.first()));
+    QVERIFY(observer.sent.isEmpty());
+    QCOMPARE(ordering.lastStatus, std::optional(AniListPendingChangeStatus::Failed));
+}
+
+void AniListPendingChangeProcessorTests::notifiesObserverOfDefinitiveFailureWithCategoryOnly() {
+    // Arrange
+    FakePendingRepository repository;
+    repository.changes.append(progressChange());
+    FakeUpdateClient client;
+    client.succeeds = false;
+    client.failureMessage = QStringLiteral("Unauthorized: Bearer secret-token-123 was rejected");
+    AniListPendingChangeProcessor processor(repository, client);
+    RecordingObserver observer;
+    processor.setObserver(&observer);
+    QString error;
+
+    // Act
+    QVERIFY(!processor.process(154587, error));
+
+    // Assert: only the category crosses the boundary; the raw (token-bearing) message stays in the outbox.
+    QCOMPARE(observer.categories, QList{AniListSyncErrorCategory::Authentication});
+    QVERIFY(!IsRetryable(observer.categories.first()));
+    QVERIFY(observer.failed.first().first().lastError.isEmpty());
+}
+
+void AniListPendingChangeProcessorTests::doesNotNotifyObserverWhenUpdateIsCancelled() {
+    // Arrange
+    FakePendingRepository repository;
+    repository.changes.append(progressChange());
+    FakeUpdateClient client;
+    client.succeeds = false;
+    AniListPendingChangeProcessor processor(repository, client, 0, {}, [] { return true; });
+    RecordingObserver observer;
+    processor.setObserver(&observer);
+    QString error;
+
+    // Act
+    QVERIFY(!processor.process(154587, error));
+
+    // Assert
+    QVERIFY(observer.sent.isEmpty());
+    QVERIFY(observer.failed.isEmpty());
+}
+
+void AniListPendingChangeProcessorTests::doesNotNotifyObserverWhenSucceededStatusCannotBePersisted() {
+    // Arrange
+    FakePendingRepository repository;
+    repository.changes.append(progressChange());
+    repository.failOnStatus = AniListPendingChangeStatus::Succeeded;
+    FakeUpdateClient client;
+    AniListPendingChangeProcessor processor(repository, client);
+    RecordingObserver observer;
+    processor.setObserver(&observer);
+    QString error;
+
+    // Act
+    QVERIFY(!processor.process(154587, error));
+
+    // Assert: the change is resent later, so nothing is reported as synchronized yet.
+    QVERIFY(observer.sent.isEmpty());
+    QVERIFY(observer.failed.isEmpty());
+}
+
+void AniListPendingChangeProcessorTests::observerDoesNotChangeOutboxStatuses() {
+    // Arrange
+    FakePendingRepository withoutObserver;
+    withoutObserver.changes.append(progressChange());
+    FakePendingRepository withObserver;
+    withObserver.changes.append(progressChange());
+    FakeUpdateClient client;
+    client.succeeds = false;
+    AniListPendingChangeProcessor plain(withoutObserver, client);
+    AniListPendingChangeProcessor observed(withObserver, client);
+    RecordingObserver observer;
+    observed.setObserver(&observer);
+    QString plainError;
+    QString observedError;
+
+    // Act
+    const bool plainResult = plain.process(154587, plainError);
+    const bool observedResult = observed.process(154587, observedError);
+
+    // Assert
+    QCOMPARE(observedResult, plainResult);
+    QCOMPARE(observedError, plainError);
+    QCOMPARE(withObserver.statuses, withoutObserver.statuses);
+    QCOMPARE(withObserver.updates.last().attempts, withoutObserver.updates.last().attempts);
+    QCOMPARE(withObserver.updates.last().lastError, withoutObserver.updates.last().lastError);
 }
 
 QTEST_MAIN(AniListPendingChangeProcessorTests)

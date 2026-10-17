@@ -1,8 +1,17 @@
 #include "AniListPendingChangeProcessor.h"
 #include "AniListPendingChangeCompactor.h"
 #include "AniListPendingChangeGrouper.h"
+#include "AniListSyncErrorClassifier.h"
 
 #include <utility>
+
+namespace {
+/** What observers see: the persisted outcome without the raw error message. */
+QList<AniListPendingChange> WithoutErrors(QList<AniListPendingChange> changes) {
+    for (auto &change : changes) change.lastError.clear();
+    return changes;
+}
+}
 
 AniListPendingChangeProcessor::AniListPendingChangeProcessor(
     IPendingChangeRepository &repository, IAniListUpdateClient &updateClient, const qint64 userId,
@@ -130,7 +139,7 @@ bool AniListPendingChangeProcessor::process(const int mediaId, QString &error) {
 
         QString operationError;
         if (updateClient_.updateMedia(group, operationError)) {
-            for (auto change : processingChanges) {
+            for (auto &change : processingChanges) {
                 change.status = AniListPendingChangeStatus::Succeeded;
                 change.lastError.clear();
                 QString statusError;
@@ -139,6 +148,8 @@ bool AniListPendingChangeProcessor::process(const int mediaId, QString &error) {
                     return false;
                 }
             }
+            // Only after every change is acknowledged: a partial write is resent, not reported.
+            if (observer_) observer_->changesSent(WithoutErrors(processingChanges));
         } else if (isCancelled_ && isCancelled_()) {
             // Cancellation is not a failed attempt: put each change back exactly as it was.
             for (const auto &original : group.changes) {
@@ -151,7 +162,7 @@ bool AniListPendingChangeProcessor::process(const int mediaId, QString &error) {
             error = operationError;
             return false;
         } else {
-            for (auto change : processingChanges) {
+            for (auto &change : processingChanges) {
                 change.status = AniListPendingChangeStatus::Failed;
                 change.lastError = operationError;
                 ++change.attempts;
@@ -160,6 +171,10 @@ bool AniListPendingChangeProcessor::process(const int mediaId, QString &error) {
                     error = statusError;
                     return false;
                 }
+            }
+            if (observer_) {
+                observer_->changesFailed(WithoutErrors(processingChanges),
+                                         AniListSyncErrorClassifier::Classify(operationError));
             }
             error = operationError;
             return false;

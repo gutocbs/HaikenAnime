@@ -35,6 +35,7 @@ private slots:
     void findsByDeduplicationKey();
     void listsNewestFirstWithCursorPagination();
     void filtersByStatusAndPlugin();
+    void findsRecordsAwaitingSyncByEffectiveMediaAndEpisode();
     void keepsUnknownSeasonAndMediaAsNull();
     void migrationRecordsVersionTwentyFive();
 
@@ -189,6 +190,46 @@ void SqliteRecognitionHistoryRepositoryTests::filtersByStatusAndPlugin() {
 
     QCOMPARE(found.size(), 1);
     QCOMPARE(found.first().id(), watched.id());
+}
+
+void SqliteRecognitionHistoryRepositoryTests::findsRecordsAwaitingSyncByEffectiveMediaAndEpisode() {
+    // Arrange
+    auto repository = repositoryFor(*database);
+    QString error;
+    auto pending = recordFor(QStringLiteral("a"), 4);
+    pending.markSyncPending(Created);
+    auto failed = recordFor(QStringLiteral("b"), 5);
+    failed.markSyncFailed(QStringLiteral("falha"), Created);
+    auto laterEpisode = recordFor(QStringLiteral("c"), 6);
+    laterEpisode.markSyncPending(Created);
+    auto synced = recordFor(QStringLiteral("d"), 3);
+    synced.markSynced(Created);
+    auto notRequired = recordFor(QStringLiteral("e"), 2);
+    auto otherMedia = recordFor(QStringLiteral("f"), 1, 99);
+    otherMedia.markSyncPending(Created);
+    auto correctedAway = recordFor(QStringLiteral("g"), 1);
+    QVERIFY(correctedAway.transitionTo(RecognitionStatus::Uncertain, Created));
+    QVERIFY(correctedAway.correct(EpisodeCandidate::create(QStringLiteral("Other"), 99, 1, 1, 1.0).value(), Created));
+    correctedAway.markSyncPending(Created);
+    auto correctedHere = recordFor(QStringLiteral("h"), 9, 99);
+    QVERIFY(correctedHere.transitionTo(RecognitionStatus::Uncertain, Created));
+    QVERIFY(correctedHere.correct(EpisodeCandidate::create(QStringLiteral("One Piece"), 21, 1, 2, 1.0).value(),
+                                  Created));
+    correctedHere.markSyncPending(Created);
+    for (auto *record : {&pending, &failed, &laterEpisode, &synced, &notRequired, &otherMedia, &correctedAway,
+                         &correctedHere}) {
+        QVERIFY2(repository.insert(*record, error), qPrintable(error));
+    }
+    QList<RecognitionRecord> found;
+
+    // Act
+    QVERIFY2(repository.find({.mediaId = 21, .maxEpisode = 5, .awaitingSync = true, .limit = 100}, found, error),
+             qPrintable(error));
+
+    // Assert
+    QList<qint64> ids;
+    for (const auto &record : found) ids.append(record.id());
+    QCOMPARE(ids, (QList<qint64>{correctedHere.id(), failed.id(), pending.id()}));
 }
 
 void SqliteRecognitionHistoryRepositoryTests::keepsUnknownSeasonAndMediaAsNull() {

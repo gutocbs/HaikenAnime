@@ -46,6 +46,8 @@ public:
     /// Durable, visible AniList failure. Local progress stays as it is.
     bool markSyncFailure(qint64 recordId, const QString &safeError, QString &error);
     bool markSynced(qint64 recordId, QString &error);
+    /// MarkedWatched/Corrected records whose AniList sync is pending or failed for mediaId, up to an episode.
+    bool findAwaitingSync(int mediaId, int upToEpisode, QList<RecognitionRecord> &records, QString &error);
 
 private:
     [[nodiscard]] QDateTime now() const;

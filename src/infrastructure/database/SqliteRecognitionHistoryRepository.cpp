@@ -164,6 +164,9 @@ bool SqliteRecognitionHistoryRepository::find(const RecognitionHistoryQuery &cri
                     criteria.deduplicationKey.isEmpty() ? nullText : QVariant(criteria.deduplicationKey));
     query.bindValue(QStringLiteral(":status"), criteria.status ? QVariant(ToString(*criteria.status)) : nullText);
     query.bindValue(QStringLiteral(":plugin_id"), criteria.pluginId.isEmpty() ? nullText : QVariant(criteria.pluginId));
+    query.bindValue(QStringLiteral(":media_id"), OptionalInt(criteria.mediaId));
+    query.bindValue(QStringLiteral(":max_episode"), OptionalInt(criteria.maxEpisode));
+    query.bindValue(QStringLiteral(":awaiting_sync"), criteria.awaitingSync ? 1 : 0);
     query.bindValue(QStringLiteral(":before_id"), criteria.beforeId ? QVariant(*criteria.beforeId) : nullId);
     query.bindValue(QStringLiteral(":limit"), qMax(criteria.limit, 1));
     if (!query.exec()) {
