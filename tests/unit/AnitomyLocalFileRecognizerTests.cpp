@@ -11,16 +11,19 @@ private slots:
     void rejectsMissingTitleOrEpisode();
     void rejectsRangesAndMultipleEpisodes();
     void rejectsUnsupportedKinds();
-    void recoversSeasonAndEpisodeWhenAnitomyMissesThem();
+    void keepsSeasonMarkerOutOfEpisodeRangeCheck();
     void recoversEpisodeWithVersionSuffix();
     void recoversSeasonAndEpisodeFromSxxExx();
     void recoversSeasonFromPart();
     void keepsOrdinalSeasonHandledByAnitomy();
     void doesNotTakeYearAsFallbackEpisode();
     void neverOverridesValidAnitomyEpisode();
+    void recoversEpisodeFromDashWhenAnitomyMissesIt();
+    void recoversEpisodeFromEpisodeKeywordWhenAnitomyMissesIt();
+    void doesNotAcceptFallbackEpisodeFromUnparseableBatch();
 };
 
-void AnitomyLocalFileRecognizerTests::recoversSeasonAndEpisodeWhenAnitomyMissesThem() {
+void AnitomyLocalFileRecognizerTests::keepsSeasonMarkerOutOfEpisodeRangeCheck() {
     AnitomyLocalFileRecognizer recognizer;
     const auto result = recognizer.recognize(QStringLiteral(
         "[Erai-raws] Ao no Hako Season 2 - 01 [1080p NF WEB-DL AVC EAC3][MultiSub][54AB16DB].mkv"));
@@ -129,6 +132,33 @@ void AnitomyLocalFileRecognizerTests::rejectsUnsupportedKinds() {
     const auto result = recognizer.recognize(QStringLiteral("Frieren - 01.mkv"), LocalMediaKind::Manga);
     QCOMPARE(result.state, LocalRecognitionState::Unsupported);
     QCOMPARE(result.mediaKind, LocalMediaKind::Manga);
+}
+
+void AnitomyLocalFileRecognizerTests::recoversEpisodeFromDashWhenAnitomyMissesIt() {
+    AnitomyLocalFileRecognizer recognizer;
+    const auto result = recognizer.recognize(QStringLiteral("Show -05.mkv"));
+    QCOMPARE(result.state, LocalRecognitionState::Recognized);
+    QCOMPARE(result.episode, std::optional<int>(5));
+    QCOMPARE(result.diagnostic, QStringLiteral("season/episode from fallback"));
+}
+
+void AnitomyLocalFileRecognizerTests::recoversEpisodeFromEpisodeKeywordWhenAnitomyMissesIt() {
+    AnitomyLocalFileRecognizer recognizer;
+    for (const auto &name : {QStringLiteral("Show-E05.mkv"), QStringLiteral("Show-Episode05.mkv")}) {
+        const auto result = recognizer.recognize(name);
+        QCOMPARE(result.state, LocalRecognitionState::Recognized);
+        QCOMPARE(result.episode, std::optional<int>(5));
+        QCOMPARE(result.diagnostic, QStringLiteral("season/episode from fallback"));
+    }
+}
+
+void AnitomyLocalFileRecognizerTests::doesNotAcceptFallbackEpisodeFromUnparseableBatch() {
+    AnitomyLocalFileRecognizer recognizer;
+    for (const auto &name : {QStringLiteral("Show-EP01-12.mkv"), QStringLiteral("Show-EP05-EP06.mkv")}) {
+        const auto result = recognizer.recognize(name);
+        QVERIFY2(result.state != LocalRecognitionState::Recognized, qPrintable(name));
+        QVERIFY(!result.episode.has_value());
+    }
 }
 
 QTEST_MAIN(AnitomyLocalFileRecognizerTests)

@@ -26,6 +26,14 @@ bool ContainsEpisodeRangeOrList(const QString &fileName) {
     return expression.match(fileName).hasMatch();
 }
 
+// Stricter than ContainsEpisodeRangeOrList: also catches glued forms such as "EP01-12" or "EP05-EP06".
+bool ContainsFallbackEpisodeRange(const QString &name) {
+    static const QRegularExpression expression(
+        QStringLiteral(R"((?<!\d)\d{1,4}\s*[-&,/\x{2013}]\s*(?:EP?\s*)?\d{1,4}(?!\d))"),
+        QRegularExpression::CaseInsensitiveOption);
+    return expression.match(name).hasMatch();
+}
+
 QString StripBracketGroups(QString name) {
     static const QRegularExpression groups(QStringLiteral(R"(\[[^\]]*\]|\([^)]*\))"));
     name.remove(groups);
@@ -127,13 +135,27 @@ LocalFileRecognition AnitomyLocalFileRecognizer::recognize(const QString &fileNa
     // A "Season N - 01" marker must not be read as the episode range "N - 01", even when Anitomy found the season.
     QRegularExpressionMatch seasonMatch;
     const auto markerSeason = FindFallbackSeason(cleanName, &seasonMatch);
-    if (markerSeason.has_value()) rangeCheckName.remove(seasonMatch.captured(0), Qt::CaseInsensitive);
+    if (markerSeason.has_value()) {
+        // Remove only the first occurrence of the marker, not every case-insensitive repeat.
+        const auto markerIndex = rangeCheckName.indexOf(seasonMatch.captured(0), 0, Qt::CaseInsensitive);
+        if (markerIndex >= 0) rangeCheckName.remove(markerIndex, seasonMatch.capturedLength(0));
+    }
     if (!season.has_value() && markerSeason.has_value()) {
         season = markerSeason;
         result.extractedTitle = RemoveSeasonMarker(result.extractedTitle, seasonMatch);
         usedFallback = true;
     }
     if (episodeValue.empty() && alternateEpisodeValue.empty()) {
+        auto fallbackRangeName = cleanName;
+        if (markerSeason.has_value()) {
+            const auto markerIndex = fallbackRangeName.indexOf(seasonMatch.captured(0), 0, Qt::CaseInsensitive);
+            if (markerIndex >= 0) fallbackRangeName.remove(markerIndex, seasonMatch.capturedLength(0));
+        }
+        if (ContainsEpisodeRangeOrList(rangeCheckName) || ContainsFallbackEpisodeRange(fallbackRangeName)) {
+            result.state = LocalRecognitionState::Ambiguous;
+            result.diagnostic = QStringLiteral("The filename contains an episode range or multiple episode values.");
+            return result;
+        }
         result.episode = FindFallbackEpisode(cleanName);
         if (!result.episode.has_value()) {
             result.diagnostic = QStringLiteral("No numeric episode was extracted from the local filename.");

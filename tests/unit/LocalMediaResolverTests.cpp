@@ -71,7 +71,6 @@ private slots:
     void aoNoHakoSeason2WithoutFolderMatchesSeasonMedia();
 };
 
-
 void LocalMediaResolverTests::matchesPrimaryTitle() {
     const auto match = LocalMediaResolver().resolve(
         Recognized(QStringLiteral("Frieren")),
