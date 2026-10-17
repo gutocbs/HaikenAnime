@@ -58,6 +58,7 @@ private slots:
     void statusAndSyncStateNamesRoundTrip();
     void restoreRebuildsStoredRecord();
     void restoreRejectsInvalidStoredData();
+    void episodeDetailsDefaultEmptyAndCompareByValue();
 };
 
 void RecognitionDomainTests::policyDefaultsToThreeMinutes() {
@@ -298,6 +299,23 @@ void RecognitionDomainTests::restoreRejectsInvalidStoredData() {
                                .candidate = candidate(4)};
 
     QVERIFY(!RecognitionRecord::restore(data).has_value());
+}
+
+void RecognitionDomainTests::episodeDetailsDefaultEmptyAndCompareByValue() {
+    const EpisodeDetails empty;
+    QVERIFY(empty.sourceTitle.isEmpty());
+    QVERIFY(empty.title.isEmpty());
+    QVERIFY(empty.summary.isEmpty());
+    QVERIFY(!empty.durationSeconds.has_value());
+    QVERIFY(!empty.airDate.has_value());
+
+    const EpisodeDetails first{.title = QStringLiteral("Romance Dawn"), .summary = QStringLiteral("A"),
+                               .durationSeconds = 1440, .airDate = QDate(1999, 10, 20)};
+    auto second = first;
+    QVERIFY(first == second);
+    second.summary = QStringLiteral("B");
+    QVERIFY(first != second);
+    QVERIFY(session().details == EpisodeDetails{});
 }
 
 QTEST_MAIN(RecognitionDomainTests)

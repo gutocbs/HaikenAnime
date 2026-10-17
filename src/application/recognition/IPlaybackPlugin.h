@@ -35,6 +35,8 @@ public:
     virtual void onSessionStarted(const PlaybackSession &session, const EpisodeCandidate &candidate) = 0;
     virtual void onSessionUpdated(const PlaybackSessionId &sessionId, const PlaybackSnapshot &snapshot) = 0;
     virtual void onSessionStopped(const PlaybackSessionId &sessionId, StopReason reason) = 0;
+    /// Episode data changed for an active session (e.g. a later Plex poll); optional for observers.
+    virtual void onSessionDetailsChanged(const PlaybackSessionId &, const EpisodeDetails &) {}
 };
 
 /// Internal player integration (mpv, Plex) compiled with the application.

@@ -1,6 +1,7 @@
 #ifndef HAIKENANIME_PLAYBACKSESSION_H
 #define HAIKENANIME_PLAYBACKSESSION_H
 
+#include <QDate>
 #include <QDateTime>
 #include <QString>
 
@@ -40,6 +41,18 @@ struct PlaybackSnapshot final {
     QDateTime observedAt;
 };
 
+/// Episode data a plugin already received with the playback (never fetched by HaikenAnime).
+struct EpisodeDetails final {
+    /// Raw name the plugin saw: file name (mpv) or series title (Plex).
+    QString sourceTitle;
+    QString title;
+    QString summary;
+    std::optional<int> durationSeconds;
+    std::optional<QDate> airDate;
+
+    friend bool operator==(const EpisodeDetails &, const EpisodeDetails &) = default;
+};
+
 /// Normalized playback session produced by a plugin. Plugins never decide progress.
 struct PlaybackSession final {
     PlaybackSessionId id;
@@ -48,6 +61,7 @@ struct PlaybackSession final {
     QString title;
     QString filePath;
     QDateTime startedAt;
+    EpisodeDetails details;
 };
 
 #endif // HAIKENANIME_PLAYBACKSESSION_H
