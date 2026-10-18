@@ -51,7 +51,6 @@ public:
     /// Rediscovers the account's servers and selects the one with the given id.
     void selectServer(const QString &serverId, std::function<void(bool selected, const QString &safeMessage)> completion);
     [[nodiscard]] std::optional<PlexServer> server() const { return server_; }
-    [[nodiscard]] QSet<QString> selectedUsers() const { return selectedUsers_; }
     void setSelectedUsers(const QSet<QString> &userIds);
     void setPollInterval(int seconds);
     [[nodiscard]] QString lastError() const { return lastError_; }
