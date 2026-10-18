@@ -345,17 +345,8 @@ set_source_files_properties(
         resources/sqlite/queries/delete-sync-task-state.sql
         PROPERTIES QT_RESOURCE_ALIAS "delete-sync-task-state.sql")
 set_source_files_properties(
-        resources/anilist/mutations/update-progress.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "update-progress.graphql")
-set_source_files_properties(
         resources/anilist/mutations/update-media-list-entry.graphql
         PROPERTIES QT_RESOURCE_ALIAS "update-media-list-entry.graphql")
-set_source_files_properties(
-        resources/anilist/mutations/update-score.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "update-score.graphql")
-set_source_files_properties(
-        resources/anilist/mutations/update-list-status.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "update-list-status.graphql")
 set_source_files_properties(
         resources/anilist/mutations/delete-list-entry.graphql
         PROPERTIES QT_RESOURCE_ALIAS "delete-list-entry.graphql")
@@ -449,10 +440,7 @@ qt_add_resources(HaikenAnime application_config_resource
 qt_add_resources(HaikenAnime anilist_mutation_resource_bundle
         PREFIX "/anilist/mutations"
         FILES
-        resources/anilist/mutations/update-progress.graphql
         resources/anilist/mutations/update-media-list-entry.graphql
-        resources/anilist/mutations/update-score.graphql
-        resources/anilist/mutations/update-list-status.graphql
         resources/anilist/mutations/delete-list-entry.graphql
 )
 
