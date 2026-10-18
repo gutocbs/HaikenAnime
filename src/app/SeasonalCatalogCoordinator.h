@@ -59,6 +59,7 @@ private:
         bool append = false;
     };
 
+    [[nodiscard]] SeasonalCatalogRequest requestForPage(int page) const;
     void startFirstPageIfReady();
     void fetchPage(int page, bool append);
     void resetResult();

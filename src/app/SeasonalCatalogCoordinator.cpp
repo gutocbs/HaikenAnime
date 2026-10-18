@@ -62,7 +62,11 @@ void SeasonalCatalogCoordinator::Retry() {
 int SeasonalCatalogCoordinator::year() const { return year_; }
 QString SeasonalCatalogCoordinator::seasonKey() const { return seasonKey_; }
 bool SeasonalCatalogCoordinator::includeAdultContent() const { return includeAdultContent_; }
-SeasonalCatalogRequest SeasonalCatalogCoordinator::request() const { return {year_, seasonKey_, 1, perPage_, includeAdultContent_}; }
+SeasonalCatalogRequest SeasonalCatalogCoordinator::request() const { return requestForPage(1); }
+
+SeasonalCatalogRequest SeasonalCatalogCoordinator::requestForPage(const int page) const {
+    return {year_, seasonKey_, page, perPage_, includeAdultContent_};
+}
 SeasonalCatalogState SeasonalCatalogCoordinator::state() const { return state_; }
 const QList<Media> &SeasonalCatalogCoordinator::media() const { return media_; }
 QString SeasonalCatalogCoordinator::error() const { return error_; }
@@ -84,7 +88,7 @@ void SeasonalCatalogCoordinator::startFirstPageIfReady() {
 }
 
 void SeasonalCatalogCoordinator::fetchPage(const int page, const bool append) {
-    SeasonalCatalogRequest pageRequest{year_, seasonKey_, page, perPage_, includeAdultContent_};
+    const auto pageRequest = requestForPage(page);
     if (!pageRequest.isValid()) return;
 
     if (requestInFlight_) {
@@ -109,8 +113,7 @@ void SeasonalCatalogCoordinator::fetchPage(const int page, const bool append) {
         requestInFlight_ = false;
         inFlightRequest_ = {};
     }
-    const SeasonalCatalogRequest currentRequest{year_, seasonKey_, page, perPage_, includeAdultContent_};
-    if (requestGeneration != generation_ && pageRequest != currentRequest) {
+    if (requestGeneration != generation_ && pageRequest != requestForPage(page)) {
         startPendingFetchIfCurrent();
         return;
     }
@@ -180,9 +183,7 @@ bool SeasonalCatalogCoordinator::readCachedPage(const SeasonalCatalogRequest &re
 void SeasonalCatalogCoordinator::cachePage(const SeasonalCatalogRequest &request, const MediaPage &response) {
     if (cachePolicy_.maximumEntries <= 0 || cachePolicy_.timeToLiveMs <= 0) return;
     discardExpiredCacheEntries();
-    for (qsizetype index = cache_.size() - 1; index >= 0; --index) {
-        if (cache_.at(index).request == request) cache_.removeAt(index);
-    }
+    removeCachedPage(request);
     cache_.append({request, response, clock_()});
     while (cache_.size() > cachePolicy_.maximumEntries) cache_.removeFirst();
 }
@@ -223,6 +224,5 @@ void SeasonalCatalogCoordinator::startPendingFetchIfCurrent() {
     if (!pendingFetch_) return;
     const auto pending = *pendingFetch_;
     pendingFetch_.reset();
-    const SeasonalCatalogRequest current{year_, seasonKey_, pending.request.page, perPage_, includeAdultContent_};
-    if (pending.request == current) fetchPage(pending.request.page, pending.append);
+    if (pending.request == requestForPage(pending.request.page)) fetchPage(pending.request.page, pending.append);
 }
