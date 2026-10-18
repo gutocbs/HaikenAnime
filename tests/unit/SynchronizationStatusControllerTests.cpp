@@ -38,7 +38,6 @@ private slots:
     void newStartDuringLingerCancelsHiding();
     void ignoresProgressForInactivePartition();
     void ignoresCompletionOfInactivePartition();
-    void ignoresUntrackedPartitions();
     void doesNotPublishSuccessBetweenSequentialTasks();
     void failureSurvivesLaterTaskStartedDuringSettle();
     void startDuringLingerAfterFailureBeginsNewRound();
@@ -265,22 +264,6 @@ void SynchronizationStatusControllerTests::ignoresCompletionOfInactivePartition(
     QTest::qWait(60);
 
     QVERIFY(!controller.visible());
-    QCOMPARE(controller.outcome(), QStringLiteral("idle"));
-}
-
-void SynchronizationStatusControllerTests::ignoresUntrackedPartitions() {
-    SynchronizationStatusController controller(20, 20);
-
-    controller.HandleStarted(SyncPartition::Covers);
-    QVERIFY(!controller.visible());
-    controller.HandleFailed(SyncPartition::Covers, QStringLiteral("x"));
-    QVERIFY(!controller.visible());
-    controller.HandleStarted(SyncPartition::ActiveCatalog);
-    controller.HandleCompleted(SyncPartition::ActiveCatalog);
-    QTest::qWait(80);
-
-    QVERIFY(!controller.visible());
-    QVERIFY(!controller.running());
     QCOMPARE(controller.outcome(), QStringLiteral("idle"));
 }
 

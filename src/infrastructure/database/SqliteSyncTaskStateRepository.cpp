@@ -10,9 +10,7 @@
 
 namespace {
 std::optional<SyncPartition> PartitionFromString(const QString &value) {
-    for (const auto partition : {SyncPartition::UserList, SyncPartition::PendingChanges, SyncPartition::ActiveCatalog,
-                                 SyncPartition::InactiveCatalog, SyncPartition::CompletedCatalog, SyncPartition::Covers,
-                                 SyncPartition::DerivedMetadata}) {
+    for (const auto partition : {SyncPartition::UserList, SyncPartition::PendingChanges}) {
         if (ToString(partition) == value) return partition;
     }
     return std::nullopt;

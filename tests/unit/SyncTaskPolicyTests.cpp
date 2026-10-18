@@ -19,7 +19,7 @@ private slots:
     void limitsConsecutiveImmediateRetries();
     void schedulesRetryableFailuresWithBoundedExponentialBackoff();
     void schedulesNonRetryableFailuresAfterCooldown();
-    void prioritizesWatchingAndReadingOverInactiveAndCompletedCatalogs();
+    void prioritizesUserListOverPendingChanges();
     void proposesFailureResetAfterSuccess();
     void runsManualRequestsImmediately();
     void runsLocalChangesImmediately();
@@ -32,14 +32,8 @@ private slots:
 };
 
 void SyncTaskPolicyTests::providesStablePersistedNamesForEveryTaskKind() {
-    const QList<SyncTaskKind> taskKinds{SyncTaskKind::UserList, SyncTaskKind::PendingChange,
-                                        SyncTaskKind::ActiveCatalog, SyncTaskKind::InactiveCatalog,
-                                        SyncTaskKind::CompletedCatalog, SyncTaskKind::Cover,
-                                        SyncTaskKind::DerivedMetadata};
-    const QList<QString> persistedNames{QStringLiteral("user-list"), QStringLiteral("pending-change"),
-                                        QStringLiteral("active-catalog"), QStringLiteral("inactive-catalog"),
-                                        QStringLiteral("completed-catalog"), QStringLiteral("cover"),
-                                        QStringLiteral("derived-metadata")};
+    const QList<SyncTaskKind> taskKinds{SyncTaskKind::UserList, SyncTaskKind::PendingChange};
+    const QList<QString> persistedNames{QStringLiteral("user-list"), QStringLiteral("pending-change")};
 
     QCOMPARE(taskKinds.size(), persistedNames.size());
     for (qsizetype index = 0; index < taskKinds.size(); ++index) {
@@ -58,18 +52,9 @@ void SyncTaskPolicyTests::preservesEmptyMediaFilterBehaviorWhileIdentifyingItsPa
 
 void SyncTaskPolicyTests::selectsDistinctDefaultPoliciesForEveryTaskKind() {
     const Settings settings;
-    const QList<SyncTaskKind> taskKinds{SyncTaskKind::UserList, SyncTaskKind::PendingChange,
-                                        SyncTaskKind::ActiveCatalog, SyncTaskKind::InactiveCatalog,
-                                        SyncTaskKind::CompletedCatalog, SyncTaskKind::Cover,
-                                        SyncTaskKind::DerivedMetadata};
-    const QList<std::chrono::milliseconds> intervals{std::chrono::hours(1), std::chrono::minutes(1),
-                                                       std::chrono::minutes(30), std::chrono::hours(12),
-                                                       std::chrono::hours(24), std::chrono::hours(6),
-                                                       std::chrono::hours(2)};
-    const QList<std::chrono::milliseconds> ttls{std::chrono::hours(24), std::chrono::hours(1),
-                                                  std::chrono::hours(6), std::chrono::hours(24 * 7),
-                                                  std::chrono::hours(24 * 14), std::chrono::hours(48),
-                                                  std::chrono::hours(12)};
+    const QList<SyncTaskKind> taskKinds{SyncTaskKind::UserList, SyncTaskKind::PendingChange};
+    const QList<std::chrono::milliseconds> intervals{std::chrono::hours(1), std::chrono::minutes(1)};
+    const QList<std::chrono::milliseconds> ttls{std::chrono::hours(24), std::chrono::hours(1)};
 
     QCOMPARE(taskKinds.size(), intervals.size());
     QCOMPARE(taskKinds.size(), ttls.size());
@@ -172,7 +157,7 @@ void SyncTaskPolicyTests::schedulesRetryableFailuresWithBoundedExponentialBackof
 
 void SyncTaskPolicyTests::schedulesNonRetryableFailuresAfterCooldown() {
     SyncTaskState state;
-    state.kind = SyncTaskKind::Cover;
+    state.kind = SyncTaskKind::UserList;
     state.lastErrorCategory = AniListSyncErrorCategory::Authorization;
     const auto now = QDateTime::fromMSecsSinceEpoch(3'000'000, QTimeZone::UTC);
     SyncSchedulePolicy policy;
@@ -184,11 +169,9 @@ void SyncTaskPolicyTests::schedulesNonRetryableFailuresAfterCooldown() {
     QCOMPARE(decision.nextRunAt, now.addSecs(60 * 60));
 }
 
-void SyncTaskPolicyTests::prioritizesWatchingAndReadingOverInactiveAndCompletedCatalogs() {
-    QVERIFY(SyncTaskPolicy::PriorityFor(SyncPartition::ActiveCatalog)
-            > SyncTaskPolicy::PriorityFor(SyncPartition::InactiveCatalog));
-    QVERIFY(SyncTaskPolicy::PriorityFor(SyncPartition::ActiveCatalog)
-            > SyncTaskPolicy::PriorityFor(SyncPartition::CompletedCatalog));
+void SyncTaskPolicyTests::prioritizesUserListOverPendingChanges() {
+    QVERIFY(SyncTaskPolicy::PriorityFor(SyncPartition::UserList)
+            > SyncTaskPolicy::PriorityFor(SyncPartition::PendingChanges));
 }
 
 void SyncTaskPolicyTests::proposesFailureResetAfterSuccess() {
@@ -213,7 +196,7 @@ void SyncTaskPolicyTests::proposesFailureResetAfterSuccess() {
 
 void SyncTaskPolicyTests::runsManualRequestsImmediately() {
     SyncTaskState state;
-    state.kind = SyncTaskKind::Cover;
+    state.kind = SyncTaskKind::UserList;
     state.lastErrorCategory = AniListSyncErrorCategory::Authorization;
     const auto now = QDateTime::fromMSecsSinceEpoch(7'000'000, QTimeZone::UTC);
 
@@ -291,8 +274,8 @@ void SyncTaskPolicyTests::saturatesInjectedJitterWithoutCreatingImmediateWork() 
 
 void SyncTaskPolicyTests::derivesScheduledPriorityFromPartition() {
     SyncTaskState state;
-    state.kind = SyncTaskKind::CompletedCatalog;
-    state.partition = SyncPartition::CompletedCatalog;
+    state.kind = SyncTaskKind::PendingChange;
+    state.partition = SyncPartition::PendingChanges;
     state.priority = -1;
     const auto now = QDateTime::fromMSecsSinceEpoch(14'000'000, QTimeZone::UTC);
     state.lastSucceededAt = now;
@@ -301,22 +284,15 @@ void SyncTaskPolicyTests::derivesScheduledPriorityFromPartition() {
 
     const auto decision = SyncTaskPolicy::Decide(state, policy, now, {});
 
-    QCOMPARE(decision.proposedState.priority, 200);
+    QCOMPARE(decision.proposedState.priority, 600);
 }
 
 void SyncTaskPolicyTests::appliesDistinctDefaultCadencesAtDecisionLevel() {
     const Settings settings;
     const auto now = QDateTime::fromMSecsSinceEpoch(15'000'000, QTimeZone::UTC);
-    const QList<SyncTaskKind> taskKinds{SyncTaskKind::UserList, SyncTaskKind::PendingChange,
-                                        SyncTaskKind::ActiveCatalog, SyncTaskKind::InactiveCatalog,
-                                        SyncTaskKind::CompletedCatalog, SyncTaskKind::Cover,
-                                        SyncTaskKind::DerivedMetadata};
-    const QList<SyncPartition> partitions{SyncPartition::UserList, SyncPartition::PendingChanges,
-                                          SyncPartition::ActiveCatalog, SyncPartition::InactiveCatalog,
-                                          SyncPartition::CompletedCatalog, SyncPartition::Covers,
-                                          SyncPartition::DerivedMetadata};
-    const QList<qint64> cadenceSeconds{60 * 60, 60, 30 * 60, 12 * 60 * 60, 24 * 60 * 60,
-                                       6 * 60 * 60, 2 * 60 * 60};
+    const QList<SyncTaskKind> taskKinds{SyncTaskKind::UserList, SyncTaskKind::PendingChange};
+    const QList<SyncPartition> partitions{SyncPartition::UserList, SyncPartition::PendingChanges};
+    const QList<qint64> cadenceSeconds{60 * 60, 60};
 
     QCOMPARE(taskKinds.size(), cadenceSeconds.size());
     QSet<qint64> observedCadences;

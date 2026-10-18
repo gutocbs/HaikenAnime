@@ -63,9 +63,7 @@ bool readSyncTaskPolicies(const QJsonObject &sync, Settings &settings) {
     if (policiesValue.isUndefined()) return true;
     if (!policiesValue.isObject()) return false;
     const auto policies = policiesValue.toObject();
-    for (const auto kind : {SyncTaskKind::UserList, SyncTaskKind::PendingChange, SyncTaskKind::ActiveCatalog,
-                            SyncTaskKind::InactiveCatalog, SyncTaskKind::CompletedCatalog, SyncTaskKind::Cover,
-                            SyncTaskKind::DerivedMetadata}) {
+    for (const auto kind : {SyncTaskKind::UserList, SyncTaskKind::PendingChange}) {
         const auto value = policies.value(ToString(kind));
         if (value.isUndefined()) continue;
         if (!value.isObject()) return false;

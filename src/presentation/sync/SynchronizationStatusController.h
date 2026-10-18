@@ -59,7 +59,6 @@ signals:
     void changed();
 
 private:
-    static bool isTracked(SyncPartition partition);
     void beginRoundIfSettled();
     void settleIfIdle();
     void publishOutcome();

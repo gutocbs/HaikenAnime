@@ -10,8 +10,10 @@
 
 #include "../anilist/AniListSyncErrorCategory.h"
 
-enum class SyncTaskKind { UserList, PendingChange, ActiveCatalog, InactiveCatalog, CompletedCatalog, Cover, DerivedMetadata };
-enum class SyncPartition { UserList, PendingChanges, ActiveCatalog, InactiveCatalog, CompletedCatalog, Covers, DerivedMetadata };
+// Kind and partition are 1:1 but persisted in separate columns with different texts
+// ("pending-change" x "pending-changes"). Rows of any other text are skipped when read.
+enum class SyncTaskKind { UserList, PendingChange };
+enum class SyncPartition { UserList, PendingChanges };
 enum class CacheValidity { Unknown, Fresh, Stale, Expired };
 enum class SyncTaskStatus { Idle, Running, RetryScheduled, Failed, Succeeded };
 
@@ -19,19 +21,12 @@ inline QString ToString(SyncTaskKind value) {
     switch (value) {
     case SyncTaskKind::UserList: return QStringLiteral("user-list");
     case SyncTaskKind::PendingChange: return QStringLiteral("pending-change");
-    case SyncTaskKind::ActiveCatalog: return QStringLiteral("active-catalog");
-    case SyncTaskKind::InactiveCatalog: return QStringLiteral("inactive-catalog");
-    case SyncTaskKind::CompletedCatalog: return QStringLiteral("completed-catalog");
-    case SyncTaskKind::Cover: return QStringLiteral("cover");
-    case SyncTaskKind::DerivedMetadata: return QStringLiteral("derived-metadata");
     }
     return {};
 }
 
 inline std::optional<SyncTaskKind> SyncTaskKindFromString(const QString &value) {
-    for (const auto kind : {SyncTaskKind::UserList, SyncTaskKind::PendingChange, SyncTaskKind::ActiveCatalog,
-                            SyncTaskKind::InactiveCatalog, SyncTaskKind::CompletedCatalog, SyncTaskKind::Cover,
-                            SyncTaskKind::DerivedMetadata}) {
+    for (const auto kind : {SyncTaskKind::UserList, SyncTaskKind::PendingChange}) {
         if (ToString(kind) == value) return kind;
     }
     return std::nullopt;
@@ -41,11 +36,6 @@ inline QString ToString(SyncPartition value) {
     switch (value) {
     case SyncPartition::UserList: return QStringLiteral("user-list");
     case SyncPartition::PendingChanges: return QStringLiteral("pending-changes");
-    case SyncPartition::ActiveCatalog: return QStringLiteral("active-catalog");
-    case SyncPartition::InactiveCatalog: return QStringLiteral("inactive-catalog");
-    case SyncPartition::CompletedCatalog: return QStringLiteral("completed-catalog");
-    case SyncPartition::Covers: return QStringLiteral("covers");
-    case SyncPartition::DerivedMetadata: return QStringLiteral("derived-metadata");
     }
     return {};
 }
@@ -123,38 +113,13 @@ inline SyncSchedulePolicy DefaultSyncSchedulePolicy(SyncTaskKind kind) {
         policy.normalInterval = std::chrono::minutes(1);
         policy.staleProtectionTtl = std::chrono::hours(1);
         break;
-    case SyncTaskKind::ActiveCatalog:
-        policy.normalInterval = std::chrono::minutes(30);
-        policy.staleProtectionTtl = std::chrono::hours(6);
-        break;
-    case SyncTaskKind::InactiveCatalog:
-        policy.normalInterval = std::chrono::hours(12);
-        policy.staleProtectionTtl = std::chrono::hours(24 * 7);
-        break;
-    case SyncTaskKind::CompletedCatalog:
-        policy.normalInterval = std::chrono::hours(24);
-        policy.staleProtectionTtl = std::chrono::hours(24 * 14);
-        break;
-    case SyncTaskKind::Cover:
-        policy.normalInterval = std::chrono::hours(6);
-        policy.staleProtectionTtl = std::chrono::hours(48);
-        break;
-    case SyncTaskKind::DerivedMetadata:
-        policy.normalInterval = std::chrono::hours(2);
-        policy.staleProtectionTtl = std::chrono::hours(12);
-        break;
     }
     return policy;
 }
 
 inline std::map<SyncTaskKind, SyncSchedulePolicy> DefaultSyncTaskPolicies() {
     return {{SyncTaskKind::UserList, DefaultSyncSchedulePolicy(SyncTaskKind::UserList)},
-            {SyncTaskKind::PendingChange, DefaultSyncSchedulePolicy(SyncTaskKind::PendingChange)},
-            {SyncTaskKind::ActiveCatalog, DefaultSyncSchedulePolicy(SyncTaskKind::ActiveCatalog)},
-            {SyncTaskKind::InactiveCatalog, DefaultSyncSchedulePolicy(SyncTaskKind::InactiveCatalog)},
-            {SyncTaskKind::CompletedCatalog, DefaultSyncSchedulePolicy(SyncTaskKind::CompletedCatalog)},
-            {SyncTaskKind::Cover, DefaultSyncSchedulePolicy(SyncTaskKind::Cover)},
-            {SyncTaskKind::DerivedMetadata, DefaultSyncSchedulePolicy(SyncTaskKind::DerivedMetadata)}};
+            {SyncTaskKind::PendingChange, DefaultSyncSchedulePolicy(SyncTaskKind::PendingChange)}};
 }
 
 #endif // HAIKENANIME_SYNCTASKTYPES_H

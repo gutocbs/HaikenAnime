@@ -14,16 +14,7 @@ QString SafeError(const QString &error, const QString &fallback) {
 }
 
 SyncPartition PartitionFor(const SyncTaskKind kind) {
-    switch (kind) {
-    case SyncTaskKind::UserList: return SyncPartition::UserList;
-    case SyncTaskKind::PendingChange: return SyncPartition::PendingChanges;
-    case SyncTaskKind::ActiveCatalog: return SyncPartition::ActiveCatalog;
-    case SyncTaskKind::InactiveCatalog: return SyncPartition::InactiveCatalog;
-    case SyncTaskKind::CompletedCatalog: return SyncPartition::CompletedCatalog;
-    case SyncTaskKind::Cover: return SyncPartition::Covers;
-    case SyncTaskKind::DerivedMetadata: return SyncPartition::DerivedMetadata;
-    }
-    return SyncPartition::UserList;
+    return kind == SyncTaskKind::PendingChange ? SyncPartition::PendingChanges : SyncPartition::UserList;
 }
 }
 

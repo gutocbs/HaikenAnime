@@ -89,11 +89,6 @@ int SyncTaskPolicy::PriorityFor(const SyncPartition partition) {
     switch (partition) {
     case SyncPartition::UserList: return 700;
     case SyncPartition::PendingChanges: return 600;
-    case SyncPartition::ActiveCatalog: return 500;
-    case SyncPartition::InactiveCatalog: return 300;
-    case SyncPartition::CompletedCatalog: return 200;
-    case SyncPartition::Covers: return 100;
-    case SyncPartition::DerivedMetadata: return 50;
     }
     return 0;
 }

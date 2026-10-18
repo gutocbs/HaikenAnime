@@ -36,17 +36,6 @@ QString initializationFailure(const QString &stage, const QString &detail) {
     return QStringLiteral("Application initialization failed while %1: %2").arg(stage, detail);
 }
 
-std::map<SyncTaskKind, SyncSchedulePolicy> backgroundSynchronizationPolicies(
-    const std::map<SyncTaskKind, SyncSchedulePolicy> &configuredPolicies) {
-    std::map<SyncTaskKind, SyncSchedulePolicy> policies;
-    for (const auto kind : {SyncTaskKind::UserList, SyncTaskKind::PendingChange}) {
-        const auto configured = configuredPolicies.find(kind);
-        policies.emplace(kind, configured == configuredPolicies.end()
-                                   ? DefaultSyncSchedulePolicy(kind) : configured->second);
-    }
-    return policies;
-}
-
 // Keep borrowed dependencies inside the worker-owned factory products. Member
 // order destroys the scanner/repository before its enumerator/connection owner.
 class OwnedLibraryScanner final : public ILocalLibraryScanner {
@@ -332,7 +321,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
             return std::make_unique<ApplicationSyncTaskExecutor>(
                 synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath,
                 timeoutMs, userListConfiguration);
-        }, backgroundSynchronizationPolicies(settings.syncTaskPolicies));
+        }, settings.syncTaskPolicies);
     context.seasonalNetworkManager = std::make_unique<QNetworkAccessManager>();
     const AniListGraphQlClient::Diagnostics seasonalDiagnostics{
         .log = [logger = context.logger.get()](const QString &event) {

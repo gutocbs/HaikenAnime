@@ -213,9 +213,8 @@ void AdaptiveSyncCoordinatorTests::runsAnotherRequestedPartitionAfterTheActiveOn
 void AdaptiveSyncCoordinatorTests::selectsDueTasksInPolicyPriorityOrder() {
     FakeClock clock;
     FakeTaskStateRepository repository;
-    repository.states = {DueState(SyncTaskKind::Cover, SyncPartition::Covers),
-                         DueState(SyncTaskKind::UserList, SyncPartition::UserList),
-                         DueState(SyncTaskKind::ActiveCatalog, SyncPartition::ActiveCatalog)};
+    repository.states = {DueState(SyncTaskKind::PendingChange, SyncPartition::PendingChanges),
+                         DueState(SyncTaskKind::UserList, SyncPartition::UserList)};
     FakeTaskExecutor executor;
     AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
 
@@ -224,19 +223,14 @@ void AdaptiveSyncCoordinatorTests::selectsDueTasksInPolicyPriorityOrder() {
     QCOMPARE(executor.started, QList<SyncPartition>({SyncPartition::UserList}));
     executor.Complete(SyncPartition::UserList, {.succeeded = true});
     QTRY_COMPARE(executor.started,
-                 QList<SyncPartition>({SyncPartition::UserList, SyncPartition::ActiveCatalog}));
-    executor.Complete(SyncPartition::ActiveCatalog, {.succeeded = true});
-    QTRY_COMPARE(executor.started,
-                 QList<SyncPartition>({SyncPartition::UserList, SyncPartition::ActiveCatalog,
-                                       SyncPartition::Covers}));
+                 QList<SyncPartition>({SyncPartition::UserList, SyncPartition::PendingChanges}));
 }
 
 void AdaptiveSyncCoordinatorTests::runsOnlyOneDueTaskAtATime() {
     FakeClock clock;
     FakeTaskStateRepository repository;
     repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList),
-                         DueState(SyncTaskKind::ActiveCatalog, SyncPartition::ActiveCatalog),
-                         DueState(SyncTaskKind::CompletedCatalog, SyncPartition::CompletedCatalog)};
+                         DueState(SyncTaskKind::PendingChange, SyncPartition::PendingChanges)};
     FakeTaskExecutor executor;
     AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
 
@@ -254,13 +248,12 @@ void AdaptiveSyncCoordinatorTests::persistsMissingPolicyPartitionsBeforeScheduli
     FakeTaskExecutor executor;
     std::map<SyncTaskKind, SyncSchedulePolicy> policies;
     policies.emplace(SyncTaskKind::UserList, DefaultSyncSchedulePolicy(SyncTaskKind::UserList));
-    policies.emplace(SyncTaskKind::ActiveCatalog, DefaultSyncSchedulePolicy(SyncTaskKind::ActiveCatalog));
-    policies.emplace(SyncTaskKind::CompletedCatalog, DefaultSyncSchedulePolicy(SyncTaskKind::CompletedCatalog));
+    policies.emplace(SyncTaskKind::PendingChange, DefaultSyncSchedulePolicy(SyncTaskKind::PendingChange));
     AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); }, policies, true);
 
     QVERIFY(coordinator.Start());
 
-    QCOMPARE(repository.states.size(), 3);
+    QCOMPARE(repository.states.size(), 2);
     QCOMPARE(executor.started, QList<SyncPartition>({SyncPartition::UserList}));
 }
 
@@ -268,7 +261,7 @@ void AdaptiveSyncCoordinatorTests::doesNotSchedulePersistedPartitionsOutsideConf
     FakeClock clock;
     FakeTaskStateRepository repository;
     repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList),
-                         DueState(SyncTaskKind::ActiveCatalog, SyncPartition::ActiveCatalog)};
+                         DueState(SyncTaskKind::PendingChange, SyncPartition::PendingChanges)};
     FakeTaskExecutor executor;
     std::map<SyncTaskKind, SyncSchedulePolicy> policies;
     policies.emplace(SyncTaskKind::UserList, DefaultSyncSchedulePolicy(SyncTaskKind::UserList));
@@ -300,25 +293,25 @@ void AdaptiveSyncCoordinatorTests::neverStartsTheSamePartitionTwiceWhileItIsRunn
 void AdaptiveSyncCoordinatorTests::recordsIndependentProgressWhenAnotherPartitionFails() {
     FakeClock clock;
     FakeTaskStateRepository repository;
-    repository.states = {DueState(SyncTaskKind::PendingChange, SyncPartition::PendingChanges),
-                         DueState(SyncTaskKind::ActiveCatalog, SyncPartition::ActiveCatalog)};
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList),
+                         DueState(SyncTaskKind::PendingChange, SyncPartition::PendingChanges)};
     FakeTaskExecutor executor;
     auto policies = DefaultSyncTaskPolicies();
     policies[SyncTaskKind::PendingChange].maximumConsecutiveImmediateRetries = 0;
     AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); }, policies);
 
     coordinator.Start();
+    executor.Complete(SyncPartition::UserList,
+                      {.succeeded = true, .confirmedPage = 3});
+    QTRY_VERIFY(executor.started.contains(SyncPartition::PendingChanges));
     executor.Complete(SyncPartition::PendingChanges,
                       {.succeeded = false,
                        .errorCategory = AniListSyncErrorCategory::Network,
                        .safeErrorDetail = QStringLiteral("network unavailable")});
-    QTRY_VERIFY(executor.started.contains(SyncPartition::ActiveCatalog));
-    executor.Complete(SyncPartition::ActiveCatalog,
-                      {.succeeded = true, .confirmedPage = 3});
 
     QTRY_COMPARE(repository.State(SyncPartition::PendingChanges).status, SyncTaskStatus::RetryScheduled);
-    QTRY_COMPARE(repository.State(SyncPartition::ActiveCatalog).status, SyncTaskStatus::Succeeded);
-    const auto completed = repository.State(SyncPartition::ActiveCatalog);
+    QTRY_COMPARE(repository.State(SyncPartition::UserList).status, SyncTaskStatus::Succeeded);
+    const auto completed = repository.State(SyncPartition::UserList);
     QCOMPARE(completed.confirmedPage, std::optional<int>(3));
 }
 
@@ -482,7 +475,7 @@ void AdaptiveSyncCoordinatorTests::cancelEmitsTaskCancelledAndReschedulesRemaini
     FakeClock clock;
     FakeTaskStateRepository repository;
     repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList),
-                         DueState(SyncTaskKind::ActiveCatalog, SyncPartition::ActiveCatalog)};
+                         DueState(SyncTaskKind::PendingChange, SyncPartition::PendingChanges)};
     FakeTaskExecutor executor;
     AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
     QSignalSpy cancelled(&coordinator, &AdaptiveSyncCoordinator::TaskCancelled);
@@ -502,7 +495,7 @@ void AdaptiveSyncCoordinatorTests::cancelEmitsTaskCancelledAndReschedulesRemaini
     QCOMPARE(cancelled.first().first().value<SyncPartition>(), first);
     QCOMPARE(completed.count(), 0);
     QCOMPARE(failed.count(), 0);
-    // The freed slot lets the other due partition run without waiting for another trigger.
+    // The freed slot lets the remaining due work run without waiting for another trigger.
     QTRY_COMPARE(executor.started.count(), 2);
 }
 

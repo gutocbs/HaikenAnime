@@ -420,8 +420,8 @@ void JsonSettingsReaderTests::usesSyncTaskPolicyDefaultsWhenSettingsAreOmitted()
     QString error;
 
     QVERIFY2(reader.read(settings, error), qPrintable(error));
-    QCOMPARE(settings.syncTaskPolicies.at(SyncTaskKind::ActiveCatalog).normalInterval,
-             DefaultSyncSchedulePolicy(SyncTaskKind::ActiveCatalog).normalInterval);
+    QCOMPARE(settings.syncTaskPolicies.at(SyncTaskKind::PendingChange).normalInterval,
+             DefaultSyncSchedulePolicy(SyncTaskKind::PendingChange).normalInterval);
 }
 
 void JsonSettingsReaderTests::usesDistinctSyncTaskPolicyDefaultsWhenSettingsAreOmitted() {
@@ -440,8 +440,6 @@ void JsonSettingsReaderTests::usesDistinctSyncTaskPolicyDefaultsWhenSettingsAreO
             != settings.syncTaskPolicies.at(SyncTaskKind::PendingChange).normalInterval);
     QVERIFY(settings.syncTaskPolicies.at(SyncTaskKind::UserList).staleProtectionTtl
             != settings.syncTaskPolicies.at(SyncTaskKind::PendingChange).staleProtectionTtl);
-    QVERIFY(settings.syncTaskPolicies.at(SyncTaskKind::ActiveCatalog).normalInterval
-            != settings.syncTaskPolicies.at(SyncTaskKind::InactiveCatalog).normalInterval);
 }
 
 void JsonSettingsReaderTests::rejectsNegativeSyncTaskPolicyDurations() {
@@ -450,7 +448,7 @@ void JsonSettingsReaderTests::rejectsNegativeSyncTaskPolicyDurations() {
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
     file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co"},
-        "http":{"timeoutMs":5000},"sync":{"policies":{"cover":{"cooldownMs":-1}}}})");
+        "http":{"timeoutMs":5000},"sync":{"policies":{"pending-change":{"cooldownMs":-1}}}})");
     file.close();
     JsonSettingsReader reader(path);
     Settings settings;
