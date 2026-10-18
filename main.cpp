@@ -1,6 +1,7 @@
 #include <QGuiApplication>
 #include <QElapsedTimer>
 #include <QEventLoop>
+#include <QIcon>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 #include <QThread>
@@ -58,6 +59,7 @@ bool persistLastAniListUserId(ApplicationContext &context, const qint64 userId, 
 
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
+    app.setWindowIcon(QIcon(QStringLiteral(":/icons/HaikenAnime.png")));
     app.setQuitOnLastWindowClosed(false);
 
     auto context = createApplicationContext();

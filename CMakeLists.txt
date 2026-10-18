@@ -567,7 +567,15 @@ target_link_libraries(HaikenAnime
 )
 if (WIN32)
     target_link_libraries(HaikenAnime PRIVATE Advapi32)
+    target_sources(HaikenAnime PRIVATE resources/icons/HaikenAnime.rc)
 endif()
+
+qt_add_resources(HaikenAnime application_icon_resource
+        PREFIX "/icons"
+        BASE resources/icons
+        FILES
+        resources/icons/HaikenAnime.png
+)
 
 set(HAIKENANIME_TS_FILES
         translations/HaikenAnime_pt_BR.ts
