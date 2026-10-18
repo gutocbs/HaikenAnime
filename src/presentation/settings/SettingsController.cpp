@@ -287,7 +287,7 @@ void SettingsController::ClearLocalCache() {
         cacheCleanupRunning_ = false;
         QStringList details;
         for (const auto &failure : result.failures)
-            details.append(QStringLiteral("%1: %2").arg(failure.participant, failure.error));
+            details.append(QStringLiteral("%1: %2").arg(failure.component, failure.error));
         const QString failureDetails = details.join(QStringLiteral("; "));
         if (result.Succeeded()) {
             cacheCleanupStatusMessage_ = tr("Cache local limpo. %1 item(ns) removido(s).")
@@ -301,9 +301,7 @@ void SettingsController::ClearLocalCache() {
             emit cacheCleanupPartialFailure(cacheCleanupErrorMessage_);
         } else {
             cacheCleanupStatusMessage_.clear();
-            cacheCleanupErrorMessage_ = result.cancelled
-                ? tr("A limpeza do cache local foi cancelada.")
-                : tr("Não foi possível limpar o cache local: %1").arg(failureDetails);
+            cacheCleanupErrorMessage_ = tr("Não foi possível limpar o cache local: %1").arg(failureDetails);
             emit cacheCleanupFailed(cacheCleanupErrorMessage_);
         }
         emit cacheCleanupChanged();
