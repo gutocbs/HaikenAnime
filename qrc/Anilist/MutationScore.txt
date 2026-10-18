@@ -1,6 +1,0 @@
-mutation{
-        SaveMediaListEntry (mediaId: variableID, score: variableScore) {
-    	id
-    	status
-	} 
-}
