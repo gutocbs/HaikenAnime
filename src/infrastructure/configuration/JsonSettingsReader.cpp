@@ -116,7 +116,6 @@ bool readDocument(const QString &filePath, QJsonObject &root, QString &error) {
 
 bool readAniList(const QJsonObject &aniList, AniListSettings &settings, QString &error) {
     settings.endpoint = aniList.value(QStringLiteral("endpoint")).toString();
-    settings.mediaQueryFile = aniList.value(QStringLiteral("mediaQueryFile")).toString();
     settings.oauthClientId = aniList.value(QStringLiteral("oauthClientId")).toString();
     if (!readInteger(aniList, QStringLiteral("userListPerChunk"), 500, settings.userListPerChunk)) {
         error = QStringLiteral("Settings.json AniList user-list chunk size must be a whole number.");
@@ -274,7 +273,7 @@ bool readNumbers(const QJsonObject &http, const QJsonObject &sync, const QJsonOb
 }
 
 bool validateRanges(const Settings &settings, QString &error) {
-    if (settings.aniList.endpoint.isEmpty() || settings.aniList.mediaQueryFile.isEmpty()
+    if (settings.aniList.endpoint.isEmpty()
         || settings.aniList.userListPerChunk <= 0 || settings.aniList.userListPerChunk > 500
         || settings.http.timeoutMs <= 0 || settings.http.maxRetries < 0
         || settings.http.retryDelayMs < 0 || settings.syncTimeoutMs <= 0) {

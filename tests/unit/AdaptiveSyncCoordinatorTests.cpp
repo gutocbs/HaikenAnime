@@ -397,16 +397,15 @@ void AdaptiveSyncCoordinatorTests::reschedulesSuccessfulWorkAtItsAdaptivePolicyC
 
 void AdaptiveSyncCoordinatorTests::turnsPersistedCheckpointIntoTheNextPartitionRequestPage() {
     SyncTaskState state;
-    state.kind = SyncTaskKind::CompletedCatalog;
-    state.partition = SyncPartition::CompletedCatalog;
+    state.kind = SyncTaskKind::UserList;
+    state.partition = SyncPartition::UserList;
     state.status = SyncTaskStatus::RetryScheduled;
     state.confirmedPage = 4;
 
     const auto request = SyncTaskRequest::ForState(state);
 
-    QCOMPARE(request.filter.partition, SyncPartition::CompletedCatalog);
+    QCOMPARE(request.filter.partition, SyncPartition::UserList);
     QCOMPARE(request.filter.startingPage, 5);
-    QCOMPARE(request.variables.value(QStringLiteral("status")).toString(), QStringLiteral("FINISHED"));
 }
 
 void AdaptiveSyncCoordinatorTests::schedulesRetryAtThePolicyDueTime() {

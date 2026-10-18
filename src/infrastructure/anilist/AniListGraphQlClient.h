@@ -8,7 +8,6 @@
 #include <functional>
 
 #include "../../application/anilist/IAniListAuthProvider.h"
-#include "../../application/anilist/IAniListDataSource.h"
 #include "AniListGraphQlResponse.h"
 
 class QNetworkAccessManager;
@@ -36,8 +35,6 @@ public:
     [[nodiscard]] bool execute(const QString &query, const QJsonObject &variables,
                                AniListGraphQlResponse &response, QString &error) const;
 
-    [[nodiscard]] bool execute(const QString &query, const AniListDataSourceRequest &request,
-                               AniListGraphQlResponse &response, QString &error) const;
 
     /** Returns the endpoint currently used by the client. */
     [[nodiscard]] QUrl endpoint() const;

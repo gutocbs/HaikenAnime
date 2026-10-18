@@ -89,7 +89,6 @@ private slots:
     void omitsMalformedNumericExtendedMetadata();
     void canonicalizesAndDeduplicatesExternalLinks();
     void pageParserReadsTheRecordedLibraryResponse();
-    void graphQlAdapterPostsPartitionVariablesAndParsesCatalogPage();
     void graphQlAdapterRequiresAuthenticatedIdentityForUserListRefresh();
     void graphQlAdapterUsesAuthenticatedIdentityAndConfiguredChunkForUserListRefresh();
     void graphQlAdapterKeepsNovelsInMangaUserListResponse();
@@ -408,30 +407,6 @@ void AniListGraphQlParsingTests::pageParserReadsTheRecordedLibraryResponse() {
     QVERIFY(entriesWithExternalLinks > 0);
 }
 
-void AniListGraphQlParsingTests::graphQlAdapterPostsPartitionVariablesAndParsesCatalogPage() {
-    LocalGraphQlServer server;
-    QVERIFY2(server.start(fixture(QStringLiteral(HAIKENANIME_GRAPHQL_FIXTURE))), "Local GraphQL server did not start.");
-    QNetworkAccessManager networkManager;
-    AniListGraphQlClient client(networkManager, nullptr, server.endpoint(), 1000);
-    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/media-page.graphql"));
-    GraphQlAniListDataSource source(client, store);
-    const auto request = AniListDataSourceRequest::ForPartition(SyncPartition::ActiveCatalog);
-    AniListDataSourceResult result;
-    QString error;
-
-    QVERIFY2(source.fetchPage(request, result, error), qPrintable(error));
-    QCOMPARE(result.completedPartition, SyncPartition::ActiveCatalog);
-    QVERIFY(!result.isCompleteAuthoritativeSnapshot);
-    QCOMPARE(result.page.currentPage, 1);
-    QVERIFY(!result.page.media.isEmpty());
-
-    const auto variables = server.requestPayload().value(QStringLiteral("variables")).toObject();
-    QCOMPARE(variables.value(QStringLiteral("type")).toString(), QStringLiteral("ANIME"));
-    QCOMPARE(variables.value(QStringLiteral("status")).toString(), QStringLiteral("RELEASING"));
-    QVERIFY(variables.value(QStringLiteral("includeCatalog")).toBool());
-    QVERIFY(!variables.value(QStringLiteral("includeUserList")).toBool());
-}
-
 void AniListGraphQlParsingTests::graphQlAdapterRequiresAuthenticatedIdentityForUserListRefresh() {
     QNetworkAccessManager networkManager;
     AniListGraphQlClient client(networkManager, nullptr,
@@ -570,7 +545,7 @@ void AniListGraphQlParsingTests::graphQlAdapterRejectsNonBooleanUserListPaginati
     QVERIFY2(server.start(payload), "Local GraphQL server did not start.");
     QNetworkAccessManager networkManager;
     AniListGraphQlClient client(networkManager, nullptr, server.endpoint(), 1000);
-    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/media-page.graphql"));
+    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/user-media-list.graphql"));
     AuthProviderStub authProvider;
     authProvider.value.username = QStringLiteral("authenticated-user");
     GraphQlAniListDataSource source(client, store, &authProvider);

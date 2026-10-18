@@ -205,7 +205,6 @@ private slots:
     void replayAfterCheckpointFailureIsIdempotent();
     void doesNotAdvanceCheckpointWhenPagePersistenceFails();
     void cancellationAfterFetchPreventsPagePersistence();
-    void partitionRequestsUseExplicitCatalogVariables();
     void fullMultiPageUserListReportsCompleteSnapshot();
     void userListRunStartingAfterPageOneIsNotComplete();
     void typedAndStatusFilteredFullCollectionReportsCompleteSnapshot();
@@ -345,28 +344,6 @@ void AniListFlowTests::cancellationAfterFetchPreventsPagePersistence() {
                                  [&cancelled] { return cancelled; }));
     QCOMPARE(service.lastErrorCategory(), AniListSyncErrorCategory::Cancelled);
     QCOMPARE(writer.batches.size(), 0);
-}
-
-void AniListFlowTests::partitionRequestsUseExplicitCatalogVariables() {
-    const auto userList = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
-    const auto active = AniListDataSourceRequest::ForPartition(SyncPartition::ActiveCatalog);
-    const auto inactive = AniListDataSourceRequest::ForPartition(SyncPartition::InactiveCatalog);
-    const auto completed = AniListDataSourceRequest::ForPartition(SyncPartition::CompletedCatalog);
-
-    QCOMPARE(userList.queryIdentity, QStringLiteral("user-list:v1"));
-    QVERIFY(userList.queryIdentity != active.queryIdentity);
-    QVERIFY(userList.variables.value(QStringLiteral("type")).isNull());
-    QVERIFY(userList.variables.value(QStringLiteral("status")).isNull());
-    QVERIFY(userList.variables.value(QStringLiteral("list")).isNull());
-
-    QCOMPARE(active.queryIdentity, QStringLiteral("catalog:v1"));
-    QCOMPARE(active.variables.value(QStringLiteral("type")).toString(), QStringLiteral("ANIME"));
-    QCOMPARE(active.variables.value(QStringLiteral("status")).toString(), QStringLiteral("RELEASING"));
-    QCOMPARE(inactive.variables.value(QStringLiteral("status")).toString(), QStringLiteral("NOT_YET_RELEASED"));
-    QCOMPARE(completed.variables.value(QStringLiteral("status")).toString(), QStringLiteral("FINISHED"));
-    QVERIFY(active.variables.value(QStringLiteral("list")).isNull());
-    QVERIFY(inactive.variables.value(QStringLiteral("list")).isNull());
-    QVERIFY(completed.variables.value(QStringLiteral("list")).isNull());
 }
 
 void AniListFlowTests::fullMultiPageUserListReportsCompleteSnapshot() {

@@ -7,7 +7,6 @@
 /** Runtime settings required by the AniList integration. */
 struct AniListSettings {
     QString endpoint;
-    QString mediaQueryFile;
     QString oauthClientId;
     QUrl oauthRedirectUri;
     int userListPerChunk = 500;
