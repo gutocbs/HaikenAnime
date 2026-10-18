@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `71c1a9b` (`feature/revisao-geral`)
-- **Status:** aprovado (com a recomendação) e aplicado — aguardando build do revisor
+- **Status:** aprovado (com a recomendação) e aplicado — validado
 
 ---
 
@@ -113,3 +113,6 @@ Notas:
   Em `SettingsControllerTests`, o participante saiu: a contagem esperada passou de 14 para 9 itens, e o pedido
   concorrente vem do *fake* de temporários.
 - P8-02: com a mudança, nenhum arquivo de `src/application` inclui mais algo de `src/infrastructure`.
+
+### Validação final (build do revisor)
+- `scripts/validate.ps1`: build MSVC + `ctest` todo verde; smoke de capas, limpeza de cache e catálogo sazonal OK.
