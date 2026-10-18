@@ -28,9 +28,12 @@ public:
 
     // Ids of the media entries (one per catalog entry, catalog order) matching the normalized title.
     QList<int> find(const QString &normalizedTitle) const;
+    // Ids among find() results that can be an anime: manga and novels share titles with their adaptations.
+    QList<int> findAnime(const QString &normalizedTitle) const;
     qsizetype titleCount() const { return titles_.size(); }
 
 private:
+    QHash<int, MediaType> types_;
     QHash<QString, QList<int>> titles_;
     QHash<QString, QList<int>> folders_;
 };

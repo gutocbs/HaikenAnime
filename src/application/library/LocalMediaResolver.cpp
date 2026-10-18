@@ -98,7 +98,7 @@ LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognit
         // A later season never falls back to the plain title, which belongs to the first season.
         // The first key that matches anything decides; one media wins, several are ambiguous.
         for (const auto &suffix : SeasonSuffixes(season)) {
-            matches = index.find(LocalMediaCatalogIndex::NormalizeTitle(title + QLatin1Char(' ') + suffix));
+            matches = index.findAnime(LocalMediaCatalogIndex::NormalizeTitle(title + QLatin1Char(' ') + suffix));
             if (!matches.isEmpty()) break;
         }
         if (matches.isEmpty()) {
@@ -107,7 +107,8 @@ LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognit
             return result;
         }
     } else {
-        matches = index.find(title);
+        // Only anime files reach this point, so manga/novel entries with the same title are not candidates.
+        matches = index.findAnime(title);
     }
     if (matches.isEmpty()) {
         result.state = LocalRecognitionState::Unrecognized;

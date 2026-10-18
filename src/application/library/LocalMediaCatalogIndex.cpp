@@ -34,6 +34,7 @@ LocalMediaCatalogIndex::LocalMediaCatalogIndex(const QList<Media> &catalog) {
         for (const auto &alternative : media.AlternativeNames) add(alternative);
         // A media with several names mapping to one title is still a single candidate.
         for (const auto &title : mediaTitles) titles_[title].append(media.Id);
+        types_.insert(media.Id, media.Type);
         const auto folder = NormalizeFolder(media.LocalPath);
         if (!folder.isEmpty()) {
             auto &ids = folders_[folder];
@@ -44,6 +45,15 @@ LocalMediaCatalogIndex::LocalMediaCatalogIndex(const QList<Media> &catalog) {
 
 QList<int> LocalMediaCatalogIndex::find(const QString &normalizedTitle) const {
     return titles_.value(normalizedTitle);
+}
+
+QList<int> LocalMediaCatalogIndex::findAnime(const QString &normalizedTitle) const {
+    auto ids = titles_.value(normalizedTitle);
+    ids.removeIf([this](const int id) {
+        const auto type = types_.value(id, MediaType::Unknown);
+        return type == MediaType::Manga || type == MediaType::Novel;
+    });
+    return ids;
 }
 
 QString LocalMediaCatalogIndex::NormalizeFolder(const QString &path) {

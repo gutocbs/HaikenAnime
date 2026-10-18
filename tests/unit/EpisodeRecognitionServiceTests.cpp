@@ -140,6 +140,7 @@ private slots:
     void stopClearsActiveSessions();
     void playbackStateReachesRegistry();
     void catalogResolverKeepsUnknownTitlesUnresolved();
+    void catalogResolverIgnoresMangaWithSameTitle();
 
 private:
     std::unique_ptr<EpisodeRecognitionService> makeService(RecognitionPolicy policy = RecognitionPolicy());
@@ -359,6 +360,23 @@ void EpisodeRecognitionServiceTests::playbackStateReachesRegistry() {
                                           .observedAt = Start.addSecs(20)});
 
     QCOMPARE(service->activeSessions().sessions().first().state, PlaybackState::Paused);
+}
+
+void EpisodeRecognitionServiceTests::catalogResolverIgnoresMangaWithSameTitle() {
+    Media anime;
+    anime.Id = 191656;
+    anime.Name = QStringLiteral("Seitokai ni mo Ana wa Aru!");
+    anime.Type = MediaType::Anime;
+    Media manga = anime;
+    manga.Id = 147863;
+    manga.Type = MediaType::Manga;
+    library.items = {manga, anime};
+    CatalogEpisodeCandidateResolver catalogResolver(library);
+    const auto fromPlex = EpisodeCandidate::create(QStringLiteral("Seitokai ni mo Ana wa Aru!"), std::nullopt, 1, 1, 0.9).value();
+
+    const auto resolved = catalogResolver.resolve(fromPlex);
+
+    QCOMPARE(resolved.mediaId(), std::optional<int>(191656));
 }
 
 QTEST_MAIN(EpisodeRecognitionServiceTests)

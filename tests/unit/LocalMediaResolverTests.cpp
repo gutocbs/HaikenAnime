@@ -34,6 +34,8 @@ private slots:
     void returnsUnrecognizedForUnknownTitle();
     void doesNotUseFuzzyMatching();
     void returnsAmbiguousForMultipleCatalogMatches();
+    void animeFileIgnoresMangaAndNovelWithSameTitle();
+    void twoAnimeWithSameTitleStayAmbiguous();
     void doesNotTreatMultipleVariantsOfOneMediaAsAmbiguous();
     void ignoresPunctuationWhenMatchingEnglishName();
     void ignoresPunctuationWhenExtractedTitleIsDotted();
@@ -211,6 +213,32 @@ void LocalMediaResolverTests::rejectsInvalidEpisode() {
     QCOMPARE(match.state, LocalRecognitionState::Ambiguous);
     QCOMPARE(match.mediaId, 0);
     QVERIFY(!match.diagnostic.isEmpty());
+}
+
+void LocalMediaResolverTests::animeFileIgnoresMangaAndNovelWithSameTitle() {
+    Media anime = CatalogMedia(191656, QStringLiteral("Seitokai ni mo Ana wa Aru!"));
+    anime.Type = MediaType::Anime;
+    Media manga = CatalogMedia(147863, QStringLiteral("Seitokai ni mo Ana wa Aru!"));
+    manga.Type = MediaType::Manga;
+    Media novel = CatalogMedia(150000, QStringLiteral("Seitokai ni mo Ana wa Aru!"));
+    novel.Type = MediaType::Novel;
+
+    const auto match = LocalMediaResolver().resolve(
+        Recognized(QStringLiteral("Seitokai ni mo Ana wa Aru!")), {manga, anime, novel});
+
+    QCOMPARE(match.state, LocalRecognitionState::Associated);
+    QCOMPARE(match.mediaId, 191656);
+}
+
+void LocalMediaResolverTests::twoAnimeWithSameTitleStayAmbiguous() {
+    Media first = CatalogMedia(1, QStringLiteral("Show"));
+    first.Type = MediaType::Anime;
+    Media second = CatalogMedia(2, QStringLiteral("Show"));
+    second.Type = MediaType::Anime;
+
+    const auto match = LocalMediaResolver().resolve(Recognized(QStringLiteral("Show")), {first, second});
+
+    QCOMPARE(match.state, LocalRecognitionState::Ambiguous);
 }
 
 void LocalMediaResolverTests::ignoresPunctuationWhenMatchingEnglishName() {
