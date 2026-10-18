@@ -275,81 +275,6 @@ qt_add_executable(HaikenAnime WIN32 main.cpp
         src/presentation/sync/SynchronizationStatusController.cpp
 )
 
-set_source_files_properties(
-        resources/sqlite/sqlite-queries.json
-        PROPERTIES QT_RESOURCE_ALIAS "sqlite-queries.json")
-set_source_files_properties(
-        resources/sqlite/queries/upsert-media.sql
-        PROPERTIES QT_RESOURCE_ALIAS "upsert-media.sql")
-set_source_files_properties(
-        resources/sqlite/queries/update-personal-list-media.sql
-        PROPERTIES QT_RESOURCE_ALIAS "update-personal-list-media.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-media.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-media.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-active-media-ids.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-active-media-ids.sql")
-set_source_files_properties(
-        resources/sqlite/queries/mark-media-source-removed.sql
-        PROPERTIES QT_RESOURCE_ALIAS "mark-media-source-removed.sql")
-set_source_files_properties(
-        resources/sqlite/queries/mark-media-personal-list-removed.sql
-        PROPERTIES QT_RESOURCE_ALIAS "mark-media-personal-list-removed.sql")
-set_source_files_properties(
-        resources/sqlite/queries/supersede-pending-deletion.sql
-        PROPERTIES QT_RESOURCE_ALIAS "supersede-pending-deletion.sql")
-set_source_files_properties(
-        resources/sqlite/queries/enqueue-pending-change.sql
-        PROPERTIES QT_RESOURCE_ALIAS "enqueue-pending-change.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-pending-changes.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-pending-changes.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-pending-media-ids.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-pending-media-ids.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-unsent-media-ids.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-unsent-media-ids.sql")
-set_source_files_properties(
-        resources/sqlite/queries/update-pending-change.sql
-        PROPERTIES QT_RESOURCE_ALIAS "update-pending-change.sql")
-set_source_files_properties(
-        resources/sqlite/queries/adopt-orphan-pending-changes.sql
-        PROPERTIES QT_RESOURCE_ALIAS "adopt-orphan-pending-changes.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-cover-cache.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-cover-cache.sql")
-set_source_files_properties(
-        resources/sqlite/queries/upsert-cover-cache.sql
-        PROPERTIES QT_RESOURCE_ALIAS "upsert-cover-cache.sql")
-set_source_files_properties(
-        resources/sqlite/queries/delete-cover-cache.sql
-        PROPERTIES QT_RESOURCE_ALIAS "delete-cover-cache.sql")
-set_source_files_properties(
-        resources/sqlite/queries/clear-cover-cache.sql
-        PROPERTIES QT_RESOURCE_ALIAS "clear-cover-cache.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-user-preferences.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-user-preferences.sql")
-set_source_files_properties(
-        resources/sqlite/queries/upsert-user-preferences.sql
-        PROPERTIES QT_RESOURCE_ALIAS "upsert-user-preferences.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-sync-task-states.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-sync-task-states.sql")
-set_source_files_properties(
-        resources/sqlite/queries/upsert-sync-task-state.sql
-        PROPERTIES QT_RESOURCE_ALIAS "upsert-sync-task-state.sql")
-set_source_files_properties(
-        resources/sqlite/queries/delete-sync-task-state.sql
-        PROPERTIES QT_RESOURCE_ALIAS "delete-sync-task-state.sql")
-set_source_files_properties(
-        resources/anilist/mutations/update-media-list-entry.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "update-media-list-entry.graphql")
-set_source_files_properties(
-        resources/anilist/mutations/delete-list-entry.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "delete-list-entry.graphql")
 file(GLOB SQLITE_MIGRATION_RESOURCES CONFIGURE_DEPENDS resources/sqlite/migrations/*.sql)
 foreach (MIGRATION_FILE IN LISTS SQLITE_MIGRATION_RESOURCES)
     get_filename_component(MIGRATION_ALIAS "${MIGRATION_FILE}" NAME)
@@ -383,10 +308,15 @@ set(RECOGNITION_HISTORY_SQL_RESOURCES
         resources/sqlite/queries/find-queued-recognition-progress.sql
         resources/sqlite/queries/read-media-for-recognition-progress.sql
 )
-foreach (QUERY_FILE IN LISTS LIBRARY_SCAN_SQL_RESOURCES PLUGIN_SETTINGS_SQL_RESOURCES RECOGNITION_HISTORY_SQL_RESOURCES)
-    get_filename_component(QUERY_ALIAS "${QUERY_FILE}" NAME)
-    set_source_files_properties("${QUERY_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${QUERY_ALIAS}")
+# Every SQL query and GraphQL document is exposed by its file name, e.g. :/sqlite/queries/read-media.sql.
+file(GLOB SQLITE_QUERY_RESOURCES CONFIGURE_DEPENDS resources/sqlite/queries/*.sql)
+file(GLOB ANILIST_QUERY_RESOURCES CONFIGURE_DEPENDS resources/anilist/queries/*.graphql)
+file(GLOB ANILIST_MUTATION_RESOURCES CONFIGURE_DEPENDS resources/anilist/mutations/*.graphql)
+foreach (RESOURCE_FILE IN LISTS SQLITE_QUERY_RESOURCES ANILIST_QUERY_RESOURCES ANILIST_MUTATION_RESOURCES)
+    get_filename_component(RESOURCE_ALIAS "${RESOURCE_FILE}" NAME)
+    set_source_files_properties("${RESOURCE_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${RESOURCE_ALIAS}")
 endforeach ()
+set_source_files_properties(resources/sqlite/sqlite-queries.json PROPERTIES QT_RESOURCE_ALIAS "sqlite-queries.json")
 
 set_source_files_properties(
         Settings.json
@@ -397,33 +327,7 @@ set_source_files_properties(
 
 qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
-        FILES
-        ${LIBRARY_SCAN_SQL_RESOURCES}
-        ${PLUGIN_SETTINGS_SQL_RESOURCES}
-        ${RECOGNITION_HISTORY_SQL_RESOURCES}
-        resources/sqlite/sqlite-queries.json
-        resources/sqlite/queries/upsert-media.sql
-        resources/sqlite/queries/update-personal-list-media.sql
-        resources/sqlite/queries/read-media.sql
-        resources/sqlite/queries/read-active-media-ids.sql
-        resources/sqlite/queries/mark-media-source-removed.sql
-        resources/sqlite/queries/mark-media-personal-list-removed.sql
-        resources/sqlite/queries/supersede-pending-deletion.sql
-        resources/sqlite/queries/enqueue-pending-change.sql
-        resources/sqlite/queries/read-pending-changes.sql
-        resources/sqlite/queries/read-pending-media-ids.sql
-        resources/sqlite/queries/read-unsent-media-ids.sql
-        resources/sqlite/queries/update-pending-change.sql
-        resources/sqlite/queries/adopt-orphan-pending-changes.sql
-        resources/sqlite/queries/read-cover-cache.sql
-        resources/sqlite/queries/upsert-cover-cache.sql
-        resources/sqlite/queries/delete-cover-cache.sql
-        resources/sqlite/queries/clear-cover-cache.sql
-        resources/sqlite/queries/read-user-preferences.sql
-        resources/sqlite/queries/upsert-user-preferences.sql
-        resources/sqlite/queries/read-sync-task-states.sql
-        resources/sqlite/queries/upsert-sync-task-state.sql
-        resources/sqlite/queries/delete-sync-task-state.sql
+        FILES resources/sqlite/sqlite-queries.json ${SQLITE_QUERY_RESOURCES}
 )
 
 qt_add_resources(HaikenAnime sqlite_migration_resource_bundle
@@ -439,28 +343,13 @@ qt_add_resources(HaikenAnime application_config_resource
 
 qt_add_resources(HaikenAnime anilist_mutation_resource_bundle
         PREFIX "/anilist/mutations"
-        FILES
-        resources/anilist/mutations/update-media-list-entry.graphql
-        resources/anilist/mutations/delete-list-entry.graphql
+        FILES ${ANILIST_MUTATION_RESOURCES}
 )
 
-set_source_files_properties(
-        resources/anilist/queries/seasonal-catalog.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "seasonal-catalog.graphql")
-set_source_files_properties(
-        resources/anilist/queries/viewer.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "viewer.graphql")
-set_source_files_properties(
-        resources/anilist/queries/user-media-list.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "user-media-list.graphql")
-set_source_files_properties(
-        resources/anilist/queries/media-list-entry-id.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "media-list-entry-id.graphql")
 qt_add_resources(HaikenAnime anilist_query_resource_bundle
         PREFIX "/anilist/queries"
-        FILES resources/anilist/queries/seasonal-catalog.graphql resources/anilist/queries/viewer.graphql
-              resources/anilist/queries/user-media-list.graphql
-              resources/anilist/queries/media-list-entry-id.graphql)
+        FILES ${ANILIST_QUERY_RESOURCES}
+)
 
 qt_add_qml_module(HaikenAnime
         URI HaikenAnime
@@ -1368,9 +1257,6 @@ target_compile_definitions(AniListGraphQlParsingTests
         HAIKENANIME_GRAPHQL_USERLIST_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/userlist-response.json"
 )
 
-set_source_files_properties(
-        resources/anilist/queries/media-page.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "media-page.graphql")
 qt_add_resources(AniListGraphQlParsingTests anilist_partition_query_resource_bundle
         PREFIX "/anilist/queries"
         FILES resources/anilist/queries/media-page.graphql resources/anilist/queries/user-media-list.graphql
@@ -1844,13 +1730,8 @@ add_executable(LocalLibraryScanCompositionTests
         lib/anitomy/token.cpp
         lib/anitomy/tokenizer.cpp
 )
-file(GLOB COMPOSITION_SQL_RESOURCES CONFIGURE_DEPENDS resources/sqlite/queries/*.sql)
-foreach (QUERY_FILE IN LISTS COMPOSITION_SQL_RESOURCES)
-    get_filename_component(QUERY_ALIAS "${QUERY_FILE}" NAME)
-    set_source_files_properties("${QUERY_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${QUERY_ALIAS}")
-endforeach ()
 qt_add_resources(LocalLibraryScanCompositionTests composition_sql_resources PREFIX "/sqlite/queries"
-        FILES resources/sqlite/sqlite-queries.json ${COMPOSITION_SQL_RESOURCES})
+        FILES resources/sqlite/sqlite-queries.json ${SQLITE_QUERY_RESOURCES})
 qt_add_resources(LocalLibraryScanCompositionTests composition_config_resources PREFIX "/config" FILES Settings.json)
 target_link_libraries(LocalLibraryScanCompositionTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Sql Qt6::Test)
 add_test(NAME LocalLibraryScanCompositionTests COMMAND LocalLibraryScanCompositionTests)
@@ -1869,7 +1750,7 @@ add_executable(LocalLibraryRecognitionCompositionTests
         lib/anitomy/tokenizer.cpp
 )
 qt_add_resources(LocalLibraryRecognitionCompositionTests recognition_composition_sql_resources PREFIX "/sqlite/queries"
-        FILES resources/sqlite/sqlite-queries.json ${COMPOSITION_SQL_RESOURCES})
+        FILES resources/sqlite/sqlite-queries.json ${SQLITE_QUERY_RESOURCES})
 qt_add_resources(LocalLibraryRecognitionCompositionTests recognition_composition_config_resources PREFIX "/config" FILES Settings.json)
 target_link_libraries(LocalLibraryRecognitionCompositionTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Sql Qt6::Test)
 add_test(NAME LocalLibraryRecognitionCompositionTests COMMAND LocalLibraryRecognitionCompositionTests)
