@@ -289,6 +289,11 @@ haiken_add_test(JsonSettingsReaderTests SOURCE_DIR)
 haiken_add_test(SyncTaskPolicyTests)
 haiken_add_test(UserPreferencesValidatorTests)
 haiken_add_test(TranslationLoaderTests QT Qml)
+qt_add_translations(TranslationLoaderTests
+        TS_FILES ${HAIKENANIME_TS_FILES}
+        RESOURCE_PREFIX "/i18n"
+        LUPDATE_OPTIONS -no-obsolete
+)
 haiken_add_test(CoverSettingsTests)
 haiken_add_test(CoverSourceResolverTests)
 haiken_add_test(CoverFileStoreTests QT Gui INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/src)
