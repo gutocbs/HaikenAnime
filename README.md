@@ -67,6 +67,16 @@ For an MSVC kit, replace `CMAKE_PREFIX_PATH` with the matching Qt installation a
 
 The executable is generated in the selected build directory. The exact output path depends on the generator and configuration.
 
+### Release package
+
+To produce a clean Release build packaged with only the executable and its runtime dependencies (Qt, QML, Qt translations, MSVC runtime and DXC), run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/build-release.ps1
+```
+
+The script uses the MSVC 2022 kit (`C:/Qt/6.8.3/msvc2022_64`) and Ninja, recreates `cmake-build-release` from scratch, and writes the package to `dist/`. Override the defaults with `-QtDir`, `-Ninja`, `-BuildDir` or `-OutputDir`.
+
 ## Tests
 
 Configure with testing enabled, build the test targets, and run CTest from the build directory:
