@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `71c1a9b` (`feature/revisao-geral`)
-- **Status:** aguardando aprovação — nenhuma alteração aplicada
+- **Status:** aprovado (com a recomendação) e aplicado — aguardando build do revisor
 
 ---
 
@@ -89,3 +89,27 @@ Parte 2.)*
 1. **P8-02: mover para `src/app`** (recomendo). A camada de apresentação já inclui coordinators de `src/app`,
    então a mudança só alinha estes dois. A alternativa é mantê-los em `application` e trocar o `AsyncLogger*`
    por funções de log injetadas, o que acrescenta código para três níveis (info/warning/error).
+
+---
+
+## 7. Aplicação
+
+| Item | Commit |
+| --- | --- |
+| P8-04 `CoverFailureCategory::Persistence` e `Active::attempt` | `883fff7` |
+| P8-03 `RemoveOrphans` | `12f7ba0` |
+| P8-05 repositório de capas com queries próprias | `c9ca9d4` |
+| P8-06 `requestForPage` no catálogo sazonal | `066a875` |
+| P8-01 limpeza de cache sem participantes e sem cancelamento | `56d1a65` |
+| P8-02 `CoverDownloadCoordinator` e `ClearLocalCacheUseCase` em `src/app` | `0b27021` |
+| Teste duplicado do catálogo sazonal (critério **b**) | `2abaa2d` |
+
+Notas:
+- P8-01: `CacheCleanupFailure::participant` virou `component` (o mesmo nome de `CoverCacheCleanupFailure`). O
+  texto "A limpeza do cache local foi cancelada." saiu do `SettingsController`; a entrada correspondente nas
+  traduções fica para a Parte 11.
+- P8-01, testes: os 2 de cancelamento saíram. Os outros 4 de `ClearLocalCacheUseCaseTests` foram ajustados (o
+  início aninhado agora vem do *fake* de temporários, e o teste confirma que um novo início funciona depois).
+  Em `SettingsControllerTests`, o participante saiu: a contagem esperada passou de 14 para 9 itens, e o pedido
+  concorrente vem do *fake* de temporários.
+- P8-02: com a mudança, nenhum arquivo de `src/application` inclui mais algo de `src/infrastructure`.

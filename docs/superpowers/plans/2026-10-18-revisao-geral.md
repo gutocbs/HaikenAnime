@@ -203,6 +203,7 @@ Itens coletados até agora (a lista cresce a cada parte):
 | Parte 4 | `SqliteUserPreferencesRepository::replace` perde a mensagem de erro quando o `.sql` não pode ser lido |
 | Parte 7 | `SqliteLocalFileRepository::upsertBatch`/`completeScan`/`failScan`: quando o `.sql` não pode ser lido, o erro do `SqlQueryStore` é sobrescrito por `query.lastError()` (vazio) |
 | Parte 7 | `SqliteLocalEpisodeReader::readAvailableEpisodeCount` devolve `false` sem mensagem quando o `mediaId` é inválido ou a consulta não traz linha |
+| Parte 8 | `CoverDownloadCoordinator` ignora sem log a falha de leitura do cache no construtor e a falha de remoção em `ReportMissingFile` |
 
 ---
 
@@ -244,7 +245,7 @@ Perguntas em que há mais de um caminho razoável.
 | 5 | ☑ [report](../reviews/2026-10-18-parte-05-integracao-anilist.md) | ☑ | ☑ validada: `ctest` verde, smoke de sync (lista baixada, edição enviada) |
 | 6 | ☑ [report](../reviews/2026-10-18-parte-06-agendamento-sync.md) | ☑ | ☑ validada: `ctest` verde (após `ac42360`) |
 | 7 | ☑ [report](../reviews/2026-10-18-parte-07-biblioteca-local.md) | ☑ | ☑ validada: `ctest` verde |
-| 8 | ☑ [report](../reviews/2026-10-18-parte-08-capas-cache-catalogo.md) | ☐ | ☐ |
+| 8 | ☑ [report](../reviews/2026-10-18-parte-08-capas-cache-catalogo.md) | ☑ | ☐ aplicada, aguardando build |
 | 9 | ☐ | ☐ | ☐ |
 | 10 | ☐ | ☐ | ☐ |
 | 11 | ☐ | ☐ | ☐ |

@@ -75,11 +75,10 @@ src/
 │   └── recognition/      #   PlaybackSession, EpisodeCandidate, RecognitionPolicy, RecognitionRecord
 ├── application/          # Casos de uso, serviços e interfaces (ports I*)
 │   ├── anilist/          #   sync, outbox (pending changes), auth/OAuth, ownership, remoção de conta
-│   ├── cache/            #   ClearLocalCacheUseCase
 │   ├── catalog/          #   tipos e port do catálogo sazonal
 │   ├── configuration/    #   Settings (arquivo), UserPreferences (banco) e validador
-│   ├── covers/           #   coordenação de download/cache de capas
-│   ├── library/          #   tipos de scan, resolução local → mídia, leitura do próximo episódio
+│   ├── covers/           #   tipos, qualidade, resolução de URL e ports de capas
+│   ├── library/          #   tipos e ports de scan/reconhecimento, resolução local → mídia
 │   ├── media/            #   repositório de mídia (ports), títulos, progresso, edição da lista pessoal
 │   ├── recognition/      #   pipeline de reconhecimento, plugins, histórico, settings de plugin
 │   └── scheduling/       #   tipos/política do agendador de sync
@@ -95,7 +94,7 @@ src/
 ├── presentation/         # Controllers QObject e QAbstractListModel expostos ao QML
 │   ├── home/  seasonal/  settings/  sync/  recognition/
 │   └── media/            #   textos de mídia compartilhados (progresso, rótulos, detalhes)
-└── app/                  # Composição e coordenação de workflows (threads, timers, runtime de sync)
+└── app/                  # Composição e coordenadores Qt (sync, biblioteca, capas, catálogo, limpeza de cache)
 resources/
 ├── qml/                  # Telas e componentes (módulo QML "HaikenAnime")
 ├── sqlite/               # migrations/*.sql, queries/*.sql
@@ -259,7 +258,8 @@ de entradas, intervalo mínimo entre requisições e paginação. Adição/ediç
 pela qualidade (`CoverSourceResolver`), baixa com concorrência limitada (`QtCoverDownloader`) num arquivo
 temporário (`CoverTemporaryStore`), valida tamanho/dimensões, move para o cache final (`CoverFileStore`,
 em `AppLocalDataLocation/covers`) e registra em `cover_cache`. Falhas entram em *cooldown*.
-`ClearLocalCacheUseCase` limpa cache de capas e temporários.
+`ClearLocalCacheUseCase` (botão em Configurações) limpa, de forma síncrona, entradas e arquivos de capa e os
+temporários abandonados, e informa contagens e falhas parciais; nunca toca nos dados principais.
 
 ### 6.6 Biblioteca local
 
