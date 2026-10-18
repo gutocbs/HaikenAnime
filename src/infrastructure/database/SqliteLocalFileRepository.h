@@ -2,11 +2,12 @@
 #define HAIKENANIME_SQLITELOCALFILEREPOSITORY_H
 
 #include <QSqlDatabase>
-#include "../../application/library/ILocalFileRepository.h"
+#include "../../application/library/ILocalFileRecognitionRepository.h"
+#include "../../application/library/ILocalFileScanRepository.h"
 
 // Use only on the thread that owns the injected connection. Statements come from the
 // SQL resources listed in SqliteQueries.
-class SqliteLocalFileRepository final : public ILocalFileRepository {
+class SqliteLocalFileRepository final : public ILocalFileScanRepository, public ILocalFileRecognitionRepository {
 public:
     explicit SqliteLocalFileRepository(QSqlDatabase database);
     bool beginScan(const QString &rootPath, qint64 &scanId, QString &error) override;

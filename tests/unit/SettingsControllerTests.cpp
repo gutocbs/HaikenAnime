@@ -33,7 +33,7 @@ private:
     std::shared_ptr<ScanFixture> fixture_;
 };
 
-class ScanRepository final : public ILocalFileRepository {
+class ScanRepository final : public ILocalFileScanRepository {
 public:
     bool beginScan(const QString &, qint64 &id, QString &) override { id = 1; return true; }
     bool upsertBatch(qint64, const QList<LocalFileObservation> &, QString &) override { return true; }

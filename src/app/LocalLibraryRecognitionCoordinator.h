@@ -8,7 +8,7 @@
 #include <atomic>
 #include <QThread>
 
-#include "../application/library/ILocalFileRepository.h"
+#include "../application/library/ILocalFileRecognitionRepository.h"
 #include "../application/library/ILocalFileRecognizer.h"
 #include "../application/library/LocalMediaResolver.h"
 
@@ -17,7 +17,7 @@ class AsyncLogger;
 class LocalLibraryRecognitionCoordinator final : public QObject {
     Q_OBJECT
 public:
-    using RepositoryFactory = std::function<std::unique_ptr<ILocalFileRepository>(QString &error)>;
+    using RepositoryFactory = std::function<std::unique_ptr<ILocalFileRecognitionRepository>(QString &error)>;
     LocalLibraryRecognitionCoordinator(RepositoryFactory factory, QObject *parent = nullptr);
     ~LocalLibraryRecognitionCoordinator() override;
     void setLogger(AsyncLogger *logger);

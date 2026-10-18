@@ -53,7 +53,7 @@ private:
     LocalLibraryScanner scanner_;
 };
 
-class OwnedLocalFileRepository final : public ILocalFileRepository {
+class OwnedLocalFileRepository final : public ILocalFileScanRepository, public ILocalFileRecognitionRepository {
 public:
     explicit OwnedLocalFileRepository(std::unique_ptr<SqliteDatabase> database)
         : database_(std::move(database)), repository_(database_->connection()) {}
@@ -101,8 +101,9 @@ private:
 };
 
 // Each scan and recognition worker opens its own SQLite connection on its thread.
-LocalLibraryScanCoordinator::RepositoryFactory localFileRepositoryFactory(const QString &databasePath) {
-    return [databasePath](QString &error) -> std::unique_ptr<ILocalFileRepository> {
+template <typename Repository>
+std::function<std::unique_ptr<Repository>(QString &)> localFileRepositoryFactory(const QString &databasePath) {
+    return [databasePath](QString &error) -> std::unique_ptr<Repository> {
         auto database = std::make_unique<SqliteDatabase>(databasePath);
         if (!database->open()) {
             error = database->lastError();
@@ -117,13 +118,13 @@ void composeLibraryScanner(ApplicationContext &context) {
         [](QString &) -> std::unique_ptr<ILocalLibraryScanner> {
             return std::make_unique<OwnedLibraryScanner>();
         },
-        localFileRepositoryFactory(context.database->databasePath()));
+        localFileRepositoryFactory<ILocalFileScanRepository>(context.database->databasePath()));
     context.localLibraryScan->setLogger(context.logger.get());
 }
 
 void composeLibraryRecognition(ApplicationContext &context) {
     context.localLibraryRecognition = std::make_unique<LocalLibraryRecognitionCoordinator>(
-        localFileRepositoryFactory(context.database->databasePath()));
+        localFileRepositoryFactory<ILocalFileRecognitionRepository>(context.database->databasePath()));
     context.localLibraryRecognition->setLogger(context.logger.get());
     QObject::connect(context.localLibraryScan.get(), &LocalLibraryScanCoordinator::succeeded,
                      context.localLibraryRecognition.get(),
