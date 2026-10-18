@@ -32,21 +32,6 @@ void CatalogEpisodeCandidateResolver::invalidate() {
     catalogLoaded_ = false;
 }
 
-MediaReaderProgressReader::MediaReaderProgressReader(IMediaReader &reader) : reader_(reader) {}
-
-bool MediaReaderProgressReader::find(const int mediaId, std::optional<Media> &media, QString &error) {
-    media.reset();
-    QList<Media> catalog;
-    if (!reader_.readAll(catalog, error)) return false;
-    for (const auto &item : catalog) {
-        if (item.Id == mediaId) {
-            media = item;
-            break;
-        }
-    }
-    return true;
-}
-
 EpisodeRecognitionService::EpisodeRecognitionService(PluginRegistry &registry, IEpisodeCandidateResolver &resolver,
                                                      ProgressDecisionService &decisions,
                                                      RecognitionHistoryService &history, const RecognitionPolicy policy,

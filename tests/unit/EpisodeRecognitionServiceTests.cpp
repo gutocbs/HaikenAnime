@@ -1,6 +1,7 @@
 #include <QtTest>
 
 #include "../../src/application/recognition/EpisodeRecognitionService.h"
+#include "RecognitionTestSupport.h"
 
 namespace {
 const QDateTime Start(QDate(2026, 10, 17), QTime(20, 0), QTimeZone::UTC);
@@ -167,7 +168,7 @@ private:
     TitleResolver resolver;
     MemoryHistory historyRepository;
     RecordingProgress progress;
-    std::unique_ptr<MediaReaderProgressReader> progressReader;
+    std::unique_ptr<LibraryProgressReader> progressReader;
     std::unique_ptr<ProgressDecisionService> decisions;
     std::unique_ptr<RecognitionHistoryService> history;
 };
@@ -184,7 +185,7 @@ void EpisodeRecognitionServiceTests::init() {
     library.items = {libraryEntry(5)};
     historyRepository = MemoryHistory();
     progress = RecordingProgress();
-    progressReader = std::make_unique<MediaReaderProgressReader>(library);
+    progressReader = std::make_unique<LibraryProgressReader>(library);
     decisions = std::make_unique<ProgressDecisionService>(*progressReader, RecognitionPolicy());
     history = std::make_unique<RecognitionHistoryService>(historyRepository, progress, [] { return Start; });
 }

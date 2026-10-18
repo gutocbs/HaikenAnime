@@ -2,6 +2,7 @@
 
 #include "../../src/application/recognition/EpisodeRecognitionService.h"
 #include "../../src/presentation/recognition/EpisodeRecognitionController.h"
+#include "RecognitionTestSupport.h"
 
 namespace {
 const QDateTime Start(QDate(2026, 10, 17), QTime(20, 0), QTimeZone::UTC);
@@ -100,7 +101,7 @@ private:
     RecordingProgress progress;
     FakeLibrary library;
     std::unique_ptr<RecognitionHistoryService> history;
-    std::unique_ptr<MediaReaderProgressReader> reader;
+    std::unique_ptr<LibraryProgressReader> reader;
     std::unique_ptr<ProgressDecisionService> decisions;
 };
 
@@ -110,7 +111,7 @@ void EpisodeRecognitionControllerTests::init() {
     library = FakeLibrary();
     library.items = {entry(21, QStringLiteral("One Piece"), 5), entry(30, QStringLiteral("Frieren"), 0)};
     history = std::make_unique<RecognitionHistoryService>(repository, progress, [] { return Start; });
-    reader = std::make_unique<MediaReaderProgressReader>(library);
+    reader = std::make_unique<LibraryProgressReader>(library);
     decisions = std::make_unique<ProgressDecisionService>(*reader, RecognitionPolicy());
 }
 
