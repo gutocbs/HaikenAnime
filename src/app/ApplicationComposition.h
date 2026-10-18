@@ -11,7 +11,7 @@
 #include "../application/media/IPersonalListChangeWriter.h"
 #include "../application/media/PersonalListChangeService.h"
 #include "../application/library/ILocalFileOpener.h"
-#include "../application/library/LocalEpisodeReader.h"
+#include "../application/library/ILocalEpisodeReader.h"
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "AdaptiveSyncRuntime.h"
 #include "LocalLibraryScanCoordinator.h"

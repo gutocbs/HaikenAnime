@@ -2,6 +2,7 @@
 
 #include "ApplicationSyncTaskExecutor.h"
 
+#include "../infrastructure/database/SqliteLocalEpisodeReader.h"
 #include "../infrastructure/database/SqlQueryStore.h"
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "../infrastructure/database/SqliteMediaRepository.h"
@@ -137,9 +138,7 @@ void composeLibraryRecognition(ApplicationContext &context) {
 }
 
 void composeLocalEpisodeServices(ApplicationContext &context) {
-    context.localEpisodeReader = std::make_unique<LocalEpisodeReader>(
-        context.database->connection(), SqliteQueries::ReadNextLocalEpisode,
-        SqliteQueries::ReadAvailableEpisodeCount);
+    context.localEpisodeReader = std::make_unique<SqliteLocalEpisodeReader>(context.database->connection());
     context.defaultLocalFileOpener = std::make_unique<QtLocalFileOpener>();
 }
 

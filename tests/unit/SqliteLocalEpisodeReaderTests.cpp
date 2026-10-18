@@ -3,10 +3,10 @@
 #include <QTemporaryDir>
 #include <QtTest>
 
-#include "../../src/application/library/LocalEpisodeReader.h"
+#include "../../src/infrastructure/database/SqliteLocalEpisodeReader.h"
 #include "../../src/infrastructure/database/SqliteDatabase.h"
 
-class LocalEpisodeReaderTests final : public QObject {
+class SqliteLocalEpisodeReaderTests final : public QObject {
     Q_OBJECT
 private slots:
     void selectsSmallestEligibleEpisodeAndDeterministicCopy();
@@ -43,14 +43,12 @@ void seedFile(QSqlDatabase database, int id, int mediaId, int episode, QString p
     QVERIFY2(query.exec(), qPrintable(query.lastError().text()));
 }
 
-LocalEpisodeReader reader(QSqlDatabase database) {
-    return LocalEpisodeReader(database,
-        QStringLiteral(":/sqlite/queries/read-next-local-episode.sql"),
-        QStringLiteral(":/sqlite/queries/read-available-episode-count.sql"));
+SqliteLocalEpisodeReader reader(QSqlDatabase database) {
+    return SqliteLocalEpisodeReader(database);
 }
 }
 
-void LocalEpisodeReaderTests::selectsSmallestEligibleEpisodeAndDeterministicCopy() {
+void SqliteLocalEpisodeReaderTests::selectsSmallestEligibleEpisodeAndDeterministicCopy() {
     QTemporaryDir directory;
     SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open()); QVERIFY(database.migrate()); seedScan(database.connection()); seedMedia(database.connection(), 10);
@@ -62,7 +60,7 @@ void LocalEpisodeReaderTests::selectsSmallestEligibleEpisodeAndDeterministicCopy
     QCOMPARE(episode.episode, 3); QCOMPARE(episode.path, QStringLiteral("Q:\\A/03.mkv"));
 }
 
-void LocalEpisodeReaderTests::skipsUnavailableAndNonAssociatedFiles() {
+void SqliteLocalEpisodeReaderTests::skipsUnavailableAndNonAssociatedFiles() {
     QTemporaryDir directory; SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open()); QVERIFY(database.migrate()); seedScan(database.connection()); seedMedia(database.connection(), 10);
     seedFile(database.connection(), 1, 10, 1, QStringLiteral("01.mkv"), QStringLiteral("associated"), 0);
@@ -73,7 +71,7 @@ void LocalEpisodeReaderTests::skipsUnavailableAndNonAssociatedFiles() {
     QCOMPARE(episode.episode, 3);
 }
 
-void LocalEpisodeReaderTests::returnsNoEpisodeWhenProgressIsCurrent() {
+void SqliteLocalEpisodeReaderTests::returnsNoEpisodeWhenProgressIsCurrent() {
     QTemporaryDir directory; SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open()); QVERIFY(database.migrate()); seedScan(database.connection()); seedMedia(database.connection(), 10);
     seedFile(database.connection(), 1, 10, 3, QStringLiteral("03.mkv"));
@@ -81,5 +79,5 @@ void LocalEpisodeReaderTests::returnsNoEpisodeWhenProgressIsCurrent() {
     QVERIFY(!episodeReader.readNextEpisode(10, 3, episode, error)); QVERIFY(error.isEmpty());
 }
 
-QTEST_MAIN(LocalEpisodeReaderTests)
-#include "LocalEpisodeReaderTests.moc"
+QTEST_MAIN(SqliteLocalEpisodeReaderTests)
+#include "SqliteLocalEpisodeReaderTests.moc"

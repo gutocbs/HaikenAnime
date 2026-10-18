@@ -1,7 +1,7 @@
 #include "HomeScreenController.h"
 #include "../../application/covers/CoverSourceResolver.h"
 #include "../../application/library/ILocalFileOpener.h"
-#include "../../application/library/LocalEpisodeReader.h"
+#include "../../application/library/ILocalEpisodeReader.h"
 #include "../../application/library/LocalRecognitionRequest.h"
 #include "../media/MediaPresentation.h"
 #include "../../application/media/PersonalListChangeService.h"

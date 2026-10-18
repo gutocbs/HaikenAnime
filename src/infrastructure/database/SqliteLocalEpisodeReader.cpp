@@ -1,18 +1,19 @@
-#include "LocalEpisodeReader.h"
+#include "SqliteLocalEpisodeReader.h"
 
 #include <QSqlError>
 #include <QSqlQuery>
-#include "../../infrastructure/database/SqlQueryStore.h"
 
-LocalEpisodeReader::LocalEpisodeReader(QSqlDatabase database, QString nextEpisodeQuery,
-                                       QString availableEpisodeCountQuery)
-    : database_(std::move(database)), nextEpisodeQuery_(std::move(nextEpisodeQuery)),
-      availableEpisodeCountQuery_(std::move(availableEpisodeCountQuery)) {}
+#include "SqliteQueries.h"
+#include "SqlQueryStore.h"
 
-bool LocalEpisodeReader::readAvailableEpisodeCount(int mediaId, int &count, QString &error) {
+#include <utility>
+
+SqliteLocalEpisodeReader::SqliteLocalEpisodeReader(QSqlDatabase database) : database_(std::move(database)) {}
+
+bool SqliteLocalEpisodeReader::readAvailableEpisodeCount(int mediaId, int &count, QString &error) {
     count = 0; error.clear();
     QString querySource;
-    if (mediaId <= 0 || !SqlQueryStore::loadSource(availableEpisodeCountQuery_, querySource, error)) return false;
+    if (mediaId <= 0 || !SqlQueryStore::loadSource(SqliteQueries::ReadAvailableEpisodeCount, querySource, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(querySource)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":media_id"), mediaId);
@@ -20,8 +21,8 @@ bool LocalEpisodeReader::readAvailableEpisodeCount(int mediaId, int &count, QStr
     count = query.value(0).toInt(); return true;
 }
 
-bool LocalEpisodeReader::readNextEpisode(int mediaId, int consumedEpisode,
-                                         LocalEpisode &episode, QString &error) {
+bool SqliteLocalEpisodeReader::readNextEpisode(int mediaId, int consumedEpisode,
+                                               LocalEpisode &episode, QString &error) {
     error.clear();
     episode = {};
     if (mediaId <= 0 || consumedEpisode < 0 || !database_.isValid() || !database_.isOpen()) {
@@ -29,7 +30,7 @@ bool LocalEpisodeReader::readNextEpisode(int mediaId, int consumedEpisode,
         return false;
     }
     QString querySource;
-    if (!SqlQueryStore::loadSource(nextEpisodeQuery_, querySource, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadNextLocalEpisode, querySource, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(querySource)) {
         error = query.lastError().text();

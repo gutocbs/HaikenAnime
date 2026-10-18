@@ -4,7 +4,7 @@
 
 #include "../../src/presentation/home/HomeScreenController.h"
 #include "../../src/application/library/ILocalFileOpener.h"
-#include "../../src/application/library/LocalEpisodeReader.h"
+#include "../../src/application/library/ILocalEpisodeReader.h"
 #include "../../src/application/media/IPersonalListChangeWriter.h"
 #include "../../src/application/media/PersonalListChangeService.h"
 
