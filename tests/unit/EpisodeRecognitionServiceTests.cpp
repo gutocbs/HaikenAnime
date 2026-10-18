@@ -38,11 +38,18 @@ private:
 class FakeLibrary final : public IMediaReader {
 public:
     bool readAll(QList<Media> &media, QString &error) override {
+        ++reads;
+        if (fail) {
+            error = QStringLiteral("database is locked");
+            return false;
+        }
         error.clear();
         media = items;
         return true;
     }
     QList<Media> items;
+    int reads = 0;
+    bool fail = false;
 };
 
 class TitleResolver final : public IEpisodeCandidateResolver {
@@ -80,6 +87,11 @@ public:
             if (!query.deduplicationKey.isEmpty() && record.deduplicationKey() != query.deduplicationKey) continue;
             found.append(record);
         }
+        return true;
+    }
+    bool hasQueuedProgress(const QueuedProgress &, bool &found, QString &error) override {
+        error.clear();
+        found = true;
         return true;
     }
     bool remove(const qint64 recordId, const std::optional<QueuedProgress> &, QString &error) override {
@@ -141,6 +153,9 @@ private slots:
     void playbackStateReachesRegistry();
     void catalogResolverKeepsUnknownTitlesUnresolved();
     void catalogResolverIgnoresMangaWithSameTitle();
+    void catalogResolverReadsTheLibraryOnceForManySessions();
+    void catalogResolverRereadsAfterInvalidate();
+    void catalogResolverRetriesAfterAReadFailure();
 
 private:
     std::unique_ptr<EpisodeRecognitionService> makeService(RecognitionPolicy policy = RecognitionPolicy());
@@ -377,6 +392,38 @@ void EpisodeRecognitionServiceTests::catalogResolverIgnoresMangaWithSameTitle() 
     const auto resolved = catalogResolver.resolve(fromPlex);
 
     QCOMPARE(resolved.mediaId(), std::optional<int>(191656));
+}
+
+void EpisodeRecognitionServiceTests::catalogResolverReadsTheLibraryOnceForManySessions() {
+    CatalogEpisodeCandidateResolver catalogResolver(library);
+    library.reads = 0;
+
+    (void)catalogResolver.resolve(onePiece(6));
+    (void)catalogResolver.resolve(onePiece(7));
+
+    QCOMPARE(library.reads, 1);
+}
+
+void EpisodeRecognitionServiceTests::catalogResolverRereadsAfterInvalidate() {
+    CatalogEpisodeCandidateResolver catalogResolver(library);
+    library.reads = 0;
+    (void)catalogResolver.resolve(onePiece(6));
+
+    catalogResolver.invalidate();
+    (void)catalogResolver.resolve(onePiece(7));
+
+    QCOMPARE(library.reads, 2);
+}
+
+void EpisodeRecognitionServiceTests::catalogResolverRetriesAfterAReadFailure() {
+    CatalogEpisodeCandidateResolver catalogResolver(library);
+    library.fail = true;
+    (void)catalogResolver.resolve(onePiece(6));
+    library.fail = false;
+
+    const auto resolved = catalogResolver.resolve(onePiece(7));
+
+    QCOMPARE(resolved.mediaId(), std::optional<int>(21));
 }
 
 QTEST_MAIN(EpisodeRecognitionServiceTests)

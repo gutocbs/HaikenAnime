@@ -18,6 +18,21 @@ PlexServer livingRoom() {
             .owned = true,
             .connections = {{.uri = QUrl(ServerUri), .local = true}}};
 }
+
+const auto RemoteUri = QStringLiteral("https://200-1-1-9.server-abc.plex.direct:32400");
+
+/// Away from home: the LAN address answers nothing, the public one works.
+PlexServer awayFromHome() {
+    auto server = livingRoom();
+    server.connections = {{.uri = QUrl(RemoteUri), .local = false}, {.uri = QUrl(ServerUri), .local = true}};
+    return server;
+}
+
+QStringList requestedHosts(const FakePlexHttp &http) {
+    QStringList hosts;
+    for (const auto &request : http.requests) hosts.append(request.url.host());
+    return hosts;
+}
 }
 
 class PlexApiClientTests final : public QObject {
@@ -35,6 +50,9 @@ private slots:
     void parsesEpisodeSummaryAndAirDate();
     void missingEpisodeDetailsStayEmpty();
     void qtHttpTimesOutWithoutResponse();
+    void listSessionsFallsBackToTheNextConnectionWhenUnreachable();
+    void listSessionsRemembersTheConnectionThatWorked();
+    void serverErrorDoesNotTryAnotherConnection();
     void qtHttpReturnsStatusAndBody();
 };
 
@@ -271,6 +289,55 @@ void PlexApiClientTests::missingEpisodeDetailsStayEmpty() {
         QVERIFY(session.summary.isEmpty());
         QVERIFY(!session.airDate.has_value());
     }
+}
+
+void PlexApiClientTests::listSessionsFallsBackToTheNextConnectionWhenUnreachable() {
+    FakePlexHttp http;
+    http.route(QStringLiteral("GET ") + ServerUri + QStringLiteral("/status/sessions"), {.status = 0});
+    http.route(QStringLiteral("GET ") + RemoteUri + QStringLiteral("/status/sessions"),
+               {.status = 200, .body = PlexFixture(QStringLiteral("plex-sessions.json"))});
+    PlexApiClient client(http, {.clientIdentifier = QStringLiteral("client-123")});
+    PlexApiError error = PlexApiError::Unavailable;
+    QList<PlexSession> sessions;
+
+    client.listSessions(awayFromHome(), [&](const PlexApiError result, const QList<PlexSession> &found) {
+        error = result;
+        sessions = found;
+    });
+
+    QCOMPARE(error, PlexApiError::None);
+    QVERIFY(!sessions.isEmpty());
+    QCOMPARE(requestedHosts(http), QStringList({QUrl(ServerUri).host(), QUrl(RemoteUri).host()}));
+}
+
+void PlexApiClientTests::listSessionsRemembersTheConnectionThatWorked() {
+    FakePlexHttp http;
+    http.route(QStringLiteral("GET ") + ServerUri + QStringLiteral("/status/sessions"), {.status = 0});
+    http.route(QStringLiteral("GET ") + RemoteUri + QStringLiteral("/status/sessions"),
+               {.status = 200, .body = PlexFixture(QStringLiteral("plex-sessions.json"))});
+    PlexApiClient client(http, {.clientIdentifier = QStringLiteral("client-123")});
+    client.listSessions(awayFromHome(), [](PlexApiError, const QList<PlexSession> &) {});
+    http.requests.clear();
+    PlexApiError error = PlexApiError::Unavailable;
+
+    client.listSessions(awayFromHome(), [&](const PlexApiError result, const QList<PlexSession> &) { error = result; });
+
+    QCOMPARE(error, PlexApiError::None);
+    QCOMPARE(requestedHosts(http), QStringList({QUrl(RemoteUri).host()}));
+}
+
+void PlexApiClientTests::serverErrorDoesNotTryAnotherConnection() {
+    FakePlexHttp http;
+    http.route(QStringLiteral("GET ") + ServerUri + QStringLiteral("/status/sessions"), {.status = 503});
+    http.route(QStringLiteral("GET ") + RemoteUri + QStringLiteral("/status/sessions"),
+               {.status = 200, .body = PlexFixture(QStringLiteral("plex-sessions.json"))});
+    PlexApiClient client(http, {.clientIdentifier = QStringLiteral("client-123")});
+    PlexApiError error = PlexApiError::None;
+
+    client.listSessions(awayFromHome(), [&](const PlexApiError result, const QList<PlexSession> &) { error = result; });
+
+    QCOMPARE(error, PlexApiError::Unavailable);
+    QCOMPARE(http.requests.size(), 1);
 }
 
 QTEST_MAIN(PlexApiClientTests)

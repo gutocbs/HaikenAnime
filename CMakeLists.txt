@@ -389,6 +389,8 @@ set(RECOGNITION_HISTORY_SQL_RESOURCES
         resources/sqlite/queries/update-recognition-record.sql
         resources/sqlite/queries/delete-recognition-record.sql
         resources/sqlite/queries/discard-recognition-progress.sql
+        resources/sqlite/queries/find-queued-recognition-progress.sql
+        resources/sqlite/queries/read-media-for-recognition-progress.sql
 )
 foreach (QUERY_FILE IN LISTS LIBRARY_SCAN_SQL_RESOURCES PLUGIN_SETTINGS_SQL_RESOURCES RECOGNITION_HISTORY_SQL_RESOURCES)
     get_filename_component(QUERY_ALIAS "${QUERY_FILE}" NAME)
@@ -501,10 +503,10 @@ qt_add_qml_module(HaikenAnime
         resources/qml/MediaCard.qml
         resources/qml/StatePanel.qml
         resources/qml/AppButton.qml
-        resources/qml/SyncProgressBar.qml
         resources/qml/AppTextField.qml
         resources/qml/AppSpinBox.qml
         resources/qml/AppComboBox.qml
+        resources/qml/SyncProgressBar.qml
         resources/qml/PluginSettingsScreen.qml
         resources/qml/PluginSettingField.qml
         resources/qml/EpisodeRecognitionScreen.qml
@@ -530,6 +532,7 @@ target_sources(HaikenAnime PRIVATE
         src/application/recognition/RecognitionSyncFeedback.cpp
         src/infrastructure/database/SqlitePluginSettingsRepository.cpp
         src/infrastructure/database/SqliteRecognitionHistoryRepository.cpp
+        src/infrastructure/database/SqliteMediaProgressReader.cpp
         src/infrastructure/recognition/QtProcessLauncher.cpp
         src/infrastructure/recognition/mpv/MpvIpcClient.cpp
         src/infrastructure/recognition/mpv/MpvPlugin.cpp
@@ -777,6 +780,20 @@ qt_add_resources(SqliteRecognitionHistoryRepositoryTests recognition_history_que
 target_link_libraries(SqliteRecognitionHistoryRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
 add_test(NAME SqliteRecognitionHistoryRepositoryTests COMMAND SqliteRecognitionHistoryRepositoryTests)
 
+add_executable(SqliteMediaProgressReaderTests
+        tests/unit/SqliteMediaProgressReaderTests.cpp
+        src/infrastructure/database/SqliteDatabase.cpp
+        src/infrastructure/database/SqliteMediaProgressReader.cpp
+        src/infrastructure/database/SqliteMediaMapper.cpp
+        src/infrastructure/database/SqlQueryStore.cpp
+        src/infrastructure/logging/AsyncLogger.cpp
+)
+qt_add_resources(SqliteMediaProgressReaderTests media_progress_reader_query_resources
+        PREFIX "/sqlite/queries"
+        FILES ${RECOGNITION_HISTORY_SQL_RESOURCES})
+target_link_libraries(SqliteMediaProgressReaderTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
+add_test(NAME SqliteMediaProgressReaderTests COMMAND SqliteMediaProgressReaderTests)
+
 add_executable(PluginSettingsServiceTests
         tests/unit/PluginSettingsServiceTests.cpp
         src/application/recognition/PluginSettingsSchema.cpp
@@ -939,6 +956,8 @@ set(RECOGNITION_COMPOSITION_SOURCES
         src/application/anilist/AniListPendingChangeFactory.cpp
         src/infrastructure/database/SqlitePluginSettingsRepository.cpp
         src/infrastructure/database/SqliteRecognitionHistoryRepository.cpp
+        src/infrastructure/database/SqliteMediaProgressReader.cpp
+        src/infrastructure/database/SqliteMediaMapper.cpp
         src/infrastructure/database/SqlQueryStore.cpp
         src/infrastructure/recognition/QtProcessLauncher.cpp
         src/infrastructure/recognition/mpv/MpvIpcClient.cpp
@@ -998,6 +1017,7 @@ add_executable(NowWatchingControllerTests
         src/application/recognition/ActiveSessionRegistry.cpp
         src/application/media/ProgressFormatter.cpp
         src/application/media/MediaTitleResolver.cpp
+        src/application/media/MediaDetailsPresentation.cpp
         src/domain/recognition/PlaybackSession.cpp
         src/domain/recognition/EpisodeCandidate.cpp
 )
@@ -1888,6 +1908,7 @@ foreach (SQLITE_MIGRATION_TEST_TARGET IN ITEMS
         SqliteSyncTaskStateRepositoryTests
         SqlitePluginSettingsRepositoryTests
         SqliteRecognitionHistoryRepositoryTests
+        SqliteMediaProgressReaderTests
         SqliteLocalFileRepositoryTests
         LocalEpisodeReaderTests
         InitialSyncCoordinatorTests
@@ -1908,6 +1929,7 @@ set(HAIKENANIME_TESTS
         RecognitionHistoryServiceTests
         RecognitionSyncFeedbackTests
         SqliteRecognitionHistoryRepositoryTests
+        SqliteMediaProgressReaderTests
         MpvIpcClientTests
         MpvPluginTests
         PlexAuthenticationTests

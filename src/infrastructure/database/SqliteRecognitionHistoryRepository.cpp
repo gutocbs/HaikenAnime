@@ -97,10 +97,12 @@ std::optional<RecognitionRecord> ReadRecord(const QSqlQuery &query) {
 
 SqliteRecognitionHistoryRepository::SqliteRecognitionHistoryRepository(QSqlDatabase database, QString readQuery,
                                                                        QString insertQuery, QString updateQuery,
-                                                                       QString deleteQuery, QString discardProgressQuery)
+                                                                       QString deleteQuery, QString discardProgressQuery,
+                                                                       QString queuedProgressQuery)
     : database_(std::move(database)), readQuery_(std::move(readQuery)), insertQuery_(std::move(insertQuery)),
       updateQuery_(std::move(updateQuery)), deleteQuery_(std::move(deleteQuery)),
-      discardProgressQuery_(std::move(discardProgressQuery)) {}
+      discardProgressQuery_(std::move(discardProgressQuery)),
+      queuedProgressQuery_(std::move(queuedProgressQuery)) {}
 
 bool SqliteRecognitionHistoryRepository::insert(RecognitionRecord &record, QString &error) {
     error.clear();
@@ -163,28 +165,40 @@ bool SqliteRecognitionHistoryRepository::find(const RecognitionHistoryQuery &cri
     }
     const auto nullId = QVariant(QMetaType::fromType<qint64>());
     const auto nullText = QVariant(QMetaType::fromType<QString>());
-    query.bindValue(QStringLiteral(":record_id"), criteria.recordId ? QVariant(*criteria.recordId) : nullId);
-    query.bindValue(QStringLiteral(":deduplication_key"),
-                    criteria.deduplicationKey.isEmpty() ? nullText : QVariant(criteria.deduplicationKey));
-    query.bindValue(QStringLiteral(":status"), criteria.status ? QVariant(ToString(*criteria.status)) : nullText);
-    query.bindValue(QStringLiteral(":plugin_id"), criteria.pluginId.isEmpty() ? nullText : QVariant(criteria.pluginId));
-    query.bindValue(QStringLiteral(":media_id"), OptionalInt(criteria.mediaId));
-    query.bindValue(QStringLiteral(":max_episode"), OptionalInt(criteria.maxEpisode));
-    query.bindValue(QStringLiteral(":awaiting_sync"), criteria.awaitingSync ? 1 : 0);
-    query.bindValue(QStringLiteral(":before_id"), criteria.beforeId ? QVariant(*criteria.beforeId) : nullId);
-    query.bindValue(QStringLiteral(":limit"), qMax(criteria.limit, 1));
-    if (!query.exec()) {
-        error = query.lastError().text();
-        return false;
-    }
+    const int limit = qMax(criteria.limit, 1);
+    auto beforeId = criteria.beforeId;
     QList<RecognitionRecord> loaded;
-    while (query.next()) {
-        auto record = ReadRecord(query);
-        if (!record.has_value()) {
-            error = QStringLiteral("Stored recognition record %1 is invalid.").arg(query.value(0).toLongLong());
+    // A corrupted row is skipped instead of failing the whole page; reading resumes after the last row seen
+    // so the page still comes back full and pagination does not stop early.
+    while (true) {
+        query.bindValue(QStringLiteral(":record_id"), criteria.recordId ? QVariant(*criteria.recordId) : nullId);
+        query.bindValue(QStringLiteral(":deduplication_key"),
+                        criteria.deduplicationKey.isEmpty() ? nullText : QVariant(criteria.deduplicationKey));
+        query.bindValue(QStringLiteral(":status"), criteria.status ? QVariant(ToString(*criteria.status)) : nullText);
+        query.bindValue(QStringLiteral(":plugin_id"),
+                        criteria.pluginId.isEmpty() ? nullText : QVariant(criteria.pluginId));
+        query.bindValue(QStringLiteral(":media_id"), OptionalInt(criteria.mediaId));
+        query.bindValue(QStringLiteral(":max_episode"), OptionalInt(criteria.maxEpisode));
+        query.bindValue(QStringLiteral(":awaiting_sync"), criteria.awaitingSync ? 1 : 0);
+        query.bindValue(QStringLiteral(":before_id"), beforeId ? QVariant(*beforeId) : nullId);
+        query.bindValue(QStringLiteral(":limit"), limit - loaded.size());
+        if (!query.exec()) {
+            error = query.lastError().text();
             return false;
         }
-        loaded.append(std::move(*record));
+        int rows = 0;
+        bool skipped = false;
+        while (query.next()) {
+            ++rows;
+            beforeId = query.value(QStringLiteral("id")).toLongLong();
+            auto record = ReadRecord(query);
+            if (record.has_value()) {
+                loaded.append(std::move(*record));
+            } else {
+                skipped = true;
+            }
+        }
+        if (!skipped || rows == 0 || loaded.size() >= limit) break;
     }
     records = std::move(loaded);
     return true;
@@ -232,5 +246,28 @@ bool SqliteRecognitionHistoryRepository::remove(const qint64 recordId, const std
         return fail(QStringLiteral("Recognition record %1 does not exist.").arg(recordId));
     }
     if (!database_.commit()) return fail(database_.lastError().text());
+    return true;
+}
+
+bool SqliteRecognitionHistoryRepository::hasQueuedProgress(const QueuedProgress &progress, bool &found,
+                                                           QString &error) {
+    error.clear();
+    found = false;
+    QString sql;
+    if (!SqlQueryStore::loadSource(queuedProgressQuery_, sql, error)) return false;
+    QSqlQuery query(database_);
+    if (!query.prepare(sql)) {
+        error = query.lastError().text();
+        return false;
+    }
+    query.bindValue(QStringLiteral(":media_id"), progress.mediaId);
+    query.bindValue(QStringLiteral(":progress_field"), static_cast<int>(AniListField::Progress));
+    query.bindValue(QStringLiteral(":superseded_status"), static_cast<int>(AniListPendingChangeStatus::Superseded));
+    query.bindValue(QStringLiteral(":episode"), progress.episode);
+    if (!query.exec()) {
+        error = query.lastError().text();
+        return false;
+    }
+    found = query.next();
     return true;
 }

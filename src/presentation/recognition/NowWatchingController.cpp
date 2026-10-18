@@ -2,6 +2,7 @@
 
 #include <QTimer>
 
+#include "../../application/media/MediaDetailsPresentation.h"
 #include "../../application/media/MediaTitleResolver.h"
 #include "../../application/media/ProgressFormatter.h"
 
@@ -146,6 +147,9 @@ QVariantMap NowWatchingController::buildCurrent(const ActiveSession &entry, cons
         card.insert(QStringLiteral("mediaId"), media.Id);
         InsertText(card, QStringLiteral("animeSynopsis"), media.Synopsis);
         InsertText(card, QStringLiteral("listStatus"), ListStatusKey(media.ListStatus));
+        card.insert(QStringLiteral("details"),
+                    PresentMediaDetails(media, card.value(QStringLiteral("animeTitle")).toString(),
+                                        card.value(QStringLiteral("coverUrl")).toString()));
     }
     if (candidate.season()) card.insert(QStringLiteral("season"), *candidate.season());
     card.insert(QStringLiteral("episode"), candidate.episode());

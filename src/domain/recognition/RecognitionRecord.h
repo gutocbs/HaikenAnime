@@ -86,6 +86,9 @@ public:
     bool transitionTo(RecognitionStatus status, const QDateTime &at);
     bool correct(const EpisodeCandidate &correction, const QDateTime &at);
     bool ignore(const QDateTime &at);
+    /// A record a crash left half-written (still Pending, or claiming a sync that was never queued) becomes
+    /// Uncertain with diagnostic "interrupted"; returns false for records that finished normally.
+    bool markInterrupted(const QDateTime &at);
 
 private:
     RecognitionRecord(const PlaybackSession &session, const EpisodeCandidate &candidate,

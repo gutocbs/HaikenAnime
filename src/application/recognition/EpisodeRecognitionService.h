@@ -28,9 +28,14 @@ public:
     explicit CatalogEpisodeCandidateResolver(IMediaReader &reader);
 
     [[nodiscard]] EpisodeCandidate resolve(const EpisodeCandidate &candidate) override;
+    /// Drops the cached catalog; the next resolve reads the library again (call after the library changes).
+    void invalidate();
 
 private:
     IMediaReader &reader_;
+    // Reading the whole library costs ~0.35 s; titles only need it again when the library changes.
+    QList<Media> catalog_;
+    bool catalogLoaded_ = false;
 };
 
 /// IMediaProgressReader over the existing media reader.

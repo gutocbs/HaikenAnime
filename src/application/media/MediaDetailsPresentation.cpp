@@ -5,6 +5,8 @@
 #include <QSet>
 #include <QTimeZone>
 
+#include "ProgressFormatter.h"
+
 QString PresentMediaSeason(const Media &media) {
     QString season;
     if (media.Season.compare(QStringLiteral("WINTER"), Qt::CaseInsensitive) == 0) {
@@ -46,4 +48,41 @@ QVariantList PresentMediaLinks(const Media &media) {
     appendLink(QStringLiteral("AniList"), media.AniListUrl);
     for (const auto &link : media.ExternalLinks) appendLink(link.Site, link.Url);
     return links;
+}
+
+QVariantMap PresentMediaDetails(const Media &media, const QString &title, const QString &coverSource) {
+    // Same texts (and translation context) as the Home details.
+    const auto statusLabel = [&media] {
+        switch (media.Status) {
+        case MediaStatus::NotReleased: return QCoreApplication::translate("HomeMediaModel", "Ainda não lançado");
+        case MediaStatus::Releasing: return QCoreApplication::translate("HomeMediaModel", "Em lançamento");
+        case MediaStatus::Released: return QCoreApplication::translate("HomeMediaModel", "Concluído");
+        case MediaStatus::Unknown:
+        default: return QCoreApplication::translate("HomeMediaModel", "Desconhecido");
+        }
+    };
+    const auto typeLabel = [&media] {
+        switch (media.Type) {
+        case MediaType::Anime: return QStringLiteral("Anime");
+        case MediaType::Manga: return QStringLiteral("Manga");
+        case MediaType::Novel: return QStringLiteral("Novel");
+        case MediaType::Unknown:
+        default: return QCoreApplication::translate("HomeMediaModel", "Desconhecido");
+        }
+    };
+    return {{QStringLiteral("selectedTitle"), title},
+            {QStringLiteral("selectedSynopsis"), media.Synopsis},
+            {QStringLiteral("selectedTypeLabel"), typeLabel()},
+            {QStringLiteral("selectedStatusLabel"), statusLabel()},
+            {QStringLiteral("selectedProgress"), FormatProgress(media.ConsumedChapters, media.TotalChapters)},
+            {QStringLiteral("selectedScore"),
+             media.PersonalScore > 0 ? QString::number(media.PersonalScore) : QStringLiteral("—")},
+            {QStringLiteral("selectedAverageScore"),
+             media.AverageScore > 0 ? QString::number(media.AverageScore) : QStringLiteral("—")},
+            {QStringLiteral("selectedSeasonLabel"), PresentMediaSeason(media)},
+            {QStringLiteral("selectedNextAiringLabel"), PresentMediaNextAiring(media)},
+            {QStringLiteral("selectedMediaLinks"), PresentMediaLinks(media)},
+            {QStringLiteral("selectedAlternativeNames"), media.AlternativeNames},
+            {QStringLiteral("selectedCoverSource"), coverSource},
+            {QStringLiteral("selectedMediaInPersonalList"), media.ListStatus != UserListStatus::Unknown}};
 }

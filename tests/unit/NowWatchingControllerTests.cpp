@@ -74,6 +74,7 @@ private slots:
     void burstOfRegistryChangesRefreshesOnce();
     void persistentReadFailureWarnsOnce();
     void currentCarriesMediaIdAndAnimeSynopsisOnlyWhenAssociated();
+    void currentCarriesAnimeDetailsForTheDetailsPanel();
 
 private:
     ActiveSessionRegistry registry;
@@ -365,6 +366,25 @@ void NowWatchingControllerTests::persistentReadFailureWarnsOnce() {
     controller.Refresh();
 
     QCOMPARE(warnings.size(), 1);
+}
+
+void NowWatchingControllerTests::currentCarriesAnimeDetailsForTheDetailsPanel() {
+    registry.start(session(QStringLiteral("a"), Start), candidate(21));
+    NowWatchingController controller(registry, library);
+    controller.setCoverSource([](const int) { return QStringLiteral("file:///covers/21.jpg"); });
+    controller.Refresh();
+
+    const auto details = controller.current().value(QStringLiteral("details")).toMap();
+
+    QCOMPARE(details.value(QStringLiteral("selectedTitle")).toString(), QStringLiteral("One Piece"));
+    QCOMPARE(details.value(QStringLiteral("selectedSynopsis")).toString(), QStringLiteral("Pirates and a straw hat."));
+    QCOMPARE(details.value(QStringLiteral("selectedProgress")).toString(), QStringLiteral("5/12"));
+    QCOMPARE(details.value(QStringLiteral("selectedCoverSource")).toString(), QStringLiteral("file:///covers/21.jpg"));
+    for (const auto &key : {"selectedAlternativeNames", "selectedAverageScore", "selectedMediaInPersonalList",
+                            "selectedMediaLinks", "selectedNextAiringLabel", "selectedScore", "selectedSeasonLabel",
+                            "selectedStatusLabel", "selectedTypeLabel"}) {
+        QVERIFY2(details.contains(QString::fromLatin1(key)), key);
+    }
 }
 
 QTEST_MAIN(NowWatchingControllerTests)

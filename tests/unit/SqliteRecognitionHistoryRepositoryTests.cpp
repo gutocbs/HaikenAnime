@@ -40,6 +40,9 @@ private slots:
     void migrationRecordsVersionTwentyFive();
     void removeDeletesRecordAndDiscardsOnlyMatchingQueuedProgress();
     void removeWithoutQueuedProgressLeavesTheQueue();
+    void findsQueuedProgressReachingTheEpisode();
+    void findSkipsCorruptedRowsAndStillFillsThePage();
+    void ignoresSupersededAndOtherProgressWhenLookingForQueuedProgress();
 
 private:
     std::unique_ptr<QTemporaryDir> directory;
@@ -318,6 +321,56 @@ void SqliteRecognitionHistoryRepositoryTests::removeWithoutQueuedProgressLeavesT
 
     QCOMPARE(statusOf(query, 1), 0);
     QVERIFY(!repository.remove(record.id(), std::nullopt, error));
+}
+
+void SqliteRecognitionHistoryRepositoryTests::findsQueuedProgressReachingTheEpisode() {
+    auto repository = repositoryFor(*database);
+    QSqlQuery query(database->connection());
+    QVERIFY(query.exec(QStringLiteral("INSERT INTO media (id, name, type, status) VALUES (21, 'One Piece', 1, 1)")));
+    // A later episode queued (or already sent) covers this one.
+    insertPendingChange(query, 1, 5, 7, 2, 99);
+    bool found = false;
+    QString error;
+
+    QVERIFY2(repository.hasQueuedProgress({.mediaId = 21, .episode = 6}, found, error), qPrintable(error));
+
+    QVERIFY(found);
+}
+
+void SqliteRecognitionHistoryRepositoryTests::ignoresSupersededAndOtherProgressWhenLookingForQueuedProgress() {
+    auto repository = repositoryFor(*database);
+    QSqlQuery query(database->connection());
+    QVERIFY(query.exec(QStringLiteral("INSERT INTO media (id, name, type, status) VALUES (21, 'One Piece', 1, 1)")));
+    insertPendingChange(query, 1, 5, 6, 5, 99);
+    insertPendingChange(query, 2, 5, 5, 0, 99);
+    insertPendingChange(query, 3, 6, 6, 0, 99);
+    bool found = true;
+    QString error;
+
+    QVERIFY2(repository.hasQueuedProgress({.mediaId = 21, .episode = 6}, found, error), qPrintable(error));
+
+    QVERIFY(!found);
+}
+
+void SqliteRecognitionHistoryRepositoryTests::findSkipsCorruptedRowsAndStillFillsThePage() {
+    auto repository = repositoryFor(*database);
+    QString error;
+    QList<qint64> ids;
+    for (int episode = 1; episode <= 4; ++episode) {
+        auto record = recordFor(QStringLiteral("abc"), episode);
+        QVERIFY(record.transitionTo(RecognitionStatus::Uncertain, Created));
+        QVERIFY(repository.insert(record, error));
+        ids.append(record.id());
+    }
+    QSqlQuery query(database->connection());
+    QVERIFY(query.exec(QStringLiteral("UPDATE recognition_record SET status = 'bogus' WHERE id = %1").arg(ids[2])));
+
+    QList<RecognitionRecord> found;
+    QVERIFY2(repository.find({.limit = 2}, found, error), qPrintable(error));
+
+    QCOMPARE(found.size(), 2);
+    QCOMPARE(found[0].id(), ids[3]);
+    QCOMPARE(found[1].id(), ids[1]);
 }
 
 QTEST_MAIN(SqliteRecognitionHistoryRepositoryTests)

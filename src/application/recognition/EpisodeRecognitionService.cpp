@@ -8,9 +8,13 @@ CatalogEpisodeCandidateResolver::CatalogEpisodeCandidateResolver(IMediaReader &r
 
 EpisodeCandidate CatalogEpisodeCandidateResolver::resolve(const EpisodeCandidate &candidate) {
     if (candidate.mediaId().has_value() || candidate.title().isEmpty()) return candidate;
-    QList<Media> catalog;
-    QString error;
-    if (!reader_.readAll(catalog, error)) return candidate;
+    if (!catalogLoaded_) {
+        QString error;
+        // A failed read is not cached: the next session tries again.
+        if (!reader_.readAll(catalog_, error)) return candidate;
+        catalogLoaded_ = true;
+    }
+    const auto &catalog = catalog_;
     // Same title matcher the local library uses, so Plex titles and file names agree.
     const LocalFileRecognition recognition{.state = LocalRecognitionState::Recognized,
                                            .mediaKind = LocalMediaKind::Anime,
@@ -24,6 +28,11 @@ EpisodeCandidate CatalogEpisodeCandidateResolver::resolve(const EpisodeCandidate
     return EpisodeCandidate::create(candidate.title(), match.mediaId, candidate.season(), candidate.episode(),
                                     candidate.confidence())
         .value_or(candidate);
+}
+
+void CatalogEpisodeCandidateResolver::invalidate() {
+    catalog_.clear();
+    catalogLoaded_ = false;
 }
 
 MediaReaderProgressReader::MediaReaderProgressReader(IMediaReader &reader) : reader_(reader) {}

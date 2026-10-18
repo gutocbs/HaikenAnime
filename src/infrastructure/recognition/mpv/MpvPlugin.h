@@ -34,13 +34,16 @@ struct MpvPluginDependencies final {
     std::function<void(int delayMs, std::function<void()>)> schedule;
     std::function<QDateTime()> clock;
     std::function<QString()> pipeNameFactory;
+    /// Plain-text operational messages (e.g. mpv never opened its IPC pipe); optional.
+    std::function<void(const QString &)> log;
 };
 
 /// Recognizes episodes played in an mpv instance launched by HaikenAnime with JSON IPC.
 /// External mpv instances without IPC are never reported.
 class MpvPlugin final : public IPlaybackPlugin {
 public:
-    static constexpr int ConnectionAttempts = 20;
+    // mpv on a cold start (or a slow disk) can take several seconds to open its IPC pipe: ~15 s in total.
+    static constexpr int ConnectionAttempts = 60;
     static constexpr int ConnectionRetryDelayMs = 250;
     static constexpr int PauseObserverId = 1;
     static constexpr int TimePositionObserverId = 2;

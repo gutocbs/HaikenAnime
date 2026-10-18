@@ -46,6 +46,9 @@ public:
     /// Deletes the record from the local history; a progress change it queued for AniList and not yet
     /// sent is discarded with it. Local progress stays as it is.
     bool remove(qint64 recordId, QString &error);
+    /// At startup: records left half-written by a crash become Uncertain ("interrupted") instead of
+    /// staying Pending forever or claiming a sync that was never queued.
+    bool recoverInterrupted(QString &error);
     /// Durable, visible AniList failure. Local progress stays as it is.
     bool markSyncFailure(qint64 recordId, const QString &safeError, QString &error);
     bool markSynced(qint64 recordId, QString &error);

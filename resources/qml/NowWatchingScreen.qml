@@ -276,8 +276,7 @@ Item {
                             variant: "flat"
                             visible: nowWatching.current.mediaId !== undefined
                             onClicked: {
-                                // Same panel as the Home; selecting there keeps both screens consistent.
-                                homeController.SelectMedia(nowWatching.current.mediaId)
+                                // Same panel as the Home, fed by this screen so the Home selection stays put.
                                 animeDetails.active = true
                                 animeDetails.item.openForItem(animeDetailsButton)
                             }
@@ -463,12 +462,12 @@ Item {
         }
     }
 
-    // Created on first use: it needs the Home controller, which owns the selected-media details.
+    // Created on first use.
     Loader {
         id: animeDetails
         active: false
         sourceComponent: MediaDetailsPanel {
-            controller: homeController
+            controller: nowWatching.current.details
             ink: nowWatching.ink
             muted: nowWatching.muted
             line: nowWatching.line

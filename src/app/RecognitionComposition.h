@@ -18,6 +18,7 @@
 #include "../application/recognition/PluginRegistry.h"
 #include "../application/recognition/PluginSettingsService.h"
 #include "../infrastructure/database/SqlitePluginSettingsRepository.h"
+#include "../infrastructure/database/SqliteMediaProgressReader.h"
 #include "../infrastructure/database/SqliteRecognitionHistoryRepository.h"
 #include "../infrastructure/recognition/mpv/MpvPlugin.h"
 #include "../infrastructure/recognition/plex/PlexPlugin.h"
@@ -51,7 +52,7 @@ struct RecognitionContext final {
     std::unique_ptr<SqliteRecognitionHistoryRepository> historyRepository;
     std::unique_ptr<PersonalListProgressWriter> progressWriter;
     std::unique_ptr<RecognitionHistoryService> history;
-    std::unique_ptr<MediaReaderProgressReader> progressReader;
+    std::unique_ptr<IMediaProgressReader> progressReader;
     std::unique_ptr<ProgressDecisionService> decisions;
     std::unique_ptr<CatalogEpisodeCandidateResolver> resolver;
     std::unique_ptr<IProcessLauncher> processLauncher;

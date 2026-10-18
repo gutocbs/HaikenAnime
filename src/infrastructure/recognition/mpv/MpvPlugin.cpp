@@ -165,6 +165,11 @@ void MpvPlugin::connectWithRetry(const int attempt) {
         if (attempt + 1 >= ConnectionAttempts) {
             // mpv never exposed IPC: the session is not trustworthy and is never reported.
             active->finished = true;
+            if (dependencies_.log) {
+                dependencies_.log(QStringLiteral("mpv did not open its IPC pipe within %1 s; '%2' will not be recognized.")
+                                      .arg(ConnectionAttempts * ConnectionRetryDelayMs / 1000)
+                                      .arg(active->session.title));
+            }
             return;
         }
         const auto retry = [this, active, attempt] {
@@ -181,6 +186,8 @@ void MpvPlugin::connectWithRetry(const int attempt) {
 void MpvPlugin::onConnected() {
     auto *active = active_.get();
     active->reported = true;
+    // Time only counts once playback can be observed, not while mpv was still opening its IPC pipe.
+    active->session.startedAt = now();
     active->client->observeProperty(PauseObserverId, QStringLiteral("pause"));
     active->client->observeProperty(TimePositionObserverId, QStringLiteral("time-pos"));
     active->client->observeProperty(PathObserverId, QStringLiteral("path"));

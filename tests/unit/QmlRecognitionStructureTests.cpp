@@ -260,7 +260,9 @@ void QmlRecognitionStructureTests::nowWatchingUsesHomeLayoutAndAnimeDetailsButto
     QVERIFY(text.contains(QStringLiteral("qsTr(\"Sessões abertas\")")));
     QVERIFY(text.contains(QStringLiteral("qsTr(\"DETALHES\")")));
     QVERIFY(text.contains(QStringLiteral("qsTr(\"Ver detalhes do anime\")")));
-    QVERIFY(text.contains(QStringLiteral("homeController.SelectMedia(")));
+    // Opening the details must not change what the Home has selected.
+    QVERIFY(!text.contains(QStringLiteral("homeController")));
+    QVERIFY(text.contains(QStringLiteral("controller: nowWatching.current.details")));
     QVERIFY(text.contains(QStringLiteral("MediaDetailsPanel {")));
     QVERIFY(text.contains(QStringLiteral("controller.SelectSession(")));
     QVERIFY(!text.contains(QStringLiteral("ComboBox")));

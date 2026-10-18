@@ -116,6 +116,8 @@ private slots:
     void mediaTitleAndDurationBecomeDetails();
     void repeatedDetailsAreNotReported();
     void detailsAfterSessionEndAreIgnored();
+    void sessionCountsFromTheIpcConnection();
+    void slowIpcWithinFifteenSecondsIsStillObserved();
 
 private:
     MpvPluginDependencies dependencies();
@@ -210,6 +212,8 @@ void MpvPluginTests::sessionWithoutIpcIsNeverReported() {
         static_cast<FakeTransport *>(created.get())->failuresBeforeConnect = MpvPlugin::ConnectionAttempts;
         return created;
     };
+    QStringList logs;
+    deps.log = [&logs](const QString &message) { logs.append(message); };
     MpvPlugin plugin(deps);
     plugin.observe(observer);
     QString error;
@@ -219,6 +223,8 @@ void MpvPluginTests::sessionWithoutIpcIsNeverReported() {
     QCOMPARE(transport->openAttempts, MpvPlugin::ConnectionAttempts);
     QVERIFY(observer.started.isEmpty());
     QVERIFY(observer.stops.isEmpty());
+    QCOMPARE(logs.size(), 1);
+    QVERIFY(logs.first().contains(QStringLiteral("ep01.mkv")));
 }
 
 void MpvPluginTests::launchWithoutKnownEpisodeIsRejected() {
@@ -439,6 +445,44 @@ void MpvPluginTests::detailsAfterSessionEndAreIgnored() {
     transport->event(R"({"event":"property-change","id":4,"name":"media-title","data":"Late"})");
 
     QVERIFY(observer.details.isEmpty());
+}
+
+namespace {
+/// Each retry waits its delay on the fake clock, like the real timer would.
+MpvPluginDependencies withSlowIpc(MpvPluginDependencies deps, QDateTime &now, const int failures) {
+    deps.schedule = [&now](const int delayMs, std::function<void()> callback) {
+        now = now.addMSecs(delayMs);
+        callback();
+    };
+    auto factory = deps.transportFactory;
+    deps.transportFactory = [factory, failures] {
+        auto created = factory();
+        static_cast<FakeTransport *>(created.get())->failuresBeforeConnect = failures;
+        return created;
+    };
+    return deps;
+}
+}
+
+void MpvPluginTests::sessionCountsFromTheIpcConnection() {
+    MpvPlugin plugin(withSlowIpc(dependencies(), now, 4));
+    plugin.observe(observer);
+    QString error;
+
+    QVERIFY(plugin.launchEpisode(QStringLiteral("D:/Anime/ep01.mkv"), {.candidate = candidate()}, error));
+
+    QCOMPARE(observer.started.size(), 1);
+    QCOMPARE(observer.started.first().startedAt, Start.addMSecs(4 * MpvPlugin::ConnectionRetryDelayMs));
+}
+
+void MpvPluginTests::slowIpcWithinFifteenSecondsIsStillObserved() {
+    MpvPlugin plugin(withSlowIpc(dependencies(), now, 14000 / MpvPlugin::ConnectionRetryDelayMs));
+    plugin.observe(observer);
+    QString error;
+
+    QVERIFY(plugin.launchEpisode(QStringLiteral("D:/Anime/ep01.mkv"), {.candidate = candidate()}, error));
+
+    QCOMPARE(observer.started.size(), 1);
 }
 
 QTEST_MAIN(MpvPluginTests)

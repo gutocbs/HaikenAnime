@@ -63,6 +63,11 @@ public:
         return records.first();
     }
 
+    bool hasQueuedProgress(const QueuedProgress &, bool &found, QString &error) override {
+        error.clear();
+        found = true;
+        return true;
+    }
     bool remove(const qint64 recordId, const std::optional<QueuedProgress> &, QString &error) override {
         error.clear();
         return records.removeIf([recordId](const RecognitionRecord &record) { return record.id() == recordId; }) > 0;

@@ -1,11 +1,20 @@
 #include "PluginSettingsController.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace {
 const auto PlexId = QStringLiteral("plex");
 const auto ServerKey = QStringLiteral("serverId");
 const auto UsersKey = QStringLiteral("selectedUsers");
+
+void MarkSelected(QVariantList &servers, const QString &serverId) {
+    for (auto &entry : servers) {
+        auto server = entry.toMap();
+        server.insert(QStringLiteral("selected"), server.value(QStringLiteral("id")).toString() == serverId);
+        entry = server;
+    }
+}
 
 QString TypeName(const PluginSettingType type) {
     switch (type) {
@@ -125,6 +134,10 @@ bool PluginSettingsController::Save() {
 
 void PluginSettingsController::Discard() {
     settings_.discard(selectedPluginId_);
+    if (isPlexSelected()) {
+        MarkSelected(servers_, settings_.values(PlexId).value(ServerKey).toString());
+        accounts_.clear();
+    }
     setMessages({}, {});
 }
 
@@ -147,6 +160,7 @@ void PluginSettingsController::Disconnect() {
     const bool disconnected = plex_.authentication->disconnect(error);
     if (disconnected && plex_.plugin) plex_.plugin->stop();
     servers_.clear();
+    discoveredServers_.clear();
     accounts_.clear();
     setMessages(disconnected ? QString() : error, disconnected ? tr("Disconnected from Plex.") : QString());
 }
@@ -175,6 +189,7 @@ void PluginSettingsController::LoadServers() {
     plex_.api->discoverServers(token, [this](const PlexApiError result, const QList<PlexServer> &servers) {
         busy_ = false;
         servers_.clear();
+        discoveredServers_ = servers;
         const auto selected = settings_.values(PlexId).value(ServerKey).toString();
         for (const auto &server : servers) {
             servers_.append(QVariantMap{{QStringLiteral("id"), server.clientIdentifier},
@@ -187,30 +202,33 @@ void PluginSettingsController::LoadServers() {
 }
 
 void PluginSettingsController::SelectServer(const QString &serverId) {
-    if (!isPlexSelected() || plex_.plugin == nullptr) return;
-    plex_.plugin->selectServer(serverId, [this, serverId](const bool selected, const QString &message) {
-        if (!selected) {
-            setMessages(message, {});
-            return;
-        }
-        if (plex_.plugin) plex_.plugin->resume();
-        QString error;
-        settings_.setValue(PlexId, ServerKey, serverId, error);
-        for (auto &entry : servers_) {
-            auto server = entry.toMap();
-            server.insert(QStringLiteral("selected"), server.value(QStringLiteral("id")).toString() == serverId);
-            entry = server;
-        }
-        accounts_.clear();
-        setMessages(error, {});
-    });
+    if (!isPlexSelected()) return;
+    const bool known = std::any_of(discoveredServers_.cbegin(), discoveredServers_.cend(),
+                                   [&serverId](const PlexServer &server) { return server.clientIdentifier == serverId; });
+    if (!known) {
+        setMessages(tr("The Plex server was not found."), {});
+        return;
+    }
+    // Staged like any other setting: the plugin switches servers only when the user saves.
+    QString error;
+    settings_.setValue(PlexId, ServerKey, serverId, error);
+    MarkSelected(servers_, serverId);
+    accounts_.clear();
+    setMessages(error, {});
 }
 
 void PluginSettingsController::LoadUsers() {
-    if (!isPlexSelected() || plex_.plugin == nullptr || plex_.api == nullptr || !plex_.plugin->server()) return;
+    if (!isPlexSelected() || plex_.api == nullptr) return;
+    const auto serverId = settings_.values(PlexId).value(ServerKey).toString();
+    std::optional<PlexServer> server;
+    for (const auto &candidate : discoveredServers_) {
+        if (candidate.clientIdentifier == serverId) server = candidate;
+    }
+    if (!server && plex_.plugin) server = plex_.plugin->server();
+    if (!server) return;
     busy_ = true;
     emit changed();
-    plex_.api->listUsers(*plex_.plugin->server(), [this](const PlexApiError result, const QList<PlexAccount> &accounts) {
+    plex_.api->listUsers(*server, [this](const PlexApiError result, const QList<PlexAccount> &accounts) {
         busy_ = false;
         accounts_ = accounts;
         setMessages(result == PlexApiError::None ? QString() : tr("Plex users could not be listed."), {});

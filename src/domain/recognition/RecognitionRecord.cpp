@@ -55,6 +55,18 @@ bool RecognitionRecord::ignore(const QDateTime &at) {
     return transitionTo(RecognitionStatus::Ignored, at);
 }
 
+bool RecognitionRecord::markInterrupted(const QDateTime &at) {
+    const bool claimedSync = (m_status == RecognitionStatus::MarkedWatched || m_status == RecognitionStatus::Corrected)
+        && m_syncState == RecognitionSyncState::Pending;
+    if (m_status != RecognitionStatus::Pending && !claimedSync) return false;
+    m_status = RecognitionStatus::Uncertain;
+    m_syncState = RecognitionSyncState::NotRequired;
+    m_syncError.clear();
+    m_diagnostic = QStringLiteral("interrupted");
+    m_updatedAt = at;
+    return true;
+}
+
 namespace {
 constexpr std::pair<RecognitionStatus, const char *> StatusNames[] = {
     {RecognitionStatus::Pending, "pending"},

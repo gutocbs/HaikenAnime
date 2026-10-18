@@ -77,6 +77,8 @@ private:
     QString errorMessage_;
     QString statusMessage_;
     QVariantList servers_;
+    // Servers from the last discovery: the chosen one lists its users before Save applies it to the plugin.
+    QList<PlexServer> discoveredServers_;
     QList<PlexAccount> accounts_;
     bool busy_ = false;
     bool connecting_ = false;

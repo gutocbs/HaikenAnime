@@ -35,14 +35,17 @@ std::optional<RecognitionRecord> RecognitionHistoryService::record(const Playbac
     }
 
     switch (decision.kind) {
-    case ProgressDecisionKind::MarkWatched:
-        if (applyProgress(record, decision)) {
-            record.transitionTo(RecognitionStatus::MarkedWatched, now());
-            record.markSyncPending(now());
-        } else {
-            record.transitionTo(RecognitionStatus::Uncertain, now());
-        }
+    case ProgressDecisionKind::MarkWatched: {
+        // The AniList drain may run as soon as the change is queued, so the record must already be visible
+        // as awaiting sync; otherwise its markSynced would find nothing and the record stays pending forever.
+        auto marked = record;
+        marked.transitionTo(RecognitionStatus::MarkedWatched, now());
+        marked.markSyncPending(now());
+        if (!repository_.update(marked, error)) return std::nullopt;
+        if (applyProgress(record, decision)) return marked;
+        record.transitionTo(RecognitionStatus::Uncertain, now());
         break;
+    }
     case ProgressDecisionKind::AlreadyWatched:
         record.transitionTo(RecognitionStatus::AlreadyWatched, now());
         break;
@@ -175,6 +178,32 @@ bool RecognitionHistoryService::remove(const qint64 recordId, QString &error) {
     if (!repository_.remove(recordId, queued, error)) {
         if (error.isEmpty()) error = QStringLiteral("Recognition record %1 could not be removed.").arg(recordId);
         return false;
+    }
+    return true;
+}
+
+bool RecognitionHistoryService::recoverInterrupted(QString &error) {
+    error.clear();
+    QList<RecognitionRecord> candidates;
+    if (!repository_.find({.status = RecognitionStatus::Pending, .limit = AwaitingSyncLimit}, candidates, error)) {
+        return false;
+    }
+    QList<RecognitionRecord> awaiting;
+    if (!repository_.find({.awaitingSync = true, .limit = AwaitingSyncLimit}, awaiting, error)) return false;
+    for (auto &record : awaiting) {
+        // Failed means the drain already saw the change; only a never-queued Pending sync is a lie.
+        if (record.syncState() != RecognitionSyncState::Pending) continue;
+        const auto &candidate = record.effectiveCandidate();
+        if (!candidate.mediaId()) continue;
+        bool queued = false;
+        if (!repository_.hasQueuedProgress({.mediaId = *candidate.mediaId(), .episode = candidate.episode()}, queued,
+                                           error)) {
+            return false;
+        }
+        if (!queued) candidates.append(std::move(record));
+    }
+    for (auto &record : candidates) {
+        if (record.markInterrupted(now()) && !repository_.update(record, error)) return false;
     }
     return true;
 }

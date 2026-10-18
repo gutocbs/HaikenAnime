@@ -97,7 +97,12 @@ std::unique_ptr<RecognitionContext> createRecognitionContext(RecognitionComposit
         QStringLiteral(":/sqlite/queries/update-recognition-record.sql"));
     ctx.progressWriter = std::make_unique<PersonalListProgressWriter>(*dependencies.changes, dependencies.progressApplied);
     ctx.history = std::make_unique<RecognitionHistoryService>(*ctx.historyRepository, *ctx.progressWriter);
-    ctx.progressReader = std::make_unique<MediaReaderProgressReader>(*dependencies.mediaReader);
+    // Before any plugin runs: records a crash left half-written must not stay "pending" forever.
+    if (QString recoveryError; dependencies.connection.isOpen() && !ctx.history->recoverInterrupted(recoveryError)) {
+        ctx.warnings.append(QStringLiteral("Interrupted recognitions could not be recovered: %1").arg(recoveryError));
+    }
+    // The decision reads the one media fresh from SQLite; only title matching uses a cached catalog.
+    ctx.progressReader = std::make_unique<SqliteMediaProgressReader>(dependencies.connection);
     ctx.decisions = std::make_unique<ProgressDecisionService>(*ctx.progressReader, RecognitionPolicy());
     ctx.resolver = std::make_unique<CatalogEpisodeCandidateResolver>(*dependencies.mediaReader);
 
@@ -106,7 +111,8 @@ std::unique_ptr<RecognitionContext> createRecognitionContext(RecognitionComposit
     auto mpv = std::make_unique<MpvPlugin>(MpvPluginDependencies{
         .transportFactory = [] { return std::make_unique<QtLocalSocketMpvTransport>(); },
         .launcher = ctx.processLauncher.get(),
-        .schedule = schedule});
+        .schedule = schedule,
+        .log = dependencies.diagnostics});
     ctx.mpv = mpv.get();
 
     ctx.network = std::make_unique<QNetworkAccessManager>();
@@ -151,7 +157,12 @@ void applyRecognitionSettings(RecognitionContext &context) {
     const auto serverId = plex.value(QStringLiteral("serverId")).toString();
     if (!serverId.isEmpty() && context.plexAuthentication->hasToken()) {
         context.plex->selectServer(serverId, [&context](const bool selected, const QString &message) {
-            if (!selected) context.warnings.append(message);
+            if (!selected) {
+                context.warnings.append(message);
+                return;
+            }
+            // A saved server must be observed even if polling had stopped (e.g. after a rejected token).
+            context.plex->resume();
         });
     }
 }

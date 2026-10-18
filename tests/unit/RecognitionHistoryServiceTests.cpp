@@ -60,8 +60,15 @@ public:
         return records.removeIf([recordId](const RecognitionRecord &record) { return record.id() == recordId; }) > 0;
     }
 
+    bool hasQueuedProgress(const QueuedProgress &progress, bool &found, QString &error) override {
+        error.clear();
+        found = queuedMediaIds.contains(progress.mediaId);
+        return true;
+    }
+
     bool failRemove = false;
     std::optional<QueuedProgress> removedQueuedProgress;
+    QSet<int> queuedMediaIds;
     QList<RecognitionRecord> records;
     qint64 lastId = 0;
     int updates = 0;
@@ -71,6 +78,7 @@ public:
 class FakeProgressWriter final : public IRecognitionProgressWriter {
 public:
     bool apply(const Media &previous, const Media &updated, QString &error) override {
+        if (onApply) onApply();
         if (fail) {
             error = QStringLiteral("database is locked");
             return false;
@@ -82,6 +90,7 @@ public:
 
     QList<QPair<int, int>> applied;
     bool fail = false;
+    std::function<void()> onApply;
 };
 
 class RecordingChangeWriter final : public IPersonalListChangeWriter {
@@ -147,6 +156,11 @@ private slots:
     void removeSyncedRecordDoesNotTouchTheQueue();
     void removeFailureKeepsTheRecord();
     void removeUnknownRecordFails();
+    void recordIsAwaitingSyncBeforeProgressIsQueued();
+    void failedQueueingRevertsRecordToUncertain();
+    void recoveryTurnsInterruptedPendingRecordsUncertain();
+    void recoveryTurnsUnqueuedSyncPendingRecordsUncertain();
+    void recoveryKeepsQueuedSyncPendingRecords();
 
 private:
     FakeHistoryRepository repository;
@@ -408,6 +422,72 @@ void RecognitionHistoryServiceTests::removeUnknownRecordFails() {
 
     QVERIFY(!service->remove(99, error));
     QVERIFY(!error.isEmpty());
+}
+
+void RecognitionHistoryServiceTests::recordIsAwaitingSyncBeforeProgressIsQueued() {
+    QList<RecognitionRecord> seenByDrain;
+    progress.onApply = [this, &seenByDrain] {
+        // The AniList drain may run on another thread as soon as the change is queued.
+        QString lookupError;
+        service->findAwaitingSync(21, 6, seenByDrain, lookupError);
+    };
+    QString error;
+
+    QVERIFY(service->record(session(), candidate(6), markWatched(5, 6), error));
+
+    QCOMPARE(seenByDrain.size(), 1);
+    QCOMPARE(seenByDrain.first().status(), RecognitionStatus::MarkedWatched);
+}
+
+void RecognitionHistoryServiceTests::failedQueueingRevertsRecordToUncertain() {
+    progress.fail = true;
+    QString error;
+
+    const auto record = service->record(session(), candidate(6), markWatched(5, 6), error);
+
+    QVERIFY(record.has_value());
+    QCOMPARE(repository.records.first().status(), RecognitionStatus::Uncertain);
+    QCOMPARE(repository.records.first().syncState(), RecognitionSyncState::NotRequired);
+    QCOMPARE(repository.records.first().diagnostic(), QStringLiteral("progress-write-failed"));
+}
+
+void RecognitionHistoryServiceTests::recoveryTurnsInterruptedPendingRecordsUncertain() {
+    auto interrupted = RecognitionRecord::create(session(), candidate(6), Now);
+    QString error;
+    QVERIFY(repository.insert(interrupted, error));
+
+    QVERIFY2(service->recoverInterrupted(error), qPrintable(error));
+
+    QCOMPARE(repository.records.first().status(), RecognitionStatus::Uncertain);
+    QCOMPARE(repository.records.first().diagnostic(), QStringLiteral("interrupted"));
+}
+
+void RecognitionHistoryServiceTests::recoveryTurnsUnqueuedSyncPendingRecordsUncertain() {
+    auto marked = RecognitionRecord::create(session(), candidate(6), Now);
+    QVERIFY(marked.transitionTo(RecognitionStatus::MarkedWatched, Now));
+    marked.markSyncPending(Now);
+    QString error;
+    QVERIFY(repository.insert(marked, error));
+
+    QVERIFY2(service->recoverInterrupted(error), qPrintable(error));
+
+    QCOMPARE(repository.records.first().status(), RecognitionStatus::Uncertain);
+    QCOMPARE(repository.records.first().syncState(), RecognitionSyncState::NotRequired);
+    QCOMPARE(repository.records.first().diagnostic(), QStringLiteral("interrupted"));
+}
+
+void RecognitionHistoryServiceTests::recoveryKeepsQueuedSyncPendingRecords() {
+    auto marked = RecognitionRecord::create(session(), candidate(6), Now);
+    QVERIFY(marked.transitionTo(RecognitionStatus::MarkedWatched, Now));
+    marked.markSyncPending(Now);
+    QString error;
+    QVERIFY(repository.insert(marked, error));
+    repository.queuedMediaIds = {21};
+
+    QVERIFY2(service->recoverInterrupted(error), qPrintable(error));
+
+    QCOMPARE(repository.records.first().status(), RecognitionStatus::MarkedWatched);
+    QCOMPARE(repository.records.first().syncState(), RecognitionSyncState::Pending);
 }
 
 QTEST_MAIN(RecognitionHistoryServiceTests)

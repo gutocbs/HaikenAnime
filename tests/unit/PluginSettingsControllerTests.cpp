@@ -78,6 +78,7 @@ private slots:
     void disconnectClearsLogin();
     void testConnectionShowsPluginResult();
     void selectingServerStoresItsId();
+    void discardAfterSelectingServerKeepsTheSavedServer();
     void selectingUsersUpdatesObservedUsers();
     void messagesNeverContainTheToken();
     void reconnectingResumesPlexPolling();
@@ -273,12 +274,31 @@ void PluginSettingsControllerTests::selectingServerStoresItsId() {
     QCOMPARE(controller->servers().size(), 2);
     controller->SelectServer(QStringLiteral("server-abc"));
 
-    QCOMPARE(plex->server()->clientIdentifier, QStringLiteral("server-abc"));
+    // Only Save applies it: the plugin keeps observing the saved server until then.
+    QVERIFY(!plex->server().has_value());
     QVERIFY(controller->dirty());
     QVERIFY(controller->Save());
     QCOMPARE(repository.stored.value(QStringLiteral("plex")).value(QStringLiteral("serverId")).toString(),
              QStringLiteral("server-abc"));
     QVERIFY(controller->servers().at(0).toMap().value(QStringLiteral("selected")).toBool());
+}
+
+void PluginSettingsControllerTests::discardAfterSelectingServerKeepsTheSavedServer() {
+    secrets.secrets[{QStringLiteral("plex"), QStringLiteral("token")}] = Token;
+    http.route(QStringLiteral("GET https://clients.plex.tv/api/v2/resources"),
+               json(PlexFixture(QStringLiteral("plex-resources.json"))));
+    const auto controller = makeController();
+    controller->SelectPlugin(QStringLiteral("plex"));
+    controller->LoadServers();
+    controller->SelectServer(QStringLiteral("server-abc"));
+
+    controller->Discard();
+
+    QVERIFY(!plex->server().has_value());
+    QVERIFY(settings->values(QStringLiteral("plex")).value(QStringLiteral("serverId")).toString().isEmpty());
+    for (const auto &server : controller->servers()) {
+        QVERIFY(!server.toMap().value(QStringLiteral("selected")).toBool());
+    }
 }
 
 void PluginSettingsControllerTests::selectingUsersUpdatesObservedUsers() {

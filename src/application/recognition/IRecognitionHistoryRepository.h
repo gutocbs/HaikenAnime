@@ -42,6 +42,9 @@ public:
     /// Deletes the record and, when given, discards the matching AniList progress change that has not been
     /// sent yet — atomically. Local progress is never touched.
     virtual bool remove(qint64 recordId, const std::optional<QueuedProgress> &queuedProgress, QString &error) = 0;
+    /// Whether the AniList queue still holds (or already sent) a progress change for the media that reaches
+    /// at least the episode; false means the change was never queued.
+    virtual bool hasQueuedProgress(const QueuedProgress &progress, bool &found, QString &error) = 0;
 };
 
 #endif // HAIKENANIME_IRECOGNITIONHISTORYREPOSITORY_H

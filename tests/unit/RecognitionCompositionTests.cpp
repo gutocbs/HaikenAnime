@@ -76,6 +76,7 @@ private slots:
     void startsWithoutPlexServerOrMpv();
     void invalidStoredSettingsDoNotBlockStartup();
     void missingDatabaseStillStartsWithWarnings();
+    void startupRecoversRecordsInterruptedByACrash();
     void plexClientIdentifierIsPersistent();
     void openerUsesDefaultAppWhileMpvIsDisabled();
     void openerLaunchesConfiguredMpvWithIpcWhenEnabled();
@@ -148,6 +149,22 @@ void RecognitionCompositionTests::invalidStoredSettingsDoNotBlockStartup() {
     QVERIFY(context->recognition->isRunning());
     QVERIFY(!context->warnings.isEmpty());
     QVERIFY(!context->isMpvEnabled());
+}
+
+void RecognitionCompositionTests::startupRecoversRecordsInterruptedByACrash() {
+    QSqlQuery query(database->connection());
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO recognition_record (plugin_id, session_key, user_id, device_id, deduplication_key, title, "
+        "media_id, season, episode, confidence, status, diagnostic, sync_state, sync_error, created_at, updated_at) "
+        "VALUES ('mpv', 'abc', '', '', 'mpv|abc|21|6', 'One Piece', 21, NULL, 6, 1.0, 'pending', '', "
+        "'not-required', '', '2026-10-17T00:00:00Z', '2026-10-17T00:00:00Z')")));
+
+    const auto context = createRecognitionContext(dependencies(database->connection()));
+
+    QVERIFY(query.exec(QStringLiteral("SELECT status, diagnostic FROM recognition_record")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("uncertain"));
+    QCOMPARE(query.value(1).toString(), QStringLiteral("interrupted"));
 }
 
 void RecognitionCompositionTests::missingDatabaseStillStartsWithWarnings() {

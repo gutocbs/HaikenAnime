@@ -2,11 +2,13 @@
 #define HAIKENANIME_PLEXAPICLIENT_H
 
 #include <QDate>
+#include <QHash>
 #include <QList>
 #include <QString>
 #include <QUrl>
 
 #include <functional>
+#include <memory>
 #include <optional>
 
 #include "PlexHttp.h"
@@ -36,6 +38,8 @@ struct PlexServer final {
 
     /// Local direct connection first, then remote direct, relay last.
     [[nodiscard]] std::optional<QUrl> preferredUri() const;
+    /// Every valid connection in that same order.
+    [[nodiscard]] QList<QUrl> orderedUris() const;
 };
 
 struct PlexAccount final {
@@ -77,8 +81,15 @@ public:
     [[nodiscard]] QList<QPair<QByteArray, QByteArray>> headers(const QString &token) const;
 
 private:
+    /// Sends to the server, moving to its next connection only when one gives no response at all (e.g. the LAN
+    /// address while away from home); any HTTP status is final.
+    void sendToServer(const PlexServer &server, const QString &path,
+                      std::function<void(const PlexHttpResponse &)> completion);
+
     IPlexHttp &http_;
     PlexClientIdentity identity_;
+    // Connection that last answered, per server, so a dead LAN address does not cost a timeout every poll.
+    std::shared_ptr<QHash<QString, QUrl>> workingUris_ = std::make_shared<QHash<QString, QUrl>>();
 };
 
 #endif // HAIKENANIME_PLEXAPICLIENT_H

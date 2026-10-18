@@ -46,10 +46,23 @@ std::optional<QJsonObject> MediaContainer(const QByteArray &body) {
     return container.toObject();
 }
 
-QUrl ServerUrl(const PlexServer &server, const QString &path) {
-    auto url = *server.preferredUri();
+QUrl WithPath(QUrl url, const QString &path) {
     url.setPath(url.path() + path);
     return url;
+}
+
+void SendToFirstAnswering(IPlexHttp &http, QList<QUrl> uris, const QString &path,
+                          QList<QPair<QByteArray, QByteArray>> headers,
+                          std::function<void(const QUrl &, const PlexHttpResponse &)> completion) {
+    const auto uri = uris.takeFirst();
+    http.send({.url = WithPath(uri, path), .headers = headers},
+              [&http, uri, uris, path, headers, completion = std::move(completion)](const PlexHttpResponse &response) {
+                  if (response.status == 0 && !uris.isEmpty()) {
+                      SendToFirstAnswering(http, uris, path, headers, completion);
+                      return;
+                  }
+                  completion(uri, response);
+              });
 }
 }
 
@@ -65,8 +78,36 @@ std::optional<QUrl> PlexServer::preferredUri() const {
     return pick([](const PlexConnection &) { return true; });
 }
 
+QList<QUrl> PlexServer::orderedUris() const {
+    QList<QUrl> uris;
+    const auto add = [this, &uris](const auto &accept) {
+        for (const auto &connection : connections) {
+            if (connection.uri.isValid() && accept(connection) && !uris.contains(connection.uri)) {
+                uris.append(connection.uri);
+            }
+        }
+    };
+    add([](const PlexConnection &c) { return c.local && !c.relay; });
+    add([](const PlexConnection &c) { return !c.relay; });
+    add([](const PlexConnection &) { return true; });
+    return uris;
+}
+
 PlexApiClient::PlexApiClient(IPlexHttp &http, PlexClientIdentity identity)
     : http_(http), identity_(std::move(identity)) {}
+
+void PlexApiClient::sendToServer(const PlexServer &server, const QString &path,
+                                 std::function<void(const PlexHttpResponse &)> completion) {
+    auto uris = server.orderedUris();
+    const auto remembered = workingUris_->value(server.clientIdentifier);
+    if (uris.removeOne(remembered)) uris.prepend(remembered);
+    SendToFirstAnswering(http_, uris, path, headers(server.accessToken),
+                         [memory = workingUris_, serverId = server.clientIdentifier,
+                          completion = std::move(completion)](const QUrl &uri, const PlexHttpResponse &response) {
+                             if (response.status != 0) memory->insert(serverId, uri);
+                             completion(response);
+                         });
+}
 
 QList<QPair<QByteArray, QByteArray>> PlexApiClient::headers(const QString &token) const {
     QList<QPair<QByteArray, QByteArray>> result{{"Accept", "application/json"},
@@ -120,7 +161,7 @@ void PlexApiClient::listUsers(const PlexServer &server,
         completion(PlexApiError::Unavailable, {});
         return;
     }
-    http_.send({.url = ServerUrl(server, QStringLiteral("/accounts")), .headers = headers(server.accessToken)},
+    sendToServer(server, QStringLiteral("/accounts"),
                [completion = std::move(completion)](const PlexHttpResponse &response) {
                    if (const auto error = ErrorForStatus(response.status); error != PlexApiError::None) {
                        completion(error, {});
@@ -149,7 +190,7 @@ void PlexApiClient::listSessions(const PlexServer &server,
         completion(PlexApiError::Unavailable, {});
         return;
     }
-    http_.send({.url = ServerUrl(server, QStringLiteral("/status/sessions")), .headers = headers(server.accessToken)},
+    sendToServer(server, QStringLiteral("/status/sessions"),
                [completion = std::move(completion)](const PlexHttpResponse &response) {
                    if (const auto error = ErrorForStatus(response.status); error != PlexApiError::None) {
                        completion(error, {});
