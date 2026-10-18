@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `cc91cf6` (`feature/revisao-geral`)
-- **Status:** aguardando aprovação — nenhuma alteração aplicada
+- **Status:** aprovado (com as recomendações das decisões) e aplicado — aguardando o build de validação
 
 ---
 
@@ -112,3 +112,23 @@ P2-05 → P2-06 → P2-04 (+ teste) → P2-01 → P2-02 + P2-03 (juntos, porque 
    numa iniciativa própria fora desta revisão.
 2. **P2-06:** remover `ISettingsReader` (recomendo) ou mantê-la como contrato formal da camada?
 3. **P2-03:** de acordo com criar `src/presentation/media/` para os helpers de texto de mídia?
+
+---
+
+## 7. Aplicação
+
+| Item | Commit |
+| --- | --- |
+| P2-05 cabeçalhos da IDE | `cc0120d` |
+| P2-06 `ISettingsReader` removida | `105d6f9` |
+| P2-04 `operator==` *defaulted* (+ remoção de `comparesScannerPreferences`) | `bd5c51d` |
+| P2-01 chaves de `UserListStatus` centralizadas | `70b82a4` |
+| P2-02 + P2-03 `presentation/media/MediaPresentation` (+ `MediaDomainTests` → `MediaPresentationTests`, sem o caso de defaults) | `a76046a` |
+| P2-07 `usesExactScannerDefaults` removido | `4bbda44`* |
+| SERVICE.md | ver commit de docs |
+
+\* Ao ajustar, vi que "os defaults são válidos" já é verificado por `acceptsSupportedPreferences`
+(`UserPreferences tenPoint;`). Por isso o caso foi removido em vez de reduzido (critério **b**).
+
+Decisões: `Media` mantida como está, com a convenção registrada no `SERVICE.md`; `ISettingsReader`
+removida; `src/presentation/media/` criada. Os itens fora de escopo foram para a **Parte 13** do plano.

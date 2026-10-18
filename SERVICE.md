@@ -94,6 +94,7 @@ src/
 │   └── secrets/          #   Windows Credential Manager (AniList e plugins)
 ├── presentation/         # Controllers QObject e QAbstractListModel expostos ao QML
 │   ├── home/  seasonal/  settings/  sync/  recognition/
+│   └── media/            #   textos de mídia compartilhados (progresso, rótulos, detalhes)
 └── app/                  # Composição e coordenação de workflows (threads, timers, runtime de sync)
 resources/
 ├── qml/                  # Telas e componentes (módulo QML "HaikenAnime")
@@ -196,7 +197,8 @@ abrem sua própria conexão (`SqliteDatabase(databasePath)`). Resultados voltam 
 - Filtros, busca e ordenação são aplicados no controller; a ordenação escolhida é salva em
   `UserPreferences.homeSortKey` (sinal `sortPreferenceChanged` → `main.cpp`).
 - Títulos exibidos seguem `preferredTitleKey` (`MediaTitleResolver`); progresso com total desconhecido é
-  exibido como `?` (`ProgressFormatter`).
+  exibido como `?` (`FormatProgress`). Rótulos de status/tipo e o mapa do painel de detalhes vêm de
+  `presentation/media/MediaPresentation` (um único lugar para todas as telas).
 - Recarrega quando: sync de `UserList` termina, catálogo sazonal salva uma edição, reconhecimento aplica
   progresso, reconhecimento local persiste um lote.
 
@@ -357,6 +359,9 @@ Para adicionar uma migração:
 - **Inglês** em nomes de classes, métodos, variáveis, chaves JSON e APIs internas. Textos de interface em
   `qsTr()` (QML) / `tr()`.
 - Uma classe por par `.h`/`.cpp` no módulo a que pertence; *include guards* `HAIKENANIME_<NOME>_H`.
+- Entidades de domínio são structs/classes de dados com campos públicos em `PascalCase` (`Media::Name`,
+  `MediaLink::Url`); conversões enum ↔ chave ficam no header do enum (`UserListStatusKey`,
+  `CardStatusPresentationKey`) e não são reescritas nos controllers.
 - **Interfaces** com prefixo `I` e destrutor virtual, definidas em `application/` (ports). Implementações
   em `infrastructure/`, nomeadas pela tecnologia (`Sqlite*`, `Qt*`, `Windows*`, `GraphQl*`).
 - **Erros**: métodos falíveis retornam `bool` com `[[nodiscard]]` e preenchem `QString &error`
@@ -424,14 +429,14 @@ Mapa rápido de suítes por área:
 
 | Área | Suítes principais |
 | --- | --- |
-| Domínio | `MediaDomainTests`, `RecognitionDomainTests`, `AlternativeNamesTests`, `MediaTitleResolverTests` |
+| Domínio | `RecognitionDomainTests`, `AlternativeNamesTests`, `MediaTitleResolverTests` |
 | SQLite | `SqliteDatabaseTests`, `SqliteRepositoryTests`, `Sqlite*RepositoryTests`, `SqlQueryStoreTests`, `SqliteQueryConfigurationTests` |
 | AniList | `AniListGraphQl*Tests`, `AniListFlowTests`, `AniListPendingChange*Tests`, `AniListUpdateClientTests`, `AniListAuthManagerTests`, `AniListOAuth*Tests`, `RemoveAniListAccountUseCaseTests` |
 | Sync | `SyncTaskPolicyTests`, `AdaptiveSyncCoordinatorTests`, `AdaptiveSyncRuntimeTests`, `InitialSyncCoordinatorTests` |
 | Biblioteca local | `LocalLibraryScanner*Tests`, `LocalLibraryScan*Tests`, `LocalLibraryRecognition*Tests`, `AnitomyLocalFileRecognizerTests`, `LocalMediaResolverTests`, `LocalEpisodeReaderTests` |
 | Capas/cache | `Cover*Tests`, `QtCoverDownloaderTests`, `ClearLocalCacheUseCaseTests` |
 | Reconhecimento | `Mpv*Tests`, `Plex*Tests`, `Plugin*Tests`, `PlaybackObservationServiceTests`, `ProgressDecisionServiceTests`, `RecognitionHistory*Tests`, `RecognitionSyncFeedbackTests`, `EpisodeRecognition*Tests`, `RecognitionCompositionTests`, `ActiveSessionRegistryTests`, `NowWatchingControllerTests` |
-| Apresentação | `HomeScreenControllerTests`, `SettingsControllerTests`, `SeasonalCatalog*Tests`, `SynchronizationStatusControllerTests`, `QmlStructureTests`, `QmlRecognitionStructureTests` |
+| Apresentação | `MediaPresentationTests`, `HomeScreenControllerTests`, `SettingsControllerTests`, `SeasonalCatalog*Tests`, `SynchronizationStatusControllerTests`, `QmlStructureTests`, `QmlRecognitionStructureTests` |
 | Configuração/plataforma | `JsonSettingsReaderTests`, `UserPreferencesValidatorTests`, `TranslationLoaderTests`, `Windows*Tests`, `FileSecretStoreTests` |
 
 ---
