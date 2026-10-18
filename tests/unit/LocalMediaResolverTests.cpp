@@ -44,7 +44,6 @@ private slots:
     void returnsAmbiguousWhenPunctuationOnlyDistinguishesMedia();
     void dropsApostrophesInsteadOfSplittingWords();
     void stillMatchesNonLatinTitles();
-    void rejectsUnsupportedKind();
     void rejectsInvalidEpisode_data();
     void rejectsInvalidEpisode();
     void indexedResolveMatchesCatalogResolveForEveryFixtureTitle_data();
@@ -178,18 +177,6 @@ void LocalMediaResolverTests::doesNotTreatMultipleVariantsOfOneMediaAsAmbiguous(
 
     QCOMPARE(match.state, LocalRecognitionState::Associated);
     QCOMPARE(match.mediaId, 90);
-}
-
-void LocalMediaResolverTests::rejectsUnsupportedKind() {
-    auto recognition = Recognized(QStringLiteral("Frieren"));
-    recognition.mediaKind = LocalMediaKind::Manga;
-
-    const auto match = LocalMediaResolver().resolve(
-        recognition, {CatalogMedia(100, QStringLiteral("Frieren"))});
-
-    QCOMPARE(match.state, LocalRecognitionState::Unsupported);
-    QCOMPARE(match.mediaId, 0);
-    QVERIFY(!match.diagnostic.isEmpty());
 }
 
 void LocalMediaResolverTests::rejectsInvalidEpisode_data() {

@@ -10,7 +10,6 @@ private slots:
     void recognizesDottedReleaseNameWithPunctuationFreeTitle();
     void rejectsMissingTitleOrEpisode();
     void rejectsRangesAndMultipleEpisodes();
-    void rejectsUnsupportedKinds();
     void keepsSeasonMarkerOutOfEpisodeRangeCheck();
     void recoversEpisodeWithVersionSuffix();
     void recoversSeasonAndEpisodeFromSxxExx();
@@ -125,13 +124,6 @@ void AnitomyLocalFileRecognizerTests::rejectsRangesAndMultipleEpisodes() {
     const auto multiple = recognizer.recognize(QStringLiteral("[Group] Frieren - 01, 02 [1080p].mkv"));
     QCOMPARE(multiple.state, LocalRecognitionState::Ambiguous);
     QVERIFY(!multiple.episode.has_value());
-}
-
-void AnitomyLocalFileRecognizerTests::rejectsUnsupportedKinds() {
-    AnitomyLocalFileRecognizer recognizer;
-    const auto result = recognizer.recognize(QStringLiteral("Frieren - 01.mkv"), LocalMediaKind::Manga);
-    QCOMPARE(result.state, LocalRecognitionState::Unsupported);
-    QCOMPARE(result.mediaKind, LocalMediaKind::Manga);
 }
 
 void AnitomyLocalFileRecognizerTests::recoversEpisodeFromDashWhenAnitomyMissesIt() {

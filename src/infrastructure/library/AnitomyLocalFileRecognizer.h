@@ -5,8 +5,7 @@
 
 class AnitomyLocalFileRecognizer final : public ILocalFileRecognizer {
 public:
-    LocalFileRecognition recognize(const QString &fileName,
-                                   LocalMediaKind requestedKind = LocalMediaKind::Anime) const override;
+    LocalFileRecognition recognize(const QString &fileName) const override;
 };
 
 #endif

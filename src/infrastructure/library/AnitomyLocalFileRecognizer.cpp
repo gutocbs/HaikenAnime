@@ -92,24 +92,15 @@ QString RemoveSeasonMarker(const QString &title, const QRegularExpressionMatch &
 }
 }
 
-LocalFileRecognition AnitomyLocalFileRecognizer::recognize(const QString &fileName,
-                                                           const LocalMediaKind requestedKind) const {
+LocalFileRecognition AnitomyLocalFileRecognizer::recognize(const QString &fileName) const {
     LocalFileRecognition result;
-    result.mediaKind = requestedKind;
-    if (requestedKind != LocalMediaKind::Anime) {
-        result.state = LocalRecognitionState::Unsupported;
-        result.diagnostic = QStringLiteral("The requested local media kind is not supported yet.");
-        return result;
-    }
     if (fileName.trimmed().isEmpty()) {
-        result.mediaKind = LocalMediaKind::Anime;
         result.diagnostic = QStringLiteral("The local filename is empty.");
         return result;
     }
 
     anitomy::Anitomy parser;
     if (!parser.Parse(QFileInfo(fileName).fileName().toStdWString())) {
-        result.mediaKind = LocalMediaKind::Anime;
         result.diagnostic = QStringLiteral("Anitomy could not parse the local filename.");
         return result;
     }
