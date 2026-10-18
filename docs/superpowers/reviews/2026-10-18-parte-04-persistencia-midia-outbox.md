@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `8daf391` (`feature/revisao-geral`)
-- **Status:** aguardando aprovação — nenhuma alteração aplicada
+- **Status:** aprovado e aplicado — aguardando o build de validação
 
 ---
 
@@ -108,3 +108,27 @@ P4-05 → P4-04 → P4-02 → P4-03 → P4-06 → P4-01 (o de maior impacto nos 
 
 1. **P4-01:** remover o caminho de gravação sem outbox (recomendo **sim**). Toda edição do usuário passa a
    ir, obrigatoriamente, para o outbox, como já acontece em produção hoje.
+
+---
+
+## 7. Aplicação
+
+| Item | Commit |
+| --- | --- |
+| P4-05 `read-media-alternative-names.sql` | `35e9411` |
+| P4-04 repositórios com as próprias queries | `9092763` |
+| P4-02 *bind*/serialização de mídia no `SqliteMediaMapper` | `608eb03` |
+| P4-03 `SqlitePendingChangeCodec` | `1f4645b` |
+| P4-06 helper de array JSON nas preferências | `db716f7` |
+| P4-01 caminho sem outbox removido | `613127a` |
+
+Notas:
+- **P4-05:** o `InitialSyncCoordinatorTests` (código que sai na Parte 6) passou a embutir as queries SQL,
+  porque o *upsert* agora lê `read-media-alternative-names.sql` do recurso.
+- **P4-04:** o `ApplicationSyncTaskExecutor` perdeu 6 parâmetros de caminho de query (os 3 do estado de
+  tarefa ficam para a Parte 6).
+- **P4-01:** a Home e o catálogo sazonal continuam aceitando a ausência do serviço (banco indisponível), com
+  as mesmas mensagens de erro de antes. Nos testes, os *fakes* passaram a implementar
+  `IPersonalListChangeWriter` e um `PersonalListChangeService` real fica entre eles e o controller (8 casos
+  da Home, 10 do catálogo). Os 3 testes de `updatePersonalListMedia` do repositório agora usam
+  `SqlitePersonalListChangeWriter::save` sem mudanças de outbox (mesma query e mesmo *bind*).

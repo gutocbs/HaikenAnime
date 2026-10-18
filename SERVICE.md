@@ -343,6 +343,9 @@ Para adicionar uma migração:
 - O caminho de cada query é uma constante em `src/infrastructure/database/SqliteQueries.h`
   (`SqliteQueries::ReadMedia`, …). Query nova = arquivo novo + constante nova. O CMake já pega o arquivo; os
   alvos de teste que leem a query a embutem com `qt_add_resources`.
+- Repositórios recebem só a conexão (`SqliteMediaRepository(db)`) e usam as constantes internamente. O
+  mapeamento de colunas de mídia (ler, *bind* do *upsert* e da edição da lista) fica em `SqliteMediaMapper`;
+  o formato dos valores do outbox fica em `SqlitePendingChangeCodec`.
 - O mesmo vale para GraphQL: `resources/anilist/{queries,mutations}/*.graphql`, carregados por
   `GraphQlQueryStore` de `:/anilist/queries/…` e `:/anilist/mutations/…`.
 

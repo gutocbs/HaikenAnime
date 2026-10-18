@@ -239,7 +239,7 @@ Perguntas em que há mais de um caminho razoável.
 | 1 | ☑ [report](../reviews/2026-10-18-parte-01-repositorio-build.md) | ☑ | ☑ validada: `ctest` 85/85, MinGW sem prefixo, release `dist/`, smoke OK |
 | 2 | ☑ [report](../reviews/2026-10-18-parte-02-dominio-midia.md) | ☑ | ☑ validada: `ctest` 85/85, smoke OK (inclui troca de idioma) |
 | 3 | ☑ [report](../reviews/2026-10-18-parte-03-infraestrutura-base.md) | ☑ | ☑ validada: `ctest` verde, smoke com o banco real (migrou e funcionou) |
-| 4 | ☑ [report](../reviews/2026-10-18-parte-04-persistencia-midia-outbox.md) | ☐ | ☐ |
+| 4 | ☑ [report](../reviews/2026-10-18-parte-04-persistencia-midia-outbox.md) | ☑ | ☑ aplicada; aguardando build |
 | 5 | ☐ | ☐ | ☐ |
 | 6 | ☐ | ☐ | ☐ |
 | 7 | ☐ | ☐ | ☐ |
