@@ -18,13 +18,11 @@ public:
     LocalMediaMatch resolve(const LocalFileRecognition &recognition,
                             const QList<Media> &catalog) const;
     // Preferred for batches: build the index once per catalog and reuse it for every file.
-    LocalMediaMatch resolve(const LocalFileRecognition &recognition,
-                            const LocalMediaCatalogIndex &index) const;
     // The media folder that contains the file wins over any title match; the episode still comes from
     // the recognition. An empty path skips the folder step.
     LocalMediaMatch resolve(const LocalFileRecognition &recognition,
                             const LocalMediaCatalogIndex &index,
-                            const QString &absoluteFilePath) const;
+                            const QString &absoluteFilePath = {}) const;
 };
 
 #endif // HAIKENANIME_LOCALMEDIARESOLVER_H

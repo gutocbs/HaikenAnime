@@ -43,11 +43,6 @@ LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognit
 }
 
 LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognition,
-                                            const LocalMediaCatalogIndex &index) const {
-    return resolve(recognition, index, QString());
-}
-
-LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognition,
                                             const LocalMediaCatalogIndex &index,
                                             const QString &absoluteFilePath) const {
     LocalMediaMatch result;
