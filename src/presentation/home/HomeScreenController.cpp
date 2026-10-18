@@ -212,7 +212,7 @@ void HomeMediaModel::ClearCovers() {
     if (!media_.isEmpty()) emit dataChanged(index(0), index(media_.size()-1), {CoverSourceRole, CoverStateRole});
 }
 
-void HomeMediaModel::setMedia(QList<Media> media) {
+void HomeMediaModel::SetMedia(QList<Media> media) {
     beginResetModel();
     media_ = std::move(media);
     endResetModel();
@@ -664,7 +664,7 @@ bool HomeScreenController::RemoveSelectedMedia() {
     return true;
 }
 
-void HomeScreenController::reload() {
+void HomeScreenController::Reload() {
     if (reader_ == nullptr) {
         if (errorMessage_.isEmpty()) {
             errorMessage_ = QStringLiteral("Media repository is unavailable.");
@@ -765,8 +765,8 @@ void HomeScreenController::rebuildMediaModels() {
         if (activeSort_ == QStringLiteral("season_asc")) return seasonLess(left, right);
         return titleLess(left, right);
     });
-    fullModel_.setMedia(filtered);
-    model_.setMedia(filtered.mid(0, MaximumHomeLibraryItems));
+    fullModel_.SetMedia(filtered);
+    model_.SetMedia(filtered.mid(0, MaximumHomeLibraryItems));
     if (hasSelection_) {
         const bool selectionVisible = std::any_of(filtered.cbegin(), filtered.cend(), [this](const Media &media) {
             return media.Id == selectedMedia_.Id;

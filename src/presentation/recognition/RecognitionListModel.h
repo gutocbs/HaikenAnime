@@ -36,8 +36,8 @@ public:
     [[nodiscard]] QVariant data(const QModelIndex &index, int role) const override;
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
-    void setRecords(const QList<RecognitionRecord> &records, const QHash<int, QString> &mediaTitles);
-    void appendRecords(const QList<RecognitionRecord> &records, const QHash<int, QString> &mediaTitles);
+    void SetRecords(const QList<RecognitionRecord> &records, const QHash<int, QString> &mediaTitles);
+    void AppendRecords(const QList<RecognitionRecord> &records, const QHash<int, QString> &mediaTitles);
     [[nodiscard]] const QList<RecognitionRecord> &records() const { return records_; }
 
 private:

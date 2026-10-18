@@ -71,13 +71,13 @@ QHash<int, QByteArray> SeasonalCatalogMediaModel::roleNames() const {
             {ProgressRole, "progress"}, {ScoreRole, "score"}, {CoverSourceRole, "coverSource"}};
 }
 
-void SeasonalCatalogMediaModel::setMedia(QList<Media> media) {
+void SeasonalCatalogMediaModel::SetMedia(QList<Media> media) {
     beginResetModel();
     media_ = std::move(media);
     endResetModel();
 }
 
-void SeasonalCatalogMediaModel::configurePresentation(const CoverQuality quality, QString preferredTitleKey) {
+void SeasonalCatalogMediaModel::ConfigurePresentation(const CoverQuality quality, QString preferredTitleKey) {
     preferredTitleKey = NormalizePreferredTitleKey(std::move(preferredTitleKey));
     if (coverQuality_ == quality && preferredTitleKey_ == preferredTitleKey) return;
     coverQuality_ = quality;
@@ -92,7 +92,7 @@ SeasonalCatalogController::SeasonalCatalogController(SeasonalCatalogCoordinator 
     : QObject(parent), coordinator_(coordinator), mediaModel_(this), coverQuality_(quality),
       preferredTitleKey_(NormalizePreferredTitleKey(std::move(preferredTitleKey))),
       personalLists_(personalLists) {
-    mediaModel_.configurePresentation(coverQuality_, preferredTitleKey_);
+    mediaModel_.ConfigurePresentation(coverQuality_, preferredTitleKey_);
     if (coordinator_) {
         connect(coordinator_, &SeasonalCatalogCoordinator::changed, this,
                 &SeasonalCatalogController::synchronizeFromCoordinator);
@@ -171,7 +171,7 @@ double SeasonalCatalogController::scoreStep() const { return scoreStep_; }
 void SeasonalCatalogController::ConfigureCoverQuality(const CoverQuality quality) {
     if (coverQuality_ == quality) return;
     coverQuality_ = quality;
-    mediaModel_.configurePresentation(coverQuality_, preferredTitleKey_);
+    mediaModel_.ConfigurePresentation(coverQuality_, preferredTitleKey_);
     emit selectionChanged();
 }
 
@@ -179,7 +179,7 @@ void SeasonalCatalogController::ConfigurePreferredTitle(QString key) {
     key = NormalizePreferredTitleKey(std::move(key));
     if (preferredTitleKey_ == key) return;
     preferredTitleKey_ = std::move(key);
-    mediaModel_.configurePresentation(coverQuality_, preferredTitleKey_);
+    mediaModel_.ConfigurePresentation(coverQuality_, preferredTitleKey_);
     emit selectionChanged();
 }
 
@@ -272,7 +272,7 @@ bool SeasonalCatalogController::SaveSelectedToPersonalList(const int progress, c
 void SeasonalCatalogController::synchronizeFromCoordinator() {
     if (!coordinator_) return;
     media_ = coordinator_->media();
-    mediaModel_.setMedia(media_);
+    mediaModel_.SetMedia(media_);
     if (!selectedMedia()) clearSelection();
     emit filtersChanged();
     emit stateChanged();

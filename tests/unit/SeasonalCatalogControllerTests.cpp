@@ -210,7 +210,7 @@ void SeasonalCatalogControllerTests::seasonalMediaModelPublishesCompleteRowsAndR
     item.CoverMediumUrl = QStringLiteral("https://example.test/7-medium.jpg");
     item.CoverLargeUrl = QStringLiteral("https://example.test/7-large.jpg");
 
-    model.setMedia({item});
+    model.SetMedia({item});
     const QModelIndex index = model.index(0, 0);
     QVERIFY(index.isValid());
     QCOMPARE(model.data(index, SeasonalCatalogMediaModel::TitleRole), QStringLiteral("Seasonal title"));
@@ -220,7 +220,7 @@ void SeasonalCatalogControllerTests::seasonalMediaModelPublishesCompleteRowsAndR
              QStringLiteral("https://example.test/7-medium.jpg"));
 
     QSignalSpy coverUpdated(&model, &QAbstractItemModel::dataChanged);
-    model.configurePresentation(CoverQuality::Large, DefaultPreferredTitleKey());
+    model.ConfigurePresentation(CoverQuality::Large, DefaultPreferredTitleKey());
     QCOMPARE(coverUpdated.size(), 1);
     QCOMPARE(model.data(index, SeasonalCatalogMediaModel::CoverSourceRole),
              QStringLiteral("https://example.test/7-large.jpg"));

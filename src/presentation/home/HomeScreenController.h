@@ -36,7 +36,7 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    void setMedia(QList<Media> media);
+    void SetMedia(QList<Media> media);
     bool UpdateCover(int mediaId, QString source, CoverState state);
     /// Locally cached cover of the media, empty when none was downloaded yet.
     [[nodiscard]] QString CoverSource(int mediaId) const;
@@ -161,7 +161,7 @@ public:
     void SetPersonalListChangeService(PersonalListChangeService *personalListChangeService);
     void RefreshLocalEpisode();
 
-    void reload();
+    void Reload();
     Q_INVOKABLE void SetMediaType(const QString &typeKey);
     Q_INVOKABLE void SetListFilter(const QString &filterKey);
     Q_INVOKABLE void SetSort(const QString &sortKey);

@@ -25,8 +25,8 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    void setMedia(QList<Media> media);
-    void configurePresentation(CoverQuality quality, QString preferredTitleKey);
+    void SetMedia(QList<Media> media);
+    void ConfigurePresentation(CoverQuality quality, QString preferredTitleKey);
 
 private:
     QList<Media> media_;

@@ -42,12 +42,12 @@ NowWatchingController::~NowWatchingController() {
     registry_.setChangedCallback({});
 }
 
-void NowWatchingController::setPreferredTitleKey(const QString &key) {
+void NowWatchingController::ConfigurePreferredTitle(const QString &key) {
     preferredTitleKey_ = key;
     Refresh();
 }
 
-void NowWatchingController::setCoverSource(std::function<QString(int)> coverSource) {
+void NowWatchingController::SetCoverSource(std::function<QString(int)> coverSource) {
     coverSource_ = std::move(coverSource);
     Refresh();
 }

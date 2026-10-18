@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
                          });
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCompleted,
                          &homeController, [&homeController](const SyncPartition partition) {
-                             if (partition == SyncPartition::UserList) homeController.reload();
+                             if (partition == SyncPartition::UserList) homeController.Reload();
                          });
         QObject::connect(context.adaptiveSync.get(), &AdaptiveSyncRuntime::BackgroundTaskCompleted,
                          &app, [&context](const SyncPartition partition) {
@@ -236,7 +236,7 @@ int main(int argc, char *argv[]) {
             context.logger->warning(LogCategory::Configuration, error);
         }
     });
-    homeController.reload();
+    homeController.Reload();
     if (context.localLibraryRecognition) {
         QObject::connect(context.localLibraryRecognition.get(),
                          &LocalLibraryRecognitionCoordinator::batchPersisted,
@@ -250,7 +250,7 @@ int main(int argc, char *argv[]) {
                          });
     }
     QObject::connect(&seasonalCatalogController, &SeasonalCatalogController::personalListSaved,
-                     &homeController, &HomeScreenController::reload);
+                     &homeController, &HomeScreenController::Reload);
     if (context.localLibraryRecognition) {
         // Saving a folder or alternative names re-evaluates the local files in the background; the
         // coordinator queues overlapping requests and the Home refreshes on its batch signals.
@@ -368,13 +368,13 @@ int main(int argc, char *argv[]) {
             [logger = context.logger.get()](const QString &message) {
                 if (logger) logger->warning(LogCategory::Application, message);
             });
-        nowWatchingController->setPreferredTitleKey(context.userPreferences.preferredTitleKey);
-        nowWatchingController->setCoverSource([&homeController](const int mediaId) {
+        nowWatchingController->ConfigurePreferredTitle(context.userPreferences.preferredTitleKey);
+        nowWatchingController->SetCoverSource([&homeController](const int mediaId) {
             return homeController.fullMediaModel()->CoverSource(mediaId);
         });
         QObject::connect(&settingsController, &SettingsController::preferencesApplied, nowWatchingController.get(),
                          [controller = nowWatchingController.get()](const UserPreferences &preferences) {
-                             controller->setPreferredTitleKey(preferences.preferredTitleKey);
+                             controller->ConfigurePreferredTitle(preferences.preferredTitleKey);
                          });
         // Automatic progress changes the library; the Home refreshes after the recognition callback returns.
         // The Home reloads the library after a sync or an edit; the screen's cached copy follows it.
@@ -385,7 +385,7 @@ int main(int argc, char *argv[]) {
                              if (resolver) resolver->invalidate();
                          });
         *context.recognitionProgressListener = [&homeController](const Media &) {
-            QTimer::singleShot(0, &homeController, [&homeController] { homeController.reload(); });
+            QTimer::singleShot(0, &homeController, [&homeController] { homeController.Reload(); });
         };
     }
 
