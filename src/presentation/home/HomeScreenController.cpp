@@ -108,18 +108,6 @@ QString cardStatusLabel(const Media &media, const CardStatusPresentation present
     return cardStatusLabel(media, presentation, media.ListStatus);
 }
 
-QString userListStatusKey(const UserListStatus status) {
-    switch (status) {
-    case UserListStatus::Current: return QStringLiteral("current");
-    case UserListStatus::Planning: return QStringLiteral("planning");
-    case UserListStatus::OnHold: return QStringLiteral("on_hold");
-    case UserListStatus::Dropped: return QStringLiteral("dropped");
-    case UserListStatus::Completed: return QStringLiteral("completed");
-    case UserListStatus::Unknown:
-    default: return QStringLiteral("unknown");
-    }
-}
-
 QVariantMap option(const QString &key, const QString &label) {
     return {{QStringLiteral("key"), key}, {QStringLiteral("label"), label}};
 }
@@ -388,14 +376,6 @@ QString optionLabel(const QVariantList &options, const QString &key, const QStri
     return fallback;
 }
 
-UserListStatus userListStatusFromKey(const QString &key) {
-    if (key == QStringLiteral("current")) return UserListStatus::Current;
-    if (key == QStringLiteral("planning")) return UserListStatus::Planning;
-    if (key == QStringLiteral("on_hold")) return UserListStatus::OnHold;
-    if (key == QStringLiteral("dropped")) return UserListStatus::Dropped;
-    if (key == QStringLiteral("completed")) return UserListStatus::Completed;
-    return UserListStatus::Unknown;
-}
 QString HomeScreenController::selectedAverageScore() const {
     return hasSelection_ && selectedMedia_.AverageScore > 0 ? QString::number(selectedMedia_.AverageScore) : QStringLiteral("—");
 }
@@ -413,7 +393,7 @@ int HomeScreenController::selectedProgressValue() const { return hasSelection_ ?
 int HomeScreenController::selectedProgressMaximum() const { return hasSelection_ ? selectedMedia_.TotalChapters : 0; }
 double HomeScreenController::selectedScoreValue() const { return hasSelection_ ? selectedMedia_.PersonalScore : 0.0; }
 QString HomeScreenController::selectedListStatusKey() const {
-    return hasSelection_ ? userListStatusKey(selectedMedia_.ListStatus) : QString();
+    return hasSelection_ ? UserListStatusKey(selectedMedia_.ListStatus) : QString();
 }
 QString HomeScreenController::selectedListStatusLabel() const {
     return hasSelection_ ? optionLabel(listOptions_, selectedListStatusKey(), selectedStatusLabel()) : QString();
@@ -643,7 +623,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
     if (!hasSelection_ || (personalListWriter_ == nullptr && personalListChangeService_ == nullptr)) {
         return setSaveError(QStringLiteral("A lista local não está disponível."));
     }
-    const auto status = userListStatusFromKey(statusKey);
+    const auto status = UserListStatusFromKey(statusKey);
     if (status == UserListStatus::Unknown) {
         return setSaveError(QStringLiteral("Selecione uma lista antes de salvar."));
     }
@@ -734,7 +714,7 @@ QVariantMap HomeScreenController::PreviewCardMetadata(const int progress,
               .arg(QString::number(score, 'g', 15))
               .arg(QString::number(scoreMaximum_, 'g', 15));
     return {{QStringLiteral("status"), cardStatusLabel(selectedMedia_, cardStatusPresentation_,
-                                                         userListStatusFromKey(listStatusKey))},
+                                                         UserListStatusFromKey(listStatusKey))},
             {QStringLiteral("progress"), progressLabel},
             {QStringLiteral("score"), scoreLabel}};
 }
@@ -827,7 +807,7 @@ void HomeScreenController::rebuildMediaModels() {
     for (const auto &media : std::as_const(allMedia_)) {
         if (mediaTypeKey(media.Type) != activeMediaType_) continue;
         if (activeListFilter_ != QStringLiteral("all")
-            && userListStatusKey(media.ListStatus) != activeListFilter_) continue;
+            && UserListStatusKey(media.ListStatus) != activeListFilter_) continue;
         if (!matchesSearch(media, searchQuery_, preferredTitleKey_)) continue;
         filtered.append(media);
     }

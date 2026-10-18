@@ -79,9 +79,7 @@ QStringList NormalizeScanExtensions(const QStringList &extensions, QString &erro
 }
 
 UserPreferencesValidationResult ValidateUserPreferences(const UserPreferences &preferences) {
-    const QStringList supportedLists = {QStringLiteral("current"), QStringLiteral("planning"),
-                                        QStringLiteral("on_hold"), QStringLiteral("dropped"),
-                                        QStringLiteral("completed")};
+    const QStringList supportedLists = UserListKeys();
     for (const auto &list : preferences.enabledUserLists) {
         if (!supportedLists.contains(list)) {
             return {false, QStringLiteral("Enabled user list is unsupported: %1").arg(list)};

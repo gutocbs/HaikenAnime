@@ -47,27 +47,6 @@ QString mediaStatusLabel(const MediaStatus status) {
     }
 }
 
-QString personalListStatusKey(const UserListStatus status) {
-    switch (status) {
-    case UserListStatus::Current: return QStringLiteral("current");
-    case UserListStatus::Planning: return QStringLiteral("planning");
-    case UserListStatus::OnHold: return QStringLiteral("on_hold");
-    case UserListStatus::Dropped: return QStringLiteral("dropped");
-    case UserListStatus::Completed: return QStringLiteral("completed");
-    case UserListStatus::Unknown:
-    default: return QStringLiteral("unknown");
-    }
-}
-
-UserListStatus personalListStatusFromKey(const QString &key) {
-    if (key == QStringLiteral("current")) return UserListStatus::Current;
-    if (key == QStringLiteral("planning")) return UserListStatus::Planning;
-    if (key == QStringLiteral("on_hold")) return UserListStatus::OnHold;
-    if (key == QStringLiteral("dropped")) return UserListStatus::Dropped;
-    if (key == QStringLiteral("completed")) return UserListStatus::Completed;
-    return UserListStatus::Unknown;
-}
-
 QVariantMap personalListOption(const QString &key, const QString &label) {
     return {{QStringLiteral("key"), key}, {QStringLiteral("label"), label}};
 }
@@ -193,7 +172,7 @@ QStringList SeasonalCatalogController::selectedAlternativeNames() const {
 QVariantList SeasonalCatalogController::availablePersonalListOptions() const { return personalListOptions(); }
 bool SeasonalCatalogController::selectedMediaInPersonalList() const { return selectedLocalMedia_.has_value(); }
 QString SeasonalCatalogController::selectedListStatusKey() const {
-    return selectedLocalMedia_ ? personalListStatusKey(selectedLocalMedia_->ListStatus) : QString();
+    return selectedLocalMedia_ ? UserListStatusKey(selectedLocalMedia_->ListStatus) : QString();
 }
 int SeasonalCatalogController::selectedProgressValue() const {
     return selectedLocalMedia_ ? selectedLocalMedia_->ConsumedChapters : 0;
@@ -276,7 +255,7 @@ bool SeasonalCatalogController::SaveSelectedToPersonalList(const int progress, c
         emit personalListChanged();
         return false;
     }
-    const UserListStatus status = personalListStatusFromKey(statusKey);
+    const UserListStatus status = UserListStatusFromKey(statusKey);
     if (!selectedLocalMedia_ && status == UserListStatus::Unknown) {
         personalListErrorMessage_ = tr("Selecione uma lista antes de salvar.");
         emit personalListChanged();

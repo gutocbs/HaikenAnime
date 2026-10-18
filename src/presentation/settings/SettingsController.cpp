@@ -466,10 +466,7 @@ void SettingsController::SetAutomaticLocalFileRecognition(const bool enabled) {
 }
 
 void SettingsController::SetUserListEnabled(const QString &key, const bool enabled) {
-    static const QStringList supported = {QStringLiteral("current"), QStringLiteral("planning"),
-                                          QStringLiteral("on_hold"), QStringLiteral("dropped"),
-                                          QStringLiteral("completed")};
-    if (!supported.contains(key)) return;
+    if (!UserListKeys().contains(key)) return;
     if (enabled && !draft_.enabledUserLists.contains(key)) draft_.enabledUserLists.append(key);
     if (!enabled) draft_.enabledUserLists.removeAll(key);
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();

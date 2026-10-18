@@ -7,6 +7,7 @@
 #include "CardStatusPresentation.h"
 #include "LanguagePreference.h"
 #include "../media/MediaTitleResolver.h"
+#include "../../domain/media/UserListStatus.h"
 
 struct UserPreferences final {
     double scoreMinimum = 0.0;
@@ -27,9 +28,7 @@ struct UserPreferences final {
                                   QStringLiteral(".m4v"), QStringLiteral(".mov"),
                                   QStringLiteral(".wmv"), QStringLiteral(".ts")};
     bool automaticLocalFileRecognition = true;
-    QStringList enabledUserLists = {QStringLiteral("current"), QStringLiteral("planning"),
-                                    QStringLiteral("on_hold"), QStringLiteral("dropped"),
-                                    QStringLiteral("completed")};
+    QStringList enabledUserLists = UserListKeys();
     /** Last AniList account that was connected; owns edits made while disconnected. */
     qint64 lastAniListUserId = 0;
 
