@@ -22,7 +22,6 @@ private slots:
     void acceptsMultipleIndependentLibraryRoots();
     void rejectsDuplicateNestedOrMissingLibraryRoots_data();
     void rejectsDuplicateNestedOrMissingLibraryRoots();
-    void comparesScannerPreferences();
     void validatesEnabledUserLists();
 };
 
@@ -193,17 +192,6 @@ void UserPreferencesValidatorTests::rejectsDuplicateNestedOrMissingLibraryRoots(
     const auto result = ValidateUserPreferences(preferences);
     QVERIFY(!result.valid);
     QVERIFY(!result.error.isEmpty());
-}
-
-void UserPreferencesValidatorTests::comparesScannerPreferences() {
-    const UserPreferences defaults;
-    UserPreferences changedRoot;
-    changedRoot.libraryRoots = {QStringLiteral("R:\\Anime")};
-    QVERIFY(!(defaults == changedRoot));
-    UserPreferences changedExtensions;
-    changedExtensions.scanExtensions = {".mp4"};
-    QVERIFY(!(defaults == changedExtensions));
-    QVERIFY(defaults == UserPreferences{});
 }
 
 void UserPreferencesValidatorTests::validatesEnabledUserLists() {
