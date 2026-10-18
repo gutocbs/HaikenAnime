@@ -211,7 +211,7 @@ Perguntas em que há mais de um caminho razoável.
 | Parte | Report | Aprovação | Aplicada |
 | --- | --- | --- | --- |
 | Baseline | — | — | ☑ 80/85 (5 falhas de `PATH`, código verde) |
-| 1 | ☑ [report](../reviews/2026-10-18-parte-01-repositorio-build.md) | ☐ | ☐ |
+| 1 | ☑ [report](../reviews/2026-10-18-parte-01-repositorio-build.md) | ☑ | ☑ aplicada; aguardando build |
 | 2 | ☐ | ☐ | ☐ |
 | 3 | ☐ | ☐ | ☐ |
 | 4 | ☐ | ☐ | ☐ |

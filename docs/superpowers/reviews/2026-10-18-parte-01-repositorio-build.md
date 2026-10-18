@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `775bcec` (`feature/reconhecimento-episodios`)
-- **Status:** aguardando aprovação — nenhuma alteração aplicada
+- **Status:** aprovado e aplicado em `feature/revisao-geral` — aguardando o build de validação
 
 ---
 
@@ -92,7 +92,7 @@ Os testes em si são avaliados nas partes de cada área.
 
 | ID | Categoria | Descrição | Ganho | Risco | Validação |
 | --- | --- | --- | --- | --- | --- |
-| **P1-01** | `[Remover]` | Apagar o legado V1 não compilado: `QML/`, `mainclass.cpp/.h`, `src/base/`, `src/utilities/`, `src/clients/`, `lib/robotlib/`, `qrc/`, `qml.qrc`, `queries.qrc`, `HaikenAnime.pro`, `HaikenAnime.pro.user`. Nenhum arquivo da V2/CMake/scripts os referencia (só se referenciam entre si). A V1 de consulta continua em `F:\Haiken V1` e no histórico do git. | −157 arquivos (~168k linhas); some a confusão "qual `Home.qml`?" | baixo | build + `ctest` idênticos ao baseline |
+| **P1-01** | `[Remover]` | Apagar o legado V1 não compilado: `QML/`, `mainclass.cpp/.h`, `src/base/`, `src/utilities/`, `src/clients/`, `lib/robotlib/`, `qrc/`, `qml.qrc`, `queries.qrc`, `HaikenAnime.pro`, `HaikenAnime.pro.user`. Nenhum arquivo da V2/CMake/scripts os referencia (só se referenciam entre si). A V1 de consulta continua em `F:\Haiken V1` e no histórico do git. | −157 arquivos (~33,8k linhas); some a confusão "qual `Home.qml`?" | baixo | build + `ctest` idênticos ao baseline |
 | **P1-02** | `[Simplificar]` | Reestruturar o `CMakeLists.txt`: (a) biblioteca estática interna `haiken_core` com todas as fontes de `src/` (menos `main.cpp`); (b) `anitomy` como biblioteca própria; (c) função `haiken_add_test(Nome [RESOURCES …] [DEFINITIONS …])` que cria o executável, liga em `haiken_core` + `Qt6::Test`, registra o `add_test` e aplica `PATH`/`TIMEOUT` (eliminando a lista `HAIKENANIME_TESTS`); (d) as duas suítes de composição deixam de recompilar o app inteiro. Exceção mantida: `CoverTemporaryStoreTests` continua compilando `CoverTemporaryStore.cpp` com o `#define HAIKENANIME_COVER_TEMPORARY_STORE_TESTING`. Recursos (SQL/migrações/`Settings.json`) continuam por alvo, para não depender de inicialização de recursos em biblioteca estática. | CMake de ~2.100 para ~400–500 linhas; build limpo com uma fração dos 1.194 passos; suíte nova = 1 linha | médio | mesmo conjunto de testes registrados (`ctest -N` igual ao baseline) e todos passando; app abre e funciona (smoke) |
 | **P1-03** | `[Simplificar]` | Registrar queries SQL e GraphQL por `file(GLOB … CONFIGURE_DEPENDS)` + alias pelo nome do arquivo, como já é feito com as migrações, em vez de listar cada arquivo duas vezes. | −~200 linhas; query nova não exige mexer no CMake | baixo | os mesmos caminhos `:/sqlite/queries/*`, `:/anilist/*` disponíveis; `ctest` |
 | **P1-04** | `[Teste-remover]` | Apagar fixtures sem uso: `tests/fixtures/graphql-error.json`, `tests/fixtures/graphql-page.json`, `tests/fixtures/graphql/empty-response.json` (critério **2.5-a/d**: não são lidos por nenhum teste). | menos ruído | baixo | `ctest` |
@@ -113,6 +113,9 @@ item é um commit.
 ## 5. Fora de escopo (anotado, não corrigido)
 
 - `Settings.json` usa `Q:\` como pasta padrão da biblioteca — é um default de comportamento; não mexo.
+- `QmlStructureTests`/`QmlRecognitionStructureTests`: o `ENVIRONMENT` coloca `QT_QUICK_BACKEND=software`
+  **dentro do `PATH`** (separador `\;`), então essa variável nunca é definida para os testes. O
+  comportamento foi preservado no CMake novo; corrigir é decisão da Parte 11 (QML).
 
 ---
 
@@ -122,3 +125,31 @@ item é um commit.
 2. **P1-02 (CMake):** de acordo com a biblioteca estática interna `haiken_core`? Alternativa mais
    conservadora: só criar a função `haiken_add_test()` e manter as listas de fontes por teste (ganha menos).
 3. **P1-07 (`.gitignore`):** versionar `docs/` normalmente daqui pra frente?
+
+---
+
+## 7. Aplicação
+
+| Item | Commit |
+| --- | --- |
+| SERVICE.md | `9ffc707` |
+| P1-01 legado V1 | `7187c03` |
+| P1-04 fixtures sem uso | `423eee1` |
+| P1-05 fixtures fora do executável | `f8e3adc` |
+| P1-06 mutations sem uso | `4f33774` |
+| P1-03 GLOB de queries | `2fbed70` (validado: build incremental + `ctest` 85/85) |
+| P1-02 `haiken_core` + `haiken_add_test` | `4cf485b` (CMake 2.090 → ~420 linhas) |
+| P1-07 `.gitignore` / `docs/` versionado | `24639bd` |
+| P1-08 README | `fa5c437` |
+| P1-09 sem `CMAKE_PREFIX_PATH` forçado | `625ae8c` |
+| P1-10 `windeployqt` só no release | `b239e1c` |
+| SERVICE.md (build novo) | `f114acf` |
+
+Notas de equivalência do P1-02:
+- cada teste mantém exatamente os mesmos módulos Qt (e, portanto, o mesmo tipo de aplicação do `QTEST_MAIN`),
+  os mesmos recursos, defines e includes;
+- `CoverTemporaryStoreTests` continua compilando o próprio `CoverTemporaryStore.cpp` (`NO_CORE`);
+- `SqliteSyncTaskStateRepositoryTests` embutia as migrações duas vezes (mesmos arquivos, mesmo prefixo);
+  agora uma vez;
+- as 5 suítes que estavam fora da lista e `QmlRecognitionStructureTests` passam a ter `PATH` do Qt e
+  `TIMEOUT 30` (a mais lenta do baseline leva 18 s).
