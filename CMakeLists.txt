@@ -108,9 +108,6 @@ endforeach ()
 set_source_files_properties(
         Settings.json
         PROPERTIES QT_RESOURCE_ALIAS "Settings.json")
-set_source_files_properties(
-        tests/fixtures/media-library.json
-        PROPERTIES QT_RESOURCE_ALIAS "media-library.json")
 
 qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
@@ -302,8 +299,7 @@ haiken_add_test(AniListOAuthCallbackParserTests)
 haiken_add_test(WindowsAniListOAuthLauncherTests QT Gui)
 haiken_add_test(AniListOAuthCallbackReceiverTests QT Network)
 haiken_add_test(WindowsUrlProtocolRegistrarTests)
-haiken_add_test(AniListFlowTests QT Gui DEFINITIONS HAIKENANIME_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
-qt_add_resources(AniListFlowTests fixture_test_resource_bundle PREFIX "/fixtures" FILES tests/fixtures/media-library.json)
+haiken_add_test(AniListFlowTests QT Gui)
 haiken_add_test(AniListGraphQlParsingTests QT Gui Network DEFINITIONS HAIKENANIME_GRAPHQL_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/page-response.json" HAIKENANIME_GRAPHQL_USERLIST_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/userlist-response.json")
 qt_add_resources(AniListGraphQlParsingTests anilist_partition_query_resource_bundle PREFIX "/anilist/queries" FILES resources/anilist/queries/media-page.graphql resources/anilist/queries/user-media-list.graphql)
 haiken_add_test(AniListGraphQlUserListParserTests QT Gui DEFINITIONS HAIKENANIME_USERLIST_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/userlist-response.json")
@@ -330,8 +326,6 @@ haiken_add_test(SettingsControllerTests)
 haiken_add_test(SynchronizationStatusControllerTests)
 haiken_add_test(QmlStructureTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
 haiken_add_test(QmlRecognitionStructureTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
-haiken_add_test(InitialSyncCoordinatorTests QT Gui Sql MIGRATIONS SOURCE_DIR)
-qt_add_resources(InitialSyncCoordinatorTests initial_sync_query_resources PREFIX "/sqlite/queries" FILES ${SQLITE_QUERY_RESOURCES})
 haiken_add_test(AdaptiveSyncCoordinatorTests MIGRATIONS)
 haiken_add_test(AdaptiveSyncRuntimeTests)
 haiken_add_test(LocalLibraryScanCoordinatorTests)

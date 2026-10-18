@@ -13,7 +13,6 @@
 #include "../application/library/ILocalFileOpener.h"
 #include "../application/library/LocalEpisodeReader.h"
 #include "../infrastructure/database/SqliteDatabase.h"
-#include "InitialSyncCoordinator.h"
 #include "AdaptiveSyncRuntime.h"
 #include "LocalLibraryScanCoordinator.h"
 #include "LocalLibraryRecognitionCoordinator.h"
@@ -49,7 +48,6 @@ struct ApplicationContext final {
     std::unique_ptr<GraphQlQueryStore> aniListViewerQueryStore;
     std::unique_ptr<AniListViewerClient> aniListViewerClient;
     std::unique_ptr<WindowsAniListOAuthLauncher> aniListOAuthLauncher;
-    std::unique_ptr<InitialSyncCoordinator> initialSync;
     std::unique_ptr<AdaptiveSyncRuntime> adaptiveSync;
     std::unique_ptr<ICoverCacheRepository> coverCacheRepository;
     std::unique_ptr<ICoverFileStore> coverFileStore;

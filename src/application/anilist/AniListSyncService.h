@@ -1,7 +1,6 @@
 #ifndef HAIKENANIME_ANILIST_SYNCSERVICE_H
 #define HAIKENANIME_ANILIST_SYNCSERVICE_H
 
-#include "../media/IMediaDataSource.h"
 #include "../media/IMediaWriter.h"
 #include "../media/IMediaSnapshotReconciler.h"
 #include "../media/MediaPage.h"
@@ -27,30 +26,17 @@ public:
     using CancellationProbe = std::function<bool()>;
     using ProgressReporter = std::function<void(int processedItems)>;
     /** Creates a synchronization service from a data source and media repository. */
-    AniListSyncService(IMediaDataSource &dataSource, IMediaWriter &mediaWriter,
-                       IMediaSnapshotReconciler *snapshotReconciler = nullptr,
-                       AniListPendingChangeProcessor *pendingProcessor = nullptr,
-                       int timeoutMs = 0,
-                       AniListPendingChangeReconciler *pendingReconciler = nullptr)
-        : dataSource_(&dataSource), mediaWriter_(mediaWriter),
-          snapshotReconciler_(snapshotReconciler), pendingProcessor_(pendingProcessor),
-          pendingReconciler_(pendingReconciler), timeoutMs_(timeoutMs) {
-    }
-
     AniListSyncService(IAniListDataSource &dataSource, IMediaWriter &mediaWriter,
                        IMediaSnapshotReconciler *snapshotReconciler = nullptr,
                        AniListPendingChangeProcessor *pendingProcessor = nullptr,
                        int timeoutMs = 0,
                        AniListPendingChangeReconciler *pendingReconciler = nullptr)
-        : aniListDataSource_(&dataSource), mediaWriter_(mediaWriter),
+        : dataSource_(dataSource), mediaWriter_(mediaWriter),
           snapshotReconciler_(snapshotReconciler), pendingProcessor_(pendingProcessor),
           pendingReconciler_(pendingReconciler), timeoutMs_(timeoutMs) {
     }
 
-    /** Fetches and persists all pages selected by filter, or all available data when empty. */
-    [[nodiscard]] bool synchronize(const MediaSyncFilter &filter, QString &error,
-                                   const CheckpointCommitter &commitCheckpoint = {},
-                                   const CancellationProbe &isCancelled = {});
+    /** Fetches and persists every page of the request, starting at its page. */
     [[nodiscard]] bool synchronize(const AniListDataSourceRequest &request, QString &error,
                                    const CheckpointCommitter &commitCheckpoint = {},
                                    const CancellationProbe &isCancelled = {});
@@ -61,8 +47,7 @@ public:
     [[nodiscard]] const AniListSyncOutcome &lastOutcome() const { return lastOutcome_; }
 
 private:
-    IMediaDataSource *dataSource_ = nullptr;
-    IAniListDataSource *aniListDataSource_ = nullptr;
+    IAniListDataSource &dataSource_;
     IMediaWriter &mediaWriter_;
     IMediaSnapshotReconciler *snapshotReconciler_;
     AniListPendingChangeProcessor *pendingProcessor_;

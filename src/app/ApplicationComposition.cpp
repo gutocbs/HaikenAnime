@@ -1,6 +1,5 @@
 #include "ApplicationComposition.h"
 
-#include "InitialSyncCoordinator.h"
 #include "ApplicationSyncTaskExecutor.h"
 
 #include "../infrastructure/database/SqlQueryStore.h"

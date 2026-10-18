@@ -13,14 +13,6 @@ bool HasTimedOut(const QElapsedTimer &timer, const int timeoutMs) {
 }
 }
 
-bool AniListSyncService::synchronize(const MediaSyncFilter &filter, QString &error,
-                                     const CheckpointCommitter &commitCheckpoint,
-                                     const CancellationProbe &isCancelled) {
-    AniListDataSourceRequest request;
-    request.filter = filter;
-    return synchronize(request, error, commitCheckpoint, isCancelled);
-}
-
 bool AniListSyncService::synchronize(const AniListDataSourceRequest &request, QString &error,
                                      const CheckpointCommitter &commitCheckpoint,
                                      const CancellationProbe &isCancelled) {
@@ -54,25 +46,15 @@ bool AniListSyncService::synchronize(const AniListDataSourceRequest &request, QS
             return false;
         }
         AniListDataSourceResult sourceResult;
-        if (aniListDataSource_ != nullptr) {
-            if (!aniListDataSource_->fetchPage(pageRequest, sourceResult, error)) {
-                lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
-                return false;
-            }
-            if (sourceResult.completedPartition != pageRequest.filter.partition) {
-                error = QStringLiteral("AniList data source completed partition %1 while partition %2 was requested.")
-                            .arg(ToString(sourceResult.completedPartition), ToString(pageRequest.filter.partition));
-                lastErrorCategory_ = AniListSyncErrorCategory::InvalidData;
-                return false;
-            }
-        } else if (dataSource_ == nullptr
-                   || !dataSource_->fetchPage(pageRequest.filter, sourceResult.page, error)) {
+        if (!dataSource_.fetchPage(pageRequest, sourceResult, error)) {
             lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
             return false;
         }
-        if (aniListDataSource_ == nullptr) {
-            sourceResult.completedPartition = pageRequest.filter.partition;
-            sourceResult.isCompleteAuthoritativeSnapshot = false;
+        if (sourceResult.completedPartition != pageRequest.filter.partition) {
+            error = QStringLiteral("AniList data source completed partition %1 while partition %2 was requested.")
+                        .arg(ToString(sourceResult.completedPartition), ToString(pageRequest.filter.partition));
+            lastErrorCategory_ = AniListSyncErrorCategory::InvalidData;
+            return false;
         }
         MediaPage page = std::move(sourceResult.page);
         if (isCancelled && isCancelled()) {

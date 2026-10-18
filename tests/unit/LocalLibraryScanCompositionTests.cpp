@@ -41,8 +41,7 @@ private slots:
     void manualCleanupUsesComposedCoverTemporaryStore();
     void workerProductsReleaseConnectionsAndShutdownBeforeDatabase();
     void destroyedLifetimeCancelsScheduledStartup();
-    void productionCompositionDoesNotCreateLegacyStartupSynchronization();
-    void composesAdaptiveSynchronizationWithTheLegacyStartupSeam();
+    void composesAdaptiveSynchronization();
 };
 
 void LocalLibraryScanCompositionTests::persistedPreferencesOverrideDefaultsAfterRestart() {
@@ -292,21 +291,12 @@ void LocalLibraryScanCompositionTests::destroyedLifetimeCancelsScheduledStartup(
     QCOMPARE(started.count(), 0);
 }
 
-void LocalLibraryScanCompositionTests::productionCompositionDoesNotCreateLegacyStartupSynchronization() {
-    QTemporaryDir directory;
-    auto context = createApplicationContext(optionsFor(directory));
-    QVERIFY2(context.isReady(), qPrintable(context.initializationError));
-
-    QVERIFY(!context.initialSync);
-}
-
-void LocalLibraryScanCompositionTests::composesAdaptiveSynchronizationWithTheLegacyStartupSeam() {
+void LocalLibraryScanCompositionTests::composesAdaptiveSynchronization() {
     QTemporaryDir directory;
 
     auto context = createApplicationContext(optionsFor(directory));
 
     QVERIFY2(context.isReady(), qPrintable(context.initializationError));
-    QVERIFY(!context.initialSync);
     QVERIFY(context.adaptiveSync);
 }
 

@@ -257,7 +257,6 @@ bool readNumbers(const QJsonObject &http, const QJsonObject &sync, const QJsonOb
         && readInteger(http, QStringLiteral("maxRetries"), 2, settings.http.maxRetries)
         && readInteger(http, QStringLiteral("retryDelayMs"), 1000, settings.http.retryDelayMs)
         && readInteger(sync, QStringLiteral("timeoutMs"), 60000, settings.syncTimeoutMs)
-        && readInteger(sync, QStringLiteral("intervalMs"), 3600000, settings.syncIntervalMs)
         && readInteger(logging, QStringLiteral("retentionDays"), 7, settings.logRetentionDays)
         && readInteger(covers, QStringLiteral("maxConcurrentDownloads"), 3, settings.covers.maxConcurrentDownloads)
         && readInteger(covers, QStringLiteral("timeoutMs"), 30000, settings.covers.timeoutMs)
@@ -278,8 +277,7 @@ bool validateRanges(const Settings &settings, QString &error) {
     if (settings.aniList.endpoint.isEmpty() || settings.aniList.mediaQueryFile.isEmpty()
         || settings.aniList.userListPerChunk <= 0 || settings.aniList.userListPerChunk > 500
         || settings.http.timeoutMs <= 0 || settings.http.maxRetries < 0
-        || settings.http.retryDelayMs < 0 || settings.syncTimeoutMs <= 0
-        || settings.syncIntervalMs <= 0) {
+        || settings.http.retryDelayMs < 0 || settings.syncTimeoutMs <= 0) {
         error = QStringLiteral("Settings.json contains invalid AniList or HTTP settings.");
         return false;
     }
