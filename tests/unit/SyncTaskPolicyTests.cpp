@@ -93,7 +93,7 @@ void SyncTaskPolicyTests::defersFreshCacheUntilItsNormalInterval() {
     SyncSchedulePolicy policy;
     policy.normalInterval = std::chrono::minutes(30);
 
-    const auto decision = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+    const auto decision = SyncTaskPolicy::Decide(state, policy, now, {}).schedule;
 
     QVERIFY(!decision.shouldRunNow);
     QCOMPARE(decision.nextRunAt, succeededAt.addSecs(30 * 60));
@@ -108,7 +108,7 @@ void SyncTaskPolicyTests::honorsRetryAfterWithoutApplyingJitter() {
     SyncSchedulePolicy policy;
     policy.jitterRatio = 0.5;
 
-    const auto decision = SyncTaskPolicy::Evaluate(state, policy, now, retryAfter);
+    const auto decision = SyncTaskPolicy::Decide(state, policy, now, {.retryAfter = retryAfter}).schedule;
 
     QVERIFY(!decision.shouldRunNow);
     QCOMPARE(decision.nextRunAt, retryAfter);
@@ -124,12 +124,12 @@ void SyncTaskPolicyTests::marksAgedFreshCacheAsStaleOrExpired() {
     policy.staleProtectionTtl = std::chrono::hours(2);
 
     state.lastSucceededAt = now.addSecs(-90 * 60);
-    const auto stale = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+    const auto stale = SyncTaskPolicy::Decide(state, policy, now, {}).schedule;
     QVERIFY(stale.shouldRunNow);
     QCOMPARE(stale.cacheValidity, CacheValidity::Stale);
 
     state.lastSucceededAt = now.addSecs(-3 * 60 * 60);
-    const auto expired = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+    const auto expired = SyncTaskPolicy::Decide(state, policy, now, {}).schedule;
     QVERIFY(expired.shouldRunNow);
     QCOMPARE(expired.cacheValidity, CacheValidity::Expired);
 }
@@ -162,12 +162,12 @@ void SyncTaskPolicyTests::limitsConsecutiveImmediateRetries() {
     policy.initialRetryDelay = std::chrono::seconds(5);
 
     state.consecutiveImmediateRetries = 1;
-    const auto immediate = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+    const auto immediate = SyncTaskPolicy::Decide(state, policy, now, {}).schedule;
     QVERIFY(immediate.shouldRunNow);
     QCOMPARE(immediate.nextRunAt, now);
 
     state.consecutiveImmediateRetries = 2;
-    const auto delayed = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+    const auto delayed = SyncTaskPolicy::Decide(state, policy, now, {}).schedule;
     QVERIFY(!delayed.shouldRunNow);
     QCOMPARE(delayed.nextRunAt, now.addSecs(5));
 }
@@ -182,7 +182,7 @@ void SyncTaskPolicyTests::schedulesRetryableFailuresWithBoundedExponentialBackof
     policy.initialRetryDelay = std::chrono::seconds(5);
     policy.maximumRetryDelay = std::chrono::seconds(30);
 
-    const auto decision = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+    const auto decision = SyncTaskPolicy::Decide(state, policy, now, {}).schedule;
 
     QVERIFY(!decision.shouldRunNow);
     QCOMPARE(decision.nextRunAt, now.addSecs(30));
@@ -196,7 +196,7 @@ void SyncTaskPolicyTests::schedulesNonRetryableFailuresAfterCooldown() {
     SyncSchedulePolicy policy;
     policy.cooldown = std::chrono::hours(1);
 
-    const auto decision = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+    const auto decision = SyncTaskPolicy::Decide(state, policy, now, {}).schedule;
 
     QVERIFY(!decision.shouldRunNow);
     QCOMPARE(decision.nextRunAt, now.addSecs(60 * 60));
@@ -284,7 +284,7 @@ void SyncTaskPolicyTests::clampsBackwardClockJumpsToANewCadenceFromNow() {
     SyncSchedulePolicy policy;
     policy.normalInterval = std::chrono::minutes(30);
 
-    const auto decision = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+    const auto decision = SyncTaskPolicy::Decide(state, policy, now, {}).schedule;
 
     QVERIFY(!decision.shouldRunNow);
     QCOMPARE(decision.nextRunAt, now.addSecs(30 * 60));
@@ -300,7 +300,7 @@ void SyncTaskPolicyTests::runsExpiredWorkAfterAForwardClockJump() {
     policy.normalInterval = std::chrono::hours(1);
     policy.staleProtectionTtl = std::chrono::hours(2);
 
-    const auto decision = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+    const auto decision = SyncTaskPolicy::Decide(state, policy, now, {}).schedule;
 
     QVERIFY(decision.shouldRunNow);
     QCOMPARE(decision.nextRunAt, now);
@@ -402,12 +402,12 @@ void SyncTaskPolicyTests::classifiesExactCacheValidityBoundariesAsDue() {
     policy.staleProtectionTtl = std::chrono::hours(2);
 
     state.lastSucceededAt = now.addSecs(-60 * 60);
-    const auto normalBoundary = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+    const auto normalBoundary = SyncTaskPolicy::Decide(state, policy, now, {}).schedule;
     QVERIFY(normalBoundary.shouldRunNow);
     QCOMPARE(normalBoundary.cacheValidity, CacheValidity::Stale);
 
     state.lastSucceededAt = now.addSecs(-2 * 60 * 60);
-    const auto staleBoundary = SyncTaskPolicy::Evaluate(state, policy, now, std::nullopt);
+    const auto staleBoundary = SyncTaskPolicy::Decide(state, policy, now, {}).schedule;
     QVERIFY(staleBoundary.shouldRunNow);
     QCOMPARE(staleBoundary.cacheValidity, CacheValidity::Expired);
 }

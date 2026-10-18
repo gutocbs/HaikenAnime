@@ -171,8 +171,3 @@ SyncTaskPolicyDecision SyncTaskPolicy::Decide(const SyncTaskState &state, const 
     decision.schedule = immediateDecision(now, decision.schedule.cacheValidity);
     return decision;
 }
-
-SyncScheduleDecision SyncTaskPolicy::Evaluate(const SyncTaskState &state, const SyncSchedulePolicy &policy,
-                                              QDateTime now, std::optional<QDateTime> retryAfter) {
-    return Decide(state, policy, now, {.retryAfter = std::move(retryAfter)}).schedule;
-}

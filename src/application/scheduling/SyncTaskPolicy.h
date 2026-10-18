@@ -26,10 +26,6 @@ public:
                                                         const SyncSchedulePolicy &policy,
                                                         QDateTime now,
                                                         const SyncTaskPolicyRequest &request);
-    [[nodiscard]] static SyncScheduleDecision Evaluate(const SyncTaskState &state,
-                                                        const SyncSchedulePolicy &policy,
-                                                        QDateTime now,
-                                                        std::optional<QDateTime> retryAfter);
 };
 
 #endif // HAIKENANIME_SYNCTASKPOLICY_H
