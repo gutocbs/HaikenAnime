@@ -1,11 +1,36 @@
-#include "MediaDetailsPresentation.h"
+#include "MediaPresentation.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QSet>
 #include <QTimeZone>
 
-#include "ProgressFormatter.h"
+#include <algorithm>
+
+QString FormatProgress(const int consumed, const int total) {
+    const auto totalLabel = total > 0 ? QString::number(total) : QStringLiteral("?");
+    return QStringLiteral("%1/%2").arg(std::max(consumed, 0)).arg(totalLabel);
+}
+
+QString MediaStatusLabel(const MediaStatus status) {
+    switch (status) {
+    case MediaStatus::NotReleased: return QCoreApplication::translate("HomeMediaModel", "Ainda não lançado");
+    case MediaStatus::Releasing: return QCoreApplication::translate("HomeMediaModel", "Em lançamento");
+    case MediaStatus::Released: return QCoreApplication::translate("HomeMediaModel", "Concluído");
+    case MediaStatus::Unknown:
+    default: return QCoreApplication::translate("HomeMediaModel", "Desconhecido");
+    }
+}
+
+QString MediaTypeLabel(const MediaType type) {
+    switch (type) {
+    case MediaType::Anime: return QStringLiteral("Anime");
+    case MediaType::Manga: return QStringLiteral("Manga");
+    case MediaType::Novel: return QStringLiteral("Novel");
+    case MediaType::Unknown:
+    default: return QCoreApplication::translate("HomeMediaModel", "Desconhecido");
+    }
+}
 
 QString PresentMediaSeason(const Media &media) {
     QString season;
@@ -51,29 +76,10 @@ QVariantList PresentMediaLinks(const Media &media) {
 }
 
 QVariantMap PresentMediaDetails(const Media &media, const QString &title, const QString &coverSource) {
-    // Same texts (and translation context) as the Home details.
-    const auto statusLabel = [&media] {
-        switch (media.Status) {
-        case MediaStatus::NotReleased: return QCoreApplication::translate("HomeMediaModel", "Ainda não lançado");
-        case MediaStatus::Releasing: return QCoreApplication::translate("HomeMediaModel", "Em lançamento");
-        case MediaStatus::Released: return QCoreApplication::translate("HomeMediaModel", "Concluído");
-        case MediaStatus::Unknown:
-        default: return QCoreApplication::translate("HomeMediaModel", "Desconhecido");
-        }
-    };
-    const auto typeLabel = [&media] {
-        switch (media.Type) {
-        case MediaType::Anime: return QStringLiteral("Anime");
-        case MediaType::Manga: return QStringLiteral("Manga");
-        case MediaType::Novel: return QStringLiteral("Novel");
-        case MediaType::Unknown:
-        default: return QCoreApplication::translate("HomeMediaModel", "Desconhecido");
-        }
-    };
     return {{QStringLiteral("selectedTitle"), title},
             {QStringLiteral("selectedSynopsis"), media.Synopsis},
-            {QStringLiteral("selectedTypeLabel"), typeLabel()},
-            {QStringLiteral("selectedStatusLabel"), statusLabel()},
+            {QStringLiteral("selectedTypeLabel"), MediaTypeLabel(media.Type)},
+            {QStringLiteral("selectedStatusLabel"), MediaStatusLabel(media.Status)},
             {QStringLiteral("selectedProgress"), FormatProgress(media.ConsumedChapters, media.TotalChapters)},
             {QStringLiteral("selectedScore"),
              media.PersonalScore > 0 ? QString::number(media.PersonalScore) : QStringLiteral("—")},

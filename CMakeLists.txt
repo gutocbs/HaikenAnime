@@ -239,7 +239,7 @@ function(haiken_add_test name)
             TIMEOUT 30)
 endfunction()
 
-haiken_add_test(MediaDomainTests)
+haiken_add_test(MediaPresentationTests)
 haiken_add_test(RecognitionDomainTests)
 haiken_add_test(AlternativeNamesTests)
 haiken_add_test(MediaTitleResolverTests)

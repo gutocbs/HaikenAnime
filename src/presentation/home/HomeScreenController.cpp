@@ -3,8 +3,7 @@
 #include "../../application/library/ILocalFileOpener.h"
 #include "../../application/library/LocalEpisodeReader.h"
 #include "../../application/library/LocalRecognitionRequest.h"
-#include "../../application/media/ProgressFormatter.h"
-#include "../../application/media/MediaDetailsPresentation.h"
+#include "../media/MediaPresentation.h"
 #include "../../application/media/IPersonalListMediaWriter.h"
 #include "../../application/media/PersonalListChangeService.h"
 
@@ -21,20 +20,6 @@ namespace {
 constexpr int MaximumHomeLibraryItems = 9;
 const QString CoverPlaceholder = QStringLiteral("qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg");
 
-QString mediaStatusLabel(const MediaStatus status) {
-    switch (status) {
-    case MediaStatus::NotReleased:
-        return QCoreApplication::translate("HomeMediaModel", "Ainda não lançado");
-    case MediaStatus::Releasing:
-        return QCoreApplication::translate("HomeMediaModel", "Em lançamento");
-    case MediaStatus::Released:
-        return QCoreApplication::translate("HomeMediaModel", "Concluído");
-    case MediaStatus::Unknown:
-    default:
-        return QCoreApplication::translate("HomeMediaModel", "Desconhecido");
-    }
-}
-
 QString mediaTypeKey(const MediaType type) {
     switch (type) {
     case MediaType::Anime: return QStringLiteral("anime");
@@ -42,16 +27,6 @@ QString mediaTypeKey(const MediaType type) {
     case MediaType::Novel: return QStringLiteral("novel");
     case MediaType::Unknown:
     default: return QStringLiteral("unknown");
-    }
-}
-
-QString mediaTypeLabel(const MediaType type) {
-    switch (type) {
-    case MediaType::Anime: return QStringLiteral("Anime");
-    case MediaType::Manga: return QStringLiteral("Manga");
-    case MediaType::Novel: return QStringLiteral("Novel");
-    case MediaType::Unknown:
-    default: return QCoreApplication::translate("HomeMediaModel", "Desconhecido");
     }
 }
 
@@ -98,7 +73,7 @@ QString cardStatusLabel(const Media &media, const CardStatusPresentation present
                         const UserListStatus listStatus) {
     if (presentation == CardStatusPresentation::MediaReleaseStatus) {
         return QCoreApplication::translate("HomeMediaModel", "Exibição: %1")
-            .arg(mediaStatusLabel(media.Status));
+            .arg(MediaStatusLabel(media.Status));
     }
     return QCoreApplication::translate("HomeMediaModel", "Minha lista: %1")
         .arg(userListStatusLabel(listStatus));
@@ -359,8 +334,8 @@ QString HomeScreenController::selectedTitle() const {
     return hasSelection_ ? ResolveMediaTitle(selectedMedia_, preferredTitleKey_) : QString();
 }
 QString HomeScreenController::selectedSynopsis() const { return hasSelection_ ? selectedMedia_.Synopsis : QString(); }
-QString HomeScreenController::selectedTypeLabel() const { return hasSelection_ ? mediaTypeLabel(selectedMedia_.Type) : QString(); }
-QString HomeScreenController::selectedStatusLabel() const { return hasSelection_ ? mediaStatusLabel(selectedMedia_.Status) : QString(); }
+QString HomeScreenController::selectedTypeLabel() const { return hasSelection_ ? MediaTypeLabel(selectedMedia_.Type) : QString(); }
+QString HomeScreenController::selectedStatusLabel() const { return hasSelection_ ? MediaStatusLabel(selectedMedia_.Status) : QString(); }
 QString HomeScreenController::selectedProgress() const { return hasSelection_ ? mediaProgress(selectedMedia_) : QString(); }
 QString HomeScreenController::selectedScore() const {
     return hasSelection_ ? personalScore(selectedMedia_) : QString();

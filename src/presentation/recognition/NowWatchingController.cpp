@@ -2,9 +2,8 @@
 
 #include <QTimer>
 
-#include "../../application/media/MediaDetailsPresentation.h"
+#include "../media/MediaPresentation.h"
 #include "../../application/media/MediaTitleResolver.h"
-#include "../../application/media/ProgressFormatter.h"
 
 #include <algorithm>
 #include <utility>

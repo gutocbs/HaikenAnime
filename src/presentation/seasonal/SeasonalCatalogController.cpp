@@ -3,8 +3,7 @@
 #include "../../app/SeasonalCatalogCoordinator.h"
 #include "../../application/covers/CoverSourceResolver.h"
 #include "../../application/library/LocalRecognitionRequest.h"
-#include "../../application/media/ProgressFormatter.h"
-#include "../../application/media/MediaDetailsPresentation.h"
+#include "../media/MediaPresentation.h"
 #include "../../application/media/SeasonalPersonalListService.h"
 
 #include <QCoreApplication>
@@ -21,29 +20,6 @@ QString stateName(const SeasonalCatalogState state) {
     case SeasonalCatalogState::Error: return QStringLiteral("error");
     case SeasonalCatalogState::Idle:
     default: return QStringLiteral("idle");
-    }
-}
-
-QString mediaTypeLabel(const MediaType type) {
-    switch (type) {
-    case MediaType::Anime: return QStringLiteral("Anime");
-    case MediaType::Manga: return QStringLiteral("Manga");
-    case MediaType::Novel: return QStringLiteral("Novel");
-    case MediaType::Unknown:
-    default: return QCoreApplication::translate("SeasonalCatalogController", "Desconhecido");
-    }
-}
-
-QString mediaStatusLabel(const MediaStatus status) {
-    switch (status) {
-    case MediaStatus::NotReleased:
-        return QCoreApplication::translate("SeasonalCatalogController", "Ainda não lançado");
-    case MediaStatus::Releasing:
-        return QCoreApplication::translate("SeasonalCatalogController", "Em lançamento");
-    case MediaStatus::Released:
-        return QCoreApplication::translate("SeasonalCatalogController", "Concluído");
-    case MediaStatus::Unknown:
-    default: return QCoreApplication::translate("SeasonalCatalogController", "Desconhecido");
     }
 }
 
@@ -80,7 +56,7 @@ QVariant SeasonalCatalogMediaModel::data(const QModelIndex &index, const int rol
     switch (role) {
     case MediaIdRole: return media.Id;
     case TitleRole: return ResolveMediaTitle(media, preferredTitleKey_);
-    case StatusLabelRole: return mediaStatusLabel(media.Status);
+    case StatusLabelRole: return MediaStatusLabel(media.Status);
     case ProgressRole: return PresentMediaSeason(media);
     case ScoreRole:
         return QCoreApplication::translate("SeasonalCatalogController", "Nota AniList: %1")
@@ -145,8 +121,8 @@ bool SeasonalCatalogController::hasSelection() const { return selectedMedia() !=
 int SeasonalCatalogController::selectedMediaId() const { return hasSelection() ? selectedMediaId_ : 0; }
 QString SeasonalCatalogController::selectedTitle() const { const auto *media = selectedMedia(); return media ? ResolveMediaTitle(*media, preferredTitleKey_) : QString(); }
 QString SeasonalCatalogController::selectedSynopsis() const { const auto *media = selectedMedia(); return media ? media->Synopsis : QString(); }
-QString SeasonalCatalogController::selectedTypeLabel() const { const auto *media = selectedMedia(); return media ? mediaTypeLabel(media->Type) : QString(); }
-QString SeasonalCatalogController::selectedStatusLabel() const { const auto *media = selectedMedia(); return media ? mediaStatusLabel(media->Status) : QString(); }
+QString SeasonalCatalogController::selectedTypeLabel() const { const auto *media = selectedMedia(); return media ? MediaTypeLabel(media->Type) : QString(); }
+QString SeasonalCatalogController::selectedStatusLabel() const { const auto *media = selectedMedia(); return media ? MediaStatusLabel(media->Status) : QString(); }
 QString SeasonalCatalogController::selectedProgress() const {
     if (!hasSelection()) return {};
     if (!selectedLocalMedia_) return QStringLiteral("—");
