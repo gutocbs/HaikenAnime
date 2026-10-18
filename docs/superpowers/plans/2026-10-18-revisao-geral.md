@@ -11,6 +11,8 @@
 ## 1. Como a revisão funciona
 
 1. O programa foi dividido em **12 partes** (seção 3). Cada parte é revisada inteira — código **e** testes.
+   A **Parte 13** reúne os problemas "fora de escopo" anotados nos reports e é a única que corrige
+   comportamento.
 2. Ao fim de cada parte é entregue um **report** (modelo na seção 4) explicando o que o código faz, sua
    função no programa, a avaliação dos testes e a lista de melhorias propostas.
 3. **Nenhuma alteração é feita antes da sua aprovação do report.** Você pode aprovar, recusar ou ajustar
@@ -84,6 +86,7 @@ Ordem pensada para remover ruído primeiro (legado e build), depois ir das camad
 | 10 | Controllers de apresentação | `src/presentation/*` | ~3,5k |
 | 11 | QML e traduções | `resources/qml`, `translations` | ~4,6k |
 | 12 | Composição e entrada | `main.cpp`, `ApplicationComposition`, `TranslationLoader`, fechamento do `SERVICE.md` | ~1,1k |
+| 13 | Correções | itens "fora de escopo" coletados nas Partes 1–12 | — |
 
 Os testes de cada área (≈25,8k linhas em `tests/unit`) são revisados **na parte da área**.
 
@@ -178,6 +181,22 @@ Os testes de cada área (≈25,8k linhas em `tests/unit`) são revisados **na pa
 - `[Doc]` Fechamento: atualizar `SERVICE.md` e `README` com o estado final, e reescrever o `codex.md` como
   `AGENTS.md` (renomeado) refletindo o programa após a limpeza.
 
+### Parte 13 — Correções (itens fora de escopo coletados)
+Única parte que **altera comportamento**. Regras próprias:
+- cada correção começa por um teste que reproduz o problema (falha antes, passa depois);
+- cada item tem o comportamento esperado descrito e aprovado no report antes de mudar;
+- um commit `fix:` por item.
+
+Itens coletados até agora (a lista cresce a cada parte):
+
+| Origem | Item |
+| --- | --- |
+| Parte 1 | `QmlStructureTests`/`QmlRecognitionStructureTests`: `QT_QUICK_BACKEND=software` vai dentro do `PATH` e nunca é definido |
+| Parte 1 | `scripts/build-release.ps1` só carrega o ambiente do MSVC quando não acha `cl.exe`; com `cl.exe` no `PATH` sem `INCLUDE`/`LIB`, o build falha (o `validate.ps1` já checa `VCToolsInstallDir`/`INCLUDE`) |
+| Parte 1 | `Settings.json` usa `Q:\` como pasta padrão da biblioteca — avaliar um default neutro |
+| Parte 2 | O intervalo de sincronização escolhido em Configurações (`synchronizationIntervalMs`) é salvo, mas o agendador não o usa |
+| Parte 2 | Traduções em inglês faltando: estações do ano, "%1 de %2", "Episódio %1" |
+
 ---
 
 ## 4. Modelo do report de cada parte
@@ -223,3 +242,4 @@ Perguntas em que há mais de um caminho razoável.
 | 10 | ☐ | ☐ | ☐ |
 | 11 | ☐ | ☐ | ☐ |
 | 12 | ☐ | ☐ | ☐ |
+| 13 | ☐ | ☐ | ☐ |
