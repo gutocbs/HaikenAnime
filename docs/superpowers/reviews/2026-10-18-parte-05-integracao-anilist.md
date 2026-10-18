@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `22182cd` (`feature/revisao-geral`)
-- **Status:** aprovado (com as correções e as duas recomendações) e aplicado — aguardando o build de validação
+- **Status:** aprovado (com as correções e as duas recomendações) e aplicado — validado
 
 ---
 
@@ -135,3 +135,7 @@ Notas sobre os testes:
   formato GraphQL (`graphql/page-response.json` tem 2 entradas assim), e as entradas viravam `Unknown`.
   O apelido foi restaurado em `1cff615`. Os outros apelidos removidos ("PLAN TO WATCH", "PLAN TO READ",
   "Finished Airing", "RELEASED") não aparecem em nenhuma entrada restante.
+
+### Validação final (build do revisor)
+- `scripts/validate.ps1`: build MSVC + `ctest` todo verde (após `1cff615`).
+- Smoke: a sync baixou a lista do usuário e uma edição chegou ao AniList.
