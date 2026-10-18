@@ -240,7 +240,7 @@ Perguntas em que há mais de um caminho razoável.
 | 3 | ☑ [report](../reviews/2026-10-18-parte-03-infraestrutura-base.md) | ☑ | ☑ validada: `ctest` verde, smoke com o banco real (migrou e funcionou) |
 | 4 | ☑ [report](../reviews/2026-10-18-parte-04-persistencia-midia-outbox.md) | ☑ | ☑ validada: `ctest` verde, smoke de edição (Home e catálogo, inclusive adição) |
 | 5 | ☑ [report](../reviews/2026-10-18-parte-05-integracao-anilist.md) | ☑ | ☑ validada: `ctest` verde, smoke de sync (lista baixada, edição enviada) |
-| 6 | ☑ [report](../reviews/2026-10-18-parte-06-agendamento-sync.md) | ☐ | ☐ |
+| 6 | ☑ [report](../reviews/2026-10-18-parte-06-agendamento-sync.md) | ☑ | ☐ aplicada, aguardando build |
 | 7 | ☐ | ☐ | ☐ |
 | 8 | ☐ | ☐ | ☐ |
 | 9 | ☐ | ☐ | ☐ |

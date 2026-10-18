@@ -217,9 +217,11 @@ abrem sua própria conexão (`SqliteDatabase(databasePath)`). Resultados voltam 
 
 **Agendamento** (`src/app/AdaptiveSync*`, `src/application/scheduling`):
 
-- Partições usadas hoje: `UserList` (intervalo padrão 1 h) e `PendingChanges` (1 min). O estado de cada
-  partição (`SyncTaskState`: status, próxima execução, falhas, checkpoint de página, geração) é persistido
-  em `sync_task_state`.
+- Só existem duas partições: `UserList` (intervalo padrão 1 h, prioridade maior) e `PendingChanges` (1 min).
+  O estado de cada uma (`SyncTaskState`: status, próxima execução, falhas, checkpoint de página, geração) é
+  persistido em `sync_task_state`; linhas de outros tipos (restos de versões antigas) são ignoradas na leitura.
+- Uma tarefa por vez. `PendingChanges` só roda depois da primeira `UserList` bem-sucedida. Um pedido feito
+  durante a execução da partição a reexecuta logo depois (gatilho `LocalChange`).
 - `SyncTaskPolicy` decide quando rodar, backoff exponencial com teto, cooldown e TTL de dados obsoletos.
 - `AdaptiveSyncRuntime` hospeda o coordenador numa thread, expõe `requestNow`, `cancel` (com
   confirmação na thread da GUI) e `shutdown`, e emite `BackgroundTask*` consumidos por

@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `2675f00` (`feature/revisao-geral`)
-- **Status:** aguardando aprovação — nenhuma alteração aplicada
+- **Status:** aprovado (com as duas recomendações) e aplicado — aguardando build do revisor (a migração 027 não foi necessária; ver seção 7)
 - *(O `InitialSyncCoordinator`, previsto aqui, já saiu na Parte 5.)*
 
 ---
@@ -43,8 +43,10 @@ Decide **quando** cada sincronização roda e a executa fora da thread da GUI:
 
 **Dado real relevante:** o banco do revisor tem linhas antigas em `sync_task_state` para `active-catalog`,
 `inactive-catalog` e `completed-catalog`. Hoje o coordinator as ignora (não estão nas políticas
-configuradas). Se os valores saírem dos enums, porém, o `ReadAll` rejeita o texto desconhecido e a sync não
-inicializa. Por isso o P6-02 inclui uma migração que apaga essas linhas.
+configuradas). ~~Se os valores saírem dos enums, o `ReadAll` rejeita o texto desconhecido e a sync não
+inicializa; por isso o P6-02 inclui uma migração que apaga essas linhas.~~ **Corrigido na aplicação:** o
+`ReadAll` **pula** linhas com tipo ou partição desconhecidos (não falha), então essas linhas continuam
+ignoradas sem migração. Ver seção 7.
 
 ---
 
@@ -57,7 +59,7 @@ inicializa. Por isso o P6-02 inclui uma migração que apaga essas linhas.
 | `AdaptiveSyncRuntimeTests` (14) | **manter** |
 | `SqliteSyncTaskStateRepositoryTests` (7) | **apagar** `removesTaskPartitionState` (critério **a**); os demais ficam (o de texto desconhecido continua valendo) |
 | `JsonSettingsReaderTests` — políticas por tipo | **ajustar** para os 2 tipos |
-| `SqliteDatabaseTests` | **ganha** um caso para a migração nova (linhas de catálogo apagadas, as outras preservadas) e a fixture do schema é regenerada |
+| ~~`SqliteDatabaseTests`~~ | ~~ganha um caso para a migração nova~~ — sem migração, nada muda (ver seção 7) |
 
 ---
 
@@ -93,3 +95,44 @@ Parte 2.
 2. **Manter dois enums** (`SyncTaskKind` e `SyncPartition`, 1:1) com 2 valores cada (recomendo: as duas
    colunas existem no banco e os textos são diferentes, `pending-change` × `pending-changes`), ou
    unificá-los num só?
+
+---
+
+## 7. Aplicação
+
+| Item | Commit |
+| --- | --- |
+| P6-05 `SyncTaskPolicy::Evaluate` | `70bffaf` |
+| P6-04 `retryAfter` | `546e265` |
+| P6-03 `confirmedCursor` | `02df6b8` |
+| P6-01 promoção de partição e `Remove` | `ebeeadb` |
+| P6-02 dois tipos e duas partições (sem migração) | `70fc863` |
+| P6-06 executor com um método por tarefa | `a94cb47` |
+| P6-07 *relay* de sinais do runtime | `e9f4fea` |
+
+### Correção do report: migração 027 não aplicada
+A decisão 1 foi aprovada com base numa premissa errada. O `SqliteSyncTaskStateRepository::ReadAll` não
+falha com texto desconhecido: ele **pula a linha** (`continue`), e o teste
+`rejectsUnknownPersistedEnumTextAndMalformedTimestamp` já verificava isso. Antes, as linhas
+`active-catalog`/`inactive-catalog`/`completed-catalog` do banco real eram lidas e depois descartadas pelo
+coordinator (sem política); agora são descartadas já na leitura. O resultado é o mesmo, sem tocar no
+banco. As linhas continuam gravadas; apagá-las fica como opção, se o revisor quiser.
+
+### Notas sobre os testes
+- `SyncTaskPolicyTests`: saíram `promotesCompletedCatalogToActiveCatalog` e os 2 de `retryAfter`;
+  `promotesLocalChangesForImmediateSynchronization` virou `runsLocalChangesImmediately`;
+  `prioritizesWatchingAndReadingOverInactiveAndCompletedCatalogs` virou
+  `prioritizesUserListOverPendingChanges`; os que percorriam 7 tipos percorrem os 2.
+- `AdaptiveSyncCoordinatorTests`: saíram `retainsExistingActivePartitionDuringCompletedPromotion` e
+  `forwardsRetryAfterToTheSchedulingPolicy`; `promotesManualAndLocalChangeRequests` virou
+  `runsManualRequestsForFreshPartitionsImmediately`; os que usavam partições de catálogo como "segunda
+  partição" usam `PendingChanges` (em `recordsIndependentProgressWhenAnotherPartitionFails` a ordem
+  inverteu: a `UserList` conclui e a `PendingChanges` falha).
+- `SqliteSyncTaskStateRepositoryTests`: saíram `removesTaskPartitionState` e
+  `preservesQueryLoaderDiagnostic` (o caminho da query deixou de ser parâmetro, critério **a**); a linha
+  desconhecida do teste de enum agora é uma linha `active-catalog`, igual às do banco real.
+- `SynchronizationStatusControllerTests::ignoresUntrackedPartitions` saiu: com 2 partições, as duas são
+  acompanhadas (`isTracked` removido).
+- `JsonSettingsReaderTests`: o caso de duração negativa usa `pending-change` em vez de `cover`. Uma
+  política `cover` no `Settings.json` passa a ser ignorada, como qualquer chave desconhecida.
+- `AniListAccountOwnershipTests`: saiu a linha que verificava uma partição de capas.
