@@ -246,7 +246,7 @@ Perguntas em que há mais de um caminho razoável.
 | 6 | ☑ [report](../reviews/2026-10-18-parte-06-agendamento-sync.md) | ☑ | ☑ validada: `ctest` verde (após `ac42360`) |
 | 7 | ☑ [report](../reviews/2026-10-18-parte-07-biblioteca-local.md) | ☑ | ☑ validada: `ctest` verde |
 | 8 | ☑ [report](../reviews/2026-10-18-parte-08-capas-cache-catalogo.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
-| 9 | ☐ | ☐ | ☐ |
+| 9 | ☑ [report](../reviews/2026-10-18-parte-09-reconhecimento.md) | ☐ | ☐ |
 | 10 | ☐ | ☐ | ☐ |
 | 11 | ☐ | ☐ | ☐ |
 | 12 | ☐ | ☐ | ☐ |
