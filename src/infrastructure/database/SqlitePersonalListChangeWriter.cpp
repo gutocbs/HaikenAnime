@@ -1,6 +1,7 @@
 #include "SqlitePersonalListChangeWriter.h"
 
 #include "SqlQueryStore.h"
+#include "SqliteQueries.h"
 #include "../logging/AsyncLogger.h"
 
 #include <QJsonArray>
@@ -90,16 +91,9 @@ void bindPendingChange(QSqlQuery &query, const AniListPendingChange &change) {
 }
 }
 
-SqlitePersonalListChangeWriter::SqlitePersonalListChangeWriter(
-    QSqlDatabase database, QString upsertMediaQuery, QString updatePersonalListQuery,
-    QString enqueuePendingChangeQuery, QString markPersonalListRemovedQuery, QString supersedeDeletionQuery)
-    : database_(std::move(database)), upsertMediaQuery_(std::move(upsertMediaQuery)),
-      updatePersonalListQuery_(std::move(updatePersonalListQuery)),
-      enqueuePendingChangeQuery_(std::move(enqueuePendingChangeQuery)),
-      markPersonalListRemovedQuery_(std::move(markPersonalListRemovedQuery)),
-      supersedeDeletionQuery_(std::move(supersedeDeletionQuery)) {
+SqlitePersonalListChangeWriter::SqlitePersonalListChangeWriter(QSqlDatabase database)
+    : database_(std::move(database)) {
 }
-
 bool SqlitePersonalListChangeWriter::save(const Media &media, const QList<AniListPendingChange> &changes,
                                           QString &error) {
     error.clear();
@@ -110,9 +104,9 @@ bool SqlitePersonalListChangeWriter::save(const Media &media, const QList<AniLis
     QString updateQuery;
     QString upsertQuery;
     QString enqueueQuery;
-    if (!SqlQueryStore::loadSource(updatePersonalListQuery_, updateQuery, error)
-        || !SqlQueryStore::loadSource(upsertMediaQuery_, upsertQuery, error)
-        || !SqlQueryStore::loadSource(enqueuePendingChangeQuery_, enqueueQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpdatePersonalListMedia, updateQuery, error)
+        || !SqlQueryStore::loadSource(SqliteQueries::UpsertMedia, upsertQuery, error)
+        || !SqlQueryStore::loadSource(SqliteQueries::EnqueuePendingChange, enqueueQuery, error)) return false;
     if (!database_.transaction()) {
         error = database_.lastError().text();
         return false;
@@ -147,7 +141,7 @@ bool SqlitePersonalListChangeWriter::save(const Media &media, const QList<AniLis
 
     // Re-adding a media cancels any removal that has not reached AniList yet.
     QString supersedeQuery;
-    if (!SqlQueryStore::loadSource(supersedeDeletionQuery_, supersedeQuery, error)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::SupersedePendingDeletion, supersedeQuery, error)) {
         database_.rollback();
         return false;
     }
@@ -207,8 +201,8 @@ bool SqlitePersonalListChangeWriter::remove(const Media &media, const AniListPen
     }
     QString markQuery;
     QString enqueueQuery;
-    if (!SqlQueryStore::loadSource(markPersonalListRemovedQuery_, markQuery, error)
-        || !SqlQueryStore::loadSource(enqueuePendingChangeQuery_, enqueueQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::MarkMediaPersonalListRemoved, markQuery, error)
+        || !SqlQueryStore::loadSource(SqliteQueries::EnqueuePendingChange, enqueueQuery, error)) return false;
     if (!database_.transaction()) {
         error = database_.lastError().text();
         return false;

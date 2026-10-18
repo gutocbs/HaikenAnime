@@ -6,11 +6,10 @@
 #include <QJsonDocument>
 #include "../../application/configuration/UserPreferencesValidator.h"
 #include "SqlQueryStore.h"
+#include "SqliteQueries.h"
 
-SqliteUserPreferencesRepository::SqliteUserPreferencesRepository(
-    QSqlDatabase database, QString readQuery, QString upsertQuery)
-    : database_(std::move(database)), readQuery_(std::move(readQuery)),
-      upsertQuery_(std::move(upsertQuery)) {}
+SqliteUserPreferencesRepository::SqliteUserPreferencesRepository(QSqlDatabase database)
+    : database_(std::move(database)) {}
 
 bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &found,
                                            QString &error) {
@@ -24,7 +23,7 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
     warning.clear();
     found = false;
     QString readQuery;
-    if (!SqlQueryStore::loadSource(readQuery_, readQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadUserPreferences, readQuery, error)) return false;
     QSqlQuery query(database_);
     if (!query.exec(readQuery)) {
         error = query.lastError().text();
@@ -129,7 +128,7 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
     }
     QSqlQuery query(database_);
     QString upsertQuery;
-    if (!SqlQueryStore::loadSource(upsertQuery_, upsertQuery, error)
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpsertUserPreferences, upsertQuery, error)
         || !query.prepare(upsertQuery)) {
         error = query.lastError().text();
         database_.rollback();

@@ -51,27 +51,14 @@ bool DecodeValue(const QString &encoded, AniListFieldValue &value) {
 }
 }
 
-SqlitePendingChangeRepository::SqlitePendingChangeRepository(
-    QSqlDatabase database, QString enqueueQuery, QString pendingQuery, QString updateStatusQuery)
-    : SqlitePendingChangeRepository(std::move(database), std::move(enqueueQuery),
-                                    std::move(pendingQuery),
-                                    SqliteQueries::ReadPendingMediaIds,
-                                    std::move(updateStatusQuery)) {
+SqlitePendingChangeRepository::SqlitePendingChangeRepository(QSqlDatabase database)
+    : database_(std::move(database)) {
 }
-
-SqlitePendingChangeRepository::SqlitePendingChangeRepository(
-    QSqlDatabase database, QString enqueueQuery, QString pendingQuery,
-    QString pendingMediaIdsQuery, QString updateStatusQuery)
-    : database_(std::move(database)), enqueueQuery_(std::move(enqueueQuery)),
-      pendingQuery_(std::move(pendingQuery)), pendingMediaIdsQuery_(std::move(pendingMediaIdsQuery)),
-      updateStatusQuery_(std::move(updateStatusQuery)) {
-}
-
 bool SqlitePendingChangeRepository::getPendingMediaIds(QList<int> &mediaIds, QString &error) {
     mediaIds.clear();
     error.clear();
     QString source;
-    if (!SqlQueryStore::loadSource(pendingMediaIdsQuery_, source, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadPendingMediaIds, source, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(source)) {
         error = query.lastError().text();
@@ -90,7 +77,7 @@ bool SqlitePendingChangeRepository::getMediaIdsWithUnsentChanges(QSet<int> &medi
     mediaIds.clear();
     error.clear();
     QString source;
-    if (!SqlQueryStore::loadSource(unsentMediaIdsQuery_, source, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadUnsentMediaIds, source, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(source)) {
         error = query.lastError().text();
@@ -107,7 +94,7 @@ bool SqlitePendingChangeRepository::getMediaIdsWithUnsentChanges(QSet<int> &medi
 bool SqlitePendingChangeRepository::enqueue(const AniListPendingChange &change, QString &error) {
     error.clear();
     QString enqueueQuery;
-    if (!SqlQueryStore::loadSource(enqueueQuery_, enqueueQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::EnqueuePendingChange, enqueueQuery, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(enqueueQuery)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":media_id"), change.mediaId);
@@ -146,7 +133,7 @@ bool SqlitePendingChangeRepository::adoptOrphanChanges(const qint64 ownerUserId,
         return false;
     }
     QString source;
-    if (!SqlQueryStore::loadSource(adoptOrphanChangesQuery_, source, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::AdoptOrphanPendingChanges, source, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(source)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":owner"), ownerUserId);
@@ -163,7 +150,7 @@ bool SqlitePendingChangeRepository::getPending(int mediaId, QList<AniListPending
     changes.clear();
     error.clear();
     QString pendingQuery;
-    if (!SqlQueryStore::loadSource(pendingQuery_, pendingQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadPendingChanges, pendingQuery, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(pendingQuery)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":media_id"), mediaId);
@@ -203,7 +190,7 @@ bool SqlitePendingChangeRepository::getPending(int mediaId, QList<AniListPending
 bool SqlitePendingChangeRepository::updateStatus(const AniListPendingChange &change, QString &error) {
     error.clear();
     QString updateStatusQuery;
-    if (!SqlQueryStore::loadSource(updateStatusQuery_, updateStatusQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpdatePendingChange, updateStatusQuery, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(updateStatusQuery)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":id"), change.id);

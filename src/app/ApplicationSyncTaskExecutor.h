@@ -28,12 +28,8 @@ public:
         std::function<void(const QString &)> auditLogger;
     };
 
-    ApplicationSyncTaskExecutor(QString databasePath, QString upsertQueryPath,
-                                QString readQueryPath, QString readActiveMediaIdsQueryPath,
-                                QString markSourceRemovedQueryPath, QString readTaskStatesQueryPath,
-                                QString upsertTaskStateQueryPath, QString deleteTaskStateQueryPath,
-                                QString readUserPreferencesQueryPath,
-                                QString upsertUserPreferencesQueryPath, int timeoutMs,
+    ApplicationSyncTaskExecutor(QString databasePath, QString readTaskStatesQueryPath,
+                                QString upsertTaskStateQueryPath, QString deleteTaskStateQueryPath, int timeoutMs,
                                 AuthenticatedUserListConfiguration authenticatedUserList);
     ~ApplicationSyncTaskExecutor() override;
 
@@ -54,15 +50,9 @@ private:
     void NotifyShutdownIfIdle();
 
     QString databasePath_;
-    QString upsertQueryPath_;
-    QString readQueryPath_;
-    QString readActiveMediaIdsQueryPath_;
-    QString markSourceRemovedQueryPath_;
     QString readTaskStatesQueryPath_;
     QString upsertTaskStateQueryPath_;
     QString deleteTaskStateQueryPath_;
-    QString readUserPreferencesQueryPath_;
-    QString upsertUserPreferencesQueryPath_;
     int timeoutMs_ = 0;
     AuthenticatedUserListConfiguration authenticatedUserList_;
     std::mutex mutex_;

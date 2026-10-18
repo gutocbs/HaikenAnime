@@ -67,21 +67,12 @@ bool ScopePendingChangesToAccount(SqlitePendingChangeRepository &pendingChanges,
 }
 
 ApplicationSyncTaskExecutor::ApplicationSyncTaskExecutor(
-    QString databasePath, QString upsertQueryPath,
-    QString readQueryPath,
-    QString readActiveMediaIdsQueryPath, QString markSourceRemovedQueryPath,
-    QString readTaskStatesQueryPath, QString upsertTaskStateQueryPath, QString deleteTaskStateQueryPath,
-    QString readUserPreferencesQueryPath, QString upsertUserPreferencesQueryPath, const int timeoutMs,
+    QString databasePath, QString readTaskStatesQueryPath, QString upsertTaskStateQueryPath,
+    QString deleteTaskStateQueryPath, const int timeoutMs,
     AuthenticatedUserListConfiguration authenticatedUserList)
-    : databasePath_(std::move(databasePath)), upsertQueryPath_(std::move(upsertQueryPath)),
-      readQueryPath_(std::move(readQueryPath)),
-      readActiveMediaIdsQueryPath_(std::move(readActiveMediaIdsQueryPath)),
-      markSourceRemovedQueryPath_(std::move(markSourceRemovedQueryPath)),
-      readTaskStatesQueryPath_(std::move(readTaskStatesQueryPath)),
+    : databasePath_(std::move(databasePath)), readTaskStatesQueryPath_(std::move(readTaskStatesQueryPath)),
       upsertTaskStateQueryPath_(std::move(upsertTaskStateQueryPath)),
-      deleteTaskStateQueryPath_(std::move(deleteTaskStateQueryPath)),
-      readUserPreferencesQueryPath_(std::move(readUserPreferencesQueryPath)),
-      upsertUserPreferencesQueryPath_(std::move(upsertUserPreferencesQueryPath)), timeoutMs_(timeoutMs),
+      deleteTaskStateQueryPath_(std::move(deleteTaskStateQueryPath)), timeoutMs_(timeoutMs),
       authenticatedUserList_(std::move(authenticatedUserList)) {
 }
 
@@ -135,8 +126,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                 const AniListCredentials credentials = authenticatedUserList_.credentialsProvider
                     ? authenticatedUserList_.credentialsProvider() : authenticatedUserList_.credentials;
                 if (partition == SyncPartition::UserList) {
-                    SqliteMediaRepository mediaRepository(database.connection(), upsertQueryPath_, readQueryPath_,
-                                                          readActiveMediaIdsQueryPath_, markSourceRemovedQueryPath_);
+                    SqliteMediaRepository mediaRepository(database.connection());
                     SqliteSyncTaskStateRepository taskRepository(
                         database.connection(), readTaskStatesQueryPath_, upsertTaskStateQueryPath_, deleteTaskStateQueryPath_);
                     if (AniListAccountOwnership::ShouldSkipAniListPartition(partition, credentials)) {
@@ -166,19 +156,14 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                         GraphQlQueryStore queryStore(QStringLiteral(":/anilist/queries/user-media-list.graphql"));
                         GraphQlAniListDataSource userListSource(client, queryStore, &authProvider,
                                                                   authenticatedUserList_.perChunk);
-                        SqlitePendingChangeRepository pendingChanges(
-                            database.connection(), SqliteQueries::EnqueuePendingChange,
-                            SqliteQueries::ReadPendingChanges,
-                            SqliteQueries::ReadPendingMediaIds,
-                            SqliteQueries::UpdatePendingChange);
+                        SqlitePendingChangeRepository pendingChanges(database.connection());
                         AniListPendingChangeReconciler pendingReconciler(
                             pendingChanges, authenticatedUserList_.auditLogger);
                         AniListSyncService service(userListSource, mediaRepository, nullptr,
                                                     nullptr, timeoutMs_, &pendingReconciler);
                         UserPreferences preferences;
                         bool found = false;
-                        SqliteUserPreferencesRepository preferencesRepository(
-                            database.connection(), readUserPreferencesQueryPath_, upsertUserPreferencesQueryPath_);
+                        SqliteUserPreferencesRepository preferencesRepository(database.connection());
                         if (!ScopePendingChangesToAccount(pendingChanges, credentials.userId,
                                                           authenticatedUserList_.auditLogger, error)
                             || !preferencesRepository.read(preferences, found, error)) {
@@ -283,11 +268,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             authenticatedUserList_.httpMaxRetries,
                             authenticatedUserList_.httpRetryDelayMs,
                             {.log = authenticatedUserList_.auditLogger, .isCancelled = [job] { return job->cancelled.load(); }});
-                        SqlitePendingChangeRepository pendingChanges(
-                            database.connection(), SqliteQueries::EnqueuePendingChange,
-                            SqliteQueries::ReadPendingChanges,
-                            SqliteQueries::ReadPendingMediaIds,
-                            SqliteQueries::UpdatePendingChange);
+                        SqlitePendingChangeRepository pendingChanges(database.connection());
                         QString scopeError;
                         const bool scoped = ScopePendingChangesToAccount(
                             pendingChanges, credentials.userId, authenticatedUserList_.auditLogger, scopeError);

@@ -222,20 +222,11 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         return context;
     }
 
-    auto mediaRepository = std::make_unique<SqliteMediaRepository>(
-        context.database->connection(), SqliteQueries::UpsertMedia,
-        SqliteQueries::ReadMedia, SqliteQueries::ReadActiveMediaIds,
-        SqliteQueries::MarkMediaSourceRemoved,
-        SqliteQueries::UpdatePersonalListMedia);
+    auto mediaRepository = std::make_unique<SqliteMediaRepository>(context.database->connection());
     mediaRepository->setLogger(context.logger.get());
     context.mediaRepository = std::move(mediaRepository);
-    context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(
-        context.database->connection(), SqliteQueries::EnqueuePendingChange,
-        SqliteQueries::ReadPendingChanges, SqliteQueries::UpdatePendingChange);
-    auto personalListChangeWriter = std::make_unique<SqlitePersonalListChangeWriter>(
-        context.database->connection(), SqliteQueries::UpsertMedia,
-        SqliteQueries::UpdatePersonalListMedia, SqliteQueries::EnqueuePendingChange,
-        SqliteQueries::MarkMediaPersonalListRemoved, SqliteQueries::SupersedePendingDeletion);
+    context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(context.database->connection());
+    auto personalListChangeWriter = std::make_unique<SqlitePersonalListChangeWriter>(context.database->connection());
     personalListChangeWriter->setLogger(context.logger.get());
     context.personalListChangeWriter = std::move(personalListChangeWriter);
     context.personalListChangeService = std::make_unique<PersonalListChangeService>(
@@ -247,9 +238,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     composeEpisodeRecognition(context);
 
     {
-        auto preferencesRepository = std::make_unique<SqliteUserPreferencesRepository>(
-            context.database->connection(), SqliteQueries::ReadUserPreferences,
-            SqliteQueries::UpsertUserPreferences);
+        auto preferencesRepository = std::make_unique<SqliteUserPreferencesRepository>(context.database->connection());
         bool found = false;
         QString preferencesError;
         QString preferencesWarning;
@@ -343,18 +332,11 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
             return std::make_unique<OwnedSyncTaskStateRepository>(std::move(database), readTaskStatesQueryPath,
                                                                    upsertTaskStateQueryPath, deleteTaskStateQueryPath);
         },
-        [synchronizationDatabasePath, upsertMediaPath = SqliteQueries::UpsertMedia,
-         readMediaPath = SqliteQueries::ReadMedia,
-         readActiveMediaIdsPath = SqliteQueries::ReadActiveMediaIds,
-         markSourceRemovedPath = SqliteQueries::MarkMediaSourceRemoved, readTaskStatesQueryPath,
-         upsertTaskStateQueryPath, deleteTaskStateQueryPath,
-         readUserPreferencesPath = SqliteQueries::ReadUserPreferences,
-         upsertUserPreferencesPath = SqliteQueries::UpsertUserPreferences,
+        [synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
          timeoutMs = settings.syncTimeoutMs, userListConfiguration] {
             return std::make_unique<ApplicationSyncTaskExecutor>(
-                synchronizationDatabasePath, upsertMediaPath, readMediaPath, readActiveMediaIdsPath,
-                markSourceRemovedPath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
-                readUserPreferencesPath, upsertUserPreferencesPath, timeoutMs, userListConfiguration);
+                synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
+                timeoutMs, userListConfiguration);
         }, backgroundSynchronizationPolicies(settings.syncTaskPolicies));
     context.seasonalNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
     const AniListGraphQlClient::Diagnostics seasonalDiagnostics{

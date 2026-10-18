@@ -26,8 +26,7 @@ private slots:
 };
 
 static SqliteUserPreferencesRepository Repository(SqliteDatabase &database) {
-    return {database.connection(), QStringLiteral(":/sqlite/queries/read-user-preferences.sql"),
-            QStringLiteral(":/sqlite/queries/upsert-user-preferences.sql")};
+    return SqliteUserPreferencesRepository(database.connection());
 }
 
 void SqliteUserPreferencesRepositoryTests::scannerPreferencesSurviveReopen() {

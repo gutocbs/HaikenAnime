@@ -47,17 +47,9 @@ QString SerializeLinks(const QList<MediaLink> &links) {
 }
 }
 
-SqliteMediaRepository::SqliteMediaRepository(QSqlDatabase database, QString upsertQuery, QString readQuery,
-                                             QString readActiveMediaIdsQuery,
-                                             QString markSourceRemovedQuery,
-                                             QString updatePersonalListQuery)
-    : database_(std::move(database)), upsertQuery_(std::move(upsertQuery)),
-      readQuery_(std::move(readQuery)),
-      readActiveMediaIdsQuery_(std::move(readActiveMediaIdsQuery)),
-      markSourceRemovedQuery_(std::move(markSourceRemovedQuery)),
-      updatePersonalListQuery_(std::move(updatePersonalListQuery)) {
+SqliteMediaRepository::SqliteMediaRepository(QSqlDatabase database)
+    : database_(std::move(database)) {
 }
-
 void SqliteMediaRepository::setLogger(AsyncLogger *logger) { logger_ = logger; }
 
 bool SqliteMediaRepository::readAll(QList<Media> &media, QString &error) {
@@ -69,7 +61,7 @@ bool SqliteMediaRepository::readAll(QList<Media> &media, QString &error) {
     }
 
     QString readQuery;
-    if (!SqlQueryStore::loadSource(readQuery_, readQuery, error, logger_)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadMedia, readQuery, error, logger_)) {
         return false;
     }
 
@@ -95,7 +87,7 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
     }
     QString upsertQuery;
     QString readNamesQuery;
-    if (!SqlQueryStore::loadSource(upsertQuery_, upsertQuery, error, logger_)
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpsertMedia, upsertQuery, error, logger_)
         || !SqlQueryStore::loadSource(SqliteQueries::ReadMediaAlternativeNames, readNamesQuery, error, logger_)) {
         return false;
     }
@@ -181,7 +173,7 @@ bool SqliteMediaRepository::updatePersonalListMedia(const Media &media, QString 
         return false;
     }
     QString updatePersonalListQuery;
-    if (!SqlQueryStore::loadSource(updatePersonalListQuery_, updatePersonalListQuery, error, logger_)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpdatePersonalListMedia, updatePersonalListQuery, error, logger_)) {
         return false;
     }
     QSqlQuery query(database_);
@@ -216,8 +208,8 @@ bool SqliteMediaRepository::reconcileAuthoritativeSnapshot(
     }
     QString readActiveMediaIdsQuery;
     QString markSourceRemovedQuery;
-    if (!SqlQueryStore::loadSource(readActiveMediaIdsQuery_, readActiveMediaIdsQuery, error, logger_)
-        || !SqlQueryStore::loadSource(markSourceRemovedQuery_, markSourceRemovedQuery, error, logger_)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadActiveMediaIds, readActiveMediaIdsQuery, error, logger_)
+        || !SqlQueryStore::loadSource(SqliteQueries::MarkMediaSourceRemoved, markSourceRemovedQuery, error, logger_)) {
         return false;
     }
     if (!database_.transaction()) {

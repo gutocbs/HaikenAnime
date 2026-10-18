@@ -134,8 +134,7 @@ bool InitialSyncCoordinator::performSynchronization(const bool filterUserLists,
         return false;
     }
 
-    SqliteMediaRepository repository(database.connection(), upsertQueryPath_, readQueryPath_,
-                                     readActiveMediaIdsQueryPath_, markSourceRemovedQueryPath_);
+    SqliteMediaRepository repository(database.connection());
     repository.setLogger(logger_);
     RecordedGraphQlAniListDataSource source(QDir::cleanPath(fixturePath_));
     AniListSyncService service(source, repository, &repository, nullptr, syncTimeoutMs_);

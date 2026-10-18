@@ -9,10 +9,8 @@ class AsyncLogger;
 /** Persists AniList media in the application's SQLite database. */
 class SqliteMediaRepository final : public IMediaRepository {
 public:
-    /** Creates a repository using an opened database connection and external upsert SQL. */
-    SqliteMediaRepository(QSqlDatabase database, QString upsertQuery, QString readQuery,
-                          QString readActiveMediaIdsQuery, QString markSourceRemovedQuery,
-                          QString updatePersonalListQuery = {});
+    /** Creates a repository over an opened connection; SQL comes from SqliteQueries. */
+    explicit SqliteMediaRepository(QSqlDatabase database);
     void setLogger(AsyncLogger *logger);
 
     /** Upserts external media in one transaction while preserving local user fields. */
@@ -27,11 +25,6 @@ public:
 
 private:
     QSqlDatabase database_;
-    QString upsertQuery_;
-    QString readQuery_;
-    QString readActiveMediaIdsQuery_;
-    QString markSourceRemovedQuery_;
-    QString updatePersonalListQuery_;
     AsyncLogger *logger_ = nullptr;
 };
 
