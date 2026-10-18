@@ -318,6 +318,10 @@ void LocalLibraryScanCompositionTests::workerProductsReleaseConnectionsAndShutdo
     {
         auto context = createApplicationContext(optionsFor(directory));
         QVERIFY(context.localLibraryScan);
+        // The adaptive sync runtime opens its long-lived connection asynchronously on its own worker;
+        // wait for it so the snapshot isolates the scan worker's connection.
+        QVERIFY(context.adaptiveSync);
+        QTRY_VERIFY(context.adaptiveSync->isReady());
         const auto uiConnections = QSqlDatabase::connectionNames();
         context.userPreferences.libraryRoots = {root.path()};
         QObject lifetime;
@@ -325,6 +329,9 @@ void LocalLibraryScanCompositionTests::workerProductsReleaseConnectionsAndShutdo
         QVERIFY(scheduleStartupLibraryScan(context, &lifetime));
         QTRY_COMPARE(started.count(), 1);
         context.localLibraryScan->shutdown();
+        // A succeeded scan starts recognition on its own worker connection; stop it as main.cpp does.
+        QVERIFY(context.localLibraryRecognition);
+        context.localLibraryRecognition->shutdown();
         QCOMPARE(QSqlDatabase::connectionNames(), uiConnections);
         QSqlQuery query(context.database->connection());
         QVERIFY(query.exec("SELECT status FROM library_scans"));
