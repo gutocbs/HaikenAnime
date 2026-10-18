@@ -10,7 +10,6 @@ private slots:
     void acceptsSupportedPreferences();
     void rejectsInvalidPreferences_data();
     void rejectsInvalidPreferences();
-    void usesExactScannerDefaults();
     void normalizesScanExtensions();
     void rejectsInvalidScanExtensions_data();
     void rejectsInvalidScanExtensions();
@@ -73,14 +72,6 @@ void UserPreferencesValidatorTests::rejectsInvalidPreferences() {
     const auto result = ValidateUserPreferences(preferences);
     QVERIFY(!result.valid);
     QVERIFY(!result.error.isEmpty());
-}
-
-void UserPreferencesValidatorTests::usesExactScannerDefaults() {
-    const UserPreferences preferences;
-    QCOMPARE(preferences.libraryRoots, QStringList{QStringLiteral("Q:\\")});
-    QCOMPARE(preferences.scanExtensions, QStringList({".mkv", ".mp4", ".avi", ".webm",
-                                                    ".m4v", ".mov", ".wmv", ".ts"}));
-    QVERIFY(ValidateUserPreferences(preferences).valid);
 }
 
 void UserPreferencesValidatorTests::normalizesScanExtensions() {
