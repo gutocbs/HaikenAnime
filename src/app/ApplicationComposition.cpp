@@ -21,7 +21,6 @@
 #include "../infrastructure/library/QtDirectoryEnumerator.h"
 #include "../infrastructure/database/SqliteLocalFileRepository.h"
 #include "../infrastructure/database/SqliteSyncTaskStateRepository.h"
-#include "../infrastructure/anilist/HttpFactory.h"
 #include "../infrastructure/anilist/AniListViewerClient.h"
 #include "../infrastructure/anilist/WindowsAniListOAuthLauncher.h"
 #include "../infrastructure/secrets/WindowsCredentialStore.h"
@@ -293,7 +292,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         && !settings.aniList.oauthRedirectUri.scheme().isEmpty()) {
         context.aniListOAuthConfiguration.emplace(settings.aniList.oauthClientId,
                                                   settings.aniList.oauthRedirectUri);
-        context.aniListNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
+        context.aniListNetworkManager = std::make_unique<QNetworkAccessManager>();
         const AniListGraphQlClient::Diagnostics oauthDiagnostics{
             .log = [logger = context.logger.get()](const QString &event) {
                 if (logger) logger->info(LogCategory::Sync, event);
@@ -338,7 +337,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
                 synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
                 timeoutMs, userListConfiguration);
         }, backgroundSynchronizationPolicies(settings.syncTaskPolicies));
-    context.seasonalNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
+    context.seasonalNetworkManager = std::make_unique<QNetworkAccessManager>();
     const AniListGraphQlClient::Diagnostics seasonalDiagnostics{
         .log = [logger = context.logger.get()](const QString &event) {
             if (logger) logger->info(LogCategory::Sync, event);

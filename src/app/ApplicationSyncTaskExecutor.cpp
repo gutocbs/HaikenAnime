@@ -15,7 +15,6 @@
 #include "../infrastructure/anilist/AniListGraphQlClient.h"
 #include "../infrastructure/anilist/GraphQlAniListDataSource.h"
 #include "../infrastructure/anilist/GraphQlQueryStore.h"
-#include "../infrastructure/anilist/HttpFactory.h"
 #include "../infrastructure/anilist/AniListUpdateClient.h"
 #include "../infrastructure/database/SqliteDatabase.h"
 #include "../infrastructure/database/SqliteMediaRepository.h"
@@ -145,8 +144,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             authenticatedUserList_.auditLogger(
                                 QStringLiteral("AniList authenticated user-list synchronization started."));
                         }
-                        auto networkManager = std::unique_ptr<QNetworkAccessManager>(
-                            HttpFactory::createNetworkAccessManager(nullptr));
+                        auto networkManager = std::make_unique<QNetworkAccessManager>();
                         SnapshotAuthProvider authProvider(credentials);
                         AniListGraphQlClient client(*networkManager, &authProvider,
                             authenticatedUserList_.endpoint, authenticatedUserList_.httpTimeoutMs,
@@ -260,8 +258,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             authenticatedUserList_.auditLogger(
                                 QStringLiteral("AniList pending-change synchronization started."));
                         }
-                        auto networkManager = std::unique_ptr<QNetworkAccessManager>(
-                            HttpFactory::createNetworkAccessManager(nullptr));
+                        auto networkManager = std::make_unique<QNetworkAccessManager>();
                         SnapshotAuthProvider authProvider(credentials);
                         AniListGraphQlClient client(*networkManager, &authProvider,
                             authenticatedUserList_.endpoint, authenticatedUserList_.httpTimeoutMs,
