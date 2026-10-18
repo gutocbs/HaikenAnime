@@ -4,7 +4,6 @@
 
 #include "../../src/application/anilist/AniListPendingChangeProcessor.h"
 #include "../../src/application/anilist/AniListPendingChangeCompactor.h"
-#include "../../src/application/anilist/AniListPendingChangeGrouper.h"
 #include "../../src/application/anilist/IAniListPendingChangeObserver.h"
 
 class FakePendingRepository final : public IPendingChangeRepository {
@@ -120,7 +119,7 @@ class AniListPendingChangeProcessorTests : public QObject {
 
 private slots:
     void compactsLocalWinsLatestByLocalUpdatedAt();
-    void groupsChangesByMedia();
+    void sendsEveryChangeOfTheMediaInOneUpdate();
     void marksSuccessfulMutationAsSucceeded();
     void preservesFailedMutationForRetry();
     void leavesUnconfirmedDeletionQueued();
@@ -171,29 +170,25 @@ void AniListPendingChangeProcessorTests::compactsLocalWinsLatestByLocalUpdatedAt
     QCOMPARE(compacted.last().id, qint64(2));
 }
 
-void AniListPendingChangeProcessorTests::groupsChangesByMedia() {
-    auto firstMediaProgress = progressChange();
-    firstMediaProgress.mediaId = 2;
-    firstMediaProgress.id = 1;
-    firstMediaProgress.localUpdatedAt = QDateTime::fromString(
-        QStringLiteral("2026-09-23T10:00:00"), Qt::ISODate);
+void AniListPendingChangeProcessorTests::sendsEveryChangeOfTheMediaInOneUpdate() {
+    FakePendingRepository repository;
+    auto progress = progressChange();
+    progress.id = 1;
+    auto status = progress;
+    status.id = 2;
+    status.field = AniListField::ListStatus;
+    status.previousValue = QStringLiteral("CURRENT");
+    status.newValue = QStringLiteral("COMPLETED");
+    repository.changes = {progress, status};
+    FakeUpdateClient client;
+    AniListPendingChangeProcessor processor(repository, client);
+    QString error;
 
-    auto firstMediaStatus = firstMediaProgress;
-    firstMediaStatus.id = 2;
-    firstMediaStatus.field = AniListField::ListStatus;
-    firstMediaStatus.newValue = QStringLiteral("WATCHING");
+    QVERIFY2(processor.process(progress.mediaId, error), qPrintable(error));
 
-    auto secondMediaProgress = firstMediaProgress;
-    secondMediaProgress.mediaId = 1;
-    secondMediaProgress.id = 3;
-
-    const auto groups = AniListPendingChangeGrouper::Group(
-        {firstMediaProgress, firstMediaStatus, secondMediaProgress});
-    QCOMPARE(groups.size(), 2);
-    QCOMPARE(groups.first().mediaId, 1);
-    QCOMPARE(groups.first().changes.size(), 1);
-    QCOMPARE(groups.last().mediaId, 2);
-    QCOMPARE(groups.last().changes.size(), 2);
+    QCOMPARE(client.mediaCalls, 1);
+    QCOMPARE(client.lastGroup.mediaId, progress.mediaId);
+    QCOMPARE(client.lastGroup.changes.size(), 2);
 }
 
 void AniListPendingChangeProcessorTests::marksSuccessfulMutationAsSucceeded() {
