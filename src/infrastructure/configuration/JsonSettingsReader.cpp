@@ -231,19 +231,6 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
             return false;
         }
     }
-    const auto coverQuality = covers.value(QStringLiteral("quality"));
-    if (!coverQuality.isUndefined()) {
-        if (!coverQuality.isString()) {
-            error = QStringLiteral("Settings.json cover quality must be a string.");
-            return false;
-        }
-        const auto parsedQuality = ParseCoverQuality(coverQuality.toString());
-        if (!parsedQuality.has_value()) {
-            error = QStringLiteral("Settings.json contains an unsupported cover quality.");
-            return false;
-        }
-        settings.covers.quality = parsedQuality.value();
-    }
     const auto userCoverQualityValue = coverPreferences.value(QStringLiteral("quality"));
     if (!userCoverQualityValue.isUndefined()) {
         if (!userCoverQualityValue.isString()) {

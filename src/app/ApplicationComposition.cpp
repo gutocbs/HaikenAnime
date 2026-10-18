@@ -363,7 +363,6 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     context.clearLocalCache = std::make_unique<ClearLocalCacheUseCase>(
         *context.coverCoordinator, *context.coverTemporaryStore,
         QList<ICacheCleanupParticipant *>{});
-    context.coverQuality = settings.covers.quality;
     context.aniListSecretStore = std::make_unique<WindowsCredentialStore>();
     context.aniListAuthManager = std::make_unique<AniListAuthManager>(*context.aniListSecretStore);
     context.aniListAuthManager->setAuditLogger([logger = context.logger.get()](const QString &event) {

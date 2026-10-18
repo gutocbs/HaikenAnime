@@ -59,7 +59,6 @@ struct ApplicationContext final {
     std::unique_ptr<ClearLocalCacheUseCase> clearLocalCache;
     std::unique_ptr<IUserPreferencesRepository> userPreferencesRepository;
     UserPreferences userPreferences;
-    CoverQuality coverQuality = CoverQuality::Medium;
     std::unique_ptr<QNetworkAccessManager> seasonalNetworkManager;
     std::unique_ptr<AniListGraphQlClient> seasonalGraphQlClient;
     std::unique_ptr<GraphQlQueryStore> seasonalQueryStore;

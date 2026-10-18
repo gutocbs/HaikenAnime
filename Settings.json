@@ -17,7 +17,6 @@
     "minimumRequestIntervalMs": 1000
   },
   "covers": {
-    "quality": "medium",
     "maxConcurrentDownloads": 3,
     "timeoutMs": 30000,
     "maxRetries": 2,
