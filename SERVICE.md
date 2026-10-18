@@ -51,8 +51,15 @@ ctest --test-dir build -C Debug -R HomeScreenControllerTests --output-on-failure
 powershell -ExecutionPolicy Bypass -File scripts/build-release.ps1
 ```
 
-O `POST_BUILD` do executável copia plugins (`platforms`, `sqldrivers`), runtime MinGW, DXC e roda o
-`windeployqt`. Os testes recebem o `PATH` do Qt pelo `set_tests_properties` (lista `HAIKENANIME_TESTS`).
+Estrutura do build:
+
+- `anitomy` (biblioteca estática com `lib/anitomy`) e `haiken_core` (biblioteca estática com **todas** as
+  fontes de `src/`, coletadas por `GLOB_RECURSE`) são compiladas uma vez e ligadas pelo app e pelos testes.
+- `HaikenAnime` = `main.cpp` + `haiken_core` + módulo QML + recursos + traduções.
+- Queries SQL, GraphQL e migrações entram por `GLOB` e são expostas pelo nome do arquivo
+  (`:/sqlite/queries/<arquivo>.sql`); criar um arquivo novo não exige mexer no CMake (basta reconfigurar).
+- O `POST_BUILD` só copia plugins (`platforms`, `sqldrivers`), runtime MinGW e DXC. O `windeployqt` roda
+  apenas no `scripts/build-release.ps1`; builds de desenvolvimento carregam o Qt do kit que está no `PATH`.
 
 ---
 
@@ -395,15 +402,20 @@ Para adicionar uma migração:
 
 - Framework **Qt Test** (`QTEST_MAIN`, `private slots`, `QCOMPARE`/`QVERIFY`), sem framework de mock:
   *doubles* são classes escritas à mão no próprio arquivo de teste (ex.: `Fake*Repository`).
-- Cada suíte em `tests/unit/<Nome>Tests.cpp` vira um executável próprio com as fontes que precisa
-  (`add_executable` + `add_test`) e deve entrar na lista `HAIKENANIME_TESTS` (ambiente/`TIMEOUT 30`).
-- Recursos (SQL, migrações, `Settings.json`, fixtures) são adicionados por `qt_add_resources` no alvo do
-  teste; suítes que abrem banco entram no `foreach` que injeta as migrações.
+- Cada suíte em `tests/unit/<Nome>Tests.cpp` é registrada com uma linha
+  `haiken_add_test(<Nome> [QT <módulos>] [MIGRATIONS] [SOURCE_DIR] [DEFINITIONS …] [INCLUDES …])`: vira um
+  executável próprio, ligado em `haiken_core`, com `PATH` do Qt e `TIMEOUT 30` no CTest.
+  - `QT` lista os módulos além de Core/Test. Declare só o que o teste usa: com `Gui` o `QTEST_MAIN` cria
+    uma `QGuiApplication`; sem ele, uma `QCoreApplication`.
+  - `MIGRATIONS` embute as migrações (suítes que abrem banco); `SOURCE_DIR` define
+    `HAIKENANIME_TEST_SOURCE_DIR` com a raiz do repositório.
+- Queries e configuração que o teste lê por recurso são adicionadas logo abaixo, com `qt_add_resources`
+  no alvo do teste (cada suíte embute só as queries de que precisa).
 - Persistência sempre em **banco temporário** (`QTemporaryDir`); nunca o banco real do usuário.
 - Rede e players nunca reais: fixtures em `tests/fixtures/` e transportes/HTTP falsos
   (ex.: `PlexTestSupport.h`, transporte mpv falso).
-- Testes de QML (`QmlStructureTests`, `QmlRecognitionStructureTests`) rodam com
-  `QT_QUICK_BACKEND=software` e usam controllers falsos.
+- Testes de QML (`QmlStructureTests`, `QmlRecognitionStructureTests`) carregam os arquivos de
+  `resources/qml` com controllers falsos.
 - Nome do teste descreve comportamento e resultado esperado (`deletionRequiresConfirmation`); um
   comportamento por teste; cobrir erros e cancelamentos, não só o caminho feliz.
 - Toda mudança concluída tem teste correspondente; rode a suíte afetada e depois o `ctest` completo.
