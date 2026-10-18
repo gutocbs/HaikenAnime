@@ -403,12 +403,6 @@ set_source_files_properties(
 set_source_files_properties(
         tests/fixtures/media-library.json
         PROPERTIES QT_RESOURCE_ALIAS "media-library.json")
-set_source_files_properties(
-        tests/fixtures/graphql/page-response.json
-        PROPERTIES QT_RESOURCE_ALIAS "graphql/page-response.json")
-set_source_files_properties(
-        tests/fixtures/graphql/userlist-response.json
-        PROPERTIES QT_RESOURCE_ALIAS "graphql/userlist-response.json")
 
 qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
@@ -460,14 +454,6 @@ qt_add_resources(HaikenAnime anilist_mutation_resource_bundle
         resources/anilist/mutations/update-score.graphql
         resources/anilist/mutations/update-list-status.graphql
         resources/anilist/mutations/delete-list-entry.graphql
-)
-
-qt_add_resources(HaikenAnime fixture_resource_bundle
-        PREFIX "/fixtures"
-        FILES
-        tests/fixtures/media-library.json
-        tests/fixtures/graphql/page-response.json
-        tests/fixtures/graphql/userlist-response.json
 )
 
 set_source_files_properties(
