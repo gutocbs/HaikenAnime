@@ -8,8 +8,8 @@
 namespace {
 SyncTaskState State() {
     SyncTaskState state;
-    state.kind = SyncTaskKind::UserList;
-    state.partition = SyncPartition::UserList;
+    state.kind = SyncTaskKind::PendingChange;
+    state.partition = SyncPartition::PendingChanges;
     state.status = SyncTaskStatus::RetryScheduled;
     state.cacheValidity = CacheValidity::Stale;
     state.lastSucceededAt = QDateTime::fromString(QStringLiteral("2026-10-04T10:30:00Z"), Qt::ISODate);
@@ -77,8 +77,8 @@ void SqliteSyncTaskStateRepositoryTests::roundTripsUtcTimestampsAndNullableValue
 
     QVERIFY2(repository.Upsert(expected, error), qPrintable(error));
     SyncTaskState nullable = State();
-    nullable.kind = SyncTaskKind::PendingChange;
-    nullable.partition = SyncPartition::PendingChanges;
+    nullable.kind = SyncTaskKind::UserList;
+    nullable.partition = SyncPartition::UserList;
     nullable.lastSucceededAt.reset();
     nullable.lastAttemptedAt.reset();
     nullable.nextRunAt.reset();
@@ -165,9 +165,9 @@ void SqliteSyncTaskStateRepositoryTests::rejectsUnknownPersistedEnumTextAndMalfo
     QList<SyncTaskState> states;
     QVERIFY2(repository.ReadAll(states, error), qPrintable(error));
     QCOMPARE(states.size(), 1);
-    QCOMPARE(states.first().kind, SyncTaskKind::UserList);
+    QCOMPARE(states.first().kind, SyncTaskKind::PendingChange);
     QVERIFY(query.exec(QStringLiteral("UPDATE sync_task_state SET last_attempted_at = 'not-a-timestamp' "
-                                      "WHERE task_kind = 'user-list'")));
+                                      "WHERE task_kind = 'pending-change'")));
     QVERIFY2(repository.ReadAll(states, error), qPrintable(error));
     QVERIFY(states.isEmpty());
 }
