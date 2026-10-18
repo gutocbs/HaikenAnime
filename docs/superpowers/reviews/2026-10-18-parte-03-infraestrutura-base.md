@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `39bd9ec` (`feature/revisao-geral`)
-- **Status:** aprovado (com as duas recomendações) e aplicado — aguardando o build de validação final
+- **Status:** aprovado (com as duas recomendações) e aplicado — validado
 
 ---
 
@@ -133,3 +133,7 @@ Notas:
   em Python e **confirmada pelo build do revisor contra o `migrate()` antigo** antes da reescrita.
 - **P3-02/03:** um commit só, porque o runner novo já não usa os arquivos removidos. A mensagem genérica de
   erro ("versions 1 through 15") foi preservada de propósito; a correção está na Parte 13.
+
+### Validação final (build do revisor)
+- `scripts/validate.ps1`: build MSVC + `ctest` todo verde.
+- Smoke com o banco real do revisor: o app abriu, aplicou a migração e funcionou normalmente.
