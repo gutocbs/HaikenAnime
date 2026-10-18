@@ -14,17 +14,14 @@ EpisodeCandidate CatalogEpisodeCandidateResolver::resolve(const EpisodeCandidate
         if (!reader_.readAll(catalog_, error)) return candidate;
         catalogLoaded_ = true;
     }
-    const auto &catalog = catalog_;
     // Same title matcher the local library uses, so Plex titles and file names agree.
     const LocalFileRecognition recognition{.state = LocalRecognitionState::Recognized,
-                                           .mediaKind = LocalMediaKind::Anime,
                                            .extractedTitle = candidate.title(),
                                            .season = candidate.season(),
                                            .episode = candidate.episode()};
-    const auto match = LocalMediaResolver().resolve(recognition, catalog);
-    const bool matched = match.mediaId > 0
-        && (match.state == LocalRecognitionState::Recognized || match.state == LocalRecognitionState::Associated);
-    if (!matched) return candidate;
+    // Only an association carries a media id.
+    const auto match = LocalMediaResolver().resolve(recognition, catalog_);
+    if (match.mediaId <= 0) return candidate;
     return EpisodeCandidate::create(candidate.title(), match.mediaId, candidate.season(), candidate.episode(),
                                     candidate.confidence())
         .value_or(candidate);
