@@ -18,15 +18,15 @@ void LocalLibraryScanCoordinator::setLogger(AsyncLogger *logger) {
 }
 
 bool LocalLibraryScanCoordinator::start(const LocalLibraryScanRequest &request) {
-    if (stopping_ || executionActive_) return false;
+    return startAll({request});
+}
+
+bool LocalLibraryScanCoordinator::startAll(const QList<LocalLibraryScanRequest> &requests) {
+    if (stopping_ || executionActive_ || requests.isEmpty()) return false;
     releaseThread();
     executionActive_ = true;
     stopRequested_ = false;
-    if (logger_) {
-        logger_->info(LogCategory::LocalLibrary,
-                      QStringLiteral("Local library scan started: root=%1").arg(request.rootPath));
-    }
-    thread_ = QThread::create([this, request] { execute(request); });
+    thread_ = QThread::create([this, requests] { execute(requests); });
     thread_->start(QThread::LowPriority);
     return true;
 }
@@ -45,13 +45,49 @@ void LocalLibraryScanCoordinator::releaseThread() {
     thread_ = nullptr;
 }
 
-void LocalLibraryScanCoordinator::execute(const LocalLibraryScanRequest &request) {
+void LocalLibraryScanCoordinator::execute(const QList<LocalLibraryScanRequest> &requests) {
+    qsizetype totalCandidates = 0;
+    QStringList errors;
+    QList<std::pair<QString, qsizetype>> succeededRoots;
+    for (const auto &request : requests) {
+        if (stopRequested_.load()) {
+            errors.append(QStringLiteral("Local library scan interrupted."));
+            break;
+        }
+        qsizetype candidateFiles = 0;
+        QString error;
+        // One unreachable folder (an unplugged drive) must not hide the others' files.
+        if (executeRoot(request, totalCandidates, candidateFiles, error)) {
+            totalCandidates += candidateFiles;
+            succeededRoots.append({request.rootPath, candidateFiles});
+        } else {
+            errors.append(requests.size() > 1 ? QStringLiteral("%1: %2").arg(request.rootPath, error) : error);
+        }
+    }
+    QMetaObject::invokeMethod(this, [this, totalCandidates, succeededRoots,
+                                     error = errors.join(QLatin1Char('\n'))] {
+        // Join before accepting another start, even if the queued callback runs
+        // just before QThread has finished unwinding its worker function.
+        releaseThread();
+        executionActive_ = false;
+        if (error.isEmpty()) emit completed(totalCandidates);
+        // Successful roots are still recognized when another root failed.
+        for (const auto &[rootPath, candidateFiles] : succeededRoots) emit succeeded(rootPath, candidateFiles);
+        if (!error.isEmpty()) emit failed(error);
+    }, Qt::QueuedConnection);
+}
+
+bool LocalLibraryScanCoordinator::executeRoot(const LocalLibraryScanRequest &request,
+                                              const qsizetype candidateOffset,
+                                              qsizetype &candidateFiles, QString &error) {
     QElapsedTimer elapsed;
     elapsed.start();
     QMetaObject::invokeMethod(this, [this, root = request.rootPath] { emit started(root); }, Qt::QueuedConnection);
+    if (logger_) {
+        logger_->info(LogCategory::LocalLibrary,
+                      QStringLiteral("Local library scan started: root=%1").arg(request.rootPath));
+    }
 
-    QString error;
-    qsizetype candidateFiles = 0;
     qsizetype skippedFiles = 0;
     bool scanSucceeded = false;
     // Resource scope ends before queuing the terminal signal. Factory products
@@ -71,10 +107,13 @@ void LocalLibraryScanCoordinator::execute(const LocalLibraryScanRequest &request
                 QElapsedTimer progressTimer;
                 progressTimer.start();
                 qsizetype lastPresented = -1;
-                const auto present = [this, &lastPresented](qsizetype count) {
+                // Progress is cumulative across roots so the count never jumps backwards.
+                const auto present = [this, &lastPresented, candidateOffset](qsizetype count) {
                     if (count == lastPresented) return;
                     lastPresented = count;
-                    QMetaObject::invokeMethod(this, [this, count] { emit progressChanged(count); }, Qt::QueuedConnection);
+                    QMetaObject::invokeMethod(this, [this, total = candidateOffset + count] {
+                        emit progressChanged(total);
+                    }, Qt::QueuedConnection);
                 };
                 result = scanner->scan(request,
                     [&](const QList<LocalFileObservation> &batch, QString &consumerError) {
@@ -134,16 +173,5 @@ void LocalLibraryScanCoordinator::execute(const LocalLibraryScanRequest &request
         else if (scanSucceeded || stopRequested_.load()) logger_->warning(LogCategory::LocalLibrary, message);
         else logger_->error(LogCategory::LocalLibrary, message);
     }
-    QMetaObject::invokeMethod(this, [this, scanSucceeded, rootPath = request.rootPath,
-                                     candidateFiles, error = std::move(error)] {
-        // Join before accepting another start, even if the queued callback runs
-        // just before QThread has finished unwinding its worker function.
-        releaseThread();
-        executionActive_ = false;
-        if (scanSucceeded) {
-            emit completed(candidateFiles);
-            emit succeeded(rootPath, candidateFiles);
-        }
-        else emit failed(error);
-    }, Qt::QueuedConnection);
+    return scanSucceeded;
 }

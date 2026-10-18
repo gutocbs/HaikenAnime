@@ -2,12 +2,12 @@ INSERT INTO user_preferences (
     id, score_minimum, score_maximum, score_step, cover_quality,
     synchronization_enabled, synchronization_interval_ms, library_root, scan_extensions, home_sort_key,
     card_status_presentation, language_key, preferred_title_key, include_adult_content, automatic_local_file_recognition, enabled_user_lists,
-    last_anilist_user_id
+    last_anilist_user_id, library_roots
 ) VALUES (
     1, :score_minimum, :score_maximum, :score_step, :cover_quality,
     :synchronization_enabled, :synchronization_interval_ms, :library_root, :scan_extensions, :home_sort_key,
     :card_status_presentation, :language_key, :preferred_title_key, :include_adult_content, :automatic_local_file_recognition, :enabled_user_lists,
-    :last_anilist_user_id
+    :last_anilist_user_id, :library_roots
 )
 ON CONFLICT(id) DO UPDATE SET
     score_minimum = excluded.score_minimum,
@@ -25,4 +25,5 @@ ON CONFLICT(id) DO UPDATE SET
     include_adult_content = excluded.include_adult_content,
     automatic_local_file_recognition = excluded.automatic_local_file_recognition,
     enabled_user_lists = excluded.enabled_user_lists,
-    last_anilist_user_id = excluded.last_anilist_user_id
+    last_anilist_user_id = excluded.last_anilist_user_id,
+    library_roots = excluded.library_roots

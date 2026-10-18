@@ -43,7 +43,7 @@ class SettingsController final : public QObject {
     Q_PROPERTY(bool saving READ saving NOTIFY changed)
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY changed)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY changed)
-    Q_PROPERTY(QString libraryRoot READ libraryRoot NOTIFY changed)
+    Q_PROPERTY(QStringList libraryRoots READ libraryRoots NOTIFY changed)
     Q_PROPERTY(QStringList availableScanExtensions READ availableScanExtensions NOTIFY changed)
     Q_PROPERTY(QStringList selectedScanExtensions READ selectedScanExtensions NOTIFY changed)
     Q_PROPERTY(bool scanRunning READ scanRunning NOTIFY scanChanged)
@@ -93,7 +93,7 @@ public:
     bool saving() const;
     QString statusMessage() const;
     QString errorMessage() const;
-    QString libraryRoot() const;
+    QStringList libraryRoots() const;
     QStringList availableScanExtensions() const;
     QStringList selectedScanExtensions() const;
     bool scanRunning() const;
@@ -135,7 +135,9 @@ public:
     Q_INVOKABLE void SetUserListEnabled(const QString &key, bool enabled);
     Q_INVOKABLE void Save();
     Q_INVOKABLE void Discard();
-    Q_INVOKABLE void SetLibraryRoot(const QString &root);
+    Q_INVOKABLE void AddLibraryRoot(const QString &root);
+    Q_INVOKABLE void SetLibraryRoot(int index, const QString &root);
+    Q_INVOKABLE void RemoveLibraryRoot(int index);
     Q_INVOKABLE void SetScanExtensionEnabled(const QString &extension, bool enabled);
     Q_INVOKABLE void ScanNow();
     Q_INVOKABLE void SynchronizeNow();

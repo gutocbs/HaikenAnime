@@ -27,6 +27,10 @@ public:
     // until this coordinator has joined its worker during destruction.
     void setLogger(AsyncLogger *logger);
     bool start(const LocalLibraryScanRequest &request);
+    // Scans each root in order on one worker. started fires as each root begins; after the
+    // worker is joined, succeeded fires per successful root and a single completed (total
+    // candidates) or failed (every root error) closes the whole run.
+    bool startAll(const QList<LocalLibraryScanRequest> &requests);
     void shutdown();
 signals:
     void started(QString rootPath);
@@ -35,7 +39,9 @@ signals:
     void succeeded(QString rootPath, qsizetype candidateFiles);
     void failed(QString error);
 private:
-    void execute(const LocalLibraryScanRequest &request);
+    void execute(const QList<LocalLibraryScanRequest> &requests);
+    bool executeRoot(const LocalLibraryScanRequest &request, qsizetype candidateOffset,
+                     qsizetype &candidateFiles, QString &error);
     void releaseThread();
     ScannerFactory scannerFactory_;
     RepositoryFactory repositoryFactory_;

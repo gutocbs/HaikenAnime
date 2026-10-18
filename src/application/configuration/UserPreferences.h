@@ -20,7 +20,8 @@ struct UserPreferences final {
     QString languageKey = DefaultLanguageKey();
     QString preferredTitleKey = DefaultPreferredTitleKey();
     bool includeAdultContent = false;
-    QString libraryRoot = QStringLiteral("Q:\\");
+    /** Folders scanned for local files; each one is scanned and recognized independently. */
+    QStringList libraryRoots = {QStringLiteral("Q:\\")};
     QStringList scanExtensions = {QStringLiteral(".mkv"), QStringLiteral(".mp4"),
                                   QStringLiteral(".avi"), QStringLiteral(".webm"),
                                   QStringLiteral(".m4v"), QStringLiteral(".mov"),
@@ -45,7 +46,7 @@ inline bool operator==(const UserPreferences &left, const UserPreferences &right
         && left.languageKey == right.languageKey
         && left.preferredTitleKey == right.preferredTitleKey
         && left.includeAdultContent == right.includeAdultContent
-        && left.libraryRoot == right.libraryRoot
+        && left.libraryRoots == right.libraryRoots
         && left.scanExtensions == right.scanExtensions
         && left.automaticLocalFileRecognition == right.automaticLocalFileRecognition
         && left.enabledUserLists == right.enabledUserLists

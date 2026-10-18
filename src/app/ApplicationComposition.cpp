@@ -452,12 +452,11 @@ bool scheduleStartupLibraryScan(ApplicationContext &context, QObject *lifetime) 
     if (!lifetime || !context.localLibraryScan || context.startupLibraryScanScheduled
         || !context.userPreferences.automaticLocalFileRecognition) return false;
     context.startupLibraryScanScheduled = true;
-    LocalLibraryScanRequest request;
-    request.rootPath = context.userPreferences.libraryRoot;
-    request.allowedExtensions = context.userPreferences.scanExtensions;
+    const auto requests = BuildLocalLibraryScanRequests(context.userPreferences.libraryRoots,
+                                                        context.userPreferences.scanExtensions);
     const QPointer<LocalLibraryScanCoordinator> coordinator(context.localLibraryScan.get());
-    QTimer::singleShot(0, lifetime, [coordinator, request] {
-        if (coordinator) coordinator->start(request);
+    QTimer::singleShot(0, lifetime, [coordinator, requests] {
+        if (coordinator) coordinator->startAll(requests);
     });
     return true;
 }

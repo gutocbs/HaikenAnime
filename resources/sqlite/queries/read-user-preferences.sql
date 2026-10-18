@@ -13,6 +13,7 @@ SELECT score_minimum,
        include_adult_content,
        automatic_local_file_recognition,
        enabled_user_lists,
-       last_anilist_user_id
+       last_anilist_user_id,
+       library_roots
 FROM user_preferences
 WHERE id = 1

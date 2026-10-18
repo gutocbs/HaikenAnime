@@ -43,7 +43,7 @@ ColumnLayout {
         Layout.fillWidth: true
     }
 
-    TextField {
+    AppTextField {
         visible: fieldRoot.field.type === "text"
         Layout.fillWidth: true
         text: fieldRoot.field.type === "text" ? (fieldRoot.field.value || "") : ""
@@ -51,7 +51,7 @@ ColumnLayout {
         Accessible.name: fieldRoot.field.label
     }
 
-    SpinBox {
+    AppSpinBox {
         visible: fieldRoot.field.type === "number"
         from: fieldRoot.field.minimum || 0
         to: fieldRoot.field.maximum || 1000000
@@ -61,7 +61,7 @@ ColumnLayout {
         Accessible.name: fieldRoot.field.label
     }
 
-    ComboBox {
+    AppComboBox {
         visible: fieldRoot.field.type === "selection"
         Layout.fillWidth: true
         model: fieldRoot.field.options || []
@@ -78,7 +78,7 @@ ColumnLayout {
         spacing: 8
 
         // Secrets are write-only: the stored value is never shown, only whether one exists.
-        TextField {
+        AppTextField {
             id: secretInput
             Layout.fillWidth: true
             echoMode: TextInput.Password

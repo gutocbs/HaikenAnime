@@ -16,7 +16,7 @@ class TestSettingsController final : public QObject {
     Q_PROPERTY(bool valid READ valid CONSTANT)
     Q_PROPERTY(bool saving READ saving CONSTANT)
     Q_PROPERTY(bool scanRunning READ scanRunning CONSTANT)
-    Q_PROPERTY(QString libraryRoot READ libraryRoot CONSTANT)
+    Q_PROPERTY(QStringList libraryRoots READ libraryRoots CONSTANT)
     Q_PROPERTY(QStringList availableScanExtensions READ availableScanExtensions CONSTANT)
     Q_PROPERTY(QStringList selectedScanExtensions READ selectedScanExtensions NOTIFY changed)
     Q_PROPERTY(QString scanStatusMessage READ scanStatusMessage CONSTANT)
@@ -31,7 +31,7 @@ public:
     bool valid() const { return true; }
     bool saving() const { return false; }
     bool scanRunning() const { return false; }
-    QString libraryRoot() const { return {}; }
+    QStringList libraryRoots() const { return {}; }
     QStringList availableScanExtensions() const {
         return {QStringLiteral(".mkv"), QStringLiteral(".mp4"), QStringLiteral(".avi"),
                 QStringLiteral(".webm"), QStringLiteral(".mov")};
@@ -98,6 +98,8 @@ private slots:
     void localCacheCleanupStaysInLibrarySettingsAndUsesControllerState();
     void implicitSignalParametersAreDeclared();
     void nativeButtonsAreNotUsed();
+    void nativeInputsAreNotUsed();
+    void settingsListsEveryLibraryFolder();
     void appButtonVariantsExist();
     void syncProgressBarUsesAniListColor();
     void mainWindowStartsMaximized();
@@ -183,6 +185,44 @@ void QmlStructureTests::nativeButtonsAreNotUsed() {
     }
     QVERIFY2(violations.isEmpty(), qPrintable(QStringLiteral("Native buttons still in use: ")
                                               + violations.join(QStringLiteral(", "))));
+}
+
+void QmlStructureTests::nativeInputsAreNotUsed() {
+    // Unqualified controls resolve to the Windows style; only Basic.* or App* controls are styled.
+    const QRegularExpression nativeInput(QStringLiteral(R"((?:^|[^\w.])(?:TextField|SpinBox|ComboBox)\s*\{)"),
+                                         QRegularExpression::MultilineOption);
+    QStringList violations;
+    for (const QString &fileName : {QStringLiteral("SettingsScreen.qml"), QStringLiteral("PluginSettingField.qml"),
+                                    QStringLiteral("SeasonalCatalogScreen.qml")}) {
+        const QString source = qmlSource(fileName);
+        QVERIFY2(!source.isEmpty(), qPrintable(fileName));
+        QRegularExpressionMatchIterator matches = nativeInput.globalMatch(source);
+        while (matches.hasNext()) {
+            const qsizetype line = source.left(matches.next().capturedStart()).count(QLatin1Char('\n')) + 1;
+            violations << QStringLiteral("%1:%2").arg(fileName).arg(line);
+        }
+    }
+    QVERIFY2(violations.isEmpty(), qPrintable(QStringLiteral("Native inputs still in use: ")
+                                              + violations.join(QStringLiteral(", "))));
+    const QString cmakeSource = [] {
+        QFile file(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/CMakeLists.txt"));
+        return file.open(QIODevice::ReadOnly | QIODevice::Text) ? QString::fromUtf8(file.readAll()) : QString();
+    }();
+    for (const QString &fileName : {QStringLiteral("AppTextField.qml"), QStringLiteral("AppSpinBox.qml"),
+                                    QStringLiteral("AppComboBox.qml")}) {
+        QVERIFY2(!qmlSource(fileName).isEmpty(), qPrintable(fileName));
+        QVERIFY2(cmakeSource.contains(QStringLiteral("resources/qml/") + fileName), qPrintable(fileName));
+    }
+}
+
+void QmlStructureTests::settingsListsEveryLibraryFolder() {
+    const QString source = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    QVERIFY(source.contains(QStringLiteral("readonly property int libraryFolderCount: controller.libraryRoots.length")));
+    QVERIFY(source.contains(QStringLiteral("model: settingsScreen.libraryFolderCount")));
+    QVERIFY(source.contains(QStringLiteral("controller.AddLibraryRoot(folder)")));
+    QVERIFY(source.contains(QStringLiteral("controller.RemoveLibraryRoot(folderField.index)")));
+    QVERIFY(source.contains(QStringLiteral("controller.SetLibraryRoot(folderField.index, text)")));
+    QVERIFY(!source.contains(QStringLiteral("PASTA PRINCIPAL DA BIBLIOTECA")));
 }
 
 void QmlStructureTests::appButtonVariantsExist() {

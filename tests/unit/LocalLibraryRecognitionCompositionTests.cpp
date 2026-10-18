@@ -91,7 +91,7 @@ void LocalLibraryRecognitionCompositionTests::successfulStartupScanStartsRecogni
     writeFile(root.filePath(QStringLiteral("[Group] Example - 01.mkv")));
     auto context = createApplicationContext(optionsFor(directory));
     QVERIFY2(context.isReady(), qPrintable(context.initializationError));
-    context.userPreferences.libraryRoot = root.path();
+    context.userPreferences.libraryRoots = {root.path()};
     context.userPreferences.scanExtensions = {QStringLiteral(".mkv")};
     QObject lifetime;
     QSignalSpy recognitionCompleted(context.localLibraryRecognition.get(),
@@ -131,7 +131,7 @@ void LocalLibraryRecognitionCompositionTests::scanRecognitionPersistsAssociation
     QVERIFY(media.exec(QStringLiteral(
         "INSERT INTO media (id, name, alternative_names, type, status) "
         "VALUES (42, 'Example', '[]', 0, 0)")));
-    context.userPreferences.libraryRoot = root.path();
+    context.userPreferences.libraryRoots = {root.path()};
     context.userPreferences.scanExtensions = {QStringLiteral(".mkv")};
     QObject lifetime;
     QSignalSpy recognitionCompleted(context.localLibraryRecognition.get(),

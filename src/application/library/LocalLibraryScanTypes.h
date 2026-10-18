@@ -2,6 +2,7 @@
 #define HAIKENANIME_LOCALLIBRARYSCANTYPES_H
 
 #include <QString>
+#include <QList>
 #include <QStringList>
 
 struct LocalLibraryScanRequest final {
@@ -12,6 +13,19 @@ struct LocalLibraryScanRequest final {
     qsizetype batchSize = 200;
     int batchPauseMs = 25;
 };
+
+// One request per configured library folder, all sharing the same extension filter.
+inline QList<LocalLibraryScanRequest> BuildLocalLibraryScanRequests(const QStringList &rootPaths,
+                                                                    const QStringList &allowedExtensions) {
+    QList<LocalLibraryScanRequest> requests;
+    for (const auto &rootPath : rootPaths) {
+        LocalLibraryScanRequest request;
+        request.rootPath = rootPath;
+        request.allowedExtensions = allowedExtensions;
+        requests.append(request);
+    }
+    return requests;
+}
 
 struct LocalLibraryScanProgress final {
     qsizetype visitedEntries = 0;

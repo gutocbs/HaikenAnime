@@ -336,7 +336,7 @@ void JsonSettingsReaderTests::readsScannerPreferences() {
     Settings settings;
     QString error;
     QVERIFY2(reader.read(settings, error), qPrintable(error));
-    QCOMPARE(settings.userPreferences.libraryRoot, QStringLiteral("R:\\Anime"));
+    QCOMPARE(settings.userPreferences.libraryRoots, QStringList{QStringLiteral("R:\\Anime")});
     QCOMPARE(settings.userPreferences.scanExtensions, QStringList({".mkv", ".mp4", ".avi"}));
     QVERIFY(error.isEmpty());
 }
@@ -364,7 +364,7 @@ void JsonSettingsReaderTests::usesScannerDefaultsForMissingSections() {
     Settings settings;
     QString error;
     QVERIFY2(reader.read(settings, error), qPrintable(error));
-    QCOMPARE(settings.userPreferences.libraryRoot, QStringLiteral("Q:\\"));
+    QCOMPARE(settings.userPreferences.libraryRoots, QStringList{QStringLiteral("Q:\\")});
     QCOMPARE(settings.userPreferences.scanExtensions, QStringList({".mkv", ".mp4", ".avi", ".webm",
                                                                  ".m4v", ".mov", ".wmv", ".ts"}));
 }
@@ -381,7 +381,7 @@ void JsonSettingsReaderTests::readsPackagedScannerDefaults() {
     Settings settings;
     QString error;
     QVERIFY2(reader.read(settings, error), qPrintable(error));
-    QCOMPARE(settings.userPreferences.libraryRoot, QStringLiteral("Q:\\"));
+    QCOMPARE(settings.userPreferences.libraryRoots, QStringList{QStringLiteral("Q:\\")});
     QCOMPARE(settings.userPreferences.scanExtensions, QStringList({".mkv", ".mp4", ".avi", ".webm",
                                                                  ".m4v", ".mov", ".wmv", ".ts"}));
 }

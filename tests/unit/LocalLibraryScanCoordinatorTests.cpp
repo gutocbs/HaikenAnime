@@ -141,6 +141,8 @@ private slots:
     void logsZeroResultAsWarning();
     void logsEnumerationAndRepositoryErrors();
     void logsInterruptedShutdown();
+    void scansEveryRootAndReportsTotals();
+    void failingRootDoesNotStopTheOthers();
 };
 
 void LocalLibraryScanCoordinatorTests::successfulLifecycleOwnsDependenciesOnLowPriorityWorker() {
@@ -508,6 +510,46 @@ void LocalLibraryScanCoordinatorTests::logsInterruptedShutdown() {
     QVERIFY(entries.contains(QStringLiteral("[WARN] [LocalLibrary] Local library scan completed: outcome=interrupted, elapsedMs=")));
     QVERIFY(entries.contains(QStringLiteral("candidateFiles=0, error=interrupted")));
     QVERIFY(entries.contains(QStringLiteral("skippedFiles=0")));
+}
+
+void LocalLibraryScanCoordinatorTests::scansEveryRootAndReportsTotals() {
+    State state;
+    LocalLibraryScanCoordinator coordinator(scannerFactory(state, success()), repositoryFactory(state));
+    QSignalSpy started(&coordinator, &LocalLibraryScanCoordinator::started);
+    QSignalSpy succeeded(&coordinator, &LocalLibraryScanCoordinator::succeeded);
+    QSignalSpy completed(&coordinator, &LocalLibraryScanCoordinator::completed);
+    QSignalSpy failed(&coordinator, &LocalLibraryScanCoordinator::failed);
+    QVERIFY(coordinator.startAll(BuildLocalLibraryScanRequests(
+        {QStringLiteral("Q:/"), QStringLiteral("R:/")}, {QStringLiteral(".mkv")})));
+    QTRY_COMPARE_WITH_TIMEOUT(completed.count(), 1, 3000);
+    coordinator.shutdown();
+    QCOMPARE(state.beginCalls, 2);
+    QCOMPARE(state.completeCalls, 2);
+    QCOMPARE(started.count(), 2);
+    QCOMPARE(started.at(1).first().toString(), QStringLiteral("R:/"));
+    QCOMPARE(succeeded.count(), 2);
+    QCOMPARE(succeeded.at(0).first().toString(), QStringLiteral("Q:/"));
+    QCOMPARE(succeeded.at(1).first().toString(), QStringLiteral("R:/"));
+    QCOMPARE(completed.first().first().toLongLong(), 6);
+    QCOMPARE(failed.count(), 0);
+    QVERIFY(!coordinator.startAll({}));
+}
+
+void LocalLibraryScanCoordinatorTests::failingRootDoesNotStopTheOthers() {
+    State state;
+    state.onBegin = [&state] { state.beginFails = state.root == QStringLiteral("Q:/"); };
+    LocalLibraryScanCoordinator coordinator(scannerFactory(state, success()), repositoryFactory(state));
+    QSignalSpy succeeded(&coordinator, &LocalLibraryScanCoordinator::succeeded);
+    QSignalSpy completed(&coordinator, &LocalLibraryScanCoordinator::completed);
+    QSignalSpy failed(&coordinator, &LocalLibraryScanCoordinator::failed);
+    QVERIFY(coordinator.startAll(BuildLocalLibraryScanRequests(
+        {QStringLiteral("Q:/"), QStringLiteral("R:/")}, {QStringLiteral(".mkv")})));
+    QTRY_COMPARE_WITH_TIMEOUT(failed.count(), 1, 3000);
+    coordinator.shutdown();
+    QCOMPARE(completed.count(), 0);
+    QCOMPARE(succeeded.count(), 1);
+    QCOMPARE(succeeded.first().first().toString(), QStringLiteral("R:/"));
+    QVERIFY(failed.first().first().toString().startsWith(QStringLiteral("Q:/: begin rejected")));
 }
 
 QTEST_GUILESS_MAIN(LocalLibraryScanCoordinatorTests)

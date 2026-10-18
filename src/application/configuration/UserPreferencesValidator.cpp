@@ -4,6 +4,48 @@
 
 #include <cmath>
 
+namespace {
+// Case-insensitive, separator-agnostic form used only for comparisons between roots.
+QString ComparableLibraryRoot(const QString &root) {
+    auto value = root.trimmed().replace(QLatin1Char('\\'), QLatin1Char('/')).toCaseFolded();
+    while (value.size() > 1 && value.endsWith(QLatin1Char('/'))) value.chop(1);
+    return value;
+}
+}
+
+bool ValidateLibraryRoots(const QStringList &roots, QString &error) {
+    error.clear();
+    if (roots.isEmpty()) {
+        error = QStringLiteral("At least one library folder must be configured.");
+        return false;
+    }
+    QStringList comparable;
+    for (const auto &root : roots) {
+        if (root.trimmed().isEmpty()) {
+            error = QStringLiteral("Library folders must not be empty.");
+            return false;
+        }
+        comparable.append(ComparableLibraryRoot(root));
+    }
+    for (qsizetype left = 0; left < comparable.size(); ++left) {
+        for (qsizetype right = 0; right < comparable.size(); ++right) {
+            if (left == right) continue;
+            if (comparable[left] == comparable[right]) {
+                error = QStringLiteral("Library folders must not contain duplicates.");
+                return false;
+            }
+            // A nested folder would be scanned twice, recording the same files under two roots.
+            const auto parent = comparable[left].endsWith(QLatin1Char('/'))
+                                    ? comparable[left] : comparable[left] + QLatin1Char('/');
+            if (comparable[right].startsWith(parent)) {
+                error = QStringLiteral("Library folders must not be nested inside each other.");
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 QStringList NormalizeScanExtensions(const QStringList &extensions, QString &error) {
     error.clear();
     if (extensions.isEmpty()) {
@@ -80,8 +122,9 @@ UserPreferencesValidationResult ValidateUserPreferences(const UserPreferences &p
         || preferences.synchronizationIntervalMs > MaximumSynchronizationIntervalMs) {
         return {false, QStringLiteral("Synchronization interval is outside the supported range.")};
     }
-    if (preferences.libraryRoot.trimmed().isEmpty()) {
-        return {false, QStringLiteral("Library root must not be empty.")};
+    QString libraryRootError;
+    if (!ValidateLibraryRoots(preferences.libraryRoots, libraryRootError)) {
+        return {false, libraryRootError};
     }
     QString extensionError;
     if (NormalizeScanExtensions(preferences.scanExtensions, extensionError).isEmpty()) {

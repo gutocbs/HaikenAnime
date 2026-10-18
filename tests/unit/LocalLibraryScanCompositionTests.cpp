@@ -73,7 +73,7 @@ void LocalLibraryScanCompositionTests::persistedPreferencesOverrideDefaultsAfter
         QVERIFY2(context.isReady(), qPrintable(context.initializationError));
         QVERIFY(context.userPreferencesRepository);
         auto preferences = context.userPreferences;
-        preferences.libraryRoot = directory.path();
+        preferences.libraryRoots = {directory.path()};
         preferences.scanExtensions = {".webm"};
         preferences.homeSortKey = QStringLiteral("title_desc");
         preferences.preferredTitleKey = QStringLiteral("english");
@@ -82,7 +82,7 @@ void LocalLibraryScanCompositionTests::persistedPreferencesOverrideDefaultsAfter
     }
     auto restarted = createApplicationContext(options);
     QVERIFY(restarted.isReady());
-    QCOMPARE(restarted.userPreferences.libraryRoot, directory.path());
+    QCOMPARE(restarted.userPreferences.libraryRoots, QStringList{directory.path()});
     QCOMPARE(restarted.userPreferences.scanExtensions, QStringList({".webm"}));
     QCOMPARE(restarted.userPreferences.homeSortKey, QStringLiteral("title_desc"));
     QCOMPARE(restarted.userPreferences.preferredTitleKey, QStringLiteral("english"));
@@ -126,7 +126,7 @@ void LocalLibraryScanCompositionTests::restartPreservesExternalHomeSortForContro
         auto context = createApplicationContext(options);
         QVERIFY2(context.isReady(), qPrintable(context.initializationError));
         auto preferences = context.userPreferences;
-        preferences.libraryRoot = directory.path();
+        preferences.libraryRoots = {directory.path()};
         preferences.scanExtensions = {QStringLiteral(".webm")};
         preferences.homeSortKey = QStringLiteral("remote_rank");
         QString error;
@@ -135,7 +135,7 @@ void LocalLibraryScanCompositionTests::restartPreservesExternalHomeSortForContro
 
     auto restarted = createApplicationContext(options);
     QVERIFY2(restarted.isReady(), qPrintable(restarted.initializationError));
-    QCOMPARE(restarted.userPreferences.libraryRoot, directory.path());
+    QCOMPARE(restarted.userPreferences.libraryRoots, QStringList{directory.path()});
     QCOMPARE(restarted.userPreferences.scanExtensions, QStringList({QStringLiteral(".webm")}));
     QCOMPARE(restarted.userPreferences.homeSortKey, QStringLiteral("remote_rank"));
 
@@ -159,11 +159,11 @@ void LocalLibraryScanCompositionTests::startupUsesPersistedSnapshotAndSchedulesO
     writeFile(directory.filePath("excluded.mkv"));
     auto context = createApplicationContext(optionsFor(directory));
     QVERIFY(context.localLibraryScan);
-    context.userPreferences.libraryRoot = directory.path();
+    context.userPreferences.libraryRoots = {directory.path()};
     context.userPreferences.scanExtensions = {".webm"};
     SettingsController controller(context.userPreferencesRepository.get(), context.userPreferences);
     controller.SetScanCoordinator(context.localLibraryScan.get());
-    controller.SetLibraryRoot(directory.filePath("unsaved"));
+    controller.SetLibraryRoot(0, directory.filePath("unsaved"));
     QVERIFY(controller.dirty());
     QSignalSpy started(context.localLibraryScan.get(), &LocalLibraryScanCoordinator::started);
     QSignalSpy completed(context.localLibraryScan.get(), &LocalLibraryScanCoordinator::completed);
@@ -196,13 +196,13 @@ void LocalLibraryScanCompositionTests::manualRootChangeRetainsOldInventory() {
     writeFile(newRoot.filePath("new.mkv"));
     auto context = createApplicationContext(optionsFor(directory));
     QVERIFY(context.localLibraryScan);
-    context.userPreferences.libraryRoot = oldRoot.path();
+    context.userPreferences.libraryRoots = {oldRoot.path()};
     SettingsController controller(context.userPreferencesRepository.get(), context.userPreferences);
     controller.SetScanCoordinator(context.localLibraryScan.get());
     QSignalSpy completed(context.localLibraryScan.get(), &LocalLibraryScanCoordinator::completed);
     QVERIFY(scheduleStartupLibraryScan(context, &controller));
     QTRY_COMPARE(completed.count(), 1);
-    controller.SetLibraryRoot(newRoot.path());
+    controller.SetLibraryRoot(0, newRoot.path());
     controller.Save();
     QVERIFY(!controller.dirty());
     controller.ScanNow();
@@ -319,7 +319,7 @@ void LocalLibraryScanCompositionTests::workerProductsReleaseConnectionsAndShutdo
         auto context = createApplicationContext(optionsFor(directory));
         QVERIFY(context.localLibraryScan);
         const auto uiConnections = QSqlDatabase::connectionNames();
-        context.userPreferences.libraryRoot = root.path();
+        context.userPreferences.libraryRoots = {root.path()};
         QObject lifetime;
         QSignalSpy started(context.localLibraryScan.get(), &LocalLibraryScanCoordinator::started);
         QVERIFY(scheduleStartupLibraryScan(context, &lifetime));

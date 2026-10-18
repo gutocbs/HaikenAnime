@@ -391,7 +391,16 @@ bool SqliteDatabase::migrate() {
         query, QStringLiteral(":/sqlite/migrations/025-create-recognition-history.sql"), lastError_);
     const bool recognitionHistoryVersionInserted = recognitionHistoryReady && ExecuteMigrationScript(
         query, QStringLiteral(":/sqlite/migrations/025-mark-recognition-history-applied.sql"), lastError_);
-    const bool versionQueried = recognitionHistoryVersionInserted && ExecuteMigrationScript(
+    bool libraryRootsExists = false;
+    if (recognitionHistoryVersionInserted && ExecuteMigrationScript(
+            query, QStringLiteral(":/sqlite/migrations/000-inspect-user-preference-columns.sql"), lastError_)) {
+        while (query.next()) libraryRootsExists |= query.value(1).toString() == QStringLiteral("library_roots");
+    }
+    const bool libraryRootsReady = recognitionHistoryVersionInserted && (libraryRootsExists
+        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/026-add-library-roots-preference.sql"), lastError_));
+    const bool libraryRootsVersionInserted = libraryRootsReady && ExecuteMigrationScript(
+        query, QStringLiteral(":/sqlite/migrations/026-mark-library-roots-preference-applied.sql"), lastError_);
+    const bool versionQueried = libraryRootsVersionInserted && ExecuteMigrationScript(
         query, QStringLiteral(":/sqlite/migrations/000-inspect-applied-schema-versions.sql"), lastError_);
     const bool legacyVersionsRecorded = versionQueried && query.next() && query.value(0).toBool()
         && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
@@ -402,9 +411,9 @@ bool SqliteDatabase::migrate() {
         && query.value(16).toBool() && query.value(17).toBool()
         && query.value(18).toBool() && query.value(19).toBool()
         && query.value(20).toBool() && query.value(21).toBool() && query.value(22).toBool()
-        && query.value(23).toBool() && query.value(24).toBool();
-    const bool versionRecorded = recognitionHistoryVersionInserted && legacyVersionsRecorded
-        && query.exec(QStringLiteral("SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 25)"))
+        && query.value(23).toBool() && query.value(24).toBool() && query.value(25).toBool();
+    const bool versionRecorded = libraryRootsVersionInserted && legacyVersionsRecorded
+        && query.exec(QStringLiteral("SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 26)"))
         && query.next() && query.value(0).toBool();
 
     if (versionRecorded) {

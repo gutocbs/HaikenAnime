@@ -192,7 +192,24 @@ bool JsonSettingsReader::read(Settings &settings, QString &error) {
             error = QStringLiteral("Settings.json library root must be a string.");
             return false;
         }
-        settings.userPreferences.libraryRoot = libraryRoot.toString();
+        settings.userPreferences.libraryRoots = {libraryRoot.toString()};
+    }
+    // "roots" supersedes the legacy single "root" when both are present.
+    const auto libraryRoots = libraryPreferences.value(QStringLiteral("roots"));
+    if (!libraryRoots.isUndefined()) {
+        if (!libraryRoots.isArray() || libraryRoots.toArray().isEmpty()) {
+            error = QStringLiteral("Settings.json library roots must be a non-empty array of strings.");
+            return false;
+        }
+        QStringList roots;
+        for (const auto &root : libraryRoots.toArray()) {
+            if (!root.isString()) {
+                error = QStringLiteral("Settings.json library roots must be a non-empty array of strings.");
+                return false;
+            }
+            roots.append(root.toString());
+        }
+        settings.userPreferences.libraryRoots = roots;
     }
     const auto scanExtensions = libraryPreferences.value(QStringLiteral("extensions"));
     if (!scanExtensions.isUndefined()) {

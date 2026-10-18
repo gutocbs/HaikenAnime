@@ -23,4 +23,5 @@ SELECT
     EXISTS(SELECT 1 FROM schema_version WHERE version = 22),
     EXISTS(SELECT 1 FROM schema_version WHERE version = 23),
     EXISTS(SELECT 1 FROM schema_version WHERE version = 24),
-    EXISTS(SELECT 1 FROM schema_version WHERE version = 25);
+    EXISTS(SELECT 1 FROM schema_version WHERE version = 25),
+    EXISTS(SELECT 1 FROM schema_version WHERE version = 26);

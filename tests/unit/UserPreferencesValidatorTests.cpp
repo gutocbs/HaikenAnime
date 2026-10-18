@@ -19,6 +19,9 @@ private slots:
     void rejectsUnsupportedLanguage();
     void rejectsUnsupportedPreferredTitle();
     void rejectsEmptyLibraryRoot();
+    void acceptsMultipleIndependentLibraryRoots();
+    void rejectsDuplicateNestedOrMissingLibraryRoots_data();
+    void rejectsDuplicateNestedOrMissingLibraryRoots();
     void comparesScannerPreferences();
     void validatesEnabledUserLists();
 };
@@ -75,7 +78,7 @@ void UserPreferencesValidatorTests::rejectsInvalidPreferences() {
 
 void UserPreferencesValidatorTests::usesExactScannerDefaults() {
     const UserPreferences preferences;
-    QCOMPARE(preferences.libraryRoot, QStringLiteral("Q:\\"));
+    QCOMPARE(preferences.libraryRoots, QStringList{QStringLiteral("Q:\\")});
     QCOMPARE(preferences.scanExtensions, QStringList({".mkv", ".mp4", ".avi", ".webm",
                                                     ".m4v", ".mov", ".wmv", ".ts"}));
     QVERIFY(ValidateUserPreferences(preferences).valid);
@@ -158,17 +161,44 @@ void UserPreferencesValidatorTests::rejectsUnsupportedPreferredTitle() {
 void UserPreferencesValidatorTests::rejectsEmptyLibraryRoot() {
     for (const auto &root : {QString{}, QStringLiteral("   ")}) {
         UserPreferences preferences;
-        preferences.libraryRoot = root;
+        preferences.libraryRoots = {root};
         const auto result = ValidateUserPreferences(preferences);
         QVERIFY(!result.valid);
         QVERIFY(!result.error.isEmpty());
     }
 }
 
+void UserPreferencesValidatorTests::acceptsMultipleIndependentLibraryRoots() {
+    UserPreferences preferences;
+    preferences.libraryRoots = {QStringLiteral("Q:\\"), QStringLiteral("R:\\Anime"),
+                                QStringLiteral("R:\\AnimeExtra")};
+    QVERIFY(ValidateUserPreferences(preferences).valid);
+}
+
+void UserPreferencesValidatorTests::rejectsDuplicateNestedOrMissingLibraryRoots_data() {
+    QTest::addColumn<QStringList>("roots");
+    QTest::newRow("none") << QStringList{};
+    QTest::newRow("blank second") << QStringList{QStringLiteral("Q:\\"), QStringLiteral("  ")};
+    QTest::newRow("duplicate ignoring case and slash")
+        << QStringList{QStringLiteral("R:\\Anime"), QStringLiteral("r:/anime/")};
+    QTest::newRow("nested in drive") << QStringList{QStringLiteral("Q:\\"), QStringLiteral("Q:\\Series")};
+    QTest::newRow("parent after child")
+        << QStringList{QStringLiteral("R:\\Anime\\Movies"), QStringLiteral("R:\\Anime")};
+}
+
+void UserPreferencesValidatorTests::rejectsDuplicateNestedOrMissingLibraryRoots() {
+    QFETCH(QStringList, roots);
+    UserPreferences preferences;
+    preferences.libraryRoots = roots;
+    const auto result = ValidateUserPreferences(preferences);
+    QVERIFY(!result.valid);
+    QVERIFY(!result.error.isEmpty());
+}
+
 void UserPreferencesValidatorTests::comparesScannerPreferences() {
     const UserPreferences defaults;
     UserPreferences changedRoot;
-    changedRoot.libraryRoot = QStringLiteral("R:\\Anime");
+    changedRoot.libraryRoots = {QStringLiteral("R:\\Anime")};
     QVERIFY(!(defaults == changedRoot));
     UserPreferences changedExtensions;
     changedExtensions.scanExtensions = {".mp4"};

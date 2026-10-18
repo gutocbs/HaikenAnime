@@ -43,8 +43,26 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
     loaded.coverQuality = quality.value();
     loaded.synchronizationEnabled = query.value(4).toBool();
     loaded.synchronizationIntervalMs = query.value(5).toInt();
-    loaded.libraryRoot = query.value(6).toString();
     QJsonParseError parseError;
+    // library_roots (JSON array) replaced library_root; an empty array means the row predates it.
+    const auto storedRoots = query.value(16).toString();
+    loaded.libraryRoots = {query.value(6).toString()};
+    if (!storedRoots.isEmpty()) {
+        const auto roots = QJsonDocument::fromJson(storedRoots.toUtf8(), &parseError);
+        if (parseError.error != QJsonParseError::NoError || !roots.isArray()) {
+            error = QStringLiteral("Stored library roots must be a JSON array of strings.");
+            return false;
+        }
+        QStringList values;
+        for (const auto &root : roots.array()) {
+            if (!root.isString()) {
+                error = QStringLiteral("Stored library roots must be strings.");
+                return false;
+            }
+            values.append(root.toString());
+        }
+        if (!values.isEmpty()) loaded.libraryRoots = values;
+    }
     const auto extensions = QJsonDocument::fromJson(query.value(7).toString().toUtf8(), &parseError);
     if (parseError.error != QJsonParseError::NoError || !extensions.isArray()) {
         error = QStringLiteral("Stored scan extensions must be a JSON array of strings.");
@@ -133,7 +151,10 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
     query.bindValue(QStringLiteral(":enabled_user_lists"), QString::fromUtf8(
         QJsonDocument(QJsonArray::fromStringList(preferences.enabledUserLists)).toJson(QJsonDocument::Compact)));
     query.bindValue(QStringLiteral(":last_anilist_user_id"), preferences.lastAniListUserId);
-    query.bindValue(QStringLiteral(":library_root"), preferences.libraryRoot);
+    // library_root keeps the first folder so older builds still read a usable value.
+    query.bindValue(QStringLiteral(":library_root"), preferences.libraryRoots.first());
+    query.bindValue(QStringLiteral(":library_roots"), QString::fromUtf8(
+        QJsonDocument(QJsonArray::fromStringList(preferences.libraryRoots)).toJson(QJsonDocument::Compact)));
     query.bindValue(QStringLiteral(":scan_extensions"), QString::fromUtf8(
         QJsonDocument(QJsonArray::fromStringList(NormalizeScanExtensions(preferences.scanExtensions, error)))
             .toJson(QJsonDocument::Compact)));

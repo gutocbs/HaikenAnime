@@ -12,6 +12,8 @@ private slots:
     void readsMissingAndRoundTripsReplacement();
     void rejectsInvalidPreferencesWithoutChangingStoredRow();
     void scannerPreferencesSurviveReopen();
+    void multipleLibraryRootsSurviveReopenAndLegacyRootIsKept();
+    void legacyRowWithoutLibraryRootsReadsSingleRoot();
     void homeSortKeySurvivesReopen();
     void rejectsMalformedStoredExtensions();
     void preservesExternalStoredHomeSortKey();
@@ -32,7 +34,7 @@ void SqliteUserPreferencesRepositoryTests::scannerPreferencesSurviveReopen() {
     QTemporaryDir directory;
     const auto path = directory.filePath("preferences.sqlite");
     UserPreferences expected;
-    expected.libraryRoot = QStringLiteral("R:\\Anime");
+    expected.libraryRoots = {QStringLiteral("R:\\Anime")};
     expected.scanExtensions = {QStringLiteral(".webm"), QStringLiteral(".mkv")};
     QString error;
     {
@@ -50,12 +52,57 @@ void SqliteUserPreferencesRepositoryTests::scannerPreferencesSurviveReopen() {
     bool found = false;
     QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
     QVERIFY(found);
-    QCOMPARE(loaded.libraryRoot, QStringLiteral("R:\\Anime"));
+    QCOMPARE(loaded.libraryRoots, QStringList{QStringLiteral("R:\\Anime")});
     QCOMPARE(loaded.scanExtensions, QStringList({".webm", ".mkv"}));
     QSqlQuery query(reopened.connection());
     QVERIFY(query.exec("SELECT scan_extensions FROM user_preferences"));
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toString(), QStringLiteral("[\".webm\",\".mkv\"]"));
+}
+
+void SqliteUserPreferencesRepositoryTests::multipleLibraryRootsSurviveReopenAndLegacyRootIsKept() {
+    QTemporaryDir directory;
+    const auto path = directory.filePath("preferences.sqlite");
+    UserPreferences expected;
+    expected.libraryRoots = {QStringLiteral("R:\\Anime"), QStringLiteral("S:\\Movies")};
+    QString error;
+    {
+        SqliteDatabase database(path);
+        QVERIFY(database.open());
+        QVERIFY(database.migrate());
+        auto repository = Repository(database);
+        QVERIFY2(repository.replace(expected, error), qPrintable(error));
+    }
+    SqliteDatabase reopened(path);
+    QVERIFY(reopened.open());
+    QVERIFY(reopened.migrate());
+    auto repository = Repository(reopened);
+    UserPreferences loaded;
+    bool found = false;
+    QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
+    QVERIFY(found);
+    QCOMPARE(loaded.libraryRoots, expected.libraryRoots);
+    QSqlQuery query(reopened.connection());
+    QVERIFY(query.exec("SELECT library_root FROM user_preferences"));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toString(), QStringLiteral("R:\\Anime"));
+}
+
+void SqliteUserPreferencesRepositoryTests::legacyRowWithoutLibraryRootsReadsSingleRoot() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath("preferences.sqlite"));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    auto repository = Repository(database);
+    QString error;
+    QVERIFY2(repository.replace(UserPreferences{}, error), qPrintable(error));
+    // Simulates a row written before library_roots existed: only library_root is meaningful.
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec("UPDATE user_preferences SET library_root = 'R:\\Legacy', library_roots = '[]'"));
+    UserPreferences loaded;
+    bool found = false;
+    QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
+    QCOMPARE(loaded.libraryRoots, QStringList{QStringLiteral("R:\\Legacy")});
 }
 
 void SqliteUserPreferencesRepositoryTests::homeSortKeySurvivesReopen() {

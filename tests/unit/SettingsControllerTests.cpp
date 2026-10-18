@@ -164,6 +164,7 @@ public:
 class SettingsControllerTests final : public QObject {
     Q_OBJECT
 private slots:
+    void addsEditsAndRemovesLibraryFolders();
     void editsSavesAndEmitsCompletePreferences();
     void invalidDraftDoesNotCallRepository();
     void repositoryFailurePreservesDraftAndDoesNotApply();
@@ -262,25 +263,51 @@ void SettingsControllerTests::discardRestoresPersistedSnapshot() {
 void SettingsControllerTests::libraryDraftSavesAndDiscardsAtomically() {
     FakePreferencesRepository repository;
     SettingsController controller(&repository, {});
-    controller.SetLibraryRoot(QStringLiteral("D:\\Anime"));
+    controller.SetLibraryRoot(0, QStringLiteral("D:\\Anime"));
     controller.SetScanExtensionEnabled(QStringLiteral(".avi"), false);
     QVERIFY(controller.dirty());
     QVERIFY(controller.valid());
     controller.Discard();
-    QCOMPARE(controller.libraryRoot(), QStringLiteral("Q:\\"));
+    QCOMPARE(controller.libraryRoots(), QStringList{QStringLiteral("Q:\\")});
     QVERIFY(controller.selectedScanExtensions().contains(QStringLiteral(".avi")));
     QVERIFY(!controller.dirty());
-    controller.SetLibraryRoot(QStringLiteral("D:\\Anime"));
+    controller.SetLibraryRoot(0, QStringLiteral("D:\\Anime"));
     controller.SetScanExtensionEnabled(QStringLiteral(".avi"), false);
     repository.fail = true;
     controller.Save();
     QVERIFY(controller.dirty());
-    QCOMPARE(controller.libraryRoot(), QStringLiteral("D:\\Anime"));
+    QCOMPARE(controller.libraryRoots(), QStringList{QStringLiteral("D:\\Anime")});
     repository.fail = false;
     controller.Save();
-    QCOMPARE(repository.stored.libraryRoot, QStringLiteral("D:\\Anime"));
+    QCOMPARE(repository.stored.libraryRoots, QStringList{QStringLiteral("D:\\Anime")});
     QVERIFY(!repository.stored.scanExtensions.contains(QStringLiteral(".avi")));
     QVERIFY(!controller.dirty());
+}
+
+void SettingsControllerTests::addsEditsAndRemovesLibraryFolders() {
+    FakePreferencesRepository repository;
+    SettingsController controller(&repository, {});
+    controller.RemoveLibraryRoot(0);
+    QCOMPARE(controller.libraryRoots(), QStringList{QStringLiteral("Q:\\")});
+
+    controller.AddLibraryRoot(QStringLiteral("R:\\Anime"));
+    QCOMPARE(controller.libraryRoots(), QStringList({QStringLiteral("Q:\\"), QStringLiteral("R:\\Anime")}));
+    QVERIFY(controller.dirty());
+    QVERIFY(controller.valid());
+
+    controller.SetLibraryRoot(1, QStringLiteral("Q:\\Anime"));
+    QVERIFY(!controller.valid());
+    QVERIFY(!controller.errorMessage().isEmpty());
+    controller.SetLibraryRoot(1, QStringLiteral("S:\\Anime"));
+    QVERIFY(controller.valid());
+    controller.SetLibraryRoot(7, QStringLiteral("T:\\"));
+    QCOMPARE(controller.libraryRoots().size(), 2);
+
+    controller.Save();
+    QCOMPARE(repository.stored.libraryRoots, QStringList({QStringLiteral("Q:\\"), QStringLiteral("S:\\Anime")}));
+    controller.RemoveLibraryRoot(0);
+    QCOMPARE(controller.libraryRoots(), QStringList{QStringLiteral("S:\\Anime")});
+    QVERIFY(controller.dirty());
 }
 
 void SettingsControllerTests::savesAutomaticLocalRecognitionPreference() {
@@ -411,7 +438,7 @@ void SettingsControllerTests::savesEnabledUserListsAndRestoresThemOnDiscard() {
 void SettingsControllerTests::invalidLibraryDraftCannotSave() {
     FakePreferencesRepository repository;
     SettingsController controller(&repository, {});
-    controller.SetLibraryRoot(QStringLiteral("   "));
+    controller.SetLibraryRoot(0, QStringLiteral("   "));
     QVERIFY(!controller.valid());
     controller.Save();
     QCOMPARE(repository.replaceCalls, 0);
@@ -459,7 +486,7 @@ void SettingsControllerTests::scanRejectsDirtyAndUnavailableCoordinator() {
     LocalLibraryScanCoordinator coordinator(scannerFactory(fixture), scanRepositoryFactory());
     controller.SetScanCoordinator(&coordinator);
     QSignalSpy started(&coordinator, &LocalLibraryScanCoordinator::started);
-    controller.SetLibraryRoot(QStringLiteral("D:\\Draft"));
+    controller.SetLibraryRoot(0, QStringLiteral("D:\\Draft"));
     controller.ScanNow();
     QVERIFY(!controller.scanRunning());
     QVERIFY(!controller.scanErrorMessage().isEmpty());
@@ -470,7 +497,7 @@ void SettingsControllerTests::scanRejectsDirtyAndUnavailableCoordinator() {
 void SettingsControllerTests::scanUsesPersistedRequestAndRejectsConcurrentAction() {
     FakePreferencesRepository repository;
     UserPreferences initial;
-    initial.libraryRoot = QStringLiteral("D:\\Saved");
+    initial.libraryRoots = {QStringLiteral("D:\\Saved")};
     initial.scanExtensions = {QStringLiteral(".mp4")};
     auto fixture = std::make_shared<ScanFixture>();
     fixture->hold = true;
@@ -484,7 +511,7 @@ void SettingsControllerTests::scanUsesPersistedRequestAndRejectsConcurrentAction
     QTRY_COMPARE(started.count(), 1);
     controller.ScanNow();
     QVERIFY(!controller.scanErrorMessage().isEmpty());
-    controller.SetLibraryRoot(QStringLiteral("D:\\Unsaved"));
+    controller.SetLibraryRoot(0, QStringLiteral("D:\\Unsaved"));
     fixture->hold = false;
     QTRY_VERIFY(!controller.scanRunning());
     { QMutexLocker lock(&fixture->mutex);
@@ -495,7 +522,7 @@ void SettingsControllerTests::scanUsesPersistedRequestAndRejectsConcurrentAction
     QCOMPARE(controller.scanCandidateCount(), 7);
     QVERIFY(controller.scanErrorMessage().isEmpty());
     controller.Discard();
-    controller.SetLibraryRoot(QStringLiteral("E:\\NewSaved"));
+    controller.SetLibraryRoot(0, QStringLiteral("E:\\NewSaved"));
     controller.Save();
     controller.ScanNow();
     QTRY_COMPARE(started.count(), 2);
@@ -746,7 +773,7 @@ void SettingsControllerTests::clearsLocalCacheWithoutChangingUnsavedDraft() {
     SettingsController controller(&repository, {}, &cleanup);
     QSignalSpy completed(&controller, &SettingsController::cacheCleanupCompleted);
 
-    controller.SetLibraryRoot(QStringLiteral("D:\\Draft"));
+    controller.SetLibraryRoot(0, QStringLiteral("D:\\Draft"));
     controller.ClearLocalCache();
 
     QVERIFY(!controller.cacheCleanupRunning());
@@ -754,7 +781,7 @@ void SettingsControllerTests::clearsLocalCacheWithoutChangingUnsavedDraft() {
     QVERIFY(controller.cacheCleanupErrorMessage().isEmpty());
     QVERIFY(controller.cacheCleanupStatusMessage().contains(QStringLiteral("14")));
     QVERIFY(controller.dirty());
-    QCOMPARE(controller.libraryRoot(), QStringLiteral("D:\\Draft"));
+    QCOMPARE(controller.libraryRoots(), QStringList{QStringLiteral("D:\\Draft")});
 }
 
 void SettingsControllerTests::reportsPartialCleanupAndIgnoresConcurrentRequest() {

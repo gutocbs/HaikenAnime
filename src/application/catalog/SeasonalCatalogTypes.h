@@ -14,9 +14,13 @@ struct SeasonalCatalogCachePolicy final {
     qint64 minimumRequestIntervalMs = 1000;
 };
 
+/** Oldest year offered by the seasonal catalog filter. */
+inline constexpr int kSeasonalCatalogFirstYear = 1990;
+
+/** Years from next year (announced seasons) down to kSeasonalCatalogFirstYear, newest first. */
 inline QVariantList DefaultSeasonalCatalogYearOptions(const int referenceYear = QDate::currentDate().year()) {
     QVariantList options;
-    for (int year = referenceYear + 1; year >= referenceYear - 10; --year) {
+    for (int year = referenceYear + 1; year >= kSeasonalCatalogFirstYear; --year) {
         options.append(QVariantMap{{QStringLiteral("key"), QString::number(year)},
                                    {QStringLiteral("label"), QString::number(year)}});
     }

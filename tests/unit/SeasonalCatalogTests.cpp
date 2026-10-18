@@ -105,6 +105,7 @@ class SeasonalCatalogTests final : public QObject {
     Q_OBJECT
 
 private slots:
+    void yearOptionsSpanFrom1990ThroughNextYear();
     void requestRejectsInvalidYearSeasonAndPagination();
     void requestAndGraphQlVariablesDistinguishAdultContentPolicy();
     void gateDoesNotCallSourceUntilBothFiltersAreValid();
@@ -127,6 +128,14 @@ private slots:
     void graphQlDataSourceRejectsMalformedResponse();
     void seasonalFixturesCoverCompleteEmptyMalformedAndPaginatedPages();
 };
+
+void SeasonalCatalogTests::yearOptionsSpanFrom1990ThroughNextYear() {
+    const auto options = DefaultSeasonalCatalogYearOptions(2026);
+    QCOMPARE(options.size(), 2027 - 1990 + 1);
+    QCOMPARE(options.first().toMap().value(QStringLiteral("key")).toString(), QStringLiteral("2027"));
+    QCOMPARE(options.last().toMap().value(QStringLiteral("key")).toString(), QStringLiteral("1990"));
+    QCOMPARE(options.at(1).toMap().value(QStringLiteral("label")).toString(), QStringLiteral("2026"));
+}
 
 void SeasonalCatalogTests::requestRejectsInvalidYearSeasonAndPagination() {
     QVERIFY(!(SeasonalCatalogRequest{0, QStringLiteral("WINTER"), 1, 50}.isValid()));

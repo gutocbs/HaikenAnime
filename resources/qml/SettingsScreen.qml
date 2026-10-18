@@ -21,6 +21,11 @@ Item {
     readonly property color accentSoft: "#e2ebf6"
     readonly property color danger: "#b42318"
     property string activeSection: "overview"
+    // Integer properties only notify on real changes, so editing a folder path does not
+    // rebuild the folder rows (and drop keyboard focus) on every keystroke.
+    readonly property int libraryFolderCount: controller.libraryRoots.length
+    // -1 appends the folder picked in the dialog; otherwise it replaces that row.
+    property int libraryFolderTargetIndex: -1
 
     readonly property var sections: [
         { key: "overview", label: qsTr("Visão geral"), eyebrow: qsTr("INÍCIO"),
@@ -413,6 +418,76 @@ Item {
         }
     }
 
+    component LibraryFolderField: Rectangle {
+        id: folderField
+        required property int index
+        readonly property string path: controller.libraryRoots[index] || ""
+        Layout.fillWidth: true
+        implicitHeight: 64
+        color: surface
+        radius: 5
+        border.width: folderInput.activeFocus ? 2 : 1
+        border.color: folderInput.activeFocus ? accent : line
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 13
+            anchors.rightMargin: 8
+            spacing: 4
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+                FieldLabel {
+                    text: settingsScreen.libraryFolderCount > 1 ? qsTr("PASTA %1").arg(folderField.index + 1)
+                                                                : qsTr("PASTA DA BIBLIOTECA")
+                    font.pixelSize: 9
+                    font.weight: Font.DemiBold
+                    font.letterSpacing: 0.8
+                }
+                TextInput {
+                    id: folderInput
+                    Layout.fillWidth: true
+                    text: folderField.path
+                    color: ink
+                    selectionColor: accentSoft
+                    selectedTextColor: ink
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
+                    selectByMouse: true
+                    clip: true
+                    activeFocusOnTab: true
+                    Accessible.role: Accessible.EditableText
+                    Accessible.name: qsTr("Pasta da biblioteca %1").arg(folderField.index + 1)
+                    onTextEdited: controller.SetLibraryRoot(folderField.index, text)
+
+                    Text {
+                        visible: folderInput.text.length === 0
+                        text: qsTr("Digite ou selecione uma pasta")
+                        color: muted
+                        font: folderInput.font
+                    }
+                }
+            }
+            AppButton {
+                text: qsTr("Alterar")
+                variant: "flat"
+                Accessible.name: qsTr("Alterar pasta %1").arg(folderField.index + 1)
+                onClicked: {
+                    settingsScreen.libraryFolderTargetIndex = folderField.index
+                    libraryFolderDialog.open()
+                }
+            }
+            AppButton {
+                visible: settingsScreen.libraryFolderCount > 1
+                text: qsTr("Remover")
+                variant: "flat"
+                Accessible.name: qsTr("Remover pasta %1").arg(folderField.index + 1)
+                onClicked: controller.RemoveLibraryRoot(folderField.index)
+            }
+        }
+    }
+
     component SettingSwitch: RowLayout {
         id: settingSwitch
         property string title: ""
@@ -584,19 +659,27 @@ Item {
             spacing: 16
             SectionCard {
                 Label { text: qsTr("Arquivos locais"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
-                FieldLabel { text: qsTr("PASTA PRINCIPAL DA BIBLIOTECA") }
-                TextField {
+                Label { Layout.fillWidth: true; text: qsTr("Todas as pastas são escaneadas e reconhecidas. Uma pasta não pode estar dentro de outra já adicionada."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
+                ColumnLayout {
+                    id: libraryFolderList
                     Layout.fillWidth: true
-                    text: controller.libraryRoot
-                    color: ink
-                    selectByMouse: true
-                    Accessible.name: qsTr("Pasta principal da biblioteca")
-                    onTextEdited: controller.SetLibraryRoot(text)
+                    spacing: 8
+                    Repeater {
+                        model: settingsScreen.libraryFolderCount
+                        delegate: LibraryFolderField {}
+                    }
                 }
                 RowLayout {
                     Layout.fillWidth: true
                     Item { Layout.fillWidth: true }
-                    AppButton { text: qsTr("Selecionar pasta"); onClicked: libraryFolderDialog.open() }
+                    AppButton {
+                        text: qsTr("+  Adicionar pasta")
+                        variant: "secondary"
+                        onClicked: {
+                            settingsScreen.libraryFolderTargetIndex = -1
+                            libraryFolderDialog.open()
+                        }
+                    }
                 }
                 Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
                 FieldLabel { text: qsTr("EXTENSÕES INCLUÍDAS") }
@@ -833,7 +916,9 @@ Item {
             const url = selectedFolder.toString()
             let path = url.startsWith("file:///") ? url.substring(8)
                      : url.startsWith("file://") ? "//" + url.substring(7) : url
-            controller.SetLibraryRoot(decodeURIComponent(path).replace(/\//g, "\\"))
+            const folder = decodeURIComponent(path).replace(/\//g, "\\")
+            if (settingsScreen.libraryFolderTargetIndex < 0) controller.AddLibraryRoot(folder)
+            else controller.SetLibraryRoot(settingsScreen.libraryFolderTargetIndex, folder)
         }
     }
 

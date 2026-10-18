@@ -96,9 +96,15 @@ Item {
                 anchors.margins: 16
                 spacing: 12
 
-                Label { text: qsTr("Filtrar por"); color: muted; font.pixelSize: 12 }
+                Label {
+                    height: yearSelector.height
+                    text: qsTr("Filtrar por")
+                    color: muted
+                    font.pixelSize: 12
+                    verticalAlignment: Text.AlignVCenter
+                }
 
-                ComboBox {
+                AppComboBox {
                     id: yearSelector
                     width: filterLayout.width >= 560 ? 150 : filterLayout.width
                     model: controller.availableYearOptions
@@ -107,11 +113,13 @@ Item {
                     currentIndex: controller.selectedYear > 0
                                   ? seasonalCatalog.indexForKey(controller.availableYearOptions,
                                                                 String(controller.selectedYear)) : -1
-                    displayText: currentIndex < 0 ? qsTr("Ano") : currentText
+                    caption: qsTr("ANO")
+                    placeholderText: qsTr("Selecione o ano")
+                    Accessible.name: qsTr("Selecionar ano")
                     onActivated: controller.SetYear(Number(currentValue))
                 }
 
-                ComboBox {
+                AppComboBox {
                     id: seasonSelector
                     width: filterLayout.width >= 560 ? 170 : filterLayout.width
                     model: controller.availableSeasonOptions
@@ -120,7 +128,9 @@ Item {
                     currentIndex: controller.selectedSeasonKey.length > 0
                                   ? seasonalCatalog.indexForKey(controller.availableSeasonOptions,
                                                                 controller.selectedSeasonKey) : -1
-                    displayText: currentIndex < 0 ? qsTr("Temporada") : currentText
+                    caption: qsTr("TEMPORADA")
+                    placeholderText: qsTr("Selecione a temporada")
+                    Accessible.name: qsTr("Selecionar temporada")
                     onActivated: controller.SetSeason(currentValue)
                 }
 

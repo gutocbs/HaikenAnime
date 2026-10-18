@@ -19,7 +19,7 @@ QString authenticationStateName(const AniListAuthenticationState state) {
 }
 }
 
-QString SettingsController::libraryRoot() const { return draft_.libraryRoot; }
+QStringList SettingsController::libraryRoots() const { return draft_.libraryRoots; }
 QStringList SettingsController::availableScanExtensions() const {
     QStringList options = UserPreferences{}.scanExtensions;
     for (const auto &extension : persisted_.scanExtensions + draft_.scanExtensions)
@@ -119,8 +119,21 @@ void SettingsController::ApplyExternalLastAniListUserId(const qint64 userId) {
     draft_.lastAniListUserId = userId;
 }
 
-void SettingsController::SetLibraryRoot(const QString &root) {
-    draft_.libraryRoot = root;
+void SettingsController::AddLibraryRoot(const QString &root) {
+    draft_.libraryRoots.append(root);
+    statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
+}
+
+void SettingsController::SetLibraryRoot(const int index, const QString &root) {
+    if (index < 0 || index >= draft_.libraryRoots.size() || draft_.libraryRoots.at(index) == root) return;
+    draft_.libraryRoots[index] = root;
+    statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
+}
+
+void SettingsController::RemoveLibraryRoot(const int index) {
+    // The last folder can be edited but never removed: scanning needs at least one.
+    if (index < 0 || index >= draft_.libraryRoots.size() || draft_.libraryRoots.size() == 1) return;
+    draft_.libraryRoots.removeAt(index);
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }
 
@@ -144,13 +157,11 @@ void SettingsController::ScanNow() {
     } else if (!scanCoordinator_) {
         scanErrorMessage_ = tr("O serviço de varredura não está disponível.");
     } else {
-        LocalLibraryScanRequest request;
-        request.rootPath = persisted_.libraryRoot;
-        request.allowedExtensions = persisted_.scanExtensions;
-        if (scanCoordinator_->start(request)) {
+        const auto requests = BuildLocalLibraryScanRequests(persisted_.libraryRoots, persisted_.scanExtensions);
+        if (scanCoordinator_->startAll(requests)) {
             scanRunning_ = true;
             scanCandidateCount_ = 0;
-            scanStatusMessage_ = tr("Escaneando %1").arg(request.rootPath);
+            scanStatusMessage_ = tr("Escaneando %1").arg(requests.first().rootPath);
             scanErrorMessage_.clear();
         } else {
             scanErrorMessage_ = tr("Não foi possível iniciar a varredura. O serviço pode estar ocupado ou encerrando.");

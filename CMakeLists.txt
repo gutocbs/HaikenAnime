@@ -502,6 +502,9 @@ qt_add_qml_module(HaikenAnime
         resources/qml/StatePanel.qml
         resources/qml/AppButton.qml
         resources/qml/SyncProgressBar.qml
+        resources/qml/AppTextField.qml
+        resources/qml/AppSpinBox.qml
+        resources/qml/AppComboBox.qml
         resources/qml/PluginSettingsScreen.qml
         resources/qml/PluginSettingField.qml
         resources/qml/EpisodeRecognitionScreen.qml

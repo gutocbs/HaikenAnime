@@ -257,7 +257,8 @@ int main(int argc, char *argv[]) {
         const auto requestLocalRecognition = [&context](const QStringList &folderPaths, bool alternativeNamesChanged) {
             auto *recognition = context.localLibraryRecognition.get();
             for (const auto &folderPath : folderPaths) recognition->startForFolder(folderPath);
-            if (alternativeNamesChanged) recognition->startForPending(context.userPreferences.libraryRoot);
+            if (!alternativeNamesChanged) return;
+            for (const auto &root : context.userPreferences.libraryRoots) recognition->startForPending(root);
         };
         QObject::connect(&homeController, &HomeScreenController::localRecognitionRequested,
                          &homeController, requestLocalRecognition);
