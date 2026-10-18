@@ -206,6 +206,8 @@ Itens coletados até agora (a lista cresce a cada parte):
 | Parte 8 | `CoverDownloadCoordinator` ignora sem log a falha de leitura do cache no construtor e a falha de remoção em `ReportMissingFile` |
 | Parte 9 | Avisos adicionados a `RecognitionContext::warnings` depois da inicialização nunca aparecem (falha ao abrir o mpv, falha assíncrona ao selecionar o servidor Plex) |
 | Parte 9 | `RecognitionSyncFeedback::SafeError` grava no histórico textos fixos em português, que não passam pela tradução |
+| Revisor (Parte 9) | O histórico só registra progresso reconhecido pelos players; deve registrar também as alterações manuais de progresso (Home e catálogo) |
+| Revisor (Parte 9) | Sessões encerradas antes do tempo mínimo não devem ser gravadas no histórico (hoje viram registros `Incomplete`) |
 
 ---
 
@@ -248,7 +250,7 @@ Perguntas em que há mais de um caminho razoável.
 | 6 | ☑ [report](../reviews/2026-10-18-parte-06-agendamento-sync.md) | ☑ | ☑ validada: `ctest` verde (após `ac42360`) |
 | 7 | ☑ [report](../reviews/2026-10-18-parte-07-biblioteca-local.md) | ☑ | ☑ validada: `ctest` verde |
 | 8 | ☑ [report](../reviews/2026-10-18-parte-08-capas-cache-catalogo.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
-| 9 | ☑ [report](../reviews/2026-10-18-parte-09-reconhecimento.md) | ☑ | ☐ aplicada, aguardando build |
+| 9 | ☑ [report](../reviews/2026-10-18-parte-09-reconhecimento.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
 | 10 | ☐ | ☐ | ☐ |
 | 11 | ☐ | ☐ | ☐ |
 | 12 | ☐ | ☐ | ☐ |

@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `ba89dc5` (`feature/revisao-geral`)
-- **Status:** aprovado e aplicado — aguardando build do revisor
+- **Status:** aprovado e aplicado — validado
 
 ---
 
@@ -114,3 +114,8 @@ Notas:
 - P9-03: as flags que sobraram foram renumeradas (`0x01`, `0x02`, `0x04`). Elas não são persistidas.
 - P9-02: `SqliteRecognitionHistoryRepository.h` e `SqliteMediaProgressReader.h` deixaram de incluir
   `SqliteQueries.h`; todo arquivo que usa `SqliteQueries::` o inclui diretamente (conferido).
+
+### Validação final (build do revisor)
+- `scripts/validate.ps1`: build MSVC + `ctest` todo verde; smoke de reconhecimento OK.
+- O revisor pediu dois ajustes de comportamento, registrados na Parte 13: gravar no histórico as alterações
+  manuais de progresso e não gravar sessões encerradas antes do tempo mínimo.
