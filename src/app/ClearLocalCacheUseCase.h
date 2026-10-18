@@ -1,8 +1,8 @@
 #ifndef HAIKENANIME_CLEARLOCALCACHEUSECASE_H
 #define HAIKENANIME_CLEARLOCALCACHEUSECASE_H
 
-#include "../covers/CoverDownloadCoordinator.h"
-#include "../covers/ICoverTemporaryStore.h"
+#include "CoverDownloadCoordinator.h"
+#include "../application/covers/ICoverTemporaryStore.h"
 
 #include <QList>
 #include <QString>

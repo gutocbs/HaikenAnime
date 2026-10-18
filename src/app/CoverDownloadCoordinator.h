@@ -1,10 +1,10 @@
 #ifndef HAIKENANIME_COVERDOWNLOADCOORDINATOR_H
 #define HAIKENANIME_COVERDOWNLOADCOORDINATOR_H
 
-#include "CoverSettings.h"
-#include "ICoverCacheRepository.h"
-#include "ICoverDownloader.h"
-#include "ICoverFileStore.h"
+#include "../application/covers/CoverSettings.h"
+#include "../application/covers/ICoverCacheRepository.h"
+#include "../application/covers/ICoverDownloader.h"
+#include "../application/covers/ICoverFileStore.h"
 #include <QHash>
 #include <QObject>
 #include <QQueue>

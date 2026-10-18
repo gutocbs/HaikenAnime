@@ -7,10 +7,10 @@
 
 #include "../../src/presentation/settings/SettingsController.h"
 #include "../../src/app/LocalLibraryScanCoordinator.h"
-#include "../../src/application/cache/ClearLocalCacheUseCase.h"
+#include "../../src/app/ClearLocalCacheUseCase.h"
 #include "../../src/application/anilist/AniListAuthManager.h"
 #include "../../src/application/anilist/RemoveAniListAccountUseCase.h"
-#include "../../src/application/covers/CoverDownloadCoordinator.h"
+#include "../../src/app/CoverDownloadCoordinator.h"
 
 struct ScanFixture {
     QMutex mutex;

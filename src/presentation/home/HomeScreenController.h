@@ -7,7 +7,7 @@
 #include <QVariantList>
 
 #include "../../application/media/IMediaReader.h"
-#include "../../application/covers/CoverDownloadCoordinator.h"
+#include "../../app/CoverDownloadCoordinator.h"
 #include "../../application/configuration/CardStatusPresentation.h"
 #include "../../application/media/MediaTitleResolver.h"
 

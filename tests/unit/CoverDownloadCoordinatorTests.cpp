@@ -1,4 +1,4 @@
-#include "application/covers/CoverDownloadCoordinator.h"
+#include "app/CoverDownloadCoordinator.h"
 #include <QFile>
 #include <QTemporaryDir>
 #include <QtTest>

@@ -1,6 +1,6 @@
 #include "SettingsController.h"
 
-#include "../../application/cache/ClearLocalCacheUseCase.h"
+#include "../../app/ClearLocalCacheUseCase.h"
 #include "../../application/anilist/AniListAuthManager.h"
 #include "../../application/anilist/RemoveAniListAccountUseCase.h"
 #include "../../application/configuration/UserPreferencesValidator.h"

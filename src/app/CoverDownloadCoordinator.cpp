@@ -1,5 +1,5 @@
 #include "CoverDownloadCoordinator.h"
-#include "../../infrastructure/logging/AsyncLogger.h"
+#include "../infrastructure/logging/AsyncLogger.h"
 #include <QFile>
 #include <QTimer>
 

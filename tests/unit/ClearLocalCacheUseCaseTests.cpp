@@ -1,4 +1,4 @@
-#include "application/cache/ClearLocalCacheUseCase.h"
+#include "app/ClearLocalCacheUseCase.h"
 
 #include <QtTest>
 
