@@ -57,7 +57,6 @@ class SettingsController final : public QObject {
     Q_PROPERTY(bool aniListAuthenticationInProgress READ aniListAuthenticationInProgress NOTIFY changed)
     Q_PROPERTY(bool aniListConnected READ aniListConnected NOTIFY changed)
     Q_PROPERTY(bool aniListRemovalInProgress READ aniListRemovalInProgress NOTIFY changed)
-    Q_PROPERTY(QString aniListAuthenticationState READ aniListAuthenticationState NOTIFY changed)
     Q_PROPERTY(QString aniListUsername READ aniListUsername NOTIFY changed)
     Q_PROPERTY(QString aniListAuthenticationMessage READ aniListAuthenticationMessage NOTIFY changed)
 public:
@@ -143,7 +142,7 @@ public:
     Q_INVOKABLE void SynchronizeNow();
     Q_INVOKABLE void ClearLocalCache();
     Q_INVOKABLE void ConnectAniList();
-    Q_INVOKABLE void HandleAniListOAuthCallback(const QUrl &callback);
+    void HandleAniListOAuthCallback(const QUrl &callback);
     Q_INVOKABLE void RemoveAniListAccount();
 signals:
     void changed();

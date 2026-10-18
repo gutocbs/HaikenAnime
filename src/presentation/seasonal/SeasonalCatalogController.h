@@ -131,8 +131,8 @@ public:
     Q_INVOKABLE bool SaveSelectedToPersonalListFromEditor(int progress, const QString &statusKey,
                                                           double score, const QString &path,
                                                           const QString &alternativeNames);
-    Q_INVOKABLE bool SaveSelectedToPersonalList(int progress, const QString &statusKey, double score,
-                                                const QString &path, const QStringList &alternativeNames);
+    bool SaveSelectedToPersonalList(int progress, const QString &statusKey, double score,
+                                    const QString &path, const QStringList &alternativeNames);
 
 signals:
     void filtersChanged();

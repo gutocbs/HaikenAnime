@@ -18,7 +18,6 @@ class NowWatchingController final : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool active READ active NOTIFY changed)
     Q_PROPERTY(QVariantList sessions READ sessions NOTIFY changed)
-    Q_PROPERTY(QString selectedSessionKey READ selectedSessionKey NOTIFY changed)
     Q_PROPERTY(QVariantMap current READ current NOTIFY changed)
 
 public:
