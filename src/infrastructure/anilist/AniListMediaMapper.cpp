@@ -222,6 +222,9 @@ Media AniListMediaMapper::ToDomainMedia(const AniListMediaDto &externalMedia) {
         media.Status = MediaStatus::Unknown;
     }
 
-    media.ListStatus = ParseAniListListStatus(externalMedia.listStatus).value_or(UserListStatus::Unknown);
+    // AniList answers "PAUSED"; "ON_HOLD" is also accepted for that list, as before.
+    media.ListStatus = externalMedia.listStatus.trimmed().compare(QStringLiteral("ON_HOLD"), Qt::CaseInsensitive) == 0
+        ? UserListStatus::OnHold
+        : ParseAniListListStatus(externalMedia.listStatus).value_or(UserListStatus::Unknown);
     return media;
 }
