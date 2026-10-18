@@ -68,18 +68,13 @@ QString userListStatusLabel(const UserListStatus status) {
     }
 }
 
-QString cardStatusLabel(const Media &media, const CardStatusPresentation presentation,
-                        const UserListStatus listStatus) {
+QString cardStatusLabel(const Media &media, const CardStatusPresentation presentation) {
     if (presentation == CardStatusPresentation::MediaReleaseStatus) {
         return QCoreApplication::translate("HomeMediaModel", "Exibição: %1")
             .arg(MediaStatusLabel(media.Status));
     }
     return QCoreApplication::translate("HomeMediaModel", "Minha lista: %1")
-        .arg(userListStatusLabel(listStatus));
-}
-
-QString cardStatusLabel(const Media &media, const CardStatusPresentation presentation) {
-    return cardStatusLabel(media, presentation, media.ListStatus);
+        .arg(userListStatusLabel(media.ListStatus));
 }
 
 QVariantMap option(const QString &key, const QString &label) {
@@ -669,36 +664,6 @@ bool HomeScreenController::RemoveSelectedMedia() {
     return true;
 }
 
-QVariantMap HomeScreenController::PreviewCardMetadata(const int progress,
-                                                       const QString &listStatusKey,
-                                                       const double score) const {
-    if (!hasSelection_) return {};
-    const auto progressLabel = QCoreApplication::translate("HomeMediaModel", "Progresso %1")
-        .arg(FormatProgress(progress, selectedMedia_.TotalChapters));
-    const auto scoreLabel = score <= 0.0
-        ? QCoreApplication::translate("HomeMediaModel", "Nota —")
-        : QCoreApplication::translate("HomeMediaModel", "Nota %1/%2")
-              .arg(QString::number(score, 'g', 15))
-              .arg(QString::number(scoreMaximum_, 'g', 15));
-    return {{QStringLiteral("status"), cardStatusLabel(selectedMedia_, cardStatusPresentation_,
-                                                         UserListStatusFromKey(listStatusKey))},
-            {QStringLiteral("progress"), progressLabel},
-            {QStringLiteral("score"), scoreLabel}};
-}
-
-QVariantMap HomeScreenController::PreviewCompactDetailMetadata(const int progress,
-                                                                const QString &listStatusKey,
-                                                                const double score) const {
-    if (!hasSelection_) return {};
-    const auto progressLabel = FormatProgress(progress, selectedMedia_.TotalChapters);
-    const auto scoreLabel = score <= 0.0 ? QStringLiteral("—")
-                                          : QString::number(score, 'g', 15);
-    return {{QStringLiteral("status"), optionLabel(listOptions_, listStatusKey,
-                                                     selectedStatusLabel())},
-            {QStringLiteral("progress"), progressLabel},
-            {QStringLiteral("score"), scoreLabel}};
-}
-
 void HomeScreenController::reload() {
     if (reader_ == nullptr) {
         if (errorMessage_.isEmpty()) {
@@ -767,8 +732,6 @@ void HomeScreenController::RequestCoverWindow(const QString &scope, int firstVis
 }
 
 void HomeScreenController::ReportCoverLoadFailure(int mediaId) { if (covers_) covers_->ReportMissingFile(mediaId); }
-void HomeScreenController::ClearCoverCache() { if (covers_) covers_->Clear(); }
-
 void HomeScreenController::rebuildMediaModels() {
     QList<Media> filtered;
     for (const auto &media : std::as_const(allMedia_)) {

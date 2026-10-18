@@ -174,15 +174,9 @@ public:
     Q_INVOKABLE bool RemoveSelectedMedia();
     Q_INVOKABLE bool SaveSelectedMediaFromEditor(int progress, const QString &statusKey, double score,
                                                  const QString &path, const QStringList &alternativeNames);
-    Q_INVOKABLE QVariantMap PreviewCardMetadata(int progress, const QString &listStatusKey,
-                                                double score) const;
-    Q_INVOKABLE QVariantMap PreviewCompactDetailMetadata(int progress,
-                                                         const QString &listStatusKey,
-                                                         double score) const;
     Q_INVOKABLE void RequestCoverWindow(const QString &scope, int firstVisibleIndex,
                                         int lastVisibleIndex, int prefetchCount);
     Q_INVOKABLE void ReportCoverLoadFailure(int mediaId);
-    Q_INVOKABLE void ClearCoverCache();
 
 signals:
     void stateChanged();
