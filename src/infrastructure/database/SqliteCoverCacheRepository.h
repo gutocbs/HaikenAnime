@@ -7,8 +7,7 @@
 
 class SqliteCoverCacheRepository final : public ICoverCacheRepository {
 public:
-    SqliteCoverCacheRepository(QSqlDatabase database, QString readQuery, QString upsertQuery,
-                               QString deleteQuery, QString clearQuery);
+    explicit SqliteCoverCacheRepository(QSqlDatabase database);
 
     bool ReadAll(QHash<int, CoverCacheEntry> &entries, QString &error) override;
     bool Upsert(const CoverCacheEntry &entry, QString &error) override;
@@ -17,10 +16,6 @@ public:
 
 private:
     QSqlDatabase database_;
-    QString readQuery_;
-    QString upsertQuery_;
-    QString deleteQuery_;
-    QString clearQuery_;
 };
 
 #endif // HAIKENANIME_SQLITECOVERCACHEREPOSITORY_H

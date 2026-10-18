@@ -198,10 +198,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         context.userPreferencesRepository = std::move(preferencesRepository);
     }
 
-    context.coverCacheRepository = std::make_unique<SqliteCoverCacheRepository>(
-        context.database->connection(), SqliteQueries::ReadCoverCache,
-        SqliteQueries::UpsertCoverCache, SqliteQueries::DeleteCoverCache,
-        SqliteQueries::ClearCoverCache);
+    context.coverCacheRepository = std::make_unique<SqliteCoverCacheRepository>(context.database->connection());
     const QString cacheRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)).filePath("covers");
     const QString temporaryRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation)).filePath("HaikenAnime/covers");
     context.coverTemporaryStore = std::make_unique<CoverTemporaryStore>(temporaryRoot);
