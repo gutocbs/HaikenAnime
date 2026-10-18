@@ -6,13 +6,14 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QStandardPaths>
-#include <QSet>
 #include <QUuid>
 #include "../logging/AsyncLogger.h"
 
 #include <utility>
 
 namespace {
+constexpr int LatestSchemaVersion = 26;
+
 bool ExecuteMigrationScript(QSqlQuery &query, const QString &path, QString &error) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -29,6 +30,172 @@ bool ExecuteMigrationScript(QSqlQuery &query, const QString &path, QString &erro
         }
     }
     return true;
+}
+
+/// One idempotent step of the schema chain. Every step runs on every start, in order, inside one transaction.
+struct MigrationStep final {
+    enum class Kind { Script, AddColumn, MarkVersion, RebuildLocalFilesWithRecognitionConstraint };
+    Kind kind = Kind::Script;
+    /// Script name under :/sqlite/migrations, without the .sql extension.
+    QString script;
+    QString table;
+    QString column;
+    int version = 0;
+};
+
+MigrationStep Script(QString script) {
+    return {.kind = MigrationStep::Kind::Script, .script = std::move(script)};
+}
+
+/// Runs the script only when the column is still missing.
+MigrationStep AddColumn(QString table, QString column, QString script) {
+    return {.kind = MigrationStep::Kind::AddColumn, .script = std::move(script), .table = std::move(table),
+            .column = std::move(column)};
+}
+
+MigrationStep MarkVersion(const int version) {
+    return {.kind = MigrationStep::Kind::MarkVersion, .version = version};
+}
+
+const QList<MigrationStep> &MigrationSteps() {
+    static const QList<MigrationStep> steps = {
+        Script(QStringLiteral("001-create-initial-schema")),
+        AddColumn(QStringLiteral("media"), QStringLiteral("source_removed_at"), QStringLiteral("003-add-source-removed-at-column")),
+        AddColumn(QStringLiteral("media"), QStringLiteral("user_list_status"), QStringLiteral("004-add-user-list-status-column")),
+        AddColumn(QStringLiteral("media"), QStringLiteral("cover_medium_url"), QStringLiteral("006-add-cover-medium-url-column")),
+        AddColumn(QStringLiteral("media"), QStringLiteral("cover_large_url"), QStringLiteral("006-add-cover-large-url-column")),
+        AddColumn(QStringLiteral("media"), QStringLiteral("cover_extra_large_url"), QStringLiteral("006-add-cover-extra-large-url-column")),
+        MarkVersion(1), MarkVersion(2), MarkVersion(3), MarkVersion(4), MarkVersion(5), MarkVersion(6),
+        Script(QStringLiteral("007-create-library-inventory")),
+        MarkVersion(7),
+        AddColumn(QStringLiteral("user_preferences"), QStringLiteral("library_root"), QStringLiteral("008-add-library-root-preference")),
+        AddColumn(QStringLiteral("user_preferences"), QStringLiteral("scan_extensions"), QStringLiteral("008-add-scan-extensions-preference")),
+        MarkVersion(8),
+        AddColumn(QStringLiteral("user_preferences"), QStringLiteral("home_sort_key"), QStringLiteral("009-add-home-sort-key-preference")),
+        MarkVersion(9),
+        AddColumn(QStringLiteral("user_preferences"), QStringLiteral("card_status_presentation"),
+                  QStringLiteral("010-add-card-status-presentation-preference")),
+        MarkVersion(10),
+        AddColumn(QStringLiteral("user_preferences"), QStringLiteral("language_key"), QStringLiteral("011-add-language-preference")),
+        MarkVersion(11),
+        AddColumn(QStringLiteral("user_preferences"), QStringLiteral("preferred_title_key"),
+                  QStringLiteral("012-add-preferred-title-preference")),
+        MarkVersion(12),
+        AddColumn(QStringLiteral("media"), QStringLiteral("season"), QStringLiteral("013-add-season-to-media")),
+        AddColumn(QStringLiteral("media"), QStringLiteral("season_year"), QStringLiteral("013-add-season-year-to-media")),
+        AddColumn(QStringLiteral("media"), QStringLiteral("next_airing_episode"), QStringLiteral("013-add-next-airing-episode-to-media")),
+        AddColumn(QStringLiteral("media"), QStringLiteral("next_airing_at"), QStringLiteral("013-add-next-airing-at-to-media")),
+        AddColumn(QStringLiteral("media"), QStringLiteral("anilist_url"), QStringLiteral("013-add-anilist-url-to-media")),
+        AddColumn(QStringLiteral("media"), QStringLiteral("external_links"), QStringLiteral("013-add-external-links-to-media")),
+        MarkVersion(13),
+        AddColumn(QStringLiteral("user_preferences"), QStringLiteral("include_adult_content"),
+                  QStringLiteral("014-add-adult-content-preference")),
+        MarkVersion(14),
+        AddColumn(QStringLiteral("media"), QStringLiteral("local_path"), QStringLiteral("015-add-local-path-to-media")),
+        MarkVersion(15),
+        AddColumn(QStringLiteral("local_files"), QStringLiteral("extracted_title"), QStringLiteral("016-add-extracted-title-to-local-files")),
+        AddColumn(QStringLiteral("local_files"), QStringLiteral("media_kind"), QStringLiteral("016-add-media-kind-to-local-files")),
+        AddColumn(QStringLiteral("local_files"), QStringLiteral("season"), QStringLiteral("016-add-season-to-local-files")),
+        AddColumn(QStringLiteral("local_files"), QStringLiteral("episode"), QStringLiteral("016-add-episode-to-local-files")),
+        AddColumn(QStringLiteral("local_files"), QStringLiteral("media_id"), QStringLiteral("016-add-media-id-to-local-files")),
+        AddColumn(QStringLiteral("local_files"), QStringLiteral("recognition_diagnostic"),
+                  QStringLiteral("016-add-recognition-diagnostic-to-local-files")),
+        AddColumn(QStringLiteral("local_files"), QStringLiteral("recognized_at"), QStringLiteral("016-add-recognized-at-to-local-files")),
+        MarkVersion(16),
+        {.kind = MigrationStep::Kind::RebuildLocalFilesWithRecognitionConstraint},
+        MarkVersion(17),
+        AddColumn(QStringLiteral("user_preferences"), QStringLiteral("automatic_local_file_recognition"),
+                  QStringLiteral("018-add-automatic-local-file-recognition-preference")),
+        MarkVersion(18),
+        Script(QStringLiteral("019-create-sync-task-state")),
+        AddColumn(QStringLiteral("sync_task_state"), QStringLiteral("status"), QStringLiteral("019-add-status-to-sync-task-state")),
+        AddColumn(QStringLiteral("sync_task_state"), QStringLiteral("next_run_at"), QStringLiteral("019-add-next-run-at-to-sync-task-state")),
+        AddColumn(QStringLiteral("sync_task_state"), QStringLiteral("safe_error_detail"),
+                  QStringLiteral("019-add-safe-error-detail-to-sync-task-state")),
+        AddColumn(QStringLiteral("sync_task_state"), QStringLiteral("confirmed_page"),
+                  QStringLiteral("019-add-confirmed-page-to-sync-task-state")),
+        AddColumn(QStringLiteral("sync_task_state"), QStringLiteral("confirmed_cursor"),
+                  QStringLiteral("019-add-confirmed-cursor-to-sync-task-state")),
+        AddColumn(QStringLiteral("sync_task_state"), QStringLiteral("priority"), QStringLiteral("019-add-priority-to-sync-task-state")),
+        AddColumn(QStringLiteral("sync_task_state"), QStringLiteral("generation"), QStringLiteral("019-add-generation-to-sync-task-state")),
+        MarkVersion(19),
+        AddColumn(QStringLiteral("user_preferences"), QStringLiteral("enabled_user_lists"),
+                  QStringLiteral("020-add-enabled-user-lists-preference")),
+        MarkVersion(20),
+        AddColumn(QStringLiteral("anilist_pending_changes"), QStringLiteral("owner_user_id"),
+                  QStringLiteral("021-add-owner-user-id-to-pending-changes")),
+        MarkVersion(21),
+        AddColumn(QStringLiteral("user_preferences"), QStringLiteral("last_anilist_user_id"),
+                  QStringLiteral("022-add-last-anilist-user-id-preference")),
+        MarkVersion(22),
+        AddColumn(QStringLiteral("media"), QStringLiteral("personal_list_removed_at"),
+                  QStringLiteral("023-add-personal-list-removed-at-to-media")),
+        MarkVersion(23),
+        Script(QStringLiteral("024-create-plugin-settings")),
+        MarkVersion(24),
+        Script(QStringLiteral("025-create-recognition-history")),
+        MarkVersion(25),
+        AddColumn(QStringLiteral("user_preferences"), QStringLiteral("library_roots"), QStringLiteral("026-add-library-roots-preference")),
+        MarkVersion(LatestSchemaVersion),
+    };
+    return steps;
+}
+
+QString MigrationScriptPath(const QString &script) {
+    return QStringLiteral(":/sqlite/migrations/%1.sql").arg(script);
+}
+
+bool HasColumn(QSqlQuery &query, const QString &table, const QString &column, bool &exists, QString &error) {
+    exists = false;
+    if (!query.exec(QStringLiteral("PRAGMA table_info(%1)").arg(table))) {
+        error = query.lastError().text();
+        return false;
+    }
+    while (query.next()) exists |= query.value(1).toString() == column;
+    return true;
+}
+
+// Version 17 recreates local_files so its recognition_state CHECK also accepts 'ambiguous'.
+bool RebuildLocalFilesWithRecognitionConstraint(QSqlQuery &query, QString &error) {
+    const bool constraintReady =
+        query.exec(QStringLiteral("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'local_files'"))
+        && query.next() && query.value(0).toString().contains(QStringLiteral("'ambiguous'"));
+    if (constraintReady) return true;
+    for (const auto &script : {QStringLiteral("017-rename-legacy-local-files-table"),
+                               QStringLiteral("017-create-local-files-with-recognition-constraint"),
+                               QStringLiteral("017-copy-legacy-local-files"),
+                               QStringLiteral("017-drop-legacy-local-files-table")}) {
+        if (!ExecuteMigrationScript(query, MigrationScriptPath(script), error)) return false;
+    }
+    return true;
+}
+
+bool RunMigrationStep(QSqlQuery &query, const MigrationStep &step, QString &error) {
+    switch (step.kind) {
+    case MigrationStep::Kind::Script:
+        return ExecuteMigrationScript(query, MigrationScriptPath(step.script), error);
+    case MigrationStep::Kind::AddColumn: {
+        bool exists = false;
+        if (!HasColumn(query, step.table, step.column, exists, error)) return false;
+        return exists || ExecuteMigrationScript(query, MigrationScriptPath(step.script), error);
+    }
+    case MigrationStep::Kind::MarkVersion:
+        if (query.exec(QStringLiteral("INSERT OR IGNORE INTO schema_version (version) VALUES (%1)").arg(step.version))) {
+            return true;
+        }
+        error = query.lastError().text();
+        return false;
+    case MigrationStep::Kind::RebuildLocalFilesWithRecognitionConstraint:
+        return RebuildLocalFilesWithRecognitionConstraint(query, error);
+    }
+    return false;
+}
+
+// A trigger or constraint can silently skip a version insert, so every version is checked at the end.
+bool AllVersionsRecorded(QSqlQuery &query) {
+    return query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version WHERE version BETWEEN 1 AND %1")
+                          .arg(LatestSchemaVersion))
+        && query.next() && query.value(0).toInt() == LatestSchemaVersion;
 }
 }
 
@@ -104,317 +271,14 @@ bool SqliteDatabase::migrate() {
     }
 
     QSqlQuery query(database_);
-    const bool schemaCreated = ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/001-create-initial-schema.sql"), lastError_);
-    const bool mediaCreated = schemaCreated;
-    const bool pendingChangesCreated = mediaCreated;
-    const bool coverCacheCreated = pendingChangesCreated;
-    const bool userPreferencesCreated = coverCacheCreated;
-    bool sourceRemovalColumnExists = false;
-    bool userListStatusColumnExists = false;
-    bool coverMediumColumnExists = false;
-    bool coverLargeColumnExists = false;
-    bool coverExtraLargeColumnExists = false;
-    bool seasonColumnExists = false;
-    bool seasonYearColumnExists = false;
-    bool nextAiringEpisodeColumnExists = false;
-    bool nextAiringAtColumnExists = false;
-    bool aniListUrlColumnExists = false;
-    bool externalLinksColumnExists = false;
-    bool localPathColumnExists = false;
-    bool sourceRemovalReady = false;
-    bool userListStatusReady = false;
-    if (userPreferencesCreated && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-media-columns.sql"), lastError_)) {
-        while (query.next()) {
-            const auto column = query.value(1).toString();
-            if (column == QStringLiteral("source_removed_at")) sourceRemovalColumnExists = true;
-            if (column == QStringLiteral("user_list_status")) userListStatusColumnExists = true;
-            if (column == QStringLiteral("cover_medium_url")) coverMediumColumnExists = true;
-            if (column == QStringLiteral("cover_large_url")) coverLargeColumnExists = true;
-            if (column == QStringLiteral("cover_extra_large_url")) coverExtraLargeColumnExists = true;
-            if (column == QStringLiteral("season")) seasonColumnExists = true;
-            if (column == QStringLiteral("season_year")) seasonYearColumnExists = true;
-            if (column == QStringLiteral("next_airing_episode")) nextAiringEpisodeColumnExists = true;
-            if (column == QStringLiteral("next_airing_at")) nextAiringAtColumnExists = true;
-            if (column == QStringLiteral("anilist_url")) aniListUrlColumnExists = true;
-            if (column == QStringLiteral("external_links")) externalLinksColumnExists = true;
-            if (column == QStringLiteral("local_path")) localPathColumnExists = true;
+    bool stepsSucceeded = true;
+    for (const auto &step : MigrationSteps()) {
+        if (!RunMigrationStep(query, step, lastError_)) {
+            stepsSucceeded = false;
+            break;
         }
-        sourceRemovalReady = sourceRemovalColumnExists
-            || ExecuteMigrationScript(
-                query, QStringLiteral(":/sqlite/migrations/003-add-source-removed-at-column.sql"), lastError_);
-        userListStatusReady = userListStatusColumnExists
-            || ExecuteMigrationScript(
-                query, QStringLiteral(":/sqlite/migrations/004-add-user-list-status-column.sql"), lastError_);
     }
-    const bool coverMediumReady = coverMediumColumnExists
-        || ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/006-add-cover-medium-url-column.sql"), lastError_);
-    const bool coverLargeReady = coverMediumReady && (coverLargeColumnExists
-        || ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/006-add-cover-large-url-column.sql"), lastError_));
-    const bool coverExtraLargeReady = coverLargeReady && (coverExtraLargeColumnExists
-        || ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/006-add-cover-extra-large-url-column.sql"), lastError_));
-    const bool versionInserted = sourceRemovalReady && userListStatusReady && coverExtraLargeReady
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/001-mark-initial-schema-applied.sql"), lastError_);
-    const bool coverVersionInserted = versionInserted
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/002-mark-cover-cache-schema-applied.sql"), lastError_);
-    const bool sourceRemovalVersionInserted = coverVersionInserted
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/003-mark-source-removed-at-applied.sql"), lastError_);
-    const bool userListStatusVersionInserted = sourceRemovalVersionInserted
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/004-mark-user-list-status-applied.sql"), lastError_);
-    const bool userPreferencesVersionInserted = userListStatusVersionInserted
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/005-mark-user-preferences-schema-applied.sql"), lastError_);
-    const bool coverVariantsVersionInserted = userPreferencesVersionInserted
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/006-mark-cover-variants-applied.sql"), lastError_);
-    const bool libraryScansCreated = coverVariantsVersionInserted && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/007-create-library-inventory.sql"), lastError_);
-    const bool localFilesCreated = libraryScansCreated;
-    const bool inventoryVersionInserted = localFilesCreated
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/007-mark-library-inventory-applied.sql"), lastError_);
-    bool libraryRootExists = false;
-    bool scanExtensionsExists = false;
-    bool homeSortKeyExists = false;
-    bool scannerPreferencesReady = false;
-    if (inventoryVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-user-preference-columns.sql"), lastError_)) {
-        while (query.next()) {
-            const auto column = query.value(1).toString();
-            if (column == QStringLiteral("library_root")) libraryRootExists = true;
-            if (column == QStringLiteral("scan_extensions")) scanExtensionsExists = true;
-            if (column == QStringLiteral("home_sort_key")) homeSortKeyExists = true;
-        }
-        scannerPreferencesReady = (libraryRootExists || ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/008-add-library-root-preference.sql"), lastError_))
-            && (scanExtensionsExists || ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/008-add-scan-extensions-preference.sql"), lastError_));
-    }
-    const bool scannerPreferencesVersionInserted = scannerPreferencesReady
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/008-mark-library-scanner-preferences-applied.sql"), lastError_);
-    const bool homeSortKeyReady = scannerPreferencesVersionInserted && (homeSortKeyExists || ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/009-add-home-sort-key-preference.sql"), lastError_));
-    const bool homeSortKeyVersionInserted = homeSortKeyReady
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/009-mark-home-sort-key-applied.sql"), lastError_);
-    bool cardStatusPresentationExists = false;
-    bool cardStatusPresentationReady = false;
-    if (homeSortKeyVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-user-preference-columns.sql"), lastError_)) {
-        while (query.next()) {
-            if (query.value(1).toString() == QStringLiteral("card_status_presentation")) {
-                cardStatusPresentationExists = true;
-            }
-        }
-        cardStatusPresentationReady = cardStatusPresentationExists || ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/010-add-card-status-presentation-preference.sql"), lastError_);
-    }
-    const bool cardStatusPresentationVersionInserted = cardStatusPresentationReady
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/010-mark-card-status-presentation-applied.sql"), lastError_);
-    bool languageKeyExists = false;
-    bool languageKeyReady = false;
-    if (cardStatusPresentationVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-user-preference-columns.sql"), lastError_)) {
-        while (query.next()) {
-            if (query.value(1).toString() == QStringLiteral("language_key")) languageKeyExists = true;
-        }
-        languageKeyReady = languageKeyExists || ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/011-add-language-preference.sql"), lastError_);
-    }
-    const bool languageVersionInserted = languageKeyReady
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/011-mark-language-preference-applied.sql"), lastError_);
-    bool preferredTitleKeyExists = false;
-    bool preferredTitleKeyReady = false;
-    if (languageVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-user-preference-columns.sql"), lastError_)) {
-        while (query.next()) {
-            if (query.value(1).toString() == QStringLiteral("preferred_title_key")) {
-                preferredTitleKeyExists = true;
-            }
-        }
-        preferredTitleKeyReady = preferredTitleKeyExists || ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/012-add-preferred-title-preference.sql"), lastError_);
-    }
-    const bool preferredTitleVersionInserted = preferredTitleKeyReady
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/012-mark-preferred-title-preference-applied.sql"), lastError_);
-    const bool seasonReady = preferredTitleVersionInserted && (seasonColumnExists
-        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/013-add-season-to-media.sql"), lastError_));
-    const bool seasonYearReady = seasonReady && (seasonYearColumnExists
-        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/013-add-season-year-to-media.sql"), lastError_));
-    const bool nextAiringEpisodeReady = seasonYearReady && (nextAiringEpisodeColumnExists
-        || ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/013-add-next-airing-episode-to-media.sql"), lastError_));
-    const bool nextAiringAtReady = nextAiringEpisodeReady && (nextAiringAtColumnExists
-        || ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/013-add-next-airing-at-to-media.sql"), lastError_));
-    const bool aniListUrlReady = nextAiringAtReady && (aniListUrlColumnExists
-        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/013-add-anilist-url-to-media.sql"), lastError_));
-    const bool externalLinksReady = aniListUrlReady && (externalLinksColumnExists
-        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/013-add-external-links-to-media.sql"), lastError_));
-    const bool extendedMediaVersionInserted = externalLinksReady
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/013-mark-extended-media-metadata-applied.sql"), lastError_);
-    bool includeAdultContentExists = false;
-    bool adultContentReady = false;
-    if (extendedMediaVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-user-preference-columns.sql"), lastError_)) {
-        while (query.next()) {
-            if (query.value(1).toString() == QStringLiteral("include_adult_content")) {
-                includeAdultContentExists = true;
-            }
-        }
-        adultContentReady = includeAdultContentExists || ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/014-add-adult-content-preference.sql"), lastError_);
-    }
-    const bool adultContentVersionInserted = adultContentReady
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/014-mark-adult-content-preference-applied.sql"), lastError_);
-    const bool localPathReady = adultContentVersionInserted && (localPathColumnExists
-        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/015-add-local-path-to-media.sql"), lastError_));
-    const bool localPathVersionInserted = localPathReady
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/015-mark-local-path-applied.sql"), lastError_);
-    bool recognitionFieldsReady = false;
-    if (localPathVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-local-file-columns.sql"), lastError_)) {
-        QSet<QString> columns;
-        while (query.next()) columns.insert(query.value(1).toString());
-        const auto addColumn = [&query, &columns, this](const QString &name, const QString &path) {
-            if (columns.contains(name)) return true;
-            if (!ExecuteMigrationScript(query, path, lastError_)) return false;
-            columns.insert(name);
-            return true;
-        };
-        recognitionFieldsReady = addColumn(QStringLiteral("extracted_title"), QStringLiteral(":/sqlite/migrations/016-add-extracted-title-to-local-files.sql"))
-            && addColumn(QStringLiteral("media_kind"), QStringLiteral(":/sqlite/migrations/016-add-media-kind-to-local-files.sql"))
-            && addColumn(QStringLiteral("season"), QStringLiteral(":/sqlite/migrations/016-add-season-to-local-files.sql"))
-            && addColumn(QStringLiteral("episode"), QStringLiteral(":/sqlite/migrations/016-add-episode-to-local-files.sql"))
-            && addColumn(QStringLiteral("media_id"), QStringLiteral(":/sqlite/migrations/016-add-media-id-to-local-files.sql"))
-            && addColumn(QStringLiteral("recognition_diagnostic"), QStringLiteral(":/sqlite/migrations/016-add-recognition-diagnostic-to-local-files.sql"))
-            && addColumn(QStringLiteral("recognized_at"), QStringLiteral(":/sqlite/migrations/016-add-recognized-at-to-local-files.sql"));
-    }
-    const bool recognitionVersionInserted = recognitionFieldsReady
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/016-mark-local-file-recognition-fields-applied.sql"), lastError_);
-    bool recognitionStateConstraintReady = false;
-    if (recognitionVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-local-files-schema.sql"), lastError_) && query.next()) {
-        recognitionStateConstraintReady = query.value(0).toString().contains(QStringLiteral("'ambiguous'"));
-    }
-    if (recognitionVersionInserted && !recognitionStateConstraintReady) {
-        const bool legacyLocalFilesRenamed = ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/017-rename-legacy-local-files-table.sql"), lastError_);
-        const bool localFilesRecreated = legacyLocalFilesRenamed && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/017-create-local-files-with-recognition-constraint.sql"), lastError_);
-        const bool localFilesCopied = localFilesRecreated && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/017-copy-legacy-local-files.sql"), lastError_);
-        recognitionStateConstraintReady = localFilesCopied && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/017-drop-legacy-local-files-table.sql"), lastError_);
-    }
-    const bool recognitionStateVersionInserted = recognitionStateConstraintReady
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/017-mark-recognition-state-constraint-applied.sql"), lastError_);
-    bool automaticRecognitionColumnExists = false;
-    if (recognitionStateVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-user-preference-columns.sql"), lastError_)) {
-        while (query.next()) automaticRecognitionColumnExists |= query.value(1).toString() == QStringLiteral("automatic_local_file_recognition");
-    }
-    const bool automaticRecognitionReady = recognitionStateVersionInserted && (automaticRecognitionColumnExists
-        || ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/018-add-automatic-local-file-recognition-preference.sql"), lastError_));
-    const bool automaticRecognitionVersionInserted = automaticRecognitionReady
-        && ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/018-mark-automatic-local-file-recognition-applied.sql"), lastError_);
-    const bool syncTaskStateReady = automaticRecognitionVersionInserted && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/019-create-sync-task-state.sql"), lastError_);
-    bool syncTaskStateColumnsReady = syncTaskStateReady;
-    if (syncTaskStateColumnsReady && query.exec(QStringLiteral("PRAGMA table_info(sync_task_state)"))) {
-        QSet<QString> columns;
-        while (query.next()) columns.insert(query.value(1).toString());
-        const auto addColumn = [&query, &columns, this](const QString &name, const QString &sql) {
-            if (columns.contains(name)) return true;
-            if (!query.exec(sql)) {
-                lastError_ = query.lastError().text();
-                return false;
-            }
-            columns.insert(name);
-            return true;
-        };
-        syncTaskStateColumnsReady = addColumn(QStringLiteral("status"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN status TEXT NOT NULL DEFAULT 'idle'"))
-            && addColumn(QStringLiteral("next_run_at"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN next_run_at TEXT"))
-            && addColumn(QStringLiteral("safe_error_detail"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN safe_error_detail TEXT NOT NULL DEFAULT ''"))
-            && addColumn(QStringLiteral("confirmed_page"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN confirmed_page INTEGER"))
-            && addColumn(QStringLiteral("confirmed_cursor"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN confirmed_cursor TEXT"))
-            && addColumn(QStringLiteral("priority"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN priority INTEGER NOT NULL DEFAULT 0"))
-            && addColumn(QStringLiteral("generation"), QStringLiteral("ALTER TABLE sync_task_state ADD COLUMN generation INTEGER NOT NULL DEFAULT 0"));
-    } else if (syncTaskStateColumnsReady) {
-        syncTaskStateColumnsReady = false;
-        lastError_ = query.lastError().text();
-    }
-    const bool syncTaskStateVersionInserted = syncTaskStateColumnsReady && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/019-mark-sync-task-state-applied.sql"), lastError_);
-    bool enabledUserListsExists = false;
-    if (syncTaskStateVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-user-preference-columns.sql"), lastError_)) {
-        while (query.next()) enabledUserListsExists |= query.value(1).toString() == QStringLiteral("enabled_user_lists");
-    }
-    const bool enabledUserListsReady = syncTaskStateVersionInserted && (enabledUserListsExists
-        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/020-add-enabled-user-lists-preference.sql"), lastError_));
-    const bool enabledUserListsVersionInserted = enabledUserListsReady && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/020-mark-enabled-user-lists-preference-applied.sql"), lastError_);
-    bool pendingOwnerExists = false;
-    if (enabledUserListsVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-pending-change-columns.sql"), lastError_)) {
-        while (query.next()) pendingOwnerExists |= query.value(1).toString() == QStringLiteral("owner_user_id");
-    }
-    const bool pendingOwnerReady = enabledUserListsVersionInserted && (pendingOwnerExists
-        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/021-add-owner-user-id-to-pending-changes.sql"), lastError_));
-    const bool pendingOwnerVersionInserted = pendingOwnerReady && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/021-mark-pending-change-owner-applied.sql"), lastError_);
-    bool lastUserIdExists = false;
-    if (pendingOwnerVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-user-preference-columns.sql"), lastError_)) {
-        while (query.next()) lastUserIdExists |= query.value(1).toString() == QStringLiteral("last_anilist_user_id");
-    }
-    const bool lastUserIdReady = pendingOwnerVersionInserted && (lastUserIdExists
-        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/022-add-last-anilist-user-id-preference.sql"), lastError_));
-    const bool lastUserIdVersionInserted = lastUserIdReady && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/022-mark-last-anilist-user-id-applied.sql"), lastError_);
-    bool personalListRemovedExists = false;
-    if (lastUserIdVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-media-columns.sql"), lastError_)) {
-        while (query.next()) personalListRemovedExists |= query.value(1).toString() == QStringLiteral("personal_list_removed_at");
-    }
-    const bool personalListRemovedReady = lastUserIdVersionInserted && (personalListRemovedExists
-        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/023-add-personal-list-removed-at-to-media.sql"), lastError_));
-    const bool personalListRemovedVersionInserted = personalListRemovedReady && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/023-mark-personal-list-removed-at-applied.sql"), lastError_);
-    const bool pluginSettingsReady = personalListRemovedVersionInserted && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/024-create-plugin-settings.sql"), lastError_);
-    const bool pluginSettingsVersionInserted = pluginSettingsReady && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/024-mark-plugin-settings-applied.sql"), lastError_);
-    const bool recognitionHistoryReady = pluginSettingsVersionInserted && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/025-create-recognition-history.sql"), lastError_);
-    const bool recognitionHistoryVersionInserted = recognitionHistoryReady && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/025-mark-recognition-history-applied.sql"), lastError_);
-    bool libraryRootsExists = false;
-    if (recognitionHistoryVersionInserted && ExecuteMigrationScript(
-            query, QStringLiteral(":/sqlite/migrations/000-inspect-user-preference-columns.sql"), lastError_)) {
-        while (query.next()) libraryRootsExists |= query.value(1).toString() == QStringLiteral("library_roots");
-    }
-    const bool libraryRootsReady = recognitionHistoryVersionInserted && (libraryRootsExists
-        || ExecuteMigrationScript(query, QStringLiteral(":/sqlite/migrations/026-add-library-roots-preference.sql"), lastError_));
-    const bool libraryRootsVersionInserted = libraryRootsReady && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/026-mark-library-roots-preference-applied.sql"), lastError_);
-    const bool versionQueried = libraryRootsVersionInserted && ExecuteMigrationScript(
-        query, QStringLiteral(":/sqlite/migrations/000-inspect-applied-schema-versions.sql"), lastError_);
-    const bool legacyVersionsRecorded = versionQueried && query.next() && query.value(0).toBool()
-        && query.value(1).toBool() && query.value(2).toBool() && query.value(3).toBool()
-        && query.value(4).toBool() && query.value(5).toBool() && query.value(6).toBool()
-        && query.value(7).toBool() && query.value(8).toBool() && query.value(9).toBool()
-        && query.value(10).toBool() && query.value(11).toBool() && query.value(12).toBool()
-        && query.value(13).toBool() && query.value(14).toBool() && query.value(15).toBool()
-        && query.value(16).toBool() && query.value(17).toBool()
-        && query.value(18).toBool() && query.value(19).toBool()
-        && query.value(20).toBool() && query.value(21).toBool() && query.value(22).toBool()
-        && query.value(23).toBool() && query.value(24).toBool() && query.value(25).toBool();
-    const bool versionRecorded = libraryRootsVersionInserted && legacyVersionsRecorded
-        && query.exec(QStringLiteral("SELECT EXISTS(SELECT 1 FROM schema_version WHERE version = 26)"))
-        && query.next() && query.value(0).toBool();
+    const bool versionRecorded = stepsSucceeded && AllVersionsRecorded(query);
 
     if (versionRecorded) {
         const bool committed = database_.commit();

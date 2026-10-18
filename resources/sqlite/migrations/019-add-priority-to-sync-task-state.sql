@@ -1,0 +1,1 @@
+ALTER TABLE sync_task_state ADD COLUMN priority INTEGER NOT NULL DEFAULT 0;

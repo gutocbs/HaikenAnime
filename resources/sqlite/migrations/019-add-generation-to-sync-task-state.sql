@@ -1,0 +1,1 @@
+ALTER TABLE sync_task_state ADD COLUMN generation INTEGER NOT NULL DEFAULT 0;
