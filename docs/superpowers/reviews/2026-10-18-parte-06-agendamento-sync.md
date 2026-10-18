@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `2675f00` (`feature/revisao-geral`)
-- **Status:** aprovado (com as duas recomendações) e aplicado — aguardando build do revisor (a migração 027 não foi necessária; ver seção 7)
+- **Status:** aprovado (com as duas recomendações) e aplicado — validado (a migração 027 não foi necessária; ver seção 7)
 - *(O `InitialSyncCoordinator`, previsto aqui, já saiu na Parte 5.)*
 
 ---
@@ -136,3 +136,13 @@ banco. As linhas continuam gravadas; apagá-las fica como opção, se o revisor 
 - `JsonSettingsReaderTests`: o caso de duração negativa usa `pending-change` em vez de `cover`. Uma
   política `cover` no `Settings.json` passa a ser ignorada, como qualquer chave desconhecida.
 - `AniListAccountOwnershipTests`: saiu a linha que verificava uma partição de capas.
+
+### Correção após o primeiro build
+- `SqliteSyncTaskStateRepositoryTests::roundTripsUtcTimestampsAndNullableValues` quebrou: a leitura ordena
+  por `task_kind`, e com os tipos novos o estado sem datas (`pending-change`) vinha primeiro. O teste passou a
+  gravar o estado completo como `PendingChange` e o vazio como `UserList` (`ac42360`).
+- `AniListOAuthCallbackReceiverTests::forwardsCallbackToExistingServer` falhou uma vez sem relação com a
+  Parte 6 (nenhum arquivo tocado); rodado de novo, passou.
+
+### Validação final (build do revisor)
+- `scripts/validate.ps1`: build MSVC + `ctest` todo verde (após `ac42360`).
