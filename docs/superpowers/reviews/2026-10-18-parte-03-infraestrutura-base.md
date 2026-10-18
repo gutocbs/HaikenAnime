@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `39bd9ec` (`feature/revisao-geral`)
-- **Status:** aguardando aprovação — nenhuma alteração aplicada
+- **Status:** aprovado (com as duas recomendações) e aplicado — aguardando o build de validação final
 
 ---
 
@@ -107,3 +107,29 @@ teste de caracterização antes, porque é o item mais sensível da parte.
    embutido no binário e não pode ser alterado sem recompilar, então a indireção não traz flexibilidade e
    obriga 4 testes a simular um JSON quebrado. Alternativa: manter o JSON e só incluir nele as 13 queries
    que hoje estão fixas no C++.
+
+---
+
+## 7. Aplicação
+
+| Item | Commit |
+| --- | --- |
+| P3-05 `FileSecretStore` removido | `aafc559` |
+| P3-06 `WindowsCredentialManager` compartilhado | `0781c62` |
+| P3-08 `covers.quality` do `Settings.json` removido | `0bed7e0` |
+| P3-07 `JsonSettingsReader::read()` em passos nomeados | `fdfd478` |
+| P3-04 `SqliteQueries.h` no lugar do JSON (+ 5 testes removidos, 1 reescrito) | `49e211c` |
+| P3-01 snapshot do schema + rollback *data-driven* (26 versões) | `dc5332e` (validado no código antigo pelo build do revisor) |
+| P3-02 + P3-03 runner declarativo; −32 arquivos de 1 linha; os 7 `ALTER` do `sync_task_state` viraram arquivos | `31a1450` |
+
+Notas:
+- **P3-04:** `failedStartupScanDoesNotStartRecognition` usava o JSON quebrado só para forçar a falha do
+  scan. Agora força a falha com uma requisição sem extensões, que o scanner rejeita. O teste continua
+  cobrindo a mesma ligação (scan que falha não dispara reconhecimento). Na mesma mudança, as duas factories
+  de repositório de arquivos locais da composição viraram uma só (`localFileRepositoryFactory`), o que
+  antecipa parte do item previsto na Parte 7. A categoria de log `QueryConfiguration` deixou de ter uso e foi
+  removida.
+- **P3-01:** a fixture `tests/fixtures/sqlite/migrated-schema.txt` foi gerada reproduzindo a cadeia antiga
+  em Python e **confirmada pelo build do revisor contra o `migrate()` antigo** antes da reescrita.
+- **P3-02/03:** um commit só, porque o runner novo já não usa os arquivos removidos. A mensagem genérica de
+  erro ("versions 1 through 15") foi preservada de propósito; a correção está na Parte 13.

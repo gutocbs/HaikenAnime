@@ -98,7 +98,7 @@ src/
 └── app/                  # Composição e coordenação de workflows (threads, timers, runtime de sync)
 resources/
 ├── qml/                  # Telas e componentes (módulo QML "HaikenAnime")
-├── sqlite/               # migrations/*.sql, queries/*.sql, sqlite-queries.json
+├── sqlite/               # migrations/*.sql, queries/*.sql
 ├── anilist/              # queries/*.graphql, mutations/*.graphql
 ├── icons/  images/
 tests/
@@ -144,7 +144,7 @@ Regras de dependência (obrigatórias):
 2. `createApplicationContext()` (`src/app/ApplicationComposition.cpp`) monta tudo e devolve um
    `ApplicationContext` (dono de todas as dependências):
    1. lê `Settings.json` (`:/config/Settings.json`) e inicia o `AsyncLogger`;
-   2. abre o SQLite e aplica as migrações; carrega `sqlite-queries.json` (`SqliteQueryConfiguration`);
+   2. abre o SQLite e aplica as migrações;
    3. cria repositórios de mídia/outbox, `PersonalListChangeService`;
    4. cria os coordenadores de **scan** e **reconhecimento local** e o leitor de episódios locais;
    5. cria o contexto de **reconhecimento de episódios** (`createRecognitionContext`, plugins mpv/Plex);
@@ -303,7 +303,7 @@ mídia) → `PlaybackObservationService` + `RecognitionPolicy` (reprodução con
 
 `AsyncLogger` grava em `AppDataLocation/logs/haikenanime-AAAA-MM-DD.log` numa thread própria, com
 retenção em dias (`logging.retentionDays`). Níveis `Info`/`Warning`/`Error` e categorias `LogCategory`
-(Application, Configuration, Database, Migration, QueryConfiguration, QueryStore, Sync, Covers,
+(Application, Configuration, Database, Migration, QueryStore, Sync, Covers,
 LocalLibrary). Camadas internas recebem *callbacks* (`std::function<void(const QString&)>`: `auditLogger`,
 `diagnostics`, `info`) em vez do logger concreto.
 
@@ -320,23 +320,29 @@ LocalLibrary). Camadas internas recebem *callbacks* (`std::function<void(const Q
 
 ### 7.1 Migrações
 
-Arquivos em `resources/sqlite/migrations/NNN-descricao.sql`, embutidos em `:/sqlite/migrations/` (GLOB no
-CMake). `SqliteDatabase::migrate()` aplica a cadeia em ordem e é **idempotente**: inspeciona colunas
-(`000-inspect-*.sql`), aplica o `ALTER/CREATE` necessário e grava a versão (`NNN-mark-*-applied.sql`).
+Os DDLs ficam em `resources/sqlite/migrations/NNN-descricao.sql`, embutidos em `:/sqlite/migrations/` (GLOB
+no CMake). `SqliteDatabase::migrate()` percorre a lista declarativa `MigrationSteps()` **a cada
+inicialização**, numa única transação. A cadeia é idempotente:
+- `Script(arquivo)` roda um DDL (`CREATE TABLE IF NOT EXISTS …`);
+- `AddColumn(tabela, coluna, arquivo)` só roda o `ALTER` se a coluna ainda não existe (`PRAGMA table_info`);
+- `MarkVersion(n)` grava `INSERT OR IGNORE INTO schema_version`;
+- no fim, todas as versões de 1 a `LatestSchemaVersion` precisam estar gravadas; senão, rollback.
 
 Para adicionar uma migração:
-1. criar `NNN-add-…sql` (DDL) e `NNN-mark-…-applied.sql` (registro em `schema_version`);
-2. encadear em `SqliteDatabase::migrate()` verificando antes se a mudança já existe;
-3. cobrir em `SqliteDatabaseTests` (banco novo **e** banco na versão anterior).
+1. criar o(s) arquivo(s) `NNN-…sql` com o DDL (um `ALTER TABLE … ADD COLUMN` por arquivo);
+2. acrescentar ao fim de `MigrationSteps()` os passos e um `MarkVersion(NNN)`, e atualizar
+   `LatestSchemaVersion`;
+3. regenerar `tests/fixtures/sqlite/migrated-schema.txt` (snapshot do schema final verificado por
+   `SqliteDatabaseTests::migrationProducesTheExpectedSchema`) e cobrir o upgrade de um banco na versão
+   anterior sem perda de dados.
 
 ### 7.2 Queries
 
-- SQL nunca fica hardcoded em C++: cada query é um arquivo em `resources/sqlite/queries/`, carregado por
-  `SqlQueryStore` a partir do recurso `:/sqlite/queries/<arquivo>.sql`.
-- `sqlite-queries.json` mapeia nome lógico → caminho e é lido por `SqliteQueryConfiguration`.
-- Ao criar uma query: adicionar o arquivo, o `QT_RESOURCE_ALIAS` e a entrada no bundle do executável no
-  `CMakeLists.txt`, a chave em `sqlite-queries.json`/`SqliteQueryConfiguration` (quando aplicável) e o
-  recurso nos alvos de teste que a usam.
+- SQL nunca fica hardcoded em C++: cada query é um arquivo em `resources/sqlite/queries/`, embutido (por
+  GLOB) como `:/sqlite/queries/<arquivo>.sql` e carregado por `SqlQueryStore`.
+- O caminho de cada query é uma constante em `src/infrastructure/database/SqliteQueries.h`
+  (`SqliteQueries::ReadMedia`, …). Query nova = arquivo novo + constante nova. O CMake já pega o arquivo; os
+  alvos de teste que leem a query a embutem com `qt_add_resources`.
 - O mesmo vale para GraphQL: `resources/anilist/{queries,mutations}/*.graphql`, carregados por
   `GraphQlQueryStore` de `:/anilist/queries/…` e `:/anilist/mutations/…`.
 
@@ -430,14 +436,14 @@ Mapa rápido de suítes por área:
 | Área | Suítes principais |
 | --- | --- |
 | Domínio | `RecognitionDomainTests`, `AlternativeNamesTests`, `MediaTitleResolverTests` |
-| SQLite | `SqliteDatabaseTests`, `SqliteRepositoryTests`, `Sqlite*RepositoryTests`, `SqlQueryStoreTests`, `SqliteQueryConfigurationTests` |
+| SQLite | `SqliteDatabaseTests`, `SqliteRepositoryTests`, `Sqlite*RepositoryTests`, `SqlQueryStoreTests` |
 | AniList | `AniListGraphQl*Tests`, `AniListFlowTests`, `AniListPendingChange*Tests`, `AniListUpdateClientTests`, `AniListAuthManagerTests`, `AniListOAuth*Tests`, `RemoveAniListAccountUseCaseTests` |
 | Sync | `SyncTaskPolicyTests`, `AdaptiveSyncCoordinatorTests`, `AdaptiveSyncRuntimeTests`, `InitialSyncCoordinatorTests` |
 | Biblioteca local | `LocalLibraryScanner*Tests`, `LocalLibraryScan*Tests`, `LocalLibraryRecognition*Tests`, `AnitomyLocalFileRecognizerTests`, `LocalMediaResolverTests`, `LocalEpisodeReaderTests` |
 | Capas/cache | `Cover*Tests`, `QtCoverDownloaderTests`, `ClearLocalCacheUseCaseTests` |
 | Reconhecimento | `Mpv*Tests`, `Plex*Tests`, `Plugin*Tests`, `PlaybackObservationServiceTests`, `ProgressDecisionServiceTests`, `RecognitionHistory*Tests`, `RecognitionSyncFeedbackTests`, `EpisodeRecognition*Tests`, `RecognitionCompositionTests`, `ActiveSessionRegistryTests`, `NowWatchingControllerTests` |
 | Apresentação | `MediaPresentationTests`, `HomeScreenControllerTests`, `SettingsControllerTests`, `SeasonalCatalog*Tests`, `SynchronizationStatusControllerTests`, `QmlStructureTests`, `QmlRecognitionStructureTests` |
-| Configuração/plataforma | `JsonSettingsReaderTests`, `UserPreferencesValidatorTests`, `TranslationLoaderTests`, `Windows*Tests`, `FileSecretStoreTests` |
+| Configuração/plataforma | `JsonSettingsReaderTests`, `UserPreferencesValidatorTests`, `TranslationLoaderTests`, `Windows*Tests` |
 
 ---
 

@@ -149,8 +149,8 @@ Os testes de cada área (≈25,8k linhas em `tests/unit`) são revisados **na pa
 - `[Simplificar]` `if (auditLogger) auditLogger(...)` repetido dezenas de vezes.
 
 ### Parte 7 — Biblioteca local
-- `[Unificar]` `composeLibraryScanner` e `composeLibraryRecognition` repetem a montagem da lista de queries e
-  da factory de repositório.
+- ~~`[Unificar]` `composeLibraryScanner` e `composeLibraryRecognition` repetem a montagem da lista de queries
+  e da factory de repositório.~~ Feito na Parte 3 (P3-04).
 - `OwnedLocalFileRepository`/`OwnedLibraryScanner` (wrappers de ownership) — avaliar alternativa mais simples.
 - `[Padronizar]` (vindo da Parte 3) `application/library/LocalEpisodeReader` inclui `SqlQueryStore` e usa
   `QSqlQuery`: SQL dentro da camada `application`. Mover a implementação para `infrastructure/database`.
@@ -236,7 +236,7 @@ Perguntas em que há mais de um caminho razoável.
 | Baseline | — | — | ☑ 80/85 (5 falhas de `PATH`, código verde) |
 | 1 | ☑ [report](../reviews/2026-10-18-parte-01-repositorio-build.md) | ☑ | ☑ validada: `ctest` 85/85, MinGW sem prefixo, release `dist/`, smoke OK |
 | 2 | ☑ [report](../reviews/2026-10-18-parte-02-dominio-midia.md) | ☑ | ☑ validada: `ctest` 85/85, smoke OK (inclui troca de idioma) |
-| 3 | ☑ [report](../reviews/2026-10-18-parte-03-infraestrutura-base.md) | ☐ | ☐ |
+| 3 | ☑ [report](../reviews/2026-10-18-parte-03-infraestrutura-base.md) | ☑ | ☑ aplicada; aguardando build |
 | 4 | ☐ | ☐ | ☐ |
 | 5 | ☐ | ☐ | ☐ |
 | 6 | ☐ | ☐ | ☐ |
