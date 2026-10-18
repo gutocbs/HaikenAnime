@@ -124,8 +124,8 @@ P2-05 → P2-06 → P2-04 (+ teste) → P2-01 → P2-02 + P2-03 (juntos, porque 
 | P2-04 `operator==` *defaulted* (+ remoção de `comparesScannerPreferences`) | `bd5c51d` |
 | P2-01 chaves de `UserListStatus` centralizadas | `70b82a4` |
 | P2-02 + P2-03 `presentation/media/MediaPresentation` (+ `MediaDomainTests` → `MediaPresentationTests`, sem o caso de defaults) | `a76046a` |
-| P2-07 `usesExactScannerDefaults` removido | `4bbda44`* |
-| SERVICE.md | ver commit de docs |
+| P2-07 `usesExactScannerDefaults` removido | `1babd4f`* |
+| SERVICE.md, report e plano | `3362bc0` |
 
 \* Ao ajustar, vi que "os defaults são válidos" já é verificado por `acceptsSupportedPreferences`
 (`UserPreferences tenPoint;`). Por isso o caso foi removido em vez de reduzido (critério **b**).
