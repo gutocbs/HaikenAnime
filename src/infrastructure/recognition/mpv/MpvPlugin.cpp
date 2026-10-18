@@ -55,7 +55,7 @@ QString MpvPlugin::displayName() const {
 }
 
 PluginCapabilities MpvPlugin::capabilities() const {
-    return PluginCapability::DynamicSettings | PluginCapability::ConnectionTest | PluginCapability::ExplicitSessionEnd;
+    return PluginCapability::ConnectionTest;
 }
 
 PluginSettingsSchema MpvPlugin::settingsSchema() const {

@@ -28,7 +28,7 @@ public:
     [[nodiscard]] QString id() const override { return QStringLiteral("mpv"); }
     [[nodiscard]] QString displayName() const override { return QStringLiteral("mpv"); }
     [[nodiscard]] PluginCapabilities capabilities() const override {
-        return PluginCapability::DynamicSettings | PluginCapability::ConnectionTest;
+        return PluginCapability::ConnectionTest;
     }
     [[nodiscard]] PluginSettingsSchema settingsSchema() const override {
         return {.pluginId = id(),

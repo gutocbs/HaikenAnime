@@ -45,8 +45,8 @@ QString PlexPlugin::displayName() const {
 }
 
 PluginCapabilities PlexPlugin::capabilities() const {
-    return PluginCapability::DynamicSettings | PluginCapability::BrowserAuthentication
-        | PluginCapability::ConnectionTest | PluginCapability::UserSelection | PluginCapability::MultipleSessions;
+    return PluginCapability::BrowserAuthentication | PluginCapability::ConnectionTest
+        | PluginCapability::UserSelection;
 }
 
 PluginSettingsSchema PlexPlugin::settingsSchema() const {
