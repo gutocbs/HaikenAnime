@@ -104,9 +104,9 @@ bool SqliteSyncTaskStateRepository::ReadAll(QList<SyncTaskState> &states, QStrin
         const auto nextRunAt = ReadTimestamp(query.value(6), timestampsValid);
         const auto confirmedPage = ReadOptionalInt(query.value(9), timestampsValid);
         bool generationValid = false;
-        const auto generation = query.value(12).toLongLong(&generationValid);
-        const auto consecutiveFailures = query.value(13).toInt();
-        const auto consecutiveImmediateRetries = query.value(14).toInt();
+        const auto generation = query.value(11).toLongLong(&generationValid);
+        const auto consecutiveFailures = query.value(12).toInt();
+        const auto consecutiveImmediateRetries = query.value(13).toInt();
         if (!kind.has_value() || !partition.has_value() || !status.has_value() || !cacheValidity.has_value()
             || !errorCategory.has_value() || !timestampsValid || query.value(8).isNull() || !generationValid
             || generation < 0 || consecutiveFailures < 0 || consecutiveImmediateRetries < 0) {
@@ -123,9 +123,7 @@ bool SqliteSyncTaskStateRepository::ReadAll(QList<SyncTaskState> &states, QStrin
         state.lastErrorCategory = *errorCategory;
         state.safeErrorDetail = query.value(8).toString();
         state.confirmedPage = confirmedPage;
-        state.confirmedCursor = query.value(10).isNull() ? std::nullopt
-                                                          : std::optional<QString>(query.value(10).toString());
-        state.priority = query.value(11).toInt();
+        state.priority = query.value(10).toInt();
         state.generation = generation;
         state.consecutiveFailures = consecutiveFailures;
         state.consecutiveImmediateRetries = consecutiveImmediateRetries;
@@ -171,7 +169,6 @@ bool SqliteSyncTaskStateRepository::Upsert(const SyncTaskState &state, QString &
     query.bindValue(QStringLiteral(":safe_error_detail"), state.safeErrorDetail.isNull()
         ? QStringLiteral("") : state.safeErrorDetail);
     query.bindValue(QStringLiteral(":confirmed_page"), state.confirmedPage.has_value() ? *state.confirmedPage : QVariant{});
-    query.bindValue(QStringLiteral(":confirmed_cursor"), state.confirmedCursor.has_value() ? *state.confirmedCursor : QVariant{});
     query.bindValue(QStringLiteral(":priority"), state.priority);
     query.bindValue(QStringLiteral(":generation"), state.generation);
     query.bindValue(QStringLiteral(":consecutive_failures"), state.consecutiveFailures);

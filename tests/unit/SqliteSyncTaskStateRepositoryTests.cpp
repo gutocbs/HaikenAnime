@@ -22,7 +22,6 @@ SyncTaskState State() {
     state.lastErrorCategory = AniListSyncErrorCategory::RateLimit;
     state.safeErrorDetail = QStringLiteral("Rate limit reached; retry later.");
     state.confirmedPage = 7;
-    state.confirmedCursor = QStringLiteral("page-7-cursor");
     state.priority = 25;
     state.generation = 42;
     state.consecutiveFailures = 3;
@@ -92,7 +91,6 @@ void SqliteSyncTaskStateRepositoryTests::roundTripsUtcTimestampsAndNullableValue
     nullable.lastErrorCategory = AniListSyncErrorCategory::None;
     nullable.safeErrorDetail.clear();
     nullable.confirmedPage.reset();
-    nullable.confirmedCursor.reset();
     nullable.priority = 0;
     nullable.generation = 0;
     nullable.consecutiveFailures = 0;
@@ -108,14 +106,12 @@ void SqliteSyncTaskStateRepositoryTests::roundTripsUtcTimestampsAndNullableValue
     QCOMPARE(states.at(0).status, expected.status);
     QCOMPARE(states.at(0).safeErrorDetail, expected.safeErrorDetail);
     QCOMPARE(states.at(0).confirmedPage, expected.confirmedPage);
-    QCOMPARE(states.at(0).confirmedCursor, expected.confirmedCursor);
     QCOMPARE(states.at(0).priority, expected.priority);
     QCOMPARE(states.at(0).generation, expected.generation);
     QVERIFY(!states.at(1).lastSucceededAt.has_value());
     QVERIFY(!states.at(1).lastAttemptedAt.has_value());
     QVERIFY(!states.at(1).nextRunAt.has_value());
     QVERIFY(!states.at(1).confirmedPage.has_value());
-    QVERIFY(!states.at(1).confirmedCursor.has_value());
     QCOMPARE(states.at(0).consecutiveFailures, 3);
 }
 

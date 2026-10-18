@@ -328,13 +328,12 @@ void AdaptiveSyncCoordinatorTests::recordsIndependentProgressWhenAnotherPartitio
                        .safeErrorDetail = QStringLiteral("network unavailable")});
     QTRY_VERIFY(executor.started.contains(SyncPartition::ActiveCatalog));
     executor.Complete(SyncPartition::ActiveCatalog,
-                      {.succeeded = true, .confirmedPage = 3, .confirmedCursor = QStringLiteral("cursor-3")});
+                      {.succeeded = true, .confirmedPage = 3});
 
     QTRY_COMPARE(repository.State(SyncPartition::PendingChanges).status, SyncTaskStatus::RetryScheduled);
     QTRY_COMPARE(repository.State(SyncPartition::ActiveCatalog).status, SyncTaskStatus::Succeeded);
     const auto completed = repository.State(SyncPartition::ActiveCatalog);
     QCOMPARE(completed.confirmedPage, std::optional<int>(3));
-    QCOMPARE(completed.confirmedCursor, std::optional<QString>(QStringLiteral("cursor-3")));
 }
 
 void AdaptiveSyncCoordinatorTests::resumesAnIncompleteTaskFromItsPersistedCheckpoint() {
@@ -343,7 +342,6 @@ void AdaptiveSyncCoordinatorTests::resumesAnIncompleteTaskFromItsPersistedCheckp
     auto interrupted = DueState(SyncTaskKind::UserList, SyncPartition::UserList);
     interrupted.status = SyncTaskStatus::RetryScheduled;
     interrupted.confirmedPage = 2;
-    interrupted.confirmedCursor = QStringLiteral("page-2");
     repository.states = {interrupted};
     FakeTaskExecutor executor;
     AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
@@ -352,7 +350,6 @@ void AdaptiveSyncCoordinatorTests::resumesAnIncompleteTaskFromItsPersistedCheckp
 
     const auto resumed = executor.requests.at(SyncPartition::UserList).state;
     QCOMPARE(resumed.confirmedPage, std::optional<int>(2));
-    QCOMPARE(resumed.confirmedCursor, std::optional<QString>(QStringLiteral("page-2")));
 }
 
 void AdaptiveSyncCoordinatorTests::restartsPersistedRetryScheduledTaskWithoutWaitingForPreviousProcessCooldown() {

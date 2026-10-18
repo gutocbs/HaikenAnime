@@ -246,10 +246,7 @@ void AdaptiveSyncCoordinator::Request(const SyncPartition partition, const SyncT
 void AdaptiveSyncCoordinator::StartTask(SyncTaskState state) {
     if (stopped_ || activeGenerations_.contains(state.partition) || !CanStart(state.partition)) return;
 
-    if (state.status == SyncTaskStatus::Succeeded) {
-        state.confirmedPage.reset();
-        state.confirmedCursor.reset();
-    }
+    if (state.status == SyncTaskStatus::Succeeded) state.confirmedPage.reset();
     state.status = SyncTaskStatus::Running;
     state.lastAttemptedAt = Now();
     ++state.generation;
@@ -288,7 +285,6 @@ void AdaptiveSyncCoordinator::CompleteTask(const SyncPartition partition, const 
         completed.consecutiveImmediateRetries = 0;
         if (partition == SyncPartition::UserList) userListReady_ = true;
         if (result.confirmedPage.has_value()) completed.confirmedPage = result.confirmedPage;
-        if (result.confirmedCursor.has_value()) completed.confirmedCursor = result.confirmedCursor;
     } else {
         completed.lastErrorCategory = result.errorCategory == AniListSyncErrorCategory::None
             ? AniListSyncErrorCategory::Unknown : result.errorCategory;

@@ -14,7 +14,6 @@ struct SyncTaskExecutionResult final {
     AniListSyncErrorCategory errorCategory = AniListSyncErrorCategory::None;
     QString safeErrorDetail;
     std::optional<int> confirmedPage;
-    std::optional<QString> confirmedCursor;
 };
 
 /** Starts one task on the executor-owned worker thread and completes asynchronously. */

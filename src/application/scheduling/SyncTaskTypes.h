@@ -90,7 +90,6 @@ struct SyncTaskState final {
     AniListSyncErrorCategory lastErrorCategory = AniListSyncErrorCategory::None;
     QString safeErrorDetail;
     std::optional<int> confirmedPage;
-    std::optional<QString> confirmedCursor;
     int priority = 0;
     qint64 generation = 0;
     int consecutiveFailures = 0;
