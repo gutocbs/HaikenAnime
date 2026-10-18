@@ -3,16 +3,11 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-#include <windows.h>
-#include <wincred.h>
+#include "WindowsCredentialManager.h"
 
 #include <utility>
 
 namespace {
-QString WinError(const DWORD code) {
-    return QStringLiteral("Windows Credential Manager error %1.").arg(code);
-}
-
 bool IsValid(const AniListCredentials &credentials) {
     return !credentials.username.trimmed().isEmpty() && !credentials.token.trimmed().isEmpty()
         && !credentials.username.contains(QLatin1Char('\n'))
@@ -51,16 +46,8 @@ WindowsCredentialStore::WindowsCredentialStore(QString targetName)
 
 bool WindowsCredentialStore::loadAniListCredentials(AniListCredentials &credentials, QString &error) {
     credentials = {};
-    error.clear();
-    PCREDENTIALW credential = nullptr;
-    if (!CredReadW(reinterpret_cast<LPCWSTR>(targetName_.utf16()), CRED_TYPE_GENERIC, 0, &credential)) {
-        error = WinError(GetLastError());
-        return false;
-    }
-
-    const QByteArray payload(reinterpret_cast<const char *>(credential->CredentialBlob),
-                             static_cast<qsizetype>(credential->CredentialBlobSize));
-    CredFree(credential);
+    QByteArray payload;
+    if (!WindowsCredentialManager::read(targetName_, payload, error)) return false;
     if (!Deserialize(payload, credentials)) {
         credentials = {};
         error = QStringLiteral("Stored AniList credentials are invalid.");
@@ -75,30 +62,9 @@ bool WindowsCredentialStore::saveAniListCredentials(const AniListCredentials &cr
         error = QStringLiteral("AniList credentials must contain non-empty single-line username and token values.");
         return false;
     }
-    const QByteArray payload = Serialize(credentials);
-    CREDENTIALW credential{};
-    credential.Type = CRED_TYPE_GENERIC;
-    credential.TargetName = reinterpret_cast<LPWSTR>(const_cast<ushort *>(targetName_.utf16()));
-    credential.CredentialBlobSize = static_cast<DWORD>(payload.size());
-    credential.CredentialBlob = reinterpret_cast<LPBYTE>(const_cast<char *>(payload.constData()));
-    credential.Persist = CRED_PERSIST_LOCAL_MACHINE;
-    credential.UserName = reinterpret_cast<LPWSTR>(const_cast<ushort *>(credentials.username.utf16()));
-    if (!CredWriteW(&credential, 0)) {
-        error = WinError(GetLastError());
-        return false;
-    }
-    return true;
+    return WindowsCredentialManager::write(targetName_, Serialize(credentials), credentials.username, error);
 }
 
 bool WindowsCredentialStore::clearAniListCredentials(QString &error) {
-    error.clear();
-    if (CredDeleteW(reinterpret_cast<LPCWSTR>(targetName_.utf16()), CRED_TYPE_GENERIC, 0)) {
-        return true;
-    }
-    const DWORD code = GetLastError();
-    if (code == ERROR_NOT_FOUND) {
-        return true;
-    }
-    error = WinError(code);
-    return false;
+    return WindowsCredentialManager::remove(targetName_, error);
 }
