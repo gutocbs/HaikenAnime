@@ -152,6 +152,8 @@ Os testes de cada área (≈25,8k linhas em `tests/unit`) são revisados **na pa
 - `[Unificar]` `composeLibraryScanner` e `composeLibraryRecognition` repetem a montagem da lista de queries e
   da factory de repositório.
 - `OwnedLocalFileRepository`/`OwnedLibraryScanner` (wrappers de ownership) — avaliar alternativa mais simples.
+- `[Padronizar]` (vindo da Parte 3) `application/library/LocalEpisodeReader` inclui `SqlQueryStore` e usa
+  `QSqlQuery`: SQL dentro da camada `application`. Mover a implementação para `infrastructure/database`.
 
 ### Parte 8 — Capas, cache e catálogo sazonal
 - `[Simplificar]` `ClearLocalCacheUseCase` recebe lista de participantes sempre vazia.
