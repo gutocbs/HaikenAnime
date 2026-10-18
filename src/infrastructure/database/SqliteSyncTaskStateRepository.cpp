@@ -3,6 +3,7 @@
 #include <QSqlError>
 #include <QSqlQuery>
 
+#include "SqliteQueries.h"
 #include "SqlQueryStore.h"
 
 #include <limits>
@@ -74,16 +75,15 @@ std::optional<int> ReadOptionalInt(const QVariant &value, bool &valid) {
 }
 }
 
-SqliteSyncTaskStateRepository::SqliteSyncTaskStateRepository(QSqlDatabase database, QString readQuery,
-                                                             QString upsertQuery)
-    : database_(std::move(database)), readQuery_(std::move(readQuery)), upsertQuery_(std::move(upsertQuery)) {
+SqliteSyncTaskStateRepository::SqliteSyncTaskStateRepository(QSqlDatabase database)
+    : database_(std::move(database)) {
 }
 
 bool SqliteSyncTaskStateRepository::ReadAll(QList<SyncTaskState> &states, QString &error) {
     states.clear();
     error.clear();
     QString sql;
-    if (!SqlQueryStore::loadSource(readQuery_, sql, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadSyncTaskStates, sql, error)) return false;
     QSqlQuery query(database_);
     if (!query.exec(sql)) {
         error = query.lastError().text();
@@ -147,7 +147,7 @@ bool SqliteSyncTaskStateRepository::Upsert(const SyncTaskState &state, QString &
     }
     QString sql;
     QSqlQuery query(database_);
-    if (!SqlQueryStore::loadSource(upsertQuery_, sql, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpsertSyncTaskState, sql, error)) return false;
     if (!query.prepare(sql)) {
         error = query.lastError().text();
         return false;
