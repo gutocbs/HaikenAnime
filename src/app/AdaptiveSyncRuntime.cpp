@@ -99,6 +99,17 @@ QString AdaptiveSyncRuntime::initializationError() const {
     return initializationError_;
 }
 
+template <typename... Args>
+void AdaptiveSyncRuntime::Relay(void (AdaptiveSyncCoordinator::*signal)(Args...),
+                                void (AdaptiveSyncRuntime::*relayed)(Args...)) {
+    // The coordinator emits on the worker thread; re-emit on this object's thread with copied arguments.
+    connect(coordinator_.get(), signal, owner_, [this, relayed](Args... arguments) {
+        QMetaObject::invokeMethod(this, [this, relayed, arguments...] {
+            emit (this->*relayed)(arguments...);
+        }, Qt::QueuedConnection);
+    });
+}
+
 void AdaptiveSyncRuntime::Initialize(RepositoryFactory repositoryFactory, ExecutorFactory executorFactory,
                                      std::map<SyncTaskKind, SyncSchedulePolicy> policies) {
     QString error;
@@ -120,36 +131,11 @@ void AdaptiveSyncRuntime::Initialize(RepositoryFactory repositoryFactory, Execut
     coordinator_ = std::make_unique<AdaptiveSyncCoordinator>(*repository_, *executor_,
                                                                AdaptiveSyncCoordinator::Clock{}, std::move(policies), true);
     connect(coordinator_.get(), &AdaptiveSyncCoordinator::Stopped, owner_, [this] { DisposeOnWorker(); });
-    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskStarted, owner_,
-            [this](const SyncPartition partition) {
-                QMetaObject::invokeMethod(this, [this, partition] {
-                    emit BackgroundTaskStarted(partition);
-                }, Qt::QueuedConnection);
-            });
-    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskProgress, owner_,
-            [this](const SyncProgress &progress) {
-                QMetaObject::invokeMethod(this, [this, progress] {
-                    emit BackgroundTaskProgress(progress);
-                }, Qt::QueuedConnection);
-            });
-    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskCompleted, owner_,
-            [this](const SyncPartition partition) {
-                QMetaObject::invokeMethod(this, [this, partition] {
-                    emit BackgroundTaskCompleted(partition);
-                }, Qt::QueuedConnection);
-            });
-    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskCancelled, owner_,
-            [this](const SyncPartition partition) {
-                QMetaObject::invokeMethod(this, [this, partition] {
-                    emit BackgroundTaskCancelled(partition);
-                }, Qt::QueuedConnection);
-            });
-    connect(coordinator_.get(), &AdaptiveSyncCoordinator::TaskFailed, owner_,
-            [this](const SyncPartition partition, const QString &error) {
-                QMetaObject::invokeMethod(this, [this, partition, error] {
-                    emit BackgroundTaskFailed(partition, error);
-                }, Qt::QueuedConnection);
-            });
+    Relay(&AdaptiveSyncCoordinator::TaskStarted, &AdaptiveSyncRuntime::BackgroundTaskStarted);
+    Relay(&AdaptiveSyncCoordinator::TaskProgress, &AdaptiveSyncRuntime::BackgroundTaskProgress);
+    Relay(&AdaptiveSyncCoordinator::TaskCompleted, &AdaptiveSyncRuntime::BackgroundTaskCompleted);
+    Relay(&AdaptiveSyncCoordinator::TaskCancelled, &AdaptiveSyncRuntime::BackgroundTaskCancelled);
+    Relay(&AdaptiveSyncCoordinator::TaskFailed, &AdaptiveSyncRuntime::BackgroundTaskFailed);
 
     if (isStopRequested()) {
         StopOnWorker();

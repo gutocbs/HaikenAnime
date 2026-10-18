@@ -54,6 +54,9 @@ private:
 
     void Initialize(RepositoryFactory repositoryFactory, ExecutorFactory executorFactory,
                     std::map<SyncTaskKind, SyncSchedulePolicy> policies);
+    /** Forwards one coordinator signal to the GUI-facing signal with the same arguments. */
+    template <typename... Args>
+    void Relay(void (AdaptiveSyncCoordinator::*signal)(Args...), void (AdaptiveSyncRuntime::*relayed)(Args...));
     void StartOnWorker();
     void RequestNowOnWorker(SyncPartition partition);
     void CancelOnWorker(SyncPartition partition, std::function<void()> acknowledged);
