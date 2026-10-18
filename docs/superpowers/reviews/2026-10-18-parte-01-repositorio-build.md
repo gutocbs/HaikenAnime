@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `775bcec` (`feature/reconhecimento-episodios`)
-- **Status:** aprovado e aplicado em `feature/revisao-geral` — aguardando o build de validação
+- **Status:** aprovado e aplicado em `feature/revisao-geral` — validado
 
 ---
 
@@ -153,3 +153,9 @@ Notas de equivalência do P1-02:
   agora uma vez;
 - as 5 suítes que estavam fora da lista e `QmlRecognitionStructureTests` passam a ter `PATH` do Qt e
   `TIMEOUT 30` (a mais lenta do baseline leva 18 s).
+
+### Validação final (build do revisor)
+- Build limpo MSVC + `ctest`: **85/85** (as 5 falhas de `PATH` do baseline sumiram).
+- Configure MinGW **sem** `-DCMAKE_PREFIX_PATH`: Qt `mingw_64` encontrado pelo `PATH`.
+- `scripts/build-release.ps1`: `dist/` gerado.
+- Smoke manual do app: OK.
