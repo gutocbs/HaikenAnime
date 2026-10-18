@@ -11,7 +11,6 @@ class CoverFileStoreTests : public QObject {
 private slots:
     void publishesValidImageDeterministically();
     void rejectsInvalidImagesAndPreservesExistingFile();
-    void removesOnlyBoundedOrphans();
 };
 
 static QString CreatePng(const QString &path, const QSize &size = {64, 96})
@@ -93,25 +92,6 @@ void CoverFileStoreTests::rejectsInvalidImagesAndPreservesExistingFile()
         QVERIFY(preserved.open(QIODevice::ReadOnly));
         QCOMPARE(preserved.readAll(), original);
     }
-}
-
-void CoverFileStoreTests::removesOnlyBoundedOrphans()
-{
-    QTemporaryDir directory;
-    QVERIFY(directory.isValid());
-    CoverFileStore store(directory.path() + "/covers", CoverSettings{});
-    QDir().mkpath(directory.path() + "/covers");
-    for (const auto &name : {"keep.png", "one.png", "two.png", "three.png"}) {
-        QFile file(directory.path() + "/covers/" + name);
-        QVERIFY(file.open(QIODevice::WriteOnly));
-        file.write("x");
-    }
-
-    int removed = 0;
-    QString error;
-    QVERIFY2(store.RemoveOrphans(QSet<QString>{"keep.png"}, 2, removed, error), qPrintable(error));
-    QCOMPARE(removed, 2);
-    QVERIFY(QFileInfo::exists(directory.path() + "/covers/keep.png"));
 }
 
 QTEST_MAIN(CoverFileStoreTests)

@@ -40,7 +40,6 @@ public:
         if (failClear) { error = "file clear failure"; return false; }
         error.clear(); return true;
     }
-    bool RemoveOrphans(const QSet<QString>&,int,int&,QString&) override{return true;}
     QString AbsolutePath(const QString& p) const override{return "/covers/"+p;}
     QSet<QString> existing; QSet<int> published; QStringList removed;
     bool failPublish = false;

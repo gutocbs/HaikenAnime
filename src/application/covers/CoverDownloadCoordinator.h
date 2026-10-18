@@ -8,6 +8,7 @@
 #include <QHash>
 #include <QObject>
 #include <QQueue>
+#include <QSet>
 
 class AsyncLogger;
 

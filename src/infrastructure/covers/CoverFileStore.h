@@ -14,8 +14,6 @@ public:
                  PublishedCover &result, QString &error) override;
     bool Remove(const QString &relativePath, QString &error) override;
     bool Clear(int &removedFiles, QString &error) override;
-    bool RemoveOrphans(const QSet<QString> &referencedPaths,
-                       int maxFiles, int &removedFiles, QString &error) override;
     QString AbsolutePath(const QString &relativePath) const override;
 
 private:

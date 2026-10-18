@@ -119,7 +119,6 @@ public:
     bool Clear(int &removedFiles, QString &error) override {
         removedFiles = 0; error.clear(); return true;
     }
-    bool RemoveOrphans(const QSet<QString> &, int, int &, QString &) override { return true; }
     QString AbsolutePath(const QString &path) const override { return QStringLiteral("C:/covers/") + path; }
 };
 

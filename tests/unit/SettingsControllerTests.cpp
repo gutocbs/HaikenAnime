@@ -132,7 +132,6 @@ public:
         error = failure;
         return failure.isEmpty();
     }
-    bool RemoveOrphans(const QSet<QString> &, int, int &, QString &) override { return true; }
     QString AbsolutePath(const QString &) const override { return {}; }
     int files = 0;
     QString failure;

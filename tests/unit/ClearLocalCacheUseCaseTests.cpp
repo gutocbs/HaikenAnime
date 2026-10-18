@@ -70,7 +70,6 @@ public:
         error.clear();
         return true;
     }
-    bool RemoveOrphans(const QSet<QString> &, int, int &, QString &) override { return true; }
     QString AbsolutePath(const QString &path) const override { return path; }
 
     QSet<QString> files;
