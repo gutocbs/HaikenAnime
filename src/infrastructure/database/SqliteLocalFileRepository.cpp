@@ -1,11 +1,11 @@
 #include "SqliteLocalFileRepository.h"
 
-#include <QDir>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QPair>
 
 #include "SqliteMediaMapper.h"
+#include "../../application/library/LocalMediaCatalogIndex.h"
 #include "SqlQueryStore.h"
 
 #include <utility>
@@ -58,19 +58,6 @@ LocalFileRecognitionRecord MapRecognitionRecord(const QSqlQuery &query) {
     if (!query.value(13).isNull()) record.mediaId = query.value(13).toInt();
     record.diagnostic = query.value(14).toString();
     return record;
-}
-// Same cleaning and case rule as LocalMediaCatalogIndex::NormalizeFolder.
-QString ComparablePath(const QString &path) {
-    auto normalized = path.trimmed();
-    normalized.replace(QLatin1Char('\\'), QLatin1Char('/'));
-    if (normalized.isEmpty()) return {};
-    normalized = QDir::cleanPath(normalized);
-    while (normalized.endsWith(QLatin1Char('/'))) normalized.chop(1);
-    if (normalized == QLatin1String(".")) return {};
-#ifdef Q_OS_WIN
-    normalized = normalized.toCaseFolded();
-#endif
-    return normalized;
 }
 }
 
@@ -231,7 +218,7 @@ bool SqliteLocalFileRepository::readFilesUnderFolder(const QString &folderPath,
                                                      QList<LocalFileRecognitionRecord> &records,
                                                      QString &error) {
     records.clear(); error.clear();
-    const auto folder = ComparablePath(folderPath);
+    const auto folder = LocalMediaCatalogIndex::NormalizeFolder(folderPath);
     if (folder.isEmpty()) {
         error = QStringLiteral("Reading local files under a folder requires a folder path.");
         return false;
@@ -246,7 +233,7 @@ bool SqliteLocalFileRepository::readFilesUnderFolder(const QString &folderPath,
     QList<QPair<QString, QString>> matches;
     while (rootsQuery.next()) {
         const auto rootPath = rootsQuery.value(0).toString();
-        const auto root = ComparablePath(rootPath);
+        const auto root = LocalMediaCatalogIndex::NormalizeFolder(rootPath);
         if (root.isEmpty()) continue;
         if (folder == root) { matches.append({rootPath, QStringLiteral("")});  /* non-null: a null binds as SQL NULL */ continue; }
         // The separator boundary keeps "Show" from matching "Show 2".
