@@ -11,7 +11,6 @@ public:
     virtual ~ISyncTaskStateRepository() = default;
     virtual bool ReadAll(QList<SyncTaskState> &states, QString &error) = 0;
     virtual bool Upsert(const SyncTaskState &state, QString &error) = 0;
-    virtual bool Remove(const SyncPartition &partition, QString &error) = 0;
 };
 
 #endif // HAIKENANIME_ISYNCTASKSTATEREPOSITORY_H

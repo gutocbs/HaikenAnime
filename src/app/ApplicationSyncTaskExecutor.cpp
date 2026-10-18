@@ -67,12 +67,11 @@ bool ScopePendingChangesToAccount(SqlitePendingChangeRepository &pendingChanges,
 }
 
 ApplicationSyncTaskExecutor::ApplicationSyncTaskExecutor(
-    QString databasePath, QString readTaskStatesQueryPath, QString upsertTaskStateQueryPath,
-    QString deleteTaskStateQueryPath, const int timeoutMs,
+    QString databasePath, QString readTaskStatesQueryPath, QString upsertTaskStateQueryPath, const int timeoutMs,
     AuthenticatedUserListConfiguration authenticatedUserList)
     : databasePath_(std::move(databasePath)), readTaskStatesQueryPath_(std::move(readTaskStatesQueryPath)),
       upsertTaskStateQueryPath_(std::move(upsertTaskStateQueryPath)),
-      deleteTaskStateQueryPath_(std::move(deleteTaskStateQueryPath)), timeoutMs_(timeoutMs),
+      timeoutMs_(timeoutMs),
       authenticatedUserList_(std::move(authenticatedUserList)) {
 }
 
@@ -128,7 +127,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                 if (partition == SyncPartition::UserList) {
                     SqliteMediaRepository mediaRepository(database.connection());
                     SqliteSyncTaskStateRepository taskRepository(
-                        database.connection(), readTaskStatesQueryPath_, upsertTaskStateQueryPath_, deleteTaskStateQueryPath_);
+                        database.connection(), readTaskStatesQueryPath_, upsertTaskStateQueryPath_);
                     if (AniListAccountOwnership::ShouldSkipAniListPartition(partition, credentials)) {
                         // No account (or suspended during removal): nothing to synchronize, not a failure.
                         result.succeeded = true;

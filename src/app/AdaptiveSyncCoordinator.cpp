@@ -128,11 +128,6 @@ void AdaptiveSyncCoordinator::RequestNow(const SyncPartition partition) {
     Request(partition, SyncTaskTrigger::ManualRun);
 }
 
-void AdaptiveSyncCoordinator::NotifyLocalChange(const SyncPartition partition) {
-    Request(partition, partition == SyncPartition::CompletedCatalog
-                           ? SyncTaskTrigger::CompletedToActive : SyncTaskTrigger::LocalChange);
-}
-
 void AdaptiveSyncCoordinator::Cancel(const SyncPartition partition, std::function<void()> acknowledged) {
     const auto active = activeGenerations_.find(partition);
     const auto state = states_.find(partition);
@@ -213,30 +208,8 @@ void AdaptiveSyncCoordinator::Request(const SyncPartition partition, const SyncT
                                                   {.trigger = trigger});
     auto state = decision.proposedState;
     state.nextRunAt = decision.schedule.nextRunAt;
-    if (state.partition != partition) {
-        const auto existing = states_.find(state.partition);
-        if (existing != states_.end()) {
-            QString error;
-            if (!stateRepository_.Remove(partition, error)) {
-                emit SchedulingFailed(SafeError(error, QStringLiteral("Unable to retire promoted synchronization task state.")));
-                return;
-            }
-            states_.erase(iterator);
-            ScheduleWakeUp();
-            return;
-        }
-        QString error;
-        if (!stateRepository_.Remove(partition, error)) {
-            emit SchedulingFailed(SafeError(error, QStringLiteral("Unable to promote synchronization task state.")));
-            return;
-        }
-        if (!Persist(state)) return;
-        states_.erase(iterator);
-        states_[state.partition] = state;
-    } else {
-        if (!Persist(state)) return;
-        iterator->second = state;
-    }
+    if (!Persist(state)) return;
+    iterator->second = state;
     if (decision.schedule.shouldRunNow && activeGenerations_.empty() && CanStart(state.partition)) {
         StartTask(state);
     }

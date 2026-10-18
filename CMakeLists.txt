@@ -247,7 +247,7 @@ qt_add_resources(SqliteRepositoryTests repository_query_resources PREFIX "/sqlit
 haiken_add_test(SqliteCoverCacheRepositoryTests QT Sql MIGRATIONS)
 qt_add_resources(SqliteCoverCacheRepositoryTests cover_cache_query_resources PREFIX "/sqlite/queries" FILES resources/sqlite/queries/read-cover-cache.sql resources/sqlite/queries/upsert-cover-cache.sql resources/sqlite/queries/delete-cover-cache.sql resources/sqlite/queries/clear-cover-cache.sql)
 haiken_add_test(SqliteSyncTaskStateRepositoryTests QT Sql MIGRATIONS)
-qt_add_resources(SqliteSyncTaskStateRepositoryTests sync_task_state_resources PREFIX "/sqlite/queries" FILES resources/sqlite/queries/read-sync-task-states.sql resources/sqlite/queries/upsert-sync-task-state.sql resources/sqlite/queries/delete-sync-task-state.sql)
+qt_add_resources(SqliteSyncTaskStateRepositoryTests sync_task_state_resources PREFIX "/sqlite/queries" FILES resources/sqlite/queries/read-sync-task-states.sql resources/sqlite/queries/upsert-sync-task-state.sql)
 haiken_add_test(SqlitePluginSettingsRepositoryTests QT Sql MIGRATIONS)
 qt_add_resources(SqlitePluginSettingsRepositoryTests plugin_settings_query_resources PREFIX "/sqlite/queries" FILES ${PLUGIN_SETTINGS_SQL_RESOURCES})
 haiken_add_test(SqliteRecognitionHistoryRepositoryTests QT Sql MIGRATIONS)

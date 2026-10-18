@@ -8,7 +8,6 @@
 namespace {
 const auto ReadSql = QStringLiteral(":/sqlite/queries/read-sync-task-states.sql");
 const auto UpsertSql = QStringLiteral(":/sqlite/queries/upsert-sync-task-state.sql");
-const auto DeleteSql = QStringLiteral(":/sqlite/queries/delete-sync-task-state.sql");
 
 SyncTaskState State() {
     SyncTaskState state;
@@ -40,7 +39,6 @@ private slots:
     void invalidUpsertDoesNotReplacePersistedState();
     void preservesQueryLoaderDiagnostic();
     void rejectsUnknownPersistedEnumTextAndMalformedTimestamp();
-    void removesTaskPartitionState();
 };
 
 void SqliteSyncTaskStateRepositoryTests::migrationCreatesVersionNineteenWithoutDataLoss() {
@@ -77,7 +75,7 @@ void SqliteSyncTaskStateRepositoryTests::roundTripsUtcTimestampsAndNullableValue
     SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY2(database.migrate(), qPrintable(database.lastError()));
-    SqliteSyncTaskStateRepository repository(database.connection(), ReadSql, UpsertSql, DeleteSql);
+    SqliteSyncTaskStateRepository repository(database.connection(), ReadSql, UpsertSql);
     QString error;
     const auto expected = State();
 
@@ -120,7 +118,7 @@ void SqliteSyncTaskStateRepositoryTests::upsertKeepsOneRowPerTaskAndPartition() 
     SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY2(database.migrate(), qPrintable(database.lastError()));
-    SqliteSyncTaskStateRepository repository(database.connection(), ReadSql, UpsertSql, DeleteSql);
+    SqliteSyncTaskStateRepository repository(database.connection(), ReadSql, UpsertSql);
     QString error;
     auto state = State();
     QVERIFY2(repository.Upsert(state, error), qPrintable(error));
@@ -140,7 +138,7 @@ void SqliteSyncTaskStateRepositoryTests::invalidUpsertDoesNotReplacePersistedSta
     SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY2(database.migrate(), qPrintable(database.lastError()));
-    SqliteSyncTaskStateRepository repository(database.connection(), ReadSql, UpsertSql, DeleteSql);
+    SqliteSyncTaskStateRepository repository(database.connection(), ReadSql, UpsertSql);
     QString error;
     const auto original = State();
     QVERIFY2(repository.Upsert(original, error), qPrintable(error));
@@ -161,7 +159,7 @@ void SqliteSyncTaskStateRepositoryTests::preservesQueryLoaderDiagnostic() {
     QVERIFY(database.open());
     QVERIFY2(database.migrate(), qPrintable(database.lastError()));
     SqliteSyncTaskStateRepository repository(database.connection(), ReadSql,
-                                              QStringLiteral(":/sqlite/queries/missing.sql"), DeleteSql);
+                                              QStringLiteral(":/sqlite/queries/missing.sql"));
     QString error;
 
     QVERIFY(!repository.Upsert(State(), error));
@@ -173,7 +171,7 @@ void SqliteSyncTaskStateRepositoryTests::rejectsUnknownPersistedEnumTextAndMalfo
     SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY2(database.migrate(), qPrintable(database.lastError()));
-    SqliteSyncTaskStateRepository repository(database.connection(), ReadSql, UpsertSql, DeleteSql);
+    SqliteSyncTaskStateRepository repository(database.connection(), ReadSql, UpsertSql);
     QString error;
     QVERIFY2(repository.Upsert(State(), error), qPrintable(error));
     QSqlQuery query(database.connection());
@@ -187,21 +185,6 @@ void SqliteSyncTaskStateRepositoryTests::rejectsUnknownPersistedEnumTextAndMalfo
     QCOMPARE(states.first().kind, SyncTaskKind::ActiveCatalog);
     QVERIFY(query.exec(QStringLiteral("UPDATE sync_task_state SET last_attempted_at = 'not-a-timestamp' "
                                       "WHERE task_kind = 'active-catalog'")));
-    QVERIFY2(repository.ReadAll(states, error), qPrintable(error));
-    QVERIFY(states.isEmpty());
-}
-
-void SqliteSyncTaskStateRepositoryTests::removesTaskPartitionState() {
-    QTemporaryDir directory;
-    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
-    QVERIFY(database.open());
-    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
-    SqliteSyncTaskStateRepository repository(database.connection(), ReadSql, UpsertSql, DeleteSql);
-    QString error;
-    QVERIFY2(repository.Upsert(State(), error), qPrintable(error));
-    QVERIFY2(repository.Remove(SyncPartition::ActiveCatalog, error), qPrintable(error));
-
-    QList<SyncTaskState> states;
     QVERIFY2(repository.ReadAll(states, error), qPrintable(error));
     QVERIFY(states.isEmpty());
 }

@@ -3,8 +3,8 @@
 
 #include "SyncTaskTypes.h"
 
-enum class SyncTaskTrigger { Scheduled, ManualRun, LocalChange, CompletedToActive };
-enum class SyncTaskPromotion { None, LocalChange, CompletedToActive };
+/** Why a task is evaluated: its own schedule, a user request, or a rerun requested while it was running. */
+enum class SyncTaskTrigger { Scheduled, ManualRun, LocalChange };
 
 struct SyncTaskPolicyRequest final {
     SyncTaskTrigger trigger = SyncTaskTrigger::Scheduled;
@@ -15,7 +15,6 @@ struct SyncTaskPolicyDecision final {
     SyncScheduleDecision schedule;
     SyncTaskState proposedState;
     bool resetFailureState = false;
-    SyncTaskPromotion promotion = SyncTaskPromotion::None;
 };
 
 class SyncTaskPolicy final {

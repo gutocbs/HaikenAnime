@@ -22,8 +22,7 @@ private slots:
     void prioritizesWatchingAndReadingOverInactiveAndCompletedCatalogs();
     void proposesFailureResetAfterSuccess();
     void runsManualRequestsImmediately();
-    void promotesLocalChangesForImmediateSynchronization();
-    void promotesCompletedCatalogToActiveCatalog();
+    void runsLocalChangesImmediately();
     void clampsBackwardClockJumpsToANewCadenceFromNow();
     void runsExpiredWorkAfterAForwardClockJump();
     void saturatesInjectedJitterWithoutCreatingImmediateWork();
@@ -225,7 +224,7 @@ void SyncTaskPolicyTests::runsManualRequestsImmediately() {
     QCOMPARE(decision.schedule.nextRunAt, now);
 }
 
-void SyncTaskPolicyTests::promotesLocalChangesForImmediateSynchronization() {
+void SyncTaskPolicyTests::runsLocalChangesImmediately() {
     SyncTaskState state;
     state.kind = SyncTaskKind::PendingChange;
     state.partition = SyncPartition::PendingChanges;
@@ -237,25 +236,7 @@ void SyncTaskPolicyTests::promotesLocalChangesForImmediateSynchronization() {
 
     QVERIFY(decision.schedule.shouldRunNow);
     QCOMPARE(decision.schedule.nextRunAt, now);
-    QCOMPARE(decision.promotion, SyncTaskPromotion::LocalChange);
     QCOMPARE(decision.proposedState.priority, SyncTaskPolicy::PriorityFor(SyncPartition::PendingChanges));
-}
-
-void SyncTaskPolicyTests::promotesCompletedCatalogToActiveCatalog() {
-    SyncTaskState state;
-    state.kind = SyncTaskKind::CompletedCatalog;
-    state.partition = SyncPartition::CompletedCatalog;
-    state.priority = SyncTaskPolicy::PriorityFor(SyncPartition::CompletedCatalog);
-    const auto now = QDateTime::fromMSecsSinceEpoch(9'000'000, QTimeZone::UTC);
-
-    const auto decision = SyncTaskPolicy::Decide(
-        state, SyncSchedulePolicy{}, now, {.trigger = SyncTaskTrigger::CompletedToActive});
-
-    QVERIFY(decision.schedule.shouldRunNow);
-    QCOMPARE(decision.promotion, SyncTaskPromotion::CompletedToActive);
-    QCOMPARE(decision.proposedState.kind, SyncTaskKind::ActiveCatalog);
-    QCOMPARE(decision.proposedState.partition, SyncPartition::ActiveCatalog);
-    QCOMPARE(decision.proposedState.priority, SyncTaskPolicy::PriorityFor(SyncPartition::ActiveCatalog));
 }
 
 void SyncTaskPolicyTests::clampsBackwardClockJumpsToANewCadenceFromNow() {

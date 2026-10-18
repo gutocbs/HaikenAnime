@@ -117,20 +117,7 @@ SyncTaskPolicyDecision SyncTaskPolicy::Decide(const SyncTaskState &state, const 
         decision.proposedState.consecutiveImmediateRetries = 0;
     }
 
-    if (request.trigger == SyncTaskTrigger::CompletedToActive) {
-        decision.proposedState.kind = SyncTaskKind::ActiveCatalog;
-        decision.proposedState.partition = SyncPartition::ActiveCatalog;
-        decision.proposedState.priority = PriorityFor(SyncPartition::ActiveCatalog);
-        decision.promotion = SyncTaskPromotion::CompletedToActive;
-    }
-
-    if (request.trigger == SyncTaskTrigger::LocalChange) {
-        decision.promotion = SyncTaskPromotion::LocalChange;
-    }
-
-
-    if (request.trigger == SyncTaskTrigger::ManualRun || request.trigger == SyncTaskTrigger::LocalChange
-        || request.trigger == SyncTaskTrigger::CompletedToActive) {
+    if (request.trigger == SyncTaskTrigger::ManualRun || request.trigger == SyncTaskTrigger::LocalChange) {
         decision.schedule = immediateDecision(now, decision.schedule.cacheValidity);
         return decision;
     }

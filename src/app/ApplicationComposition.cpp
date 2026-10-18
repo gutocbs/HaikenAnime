@@ -107,12 +107,11 @@ private:
 class OwnedSyncTaskStateRepository final : public ISyncTaskStateRepository {
 public:
     OwnedSyncTaskStateRepository(std::unique_ptr<SqliteDatabase> database, QString readQuery,
-                                 QString upsertQuery, QString deleteQuery)
+                                 QString upsertQuery)
         : database_(std::move(database)), repository_(database_->connection(), std::move(readQuery),
-          std::move(upsertQuery), std::move(deleteQuery)) {}
+          std::move(upsertQuery)) {}
     bool ReadAll(QList<SyncTaskState> &states, QString &error) override { return repository_.ReadAll(states, error); }
     bool Upsert(const SyncTaskState &state, QString &error) override { return repository_.Upsert(state, error); }
-    bool Remove(const SyncPartition &partition, QString &error) override { return repository_.Remove(partition, error); }
 private:
     std::unique_ptr<SqliteDatabase> database_;
     SqliteSyncTaskStateRepository repository_;
@@ -309,7 +308,6 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
     const auto synchronizationDatabasePath = context.database->databasePath();
     const auto readTaskStatesQueryPath = SqliteQueries::ReadSyncTaskStates;
     const auto upsertTaskStateQueryPath = SqliteQueries::UpsertSyncTaskState;
-    const auto deleteTaskStateQueryPath = SqliteQueries::DeleteSyncTaskState;
     auto *authProvider = context.aniListAuthManager.get();
     const auto userListConfiguration = ApplicationSyncTaskExecutor::AuthenticatedUserListConfiguration{
         QUrl(settings.aniList.endpoint), context.aniListAuthManager->credentials(),
@@ -320,20 +318,19 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
             if (logger) logger->info(LogCategory::Sync, event);
         }};
     context.adaptiveSync = std::make_unique<AdaptiveSyncRuntime>(
-        [synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath,
-         deleteTaskStateQueryPath](QString &error) -> std::unique_ptr<ISyncTaskStateRepository> {
+        [synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath](QString &error) -> std::unique_ptr<ISyncTaskStateRepository> {
             auto database = std::make_unique<SqliteDatabase>(synchronizationDatabasePath);
             if (!database->open()) {
                 error = database->lastError();
                 return {};
             }
             return std::make_unique<OwnedSyncTaskStateRepository>(std::move(database), readTaskStatesQueryPath,
-                                                                   upsertTaskStateQueryPath, deleteTaskStateQueryPath);
+                                                                   upsertTaskStateQueryPath);
         },
-        [synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
+        [synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath,
          timeoutMs = settings.syncTimeoutMs, userListConfiguration] {
             return std::make_unique<ApplicationSyncTaskExecutor>(
-                synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
+                synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath,
                 timeoutMs, userListConfiguration);
         }, backgroundSynchronizationPolicies(settings.syncTaskPolicies));
     context.seasonalNetworkManager = std::make_unique<QNetworkAccessManager>();

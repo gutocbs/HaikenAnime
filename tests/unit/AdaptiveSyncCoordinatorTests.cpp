@@ -41,18 +41,6 @@ public:
         return true;
     }
 
-    bool Remove(const SyncPartition &partition, QString &error) override {
-        if (!removeSucceeds) {
-            error = QStringLiteral("state removal rejected");
-            return false;
-        }
-        for (auto index = states.size() - 1; index >= 0; --index) {
-            if (states.at(index).partition == partition) states.removeAt(index);
-        }
-        error.clear();
-        return true;
-    }
-
     [[nodiscard]] SyncTaskState State(const SyncPartition partition) const {
         for (const auto &state : states) {
             if (state.partition == partition) return state;
@@ -63,7 +51,6 @@ public:
     QList<SyncTaskState> states;
     bool readSucceeds = true;
     bool upsertSucceeds = true;
-    bool removeSucceeds = true;
     int upsertCount = 0;
 };
 
@@ -135,7 +122,7 @@ private slots:
     void reschedulesSuccessfulWorkAtItsAdaptivePolicyCadence();
     void turnsPersistedCheckpointIntoTheNextPartitionRequestPage();
     void schedulesRetryAtThePolicyDueTime();
-    void promotesManualAndLocalChangeRequests();
+    void runsManualRequestsForFreshPartitionsImmediately();
     void stopCancelsWorkAndInvalidatesItsGeneration();
     void cancelAcknowledgesOnlyAfterTheExecutorConfirmsTheActivePartition();
     void cancelAcknowledgesImmediatelyForPartitionsWithoutActiveWork();
@@ -143,7 +130,6 @@ private slots:
     void dropsProgressReportedAfterCancellation();
     void ignoresExecutorCallbacksAfterTheCoordinatorIsDestroyed();
     void doesNotExecuteWhenRunningGenerationCannotBePersisted();
-    void retainsExistingActivePartitionDuringCompletedPromotion();
     void waitsForCancellationAndExecutorShutdownAcknowledgements();
     void holdsPendingChangesUntilUserListSynchronizationSucceeds();
     void republishesExecutorProgressInOrder();
@@ -188,7 +174,7 @@ void AdaptiveSyncCoordinatorTests::rerunsPartitionWhenRequestedDuringActiveExecu
     QVERIFY(coordinator.Start());
     QCOMPARE(executor.started, QList<SyncPartition>{SyncPartition::PendingChanges});
 
-    coordinator.NotifyLocalChange(SyncPartition::PendingChanges);
+    coordinator.RequestNow(SyncPartition::PendingChanges);
     executor.Complete(SyncPartition::PendingChanges,
                       SyncTaskExecutionResult{.succeeded = true});
 
@@ -426,30 +412,21 @@ void AdaptiveSyncCoordinatorTests::schedulesRetryAtThePolicyDueTime() {
     QCOMPARE(executor.started.size(), 2);
 }
 
-void AdaptiveSyncCoordinatorTests::promotesManualAndLocalChangeRequests() {
+void AdaptiveSyncCoordinatorTests::runsManualRequestsForFreshPartitionsImmediately() {
     FakeClock clock;
     FakeTaskStateRepository repository;
-    auto freshCover = DueState(SyncTaskKind::Cover, SyncPartition::Covers);
-    freshCover.lastSucceededAt = clock.CurrentTime();
-    freshCover.cacheValidity = CacheValidity::Fresh;
-    auto completedCatalog = DueState(SyncTaskKind::CompletedCatalog, SyncPartition::CompletedCatalog);
-    completedCatalog.lastSucceededAt = clock.CurrentTime();
-    completedCatalog.cacheValidity = CacheValidity::Fresh;
-    repository.states = {freshCover, completedCatalog};
+    auto freshUserList = DueState(SyncTaskKind::UserList, SyncPartition::UserList);
+    freshUserList.lastSucceededAt = clock.CurrentTime();
+    freshUserList.cacheValidity = CacheValidity::Fresh;
+    repository.states = {freshUserList};
     FakeTaskExecutor executor;
     AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
 
     coordinator.Start();
     QVERIFY(executor.started.isEmpty());
-    coordinator.RequestNow(SyncPartition::Covers);
-    coordinator.NotifyLocalChange(SyncPartition::CompletedCatalog);
+    coordinator.RequestNow(SyncPartition::UserList);
 
-    QVERIFY(executor.started.contains(SyncPartition::Covers));
-    executor.Complete(SyncPartition::Covers, {.succeeded = true});
-    QTRY_VERIFY(executor.started.contains(SyncPartition::ActiveCatalog));
-    const auto promoted = repository.State(SyncPartition::ActiveCatalog);
-    QCOMPARE(promoted.kind, SyncTaskKind::ActiveCatalog);
-    QCOMPARE(promoted.partition, SyncPartition::ActiveCatalog);
+    QCOMPARE(executor.started, QList<SyncPartition>{SyncPartition::UserList});
 }
 
 void AdaptiveSyncCoordinatorTests::stopCancelsWorkAndInvalidatesItsGeneration() {
@@ -595,27 +572,6 @@ void AdaptiveSyncCoordinatorTests::doesNotExecuteWhenRunningGenerationCannotBePe
 
     QCOMPARE(executor.started.size(), 0);
     QVERIFY(!failure.isEmpty());
-}
-
-void AdaptiveSyncCoordinatorTests::retainsExistingActivePartitionDuringCompletedPromotion() {
-    FakeClock clock;
-    FakeTaskStateRepository repository;
-    auto completed = DueState(SyncTaskKind::CompletedCatalog, SyncPartition::CompletedCatalog);
-    completed.lastSucceededAt = clock.CurrentTime();
-    completed.cacheValidity = CacheValidity::Fresh;
-    auto active = DueState(SyncTaskKind::ActiveCatalog, SyncPartition::ActiveCatalog);
-    repository.states = {completed, active};
-    FakeTaskExecutor executor;
-    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
-
-    coordinator.Start();
-    const auto activeGeneration = repository.State(SyncPartition::ActiveCatalog).generation;
-    coordinator.NotifyLocalChange(SyncPartition::CompletedCatalog);
-    executor.Complete(SyncPartition::ActiveCatalog, {.succeeded = true, .confirmedPage = 1});
-
-    QTRY_COMPARE(repository.State(SyncPartition::ActiveCatalog).status, SyncTaskStatus::Succeeded);
-    QCOMPARE(repository.State(SyncPartition::ActiveCatalog).generation, activeGeneration);
-    QCOMPARE(executor.started.count(SyncPartition::ActiveCatalog), 1);
 }
 
 void AdaptiveSyncCoordinatorTests::waitsForCancellationAndExecutorShutdownAcknowledgements() {

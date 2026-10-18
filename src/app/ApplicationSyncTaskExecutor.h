@@ -29,7 +29,7 @@ public:
     };
 
     ApplicationSyncTaskExecutor(QString databasePath, QString readTaskStatesQueryPath,
-                                QString upsertTaskStateQueryPath, QString deleteTaskStateQueryPath, int timeoutMs,
+                                QString upsertTaskStateQueryPath, int timeoutMs,
                                 AuthenticatedUserListConfiguration authenticatedUserList);
     ~ApplicationSyncTaskExecutor() override;
 
@@ -52,7 +52,6 @@ private:
     QString databasePath_;
     QString readTaskStatesQueryPath_;
     QString upsertTaskStateQueryPath_;
-    QString deleteTaskStateQueryPath_;
     int timeoutMs_ = 0;
     AuthenticatedUserListConfiguration authenticatedUserList_;
     std::mutex mutex_;

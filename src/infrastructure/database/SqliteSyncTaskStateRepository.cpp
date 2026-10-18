@@ -77,9 +77,8 @@ std::optional<int> ReadOptionalInt(const QVariant &value, bool &valid) {
 }
 
 SqliteSyncTaskStateRepository::SqliteSyncTaskStateRepository(QSqlDatabase database, QString readQuery,
-                                                             QString upsertQuery, QString deleteQuery)
-    : database_(std::move(database)), readQuery_(std::move(readQuery)), upsertQuery_(std::move(upsertQuery)),
-      deleteQuery_(std::move(deleteQuery)) {
+                                                             QString upsertQuery)
+    : database_(std::move(database)), readQuery_(std::move(readQuery)), upsertQuery_(std::move(upsertQuery)) {
 }
 
 bool SqliteSyncTaskStateRepository::ReadAll(QList<SyncTaskState> &states, QString &error) {
@@ -173,28 +172,6 @@ bool SqliteSyncTaskStateRepository::Upsert(const SyncTaskState &state, QString &
     query.bindValue(QStringLiteral(":generation"), state.generation);
     query.bindValue(QStringLiteral(":consecutive_failures"), state.consecutiveFailures);
     query.bindValue(QStringLiteral(":consecutive_immediate_retries"), state.consecutiveImmediateRetries);
-    if (!query.exec()) {
-        error = query.lastError().text();
-        return false;
-    }
-    return true;
-}
-
-bool SqliteSyncTaskStateRepository::Remove(const SyncPartition &partition, QString &error) {
-    error.clear();
-    const auto partitionKey = ToString(partition);
-    if (partitionKey.isEmpty()) {
-        error = QStringLiteral("Sync task partition is invalid.");
-        return false;
-    }
-    QString sql;
-    QSqlQuery query(database_);
-    if (!SqlQueryStore::loadSource(deleteQuery_, sql, error)) return false;
-    if (!query.prepare(sql)) {
-        error = query.lastError().text();
-        return false;
-    }
-    query.bindValue(QStringLiteral(":partition"), partitionKey);
     if (!query.exec()) {
         error = query.lastError().text();
         return false;

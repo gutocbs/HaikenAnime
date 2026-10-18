@@ -30,7 +30,6 @@ public:
     [[nodiscard]] bool Start();
     void Stop();
     void RequestNow(SyncPartition partition);
-    void NotifyLocalChange(SyncPartition partition);
     /**
      * Cancels the partition's active task, if any, and invalidates its generation so a late completion is
      * ignored. `acknowledged` runs on this object's thread once the executor has accounted for the task;

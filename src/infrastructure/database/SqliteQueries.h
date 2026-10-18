@@ -12,7 +12,6 @@ inline const QString CompleteLibraryScan = QStringLiteral(":/sqlite/queries/comp
 inline const QString DeleteCoverCache = QStringLiteral(":/sqlite/queries/delete-cover-cache.sql");
 inline const QString DeletePluginSettings = QStringLiteral(":/sqlite/queries/delete-plugin-settings.sql");
 inline const QString DeleteRecognitionRecord = QStringLiteral(":/sqlite/queries/delete-recognition-record.sql");
-inline const QString DeleteSyncTaskState = QStringLiteral(":/sqlite/queries/delete-sync-task-state.sql");
 inline const QString DiscardRecognitionProgress = QStringLiteral(":/sqlite/queries/discard-recognition-progress.sql");
 inline const QString EnqueuePendingChange = QStringLiteral(":/sqlite/queries/enqueue-pending-change.sql");
 inline const QString FailLibraryScan = QStringLiteral(":/sqlite/queries/fail-library-scan.sql");
