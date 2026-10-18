@@ -58,6 +58,9 @@ struct PlaybackSession final {
     PlaybackSessionId id;
     QString userId;
     QString deviceId;
+    /// Display names reported by the player (e.g. Plex account and "POCO X7 PRO"); ids stay the identity.
+    QString userName;
+    QString deviceName;
     QString title;
     QString filePath;
     QDateTime startedAt;

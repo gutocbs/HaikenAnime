@@ -25,6 +25,12 @@ struct RecognitionHistoryQuery final {
     int limit = 50;
 };
 
+/// AniList progress change queued by a recognition, to be discarded together with its record.
+struct QueuedProgress final {
+    int mediaId = 0;
+    int episode = 0;
+};
+
 class IRecognitionHistoryRepository {
 public:
     virtual ~IRecognitionHistoryRepository() = default;
@@ -33,6 +39,9 @@ public:
     virtual bool insert(RecognitionRecord &record, QString &error) = 0;
     virtual bool update(const RecognitionRecord &record, QString &error) = 0;
     virtual bool find(const RecognitionHistoryQuery &query, QList<RecognitionRecord> &records, QString &error) = 0;
+    /// Deletes the record and, when given, discards the matching AniList progress change that has not been
+    /// sent yet — atomically. Local progress is never touched.
+    virtual bool remove(qint64 recordId, const std::optional<QueuedProgress> &queuedProgress, QString &error) = 0;
 };
 
 #endif // HAIKENANIME_IRECOGNITIONHISTORYREPOSITORY_H

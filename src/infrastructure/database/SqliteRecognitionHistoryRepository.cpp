@@ -4,6 +4,8 @@
 #include <QSqlQuery>
 
 #include "SqlQueryStore.h"
+#include "../../application/anilist/AniListPendingChangeStatus.h"
+#include "../../domain/anilist/AniListField.h"
 
 #include <utility>
 
@@ -94,9 +96,11 @@ std::optional<RecognitionRecord> ReadRecord(const QSqlQuery &query) {
 }
 
 SqliteRecognitionHistoryRepository::SqliteRecognitionHistoryRepository(QSqlDatabase database, QString readQuery,
-                                                                       QString insertQuery, QString updateQuery)
+                                                                       QString insertQuery, QString updateQuery,
+                                                                       QString deleteQuery, QString discardProgressQuery)
     : database_(std::move(database)), readQuery_(std::move(readQuery)), insertQuery_(std::move(insertQuery)),
-      updateQuery_(std::move(updateQuery)) {}
+      updateQuery_(std::move(updateQuery)), deleteQuery_(std::move(deleteQuery)),
+      discardProgressQuery_(std::move(discardProgressQuery)) {}
 
 bool SqliteRecognitionHistoryRepository::insert(RecognitionRecord &record, QString &error) {
     error.clear();
@@ -183,5 +187,50 @@ bool SqliteRecognitionHistoryRepository::find(const RecognitionHistoryQuery &cri
         loaded.append(std::move(*record));
     }
     records = std::move(loaded);
+    return true;
+}
+
+bool SqliteRecognitionHistoryRepository::remove(const qint64 recordId, const std::optional<QueuedProgress> &queuedProgress,
+                                                QString &error) {
+    error.clear();
+    QString deleteSql;
+    QString discardSql;
+    if (!SqlQueryStore::loadSource(deleteQuery_, deleteSql, error)
+        || (queuedProgress && !SqlQueryStore::loadSource(discardProgressQuery_, discardSql, error))) {
+        return false;
+    }
+    if (!database_.transaction()) {
+        error = database_.lastError().text();
+        return false;
+    }
+    const auto fail = [this, &error](const QString &message) {
+        error = message;
+        database_.rollback();
+        return false;
+    };
+
+    // The record and the change it queued disappear together, or neither does.
+    if (queuedProgress) {
+        QSqlQuery discard(database_);
+        if (!discard.prepare(discardSql)) return fail(discard.lastError().text());
+        discard.bindValue(QStringLiteral(":superseded_status"), static_cast<int>(AniListPendingChangeStatus::Superseded));
+        discard.bindValue(QStringLiteral(":media_id"), queuedProgress->mediaId);
+        discard.bindValue(QStringLiteral(":progress_field"), static_cast<int>(AniListField::Progress));
+        discard.bindValue(QStringLiteral(":pending_status"), static_cast<int>(AniListPendingChangeStatus::Pending));
+        discard.bindValue(QStringLiteral(":failed_status"), static_cast<int>(AniListPendingChangeStatus::Failed));
+        discard.bindValue(QStringLiteral(":confirmation_status"),
+                          static_cast<int>(AniListPendingChangeStatus::RequiresConfirmation));
+        discard.bindValue(QStringLiteral(":episode"), queuedProgress->episode);
+        if (!discard.exec()) return fail(discard.lastError().text());
+    }
+
+    QSqlQuery remove(database_);
+    if (!remove.prepare(deleteSql)) return fail(remove.lastError().text());
+    remove.bindValue(QStringLiteral(":id"), recordId);
+    if (!remove.exec()) return fail(remove.lastError().text());
+    if (remove.numRowsAffected() != 1) {
+        return fail(QStringLiteral("Recognition record %1 does not exist.").arg(recordId));
+    }
+    if (!database_.commit()) return fail(database_.lastError().text());
     return true;
 }

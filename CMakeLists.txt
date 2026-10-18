@@ -387,6 +387,8 @@ set(RECOGNITION_HISTORY_SQL_RESOURCES
         resources/sqlite/queries/read-recognition-history.sql
         resources/sqlite/queries/insert-recognition-record.sql
         resources/sqlite/queries/update-recognition-record.sql
+        resources/sqlite/queries/delete-recognition-record.sql
+        resources/sqlite/queries/discard-recognition-progress.sql
 )
 foreach (QUERY_FILE IN LISTS LIBRARY_SCAN_SQL_RESOURCES PLUGIN_SETTINGS_SQL_RESOURCES RECOGNITION_HISTORY_SQL_RESOURCES)
     get_filename_component(QUERY_ALIAS "${QUERY_FILE}" NAME)

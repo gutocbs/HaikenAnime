@@ -18,6 +18,8 @@ struct PlexPluginDependencies final {
     PlexAuthentication *authentication = nullptr;
     std::function<void(int delayMs, std::function<void()>)> schedule;
     std::function<QDateTime()> clock;
+    /// Diagnostic lines (never contain tokens); routed to the structured log by the composition.
+    std::function<void(const QString &)> log;
 };
 
 /// Polls /status/sessions of the selected server and reports episodes of the selected users only.
@@ -59,6 +61,7 @@ private:
     void scheduleNextPoll(quint64 generation);
     void applySessions(const QList<PlexSession> &sessions);
     void stopAll(StopReason reason);
+    void log(const QString &message) const;
     [[nodiscard]] QDateTime now() const;
 
     PlexPluginDependencies dependencies_;
@@ -70,6 +73,7 @@ private:
     quint64 generation_ = 0;
     bool polling_ = false;
     QString lastError_;
+    QString lastPollSummary_;
 };
 
 #endif // HAIKENANIME_PLEXPLUGIN_H

@@ -82,6 +82,10 @@ public:
         }
         return true;
     }
+    bool remove(const qint64 recordId, const std::optional<QueuedProgress> &, QString &error) override {
+        error.clear();
+        return records.removeIf([recordId](const RecognitionRecord &record) { return record.id() == recordId; }) > 0;
+    }
     QList<RecognitionRecord> records;
 };
 

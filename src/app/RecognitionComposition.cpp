@@ -117,7 +117,8 @@ std::unique_ptr<RecognitionContext> createRecognitionContext(RecognitionComposit
         .http = ctx.plexHttp.get(), .secrets = ctx.secrets.get(), .identity = identity,
         .openUrl = openUrl, .schedule = schedule});
     auto plex = std::make_unique<PlexPlugin>(PlexPluginDependencies{
-        .api = ctx.plexApi.get(), .authentication = ctx.plexAuthentication.get(), .schedule = schedule});
+        .api = ctx.plexApi.get(), .authentication = ctx.plexAuthentication.get(), .schedule = schedule,
+        .log = dependencies.info});
     ctx.plex = plex.get();
 
     RegisterSchema(ctx, RecognitionSchema());

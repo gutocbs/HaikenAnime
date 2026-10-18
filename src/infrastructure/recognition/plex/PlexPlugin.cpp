@@ -143,6 +143,22 @@ void PlexPlugin::pollSessions() {
     dependencies_.api->listSessions(*server_, [this, generation](const PlexApiError result,
                                                                  const QList<PlexSession> &sessions) {
         if (generation != generation_) return;
+        // One line per change of what the server reports, so a stuck session is visible in the log.
+        QStringList reported;
+        for (const auto &session : sessions) {
+            reported.append(QStringLiteral("key=%1 type=%2 user=%3 state=%4 selected=%5")
+                                .arg(session.sessionKey, session.type, session.userId, session.state,
+                                     selectedUsers_.contains(session.userId) ? QStringLiteral("yes") : QStringLiteral("no")));
+        }
+        const auto summary = result == PlexApiError::None
+            ? QStringLiteral("Plex poll: %1 session(s) [%2]").arg(sessions.size()).arg(reported.join(QStringLiteral("; ")))
+            : QStringLiteral("Plex poll failed: %1").arg(result == PlexApiError::Unauthorized ? QStringLiteral("unauthorized")
+                                                         : result == PlexApiError::Unavailable ? QStringLiteral("unavailable")
+                                                                                               : QStringLiteral("invalid-response"));
+        if (summary != lastPollSummary_) {
+            lastPollSummary_ = summary;
+            log(summary);
+        }
         switch (result) {
         case PlexApiError::None:
             lastError_.clear();
@@ -190,10 +206,14 @@ void PlexPlugin::applySessions(const QList<PlexSession> &sessions) {
         const auto tracked = tracked_.find(key);
         if (tracked == tracked_.end() || tracked->episodeKey != candidate->episodeKey()) {
             tracked_.insert(key, {.id = *sessionId, .episodeKey = candidate->episodeKey(), .details = details});
+            log(QStringLiteral("Plex session started: %1 episode=%2 user=%3 device=%4")
+                    .arg(key, candidate->episodeKey(), plexSession.userId, plexSession.playerId));
             if (observer_) {
                 observer_->onSessionStarted({.id = *sessionId,
                                              .userId = plexSession.userId,
                                              .deviceId = plexSession.playerId,
+                                             .userName = plexSession.userName,
+                                             .deviceName = plexSession.playerTitle,
                                              .title = plexSession.episodeTitle,
                                              .startedAt = observedAt,
                                              .details = details},
@@ -217,6 +237,7 @@ void PlexPlugin::applySessions(const QList<PlexSession> &sessions) {
             continue;
         }
         const auto id = entry->id;
+        log(QStringLiteral("Plex session stopped: %1 reason=no-longer-reported").arg(entry.key()));
         entry = tracked_.erase(entry);
         if (observer_) observer_->onSessionStopped(id, StopReason::Closed);
     }
@@ -225,10 +246,16 @@ void PlexPlugin::applySessions(const QList<PlexSession> &sessions) {
 void PlexPlugin::stopAll(const StopReason reason) {
     const auto tracked = std::exchange(tracked_, {});
     for (const auto &session : tracked) {
+        log(QStringLiteral("Plex session stopped: %1 reason=%2").arg(session.id.key(),
+            reason == StopReason::Unavailable ? QStringLiteral("server-unavailable") : QStringLiteral("plugin-stopped")));
         if (observer_) observer_->onSessionStopped(session.id, reason);
     }
 }
 
 QDateTime PlexPlugin::now() const {
     return dependencies_.clock ? dependencies_.clock() : QDateTime::currentDateTimeUtc();
+}
+
+void PlexPlugin::log(const QString &message) const {
+    if (dependencies_.log) dependencies_.log(message);
 }

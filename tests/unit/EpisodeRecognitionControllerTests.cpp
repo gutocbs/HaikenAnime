@@ -36,6 +36,10 @@ public:
         }
         return true;
     }
+    bool remove(const qint64 recordId, const std::optional<QueuedProgress> &, QString &error) override {
+        error.clear();
+        return records.removeIf([recordId](const RecognitionRecord &record) { return record.id() == recordId; }) > 0;
+    }
     QList<RecognitionRecord> records;
 };
 
@@ -80,11 +84,9 @@ private slots:
     void init();
     void reloadListsNewestFirstWithLibraryTitles();
     void loadMorePagesWithCursor();
-    void correctionAppliesCorrectedEpisode();
-    void correctionRejectsInvalidEpisodeOrMedia();
-    void ignoreMarksRecordIgnored();
-    void mediaChoicesListTheLibrary();
     void modelExposesStatusAndCorrectability();
+    void removeDeletesRowFromTheList();
+    void removeUnknownRecordShowsError();
 
 private:
     void addUncertain(const QString &key, int episode);
@@ -119,7 +121,7 @@ void EpisodeRecognitionControllerTests::reloadListsNewestFirstWithLibraryTitles(
     const auto known = EpisodeCandidate::create(QStringLiteral("One Piece"), 21, 1, 6, 1.0).value();
     QVERIFY(history->record(session(QStringLiteral("a")), known, decisions->evaluate(known), error));
     addUncertain(QStringLiteral("b"), 2);
-    EpisodeRecognitionController controller(*history, *decisions, library);
+    EpisodeRecognitionController controller(*history, library);
 
     controller.Reload();
 
@@ -135,7 +137,7 @@ void EpisodeRecognitionControllerTests::loadMorePagesWithCursor() {
     for (int index = 1; index <= EpisodeRecognitionController::PageSize + 10; ++index) {
         addUncertain(QStringLiteral("s%1").arg(index), 1);
     }
-    EpisodeRecognitionController controller(*history, *decisions, library);
+    EpisodeRecognitionController controller(*history, library);
 
     controller.Reload();
     QCOMPARE(controller.model().rowCount(), EpisodeRecognitionController::PageSize);
@@ -146,59 +148,9 @@ void EpisodeRecognitionControllerTests::loadMorePagesWithCursor() {
     QVERIFY(!controller.hasMore());
 }
 
-void EpisodeRecognitionControllerTests::correctionAppliesCorrectedEpisode() {
-    addUncertain(QStringLiteral("a"), 2);
-    EpisodeRecognitionController controller(*history, *decisions, library);
-    controller.Reload();
-    const auto recordId = controller.model().data(controller.model().index(0), RecognitionListModel::RecordIdRole).toLongLong();
-
-    QVERIFY2(controller.Correct(recordId, 21, 6), qPrintable(controller.errorMessage()));
-
-    QCOMPARE(progress.applied, QList<int>({6}));
-    QCOMPARE(repository.records.first().status(), RecognitionStatus::Corrected);
-    QCOMPARE(controller.model().data(controller.model().index(0), RecognitionListModel::TitleRole).toString(),
-             QStringLiteral("One Piece"));
-    QVERIFY(controller.model().data(controller.model().index(0), RecognitionListModel::CorrectedRole).toBool());
-}
-
-void EpisodeRecognitionControllerTests::correctionRejectsInvalidEpisodeOrMedia() {
-    addUncertain(QStringLiteral("a"), 2);
-    EpisodeRecognitionController controller(*history, *decisions, library);
-    controller.Reload();
-    const auto recordId = controller.model().data(controller.model().index(0), RecognitionListModel::RecordIdRole).toLongLong();
-
-    QVERIFY(!controller.Correct(recordId, 21, 0));
-    QVERIFY(!controller.errorMessage().isEmpty());
-    QVERIFY(!controller.Correct(recordId, 0, 3));
-    QVERIFY(progress.applied.isEmpty());
-}
-
-void EpisodeRecognitionControllerTests::ignoreMarksRecordIgnored() {
-    addUncertain(QStringLiteral("a"), 2);
-    EpisodeRecognitionController controller(*history, *decisions, library);
-    controller.Reload();
-    const auto recordId = controller.model().data(controller.model().index(0), RecognitionListModel::RecordIdRole).toLongLong();
-
-    QVERIFY(controller.Ignore(recordId));
-
-    QCOMPARE(repository.records.first().status(), RecognitionStatus::Ignored);
-    QCOMPARE(controller.model().data(controller.model().index(0), RecognitionListModel::StatusRole).toString(),
-             QStringLiteral("ignored"));
-}
-
-void EpisodeRecognitionControllerTests::mediaChoicesListTheLibrary() {
-    EpisodeRecognitionController controller(*history, *decisions, library);
-
-    controller.Reload();
-
-    QCOMPARE(controller.mediaChoices().size(), 2);
-    QCOMPARE(controller.mediaChoices().at(0).toMap().value(QStringLiteral("title")).toString(), QStringLiteral("Frieren"));
-    QCOMPARE(controller.mediaChoices().at(1).toMap().value(QStringLiteral("id")).toInt(), 21);
-}
-
 void EpisodeRecognitionControllerTests::modelExposesStatusAndCorrectability() {
     addUncertain(QStringLiteral("a"), 2);
-    EpisodeRecognitionController controller(*history, *decisions, library);
+    EpisodeRecognitionController controller(*history, library);
     controller.Reload();
     auto &model = controller.model();
     const auto index = model.index(0);
@@ -210,6 +162,28 @@ void EpisodeRecognitionControllerTests::modelExposesStatusAndCorrectability() {
     QCOMPARE(model.data(index, RecognitionListModel::SyncStateRole).toString(), QStringLiteral("not-required"));
     QVERIFY(model.data(index, RecognitionListModel::CorrectableRole).toBool());
     QVERIFY(model.roleNames().values().contains("statusKey"));
+}
+
+void EpisodeRecognitionControllerTests::removeDeletesRowFromTheList() {
+    addUncertain(QStringLiteral("a"), 2);
+    addUncertain(QStringLiteral("b"), 3);
+    EpisodeRecognitionController controller(*history, library);
+    controller.Reload();
+    const auto recordId = controller.model().data(controller.model().index(0), RecognitionListModel::RecordIdRole).toLongLong();
+
+    QVERIFY(controller.Remove(recordId));
+
+    QCOMPARE(controller.model().rowCount(), 1);
+    QCOMPARE(repository.records.size(), 1);
+    QVERIFY(controller.errorMessage().isEmpty());
+}
+
+void EpisodeRecognitionControllerTests::removeUnknownRecordShowsError() {
+    EpisodeRecognitionController controller(*history, library);
+
+    QVERIFY(!controller.Remove(99));
+
+    QVERIFY(!controller.errorMessage().isEmpty());
 }
 
 QTEST_MAIN(EpisodeRecognitionControllerTests)

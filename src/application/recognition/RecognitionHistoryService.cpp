@@ -158,3 +158,23 @@ bool RecognitionHistoryService::applyProgress(RecognitionRecord &record, const P
     }
     return true;
 }
+
+bool RecognitionHistoryService::remove(const qint64 recordId, QString &error) {
+    const auto record = load(recordId, error);
+    if (!record.has_value()) return false;
+    // Only a change this recognition queued and AniList has not confirmed yet is discarded.
+    const bool appliedProgress = record->status() == RecognitionStatus::MarkedWatched
+        || record->status() == RecognitionStatus::Corrected;
+    const bool awaitingSync = record->syncState() == RecognitionSyncState::Pending
+        || record->syncState() == RecognitionSyncState::Failed;
+    const auto &candidate = record->effectiveCandidate();
+    std::optional<QueuedProgress> queued;
+    if (appliedProgress && awaitingSync && candidate.mediaId()) {
+        queued = QueuedProgress{.mediaId = *candidate.mediaId(), .episode = candidate.episode()};
+    }
+    if (!repository_.remove(recordId, queued, error)) {
+        if (error.isEmpty()) error = QStringLiteral("Recognition record %1 could not be removed.").arg(recordId);
+        return false;
+    }
+    return true;
+}

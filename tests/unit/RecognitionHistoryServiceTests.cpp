@@ -50,6 +50,18 @@ public:
         return true;
     }
 
+    bool remove(const qint64 recordId, const std::optional<QueuedProgress> &queuedProgress, QString &error) override {
+        if (failRemove) {
+            error = QStringLiteral("database is locked");
+            return false;
+        }
+        error.clear();
+        removedQueuedProgress = queuedProgress;
+        return records.removeIf([recordId](const RecognitionRecord &record) { return record.id() == recordId; }) > 0;
+    }
+
+    bool failRemove = false;
+    std::optional<QueuedProgress> removedQueuedProgress;
     QList<RecognitionRecord> records;
     qint64 lastId = 0;
     int updates = 0;
@@ -130,6 +142,11 @@ private slots:
     void listForwardsFilterAndCursor();
     void personalListWriterQueuesAniListProgressChange();
     void personalListWriterNotifiesOnlyAfterSuccessfulApply();
+    void removeDiscardsQueuedProgressAndKeepsLocalProgress();
+    void removeWithoutQueuedSyncDoesNotTouchTheQueue();
+    void removeSyncedRecordDoesNotTouchTheQueue();
+    void removeFailureKeepsTheRecord();
+    void removeUnknownRecordFails();
 
 private:
     FakeHistoryRepository repository;
@@ -336,6 +353,61 @@ void RecognitionHistoryServiceTests::personalListWriterNotifiesOnlyAfterSuccessf
     QVERIFY(!writer.apply(media(5), invalid, error));
 
     QCOMPARE(notified, QList<int>({21}));
+}
+
+void RecognitionHistoryServiceTests::removeDiscardsQueuedProgressAndKeepsLocalProgress() {
+    QString error;
+    const auto record = service->record(session(), candidate(6), markWatched(5, 6), error);
+    QVERIFY2(record.has_value(), qPrintable(error));
+
+    QVERIFY2(service->remove(record->id(), error), qPrintable(error));
+
+    QVERIFY(repository.records.isEmpty());
+    QVERIFY(repository.removedQueuedProgress.has_value());
+    QCOMPARE(repository.removedQueuedProgress->mediaId, 21);
+    QCOMPARE(repository.removedQueuedProgress->episode, 6);
+    QCOMPARE(progress.applied.size(), 1);
+}
+
+void RecognitionHistoryServiceTests::removeWithoutQueuedSyncDoesNotTouchTheQueue() {
+    QString error;
+    const auto record = service->record(session(), candidate(3), {.kind = ProgressDecisionKind::AlreadyWatched}, error);
+    QVERIFY2(record.has_value(), qPrintable(error));
+
+    QVERIFY(service->remove(record->id(), error));
+
+    QVERIFY(!repository.removedQueuedProgress.has_value());
+    QVERIFY(repository.records.isEmpty());
+}
+
+void RecognitionHistoryServiceTests::removeSyncedRecordDoesNotTouchTheQueue() {
+    QString error;
+    const auto record = service->record(session(), candidate(6), markWatched(5, 6), error);
+    QVERIFY2(record.has_value(), qPrintable(error));
+    QVERIFY(service->markSynced(record->id(), error));
+
+    QVERIFY(service->remove(record->id(), error));
+
+    QVERIFY(!repository.removedQueuedProgress.has_value());
+}
+
+void RecognitionHistoryServiceTests::removeFailureKeepsTheRecord() {
+    QString error;
+    const auto record = service->record(session(), candidate(6), markWatched(5, 6), error);
+    QVERIFY2(record.has_value(), qPrintable(error));
+    repository.failRemove = true;
+
+    QVERIFY(!service->remove(record->id(), error));
+
+    QVERIFY(!error.isEmpty());
+    QCOMPARE(repository.records.size(), 1);
+}
+
+void RecognitionHistoryServiceTests::removeUnknownRecordFails() {
+    QString error;
+
+    QVERIFY(!service->remove(99, error));
+    QVERIFY(!error.isEmpty());
 }
 
 QTEST_MAIN(RecognitionHistoryServiceTests)

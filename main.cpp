@@ -361,7 +361,7 @@ int main(int argc, char *argv[]) {
                                 .plugin = recognition.plex},
             [&recognition] { applyRecognitionSettings(recognition); });
         recognitionController = std::make_unique<EpisodeRecognitionController>(
-            *recognition.history, *recognition.decisions, *context.mediaRepository);
+            *recognition.history, *context.mediaRepository);
         nowWatchingController = std::make_unique<NowWatchingController>(
             recognition.recognition->activeSessions(), *context.mediaRepository,
             [logger = context.logger.get()](const QString &message) {

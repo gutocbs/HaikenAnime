@@ -38,6 +38,8 @@ private slots:
     void findsRecordsAwaitingSyncByEffectiveMediaAndEpisode();
     void keepsUnknownSeasonAndMediaAsNull();
     void migrationRecordsVersionTwentyFive();
+    void removeDeletesRecordAndDiscardsOnlyMatchingQueuedProgress();
+    void removeWithoutQueuedProgressLeavesTheQueue();
 
 private:
     std::unique_ptr<QTemporaryDir> directory;
@@ -255,6 +257,67 @@ void SqliteRecognitionHistoryRepositoryTests::migrationRecordsVersionTwentyFive(
     QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM schema_version WHERE version = 25")));
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toInt(), 1);
+}
+
+namespace {
+void insertPendingChange(QSqlQuery &query, const int id, const int field, const int episode, const int status,
+                         const qint64 owner) {
+    QVERIFY(query.exec(QStringLiteral(
+        "INSERT INTO anilist_pending_changes (id, media_id, field, previous_value, new_value, created_at, "
+        "local_updated_at, status, owner_user_id) VALUES (%1, 21, %2, '{\"type\":\"int\",\"value\":5}', "
+        "'{\"type\":\"int\",\"value\":%3}', '2026-10-17T00:00:00Z', '2026-10-17T00:00:00Z', %4, %5)")
+                           .arg(id).arg(field).arg(episode).arg(status).arg(owner)));
+}
+
+int statusOf(QSqlQuery &query, const int id) {
+    if (!query.exec(QStringLiteral("SELECT status FROM anilist_pending_changes WHERE id = %1").arg(id)) || !query.next()) {
+        return -1;
+    }
+    return query.value(0).toInt();
+}
+}
+
+void SqliteRecognitionHistoryRepositoryTests::removeDeletesRecordAndDiscardsOnlyMatchingQueuedProgress() {
+    auto repository = repositoryFor(*database);
+    QSqlQuery query(database->connection());
+    QVERIFY(query.exec(QStringLiteral("INSERT INTO media (id, name, type, status) VALUES (21, 'One Piece', 1, 1)")));
+    constexpr int progress = 5;
+    constexpr int score = 6;
+    insertPendingChange(query, 1, progress, 6, 0, 99);
+    insertPendingChange(query, 2, progress, 6, 3, 0);
+    insertPendingChange(query, 3, progress, 6, 1, 99);
+    insertPendingChange(query, 4, progress, 7, 0, 99);
+    insertPendingChange(query, 5, score, 6, 0, 99);
+    auto record = recordFor(QStringLiteral("abc"), 6);
+    QString error;
+    QVERIFY(repository.insert(record, error));
+
+    QVERIFY2(repository.remove(record.id(), QueuedProgress{.mediaId = 21, .episode = 6}, error), qPrintable(error));
+
+    QList<RecognitionRecord> found;
+    QVERIFY(repository.find({.recordId = record.id()}, found, error));
+    QVERIFY(found.isEmpty());
+    constexpr int superseded = 5;
+    QCOMPARE(statusOf(query, 1), superseded);
+    QCOMPARE(statusOf(query, 2), superseded);
+    QCOMPARE(statusOf(query, 3), 1);
+    QCOMPARE(statusOf(query, 4), 0);
+    QCOMPARE(statusOf(query, 5), 0);
+}
+
+void SqliteRecognitionHistoryRepositoryTests::removeWithoutQueuedProgressLeavesTheQueue() {
+    auto repository = repositoryFor(*database);
+    QSqlQuery query(database->connection());
+    QVERIFY(query.exec(QStringLiteral("INSERT INTO media (id, name, type, status) VALUES (21, 'One Piece', 1, 1)")));
+    insertPendingChange(query, 1, 5, 6, 0, 99);
+    auto record = recordFor(QStringLiteral("abc"), 6);
+    QString error;
+    QVERIFY(repository.insert(record, error));
+
+    QVERIFY2(repository.remove(record.id(), std::nullopt, error), qPrintable(error));
+
+    QCOMPARE(statusOf(query, 1), 0);
+    QVERIFY(!repository.remove(record.id(), std::nullopt, error));
 }
 
 QTEST_MAIN(SqliteRecognitionHistoryRepositoryTests)

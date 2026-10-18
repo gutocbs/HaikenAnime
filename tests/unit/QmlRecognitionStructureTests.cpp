@@ -65,18 +65,15 @@ class FakeRecognitionController final : public QObject {
     Q_PROPERTY(QObject *records READ records CONSTANT)
     Q_PROPERTY(bool hasMore READ hasMore CONSTANT)
     Q_PROPERTY(QString errorMessage READ errorMessage CONSTANT)
-    Q_PROPERTY(QVariantList mediaChoices READ mediaChoices CONSTANT)
 
 public:
     QObject *records() { return &model_; }
     bool hasMore() const { return false; }
     QString errorMessage() const { return {}; }
-    QVariantList mediaChoices() const { return {QVariantMap{{"id", 21}, {"title", "One Piece"}}}; }
 
     Q_INVOKABLE void Reload() {}
     Q_INVOKABLE void LoadMore() {}
-    Q_INVOKABLE bool Correct(qint64, int, int) { return true; }
-    Q_INVOKABLE bool Ignore(qint64) { return true; }
+    Q_INVOKABLE bool Remove(qint64) { return true; }
 
 private:
     QStringListModel model_;
@@ -201,8 +198,11 @@ void QmlRecognitionStructureTests::recognitionScreenIsNotAConfirmationQueue() {
     const auto text = source(QStringLiteral("EpisodeRecognitionScreen.qml"));
 
     QVERIFY(!text.contains(QStringLiteral("Confirmar"), Qt::CaseInsensitive));
-    QVERIFY(text.contains(QStringLiteral("controller.Correct(")));
-    QVERIFY(text.contains(QStringLiteral("controller.Ignore(")));
+    QVERIFY(text.contains(QStringLiteral("controller.Remove(")));
+    QVERIFY(text.contains(QStringLiteral("qsTr(\"Excluir\")")));
+    QVERIFY(!text.contains(QStringLiteral("Corrigir")));
+    QVERIFY(!text.contains(QStringLiteral("Ignorar")));
+    QVERIFY(!text.contains(QStringLiteral("controller.Correct(")));
 }
 
 void QmlRecognitionStructureTests::settingsScreenHostsPluginsAndHistory() {

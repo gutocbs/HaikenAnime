@@ -227,6 +227,9 @@ void composeEpisodeRecognition(ApplicationContext &context) {
          .diagnostics = [logger = context.logger.get()](const QString &message) {
              if (logger) logger->warning(LogCategory::Application, message);
          },
+         .info = [logger = context.logger.get()](const QString &message) {
+             if (logger) logger->info(LogCategory::Application, message);
+         },
          .progressApplied = [listener = context.recognitionProgressListener](const Media &media) {
              if (*listener) (*listener)(media);
          }});

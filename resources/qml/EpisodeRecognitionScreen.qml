@@ -3,12 +3,11 @@ import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
 // History of automatic recognitions. Progress was already applied by the application; this
-// panel only shows what happened and lets the user correct or ignore a wrong recognition.
+// panel only shows what happened and lets the user delete entries from the local history.
 ColumnLayout {
     id: recognitionScreen
 
     property var controller: recognitionController
-    property var correctingRecordId: 0
 
     readonly property color ink: "#172033"
     readonly property color muted: "#68758a"
@@ -134,19 +133,10 @@ ColumnLayout {
                 }
                 AppButton {
                     visible: row.correctable
-                    text: qsTr("Corrigir")
-                    variant: "secondary"
-                    onClicked: {
-                        recognitionScreen.correctingRecordId = row.recordId
-                        episodeInput.value = row.episode
-                        correctionDialog.open()
-                    }
-                }
-                AppButton {
-                    visible: row.correctable && row.statusKey !== "ignored"
-                    text: qsTr("Ignorar")
+                    text: qsTr("Excluir")
                     variant: "flat"
-                    onClicked: recognitionScreen.controller.Ignore(row.recordId)
+                    // Local history only: progress stays; an unsent AniList progress change is discarded.
+                    onClicked: recognitionScreen.controller.Remove(row.recordId)
                 }
             }
         }
@@ -157,35 +147,5 @@ ColumnLayout {
         text: qsTr("Carregar mais")
         variant: "flat"
         onClicked: recognitionScreen.controller.LoadMore()
-    }
-
-    Dialog {
-        id: correctionDialog
-        parent: Overlay.overlay
-        anchors.centerIn: parent
-        modal: true
-        title: qsTr("Corrigir reconhecimento")
-        standardButtons: Dialog.Ok | Dialog.Cancel
-        onAccepted: recognitionScreen.controller.Correct(recognitionScreen.correctingRecordId,
-                                                         mediaInput.currentValue, episodeInput.value)
-
-        ColumnLayout {
-            spacing: 10
-            ComboBox {
-                id: mediaInput
-                Layout.preferredWidth: 320
-                model: recognitionScreen.controller.mediaChoices
-                textRole: "title"
-                valueRole: "id"
-                Accessible.name: qsTr("Anime")
-            }
-            SpinBox {
-                id: episodeInput
-                from: 1
-                to: 100000
-                editable: true
-                Accessible.name: qsTr("Episódio")
-            }
-        }
     }
 }

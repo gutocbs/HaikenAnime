@@ -90,6 +90,9 @@ private slots:
     void testConnectionReportsMissingLogin();
     void serverTokenNeverAppearsInLogs();
     void startedSessionCarriesEpisodeDetails();
+    void startedSessionCarriesDisplayNames();
+    void logsSessionLifecycleWithoutTokens();
+    void logsUnchangedPollsOnlyOnce();
     void changedDetailsAreReportedOnce();
     void newEpisodeCarriesItsOwnDetails();
 
@@ -422,6 +425,64 @@ void PlexPluginTests::newEpisodeCarriesItsOwnDetails() {
     QCOMPARE(observer.started.size(), 2);
     QCOMPARE(observer.started.at(1).details.title, QStringLiteral("Episode 2"));
     QVERIFY(observer.details.isEmpty());
+}
+
+void PlexPluginTests::startedSessionCarriesDisplayNames() {
+    http.route(SessionsKey, {.status = 200, .body = PlexFixture(QStringLiteral("plex-sessions.json"))});
+    PlexPlugin plugin(dependencies());
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+
+    plugin.observe(observer);
+
+    const auto &session = observer.started.first();
+    QCOMPARE(session.userId, QStringLiteral("1"));
+    QCOMPARE(session.userName, QStringLiteral("owner"));
+    QCOMPARE(session.deviceId, QStringLiteral("tv-1"));
+    QCOMPARE(session.deviceName, QStringLiteral("Living Room TV"));
+}
+
+void PlexPluginTests::logsSessionLifecycleWithoutTokens() {
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("12"), QStringLiteral("1"), 1, 60,
+                                                                         QStringLiteral("paused"))})});
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({})});
+    http.route(SessionsKey, {.status = 0});
+    QStringList logs;
+    auto deps = dependencies();
+    deps.log = [&logs](const QString &message) { logs.append(message); };
+    PlexPlugin plugin(deps);
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+
+    plugin.observe(observer);
+    plugin.pollSessions();
+    plugin.pollSessions();
+
+    const auto all = logs.join(QStringLiteral(" | "));
+    QVERIFY2(all.contains(QStringLiteral("12")), qPrintable(all));
+    QVERIFY2(all.contains(QStringLiteral("paused")), qPrintable(all));
+    QVERIFY2(all.contains(QStringLiteral("started")), qPrintable(all));
+    QVERIFY2(all.contains(QStringLiteral("stopped")), qPrintable(all));
+    QVERIFY2(all.contains(QStringLiteral("unavailable")), qPrintable(all));
+    QVERIFY(!all.contains(QStringLiteral("server-access-token-xyz")));
+}
+
+void PlexPluginTests::logsUnchangedPollsOnlyOnce() {
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("12"), QStringLiteral("1"), 1, 60)})});
+    QStringList logs;
+    auto deps = dependencies();
+    deps.log = [&logs](const QString &message) { logs.append(message); };
+    PlexPlugin plugin(deps);
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+
+    plugin.observe(observer);
+    const auto afterFirst = logs.size();
+    plugin.pollSessions();
+    plugin.pollSessions();
+
+    QVERIFY(afterFirst > 0);
+    QCOMPARE(logs.size(), afterFirst);
 }
 
 QTEST_MAIN(PlexPluginTests)

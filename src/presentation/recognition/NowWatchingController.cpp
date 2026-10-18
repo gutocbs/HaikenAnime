@@ -90,7 +90,7 @@ void NowWatchingController::Refresh() {
         const auto key = entry.session.id.key();
         const auto title = card.value(QStringLiteral("animeTitle"), card.value(QStringLiteral("sourceTitle"))).toString();
         card.insert(QStringLiteral("key"), key);
-        card.insert(QStringLiteral("label"), QStringLiteral("%1 · %2 · %3").arg(title, entry.session.userId,
+        card.insert(QStringLiteral("label"), QStringLiteral("%1 · %2 · %3").arg(title, card.value(QStringLiteral("user")).toString(),
                                                                                 SourceName(entry.session.id.pluginId())));
         card.insert(QStringLiteral("selected"), key == selectedKey_);
         if (key == selectedKey_) current_ = card;
@@ -127,7 +127,9 @@ QVariantMap NowWatchingController::buildCurrent(const ActiveSession &entry, cons
         card.insert(QStringLiteral("airDate"), details.airDate->toString(QStringLiteral("dd/MM/yyyy")));
     }
     card.insert(QStringLiteral("source"), SourceName(entry.session.id.pluginId()));
-    InsertText(card, QStringLiteral("user"), entry.session.userId);
-    InsertText(card, QStringLiteral("device"), entry.session.deviceId);
+    // Names the player reported win; ids are only shown when no name exists.
+    const auto &session = entry.session;
+    InsertText(card, QStringLiteral("user"), session.userName.isEmpty() ? session.userId : session.userName);
+    InsertText(card, QStringLiteral("device"), session.deviceName.isEmpty() ? session.deviceId : session.deviceName);
     return card;
 }

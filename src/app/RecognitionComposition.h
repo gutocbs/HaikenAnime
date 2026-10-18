@@ -35,6 +35,8 @@ struct RecognitionCompositionDependencies final {
     /// Defaults to QTimer::singleShot bound to the context lifetime.
     std::function<void(int delayMs, std::function<void()>)> schedule;
     std::function<void(const QString &)> diagnostics;
+    /// Informational plugin events (session start/stop, Plex poll changes); never contain secrets.
+    std::function<void(const QString &)> info;
     /// Called after automatic progress was saved locally (e.g. to refresh the Home screen).
     std::function<void(const Media &)> progressApplied;
 };

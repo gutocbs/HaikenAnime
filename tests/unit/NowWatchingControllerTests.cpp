@@ -34,8 +34,9 @@ Media onePiece() {
 }
 
 PlaybackSession session(const QString &key, const QDateTime &startedAt, const QString &plugin = QStringLiteral("plex")) {
-    return {.id = PlaybackSessionId::create(plugin, key).value(), .userId = QStringLiteral("owner"),
-            .deviceId = QStringLiteral("Living Room TV"), .startedAt = startedAt,
+    return {.id = PlaybackSessionId::create(plugin, key).value(), .userId = QStringLiteral("1"),
+            .deviceId = QStringLiteral("o9w0fn8zxpq1"), .userName = QStringLiteral("owner"),
+            .deviceName = QStringLiteral("Living Room TV"), .startedAt = startedAt,
             .details = {.sourceTitle = QStringLiteral("One Piece"), .title = QStringLiteral("Romance Dawn"),
                         .summary = QStringLiteral("Luffy sets sail."), .durationSeconds = 1440,
                         .airDate = QDate(1999, 10, 20)}};
@@ -63,6 +64,7 @@ private slots:
     void destroyedControllerStopsListeningToRegistry();
     void neverExposesRemoteCoverUrls();
     void sessionsCarryCardData();
+    void fallsBackToIdsWithoutDisplayNames();
     void currentCarriesMediaIdAndAnimeSynopsisOnlyWhenAssociated();
 
 private:
@@ -262,6 +264,19 @@ void NowWatchingControllerTests::currentCarriesMediaIdAndAnimeSynopsisOnlyWhenAs
     QCOMPARE(controller.current().value(QStringLiteral("mediaId")).toInt(), 21);
     QCOMPARE(controller.current().value(QStringLiteral("animeSynopsis")).toString(), QStringLiteral("Pirates and a straw hat."));
     QVERIFY(!controller.sessions().at(1).toMap().value(QStringLiteral("selected")).toBool());
+}
+
+void NowWatchingControllerTests::fallsBackToIdsWithoutDisplayNames() {
+    auto bare = session(QStringLiteral("a"), Start);
+    bare.userName.clear();
+    bare.deviceName.clear();
+    registry.start(bare, candidate(21));
+    NowWatchingController controller(registry, library);
+
+    controller.Refresh();
+
+    QCOMPARE(controller.current().value(QStringLiteral("user")).toString(), QStringLiteral("1"));
+    QCOMPARE(controller.current().value(QStringLiteral("device")).toString(), QStringLiteral("o9w0fn8zxpq1"));
 }
 
 QTEST_MAIN(NowWatchingControllerTests)

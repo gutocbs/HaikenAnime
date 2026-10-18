@@ -43,6 +43,9 @@ public:
     bool correct(qint64 recordId, const EpisodeCandidate &correction, const ProgressDecision &decision,
                  QString &error);
     bool ignore(qint64 recordId, QString &error);
+    /// Deletes the record from the local history; a progress change it queued for AniList and not yet
+    /// sent is discarded with it. Local progress stays as it is.
+    bool remove(qint64 recordId, QString &error);
     /// Durable, visible AniList failure. Local progress stays as it is.
     bool markSyncFailure(qint64 recordId, const QString &safeError, QString &error);
     bool markSynced(qint64 recordId, QString &error);
