@@ -241,7 +241,7 @@ Perguntas em que há mais de um caminho razoável.
 | 4 | ☑ [report](../reviews/2026-10-18-parte-04-persistencia-midia-outbox.md) | ☑ | ☑ validada: `ctest` verde, smoke de edição (Home e catálogo, inclusive adição) |
 | 5 | ☑ [report](../reviews/2026-10-18-parte-05-integracao-anilist.md) | ☑ | ☑ validada: `ctest` verde, smoke de sync (lista baixada, edição enviada) |
 | 6 | ☑ [report](../reviews/2026-10-18-parte-06-agendamento-sync.md) | ☑ | ☑ validada: `ctest` verde (após `ac42360`) |
-| 7 | ☐ | ☐ | ☐ |
+| 7 | ☑ [report](../reviews/2026-10-18-parte-07-biblioteca-local.md) | ☐ | ☐ |
 | 8 | ☐ | ☐ | ☐ |
 | 9 | ☐ | ☐ | ☐ |
 | 10 | ☐ | ☐ | ☐ |
