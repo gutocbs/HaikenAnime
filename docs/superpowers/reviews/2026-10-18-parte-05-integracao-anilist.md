@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `22182cd` (`feature/revisao-geral`)
-- **Status:** aguardando aprovação — nenhuma alteração aplicada
+- **Status:** aprovado (com as correções e as duas recomendações) e aplicado — aguardando o build de validação
 
 ---
 
@@ -99,3 +99,32 @@ Nada novo nesta parte.
    porque a fonte gravada que ele usa sai aqui) ou deixar para a Parte 6?
 2. **P5-07:** remover os valores não usados de `AniListField` fixando os números dos que ficam (recomendo),
    ou manter o enum como está e só simplificar o merge?
+
+---
+
+## 7. Aplicação
+
+| Item | Commit |
+| --- | --- |
+| P5-02 workers sem uso | `0f00104` |
+| P5-08 `HttpFactory` | `5588360` |
+| P5-01 sync de fixture (inclui `InitialSyncCoordinator`) | `6d57893` |
+| P5-04 colaboradores nulos do `AniListSyncService` | `0ec0b9b` |
+| P5-03 só o caminho da lista do usuário na fonte AniList | `81a4c7a` |
+| P5-05 `AniListListStatus.h` | `9e02a92` |
+| P5-06 `AniListPendingChangeGrouper` removido | `242a39c` |
+| P5-07 merge simplificado e `AniListField` numerado | `19f70f3` |
+
+Notas sobre os testes:
+- `AniListFlowTests`: de 29 para 21 casos. Saíram os da fonte em arquivo, os que só verificavam que o caminho
+  legado não concilia, o de variáveis de catálogo e o de partição de catálogo. Os de comportamento do serviço
+  passaram a usar fontes falsas de `IAniListDataSource` (`ConfigureTwoPages`). Os que verificavam a
+  conciliação **dentro** do serviço agora verificam `lastOutcome()` (snapshot completo e ids observados),
+  que é o que o executor usa.
+- `AniListGraphQlParsingTests`: saíram os 7 casos da fonte gravada e o do adaptador de catálogo;
+  `pageParserReadsTheRecordedLibraryResponse` (ex-`recordedLibraryFixtureIsComplete`) continua com
+  `graphql/page-response.json`.
+- `AdaptiveSyncCoordinatorTests::turnsPersistedCheckpointIntoTheNextPartitionRequestPage` usa a partição
+  `UserList` (antes usava uma de catálogo só para ler as variáveis de catálogo, que deixaram de existir).
+- `AniListPendingChangeProcessorTests::groupsChangesByMedia` virou `sendsEveryChangeOfTheMediaInOneUpdate`.
+- `JsonSettingsReaderTests`: a chave `mediaQueryFile` saiu dos JSONs de teste (o leitor não a lê mais).

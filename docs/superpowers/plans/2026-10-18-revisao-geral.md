@@ -140,8 +140,7 @@ Os testes de cada área (≈25,8k linhas em `tests/unit`) são revisados **na pa
   Processor, Drain, Merge*) — confirmar responsabilidades e sobreposições.
 
 ### Parte 6 — Agendamento e execução da sync
-- `[Remover]` `ApplicationContext::initialSync` nunca é atribuído: `InitialSyncCoordinator` (+ 391 linhas
-  de teste) parece morto.
+- ~~`[Remover]` `InitialSyncCoordinator`~~ — feito na Parte 5 (P5-01).
 - `[Simplificar]` `SyncTaskKind`/`SyncPartition` têm 7 valores cada (1:1), mas só `UserList` e
   `PendingChanges` existem. Avaliar reduzir/unificar sem quebrar linhas já gravadas em `sync_task_state`.
 - `[Simplificar]` `ApplicationSyncTaskExecutor::Execute` é uma lambda de ~250 linhas com os dois fluxos →
@@ -240,7 +239,7 @@ Perguntas em que há mais de um caminho razoável.
 | 2 | ☑ [report](../reviews/2026-10-18-parte-02-dominio-midia.md) | ☑ | ☑ validada: `ctest` 85/85, smoke OK (inclui troca de idioma) |
 | 3 | ☑ [report](../reviews/2026-10-18-parte-03-infraestrutura-base.md) | ☑ | ☑ validada: `ctest` verde, smoke com o banco real (migrou e funcionou) |
 | 4 | ☑ [report](../reviews/2026-10-18-parte-04-persistencia-midia-outbox.md) | ☑ | ☑ validada: `ctest` verde, smoke de edição (Home e catálogo, inclusive adição) |
-| 5 | ☑ [report](../reviews/2026-10-18-parte-05-integracao-anilist.md) | ☐ | ☐ |
+| 5 | ☑ [report](../reviews/2026-10-18-parte-05-integracao-anilist.md) | ☑ | ☑ aplicada; aguardando build |
 | 6 | ☐ | ☐ | ☐ |
 | 7 | ☐ | ☐ | ☐ |
 | 8 | ☐ | ☐ | ☐ |

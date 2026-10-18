@@ -70,7 +70,7 @@ main.cpp                  # Entrada: cria o contexto, os controllers, faz a fia�
 src/
 ├── domain/               # Entidades e regras puras (sem Qt SQL/QML/rede)
 │   ├── media/            #   Media, MediaType, MediaStatus, UserListStatus, MediaLink
-│   ├── anilist/          #   AniListField/FieldValue, políticas e resultados de merge
+│   ├── anilist/          #   AniListField/FieldValue (campo e valor de uma mudança pendente)
 │   ├── library/          #   LocalFileRecord
 │   └── recognition/      #   PlaybackSession, EpisodeCandidate, RecognitionPolicy, RecognitionRecord
 ├── application/          # Casos de uso, serviços e interfaces (ports I*)
@@ -103,7 +103,7 @@ resources/
 ├── icons/  images/
 tests/
 ├── unit/                 # Uma suíte Qt Test por arquivo, um executável CTest por suíte
-└── fixtures/             # Respostas GraphQL/mpv/Plex gravadas, bibliotecas JSON
+└── fixtures/             # Respostas GraphQL/mpv/Plex gravadas, snapshot do schema SQLite
 translations/             # HaikenAnime_pt_BR.ts, HaikenAnime_en.ts
 Settings.json             # Configuração da aplicação (embutida como recurso :/config/Settings.json)
 scripts/build-release.ps1 # Empacotamento de release
@@ -230,7 +230,8 @@ abrem sua própria conexão (`SqliteDatabase(databasePath)`). Resultados voltam 
 - Sem conta (ou conta suspensa durante remoção) → tarefa concluída como "pulada", sem erro.
 - `UserList`: para `ANIME` e depois `MANGA`, baixa as páginas da lista do usuário filtrando pelos status
   habilitados (`UserPreferences.enabledUserLists`), faz *upsert* das mídias, grava o checkpoint de página,
-  concilia mudanças pendentes com o estado remoto (`AniListPendingChangeReconciler`) e, se o snapshot for
+  concilia mudanças pendentes com o estado remoto (`AniListPendingChangeReconciler`: vence o maior
+  progresso; nota e status locais aguardam envio) e, se o snapshot for
   completo, marca como removidas da fonte as mídias que sumiram (`ReconcileCompleteAniListSnapshot`).
 - `PendingChanges`: adota mudanças sem dono, e `AniListPendingChangeDrain` → `AniListPendingChangeProcessor`
   envia os grupos via `AniListUpdateClient` (mutations GraphQL). Uma mudança só sai da fila após
@@ -379,6 +380,8 @@ Para adicionar uma migração:
   ponteiro não-dono no construtor. Sem singletons globais.
 - **Callbacks** como `std::function` (notificadores, provedores, loggers) para manter camadas desacopladas.
 - **Opcionais**: `std::optional` para valores ausentes; coleções nunca nulas.
+- Status de lista ↔ AniList (`CURRENT`, `PAUSED`, …) só por `AniListListStatus.h`; `AniListField` é gravado
+  como inteiro no outbox, então um valor novo ganha número próprio e os existentes nunca mudam.
 - Comentários `/** */` ou `///` em APIs públicas cujo nome não é autoexplicativo (o quê, argumentos,
   retorno, condições de erro e thread de execução quando relevante).
 - Toda chamada de rede tem timeout e retry limitado (`HttpSettings`); operações longas aceitam um
@@ -441,7 +444,7 @@ Mapa rápido de suítes por área:
 | Domínio | `RecognitionDomainTests`, `AlternativeNamesTests`, `MediaTitleResolverTests` |
 | SQLite | `SqliteDatabaseTests`, `SqliteRepositoryTests`, `Sqlite*RepositoryTests`, `SqlQueryStoreTests` |
 | AniList | `AniListGraphQl*Tests`, `AniListFlowTests`, `AniListPendingChange*Tests`, `AniListUpdateClientTests`, `AniListAuthManagerTests`, `AniListOAuth*Tests`, `RemoveAniListAccountUseCaseTests` |
-| Sync | `SyncTaskPolicyTests`, `AdaptiveSyncCoordinatorTests`, `AdaptiveSyncRuntimeTests`, `InitialSyncCoordinatorTests` |
+| Sync | `SyncTaskPolicyTests`, `AdaptiveSyncCoordinatorTests`, `AdaptiveSyncRuntimeTests` |
 | Biblioteca local | `LocalLibraryScanner*Tests`, `LocalLibraryScan*Tests`, `LocalLibraryRecognition*Tests`, `AnitomyLocalFileRecognizerTests`, `LocalMediaResolverTests`, `LocalEpisodeReaderTests` |
 | Capas/cache | `Cover*Tests`, `QtCoverDownloaderTests`, `ClearLocalCacheUseCaseTests` |
 | Reconhecimento | `Mpv*Tests`, `Plex*Tests`, `Plugin*Tests`, `PlaybackObservationServiceTests`, `ProgressDecisionServiceTests`, `RecognitionHistory*Tests`, `RecognitionSyncFeedbackTests`, `EpisodeRecognition*Tests`, `RecognitionCompositionTests`, `ActiveSessionRegistryTests`, `NowWatchingControllerTests` |
