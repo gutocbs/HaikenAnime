@@ -196,6 +196,8 @@ Itens coletados até agora (a lista cresce a cada parte):
 | Parte 1 | `Settings.json` usa `Q:\` como pasta padrão da biblioteca — avaliar um default neutro |
 | Parte 2 | O intervalo de sincronização escolhido em Configurações (`synchronizationIntervalMs`) é salvo, mas o agendador não o usa |
 | Parte 2 | Traduções em inglês faltando: estações do ano, "%1 de %2", "Episódio %1" |
+| Parte 3 | Falha de migração sobrescreve o erro específico por uma mensagem genérica que cita "versions 1 through 15" |
+| Parte 3 | Repositórios releem o `.sql` a cada operação e o `SqlQueryStore` loga `INFO` a cada leitura |
 
 ---
 
@@ -232,7 +234,7 @@ Perguntas em que há mais de um caminho razoável.
 | Baseline | — | — | ☑ 80/85 (5 falhas de `PATH`, código verde) |
 | 1 | ☑ [report](../reviews/2026-10-18-parte-01-repositorio-build.md) | ☑ | ☑ validada: `ctest` 85/85, MinGW sem prefixo, release `dist/`, smoke OK |
 | 2 | ☑ [report](../reviews/2026-10-18-parte-02-dominio-midia.md) | ☑ | ☑ validada: `ctest` 85/85, smoke OK (inclui troca de idioma) |
-| 3 | ☐ | ☐ | ☐ |
+| 3 | ☑ [report](../reviews/2026-10-18-parte-03-infraestrutura-base.md) | ☐ | ☐ |
 | 4 | ☐ | ☐ | ☐ |
 | 5 | ☐ | ☐ | ☐ |
 | 6 | ☐ | ☐ | ☐ |
