@@ -9,6 +9,7 @@ const QDateTime Start(QDate(2026, 10, 17), QTime(20, 0), QTimeZone::UTC);
 class FakeLibrary final : public IMediaReader {
 public:
     bool readAll(QList<Media> &media, QString &error) override {
+        ++reads;
         if (fail) {
             error = QStringLiteral("database is locked");
             return false;
@@ -19,6 +20,7 @@ public:
     }
     QList<Media> items;
     bool fail = false;
+    int reads = 0;
 };
 
 Media onePiece() {
@@ -66,6 +68,11 @@ private slots:
     void sessionsCarryCardData();
     void fallsBackToIdsWithoutDisplayNames();
     void exposesPausedStateFromThePlayer();
+    void stateAndDetailChangesDoNotRereadTheLibrary();
+    void unknownMediaIsNotRereadOnEveryRefresh();
+    void invalidatingTheLibraryRereadsOnce();
+    void burstOfRegistryChangesRefreshesOnce();
+    void persistentReadFailureWarnsOnce();
     void currentCarriesMediaIdAndAnimeSynopsisOnlyWhenAssociated();
 
 private:
@@ -291,6 +298,73 @@ void NowWatchingControllerTests::exposesPausedStateFromThePlayer() {
 
     QVERIFY(controller.current().value(QStringLiteral("paused")).toBool());
     QVERIFY(controller.sessions().first().toMap().value(QStringLiteral("paused")).toBool());
+}
+
+void NowWatchingControllerTests::stateAndDetailChangesDoNotRereadTheLibrary() {
+    registry.start(session(QStringLiteral("a"), Start), candidate(21));
+    NowWatchingController controller(registry, library);
+    controller.Refresh();
+    const auto readsAfterStart = library.reads;
+
+    registry.updateState(session(QStringLiteral("a"), Start).id, PlaybackState::Paused);
+    registry.updateDetails(session(QStringLiteral("a"), Start).id, {.title = QStringLiteral("Other")});
+    QCoreApplication::processEvents();
+    controller.Refresh();
+
+    QCOMPARE(readsAfterStart, 1);
+    QCOMPARE(library.reads, 1);
+    QCOMPARE(controller.current().value(QStringLiteral("episodeTitle")).toString(), QStringLiteral("Other"));
+}
+
+void NowWatchingControllerTests::unknownMediaIsNotRereadOnEveryRefresh() {
+    registry.start(session(QStringLiteral("a"), Start), candidate(99));
+    NowWatchingController controller(registry, library);
+
+    controller.Refresh();
+    controller.Refresh();
+    controller.Refresh();
+
+    QCOMPARE(library.reads, 1);
+    QVERIFY(!controller.current().value(QStringLiteral("associated")).toBool());
+}
+
+void NowWatchingControllerTests::invalidatingTheLibraryRereadsOnce() {
+    registry.start(session(QStringLiteral("a"), Start), candidate(21));
+    NowWatchingController controller(registry, library);
+    controller.Refresh();
+    library.items.first().ConsumedChapters = 6;
+
+    controller.InvalidateLibrary();
+    QCoreApplication::processEvents();
+    controller.Refresh();
+
+    QCOMPARE(library.reads, 2);
+    QCOMPARE(controller.current().value(QStringLiteral("progress")).toString(), QStringLiteral("6/12"));
+}
+
+void NowWatchingControllerTests::burstOfRegistryChangesRefreshesOnce() {
+    NowWatchingController controller(registry, library);
+    QSignalSpy changed(&controller, &NowWatchingController::changed);
+
+    registry.start(session(QStringLiteral("a"), Start), candidate(21));
+    registry.updateState(session(QStringLiteral("a"), Start).id, PlaybackState::Paused);
+    registry.updateDetails(session(QStringLiteral("a"), Start).id, {.title = QStringLiteral("x")});
+    QCoreApplication::processEvents();
+
+    QCOMPARE(changed.count(), 1);
+}
+
+void NowWatchingControllerTests::persistentReadFailureWarnsOnce() {
+    library.fail = true;
+    registry.start(session(QStringLiteral("a"), Start), candidate(21));
+    QStringList warnings;
+    NowWatchingController controller(registry, library, [&warnings](const QString &message) { warnings.append(message); });
+
+    controller.Refresh();
+    controller.Refresh();
+    controller.Refresh();
+
+    QCOMPARE(warnings.size(), 1);
 }
 
 QTEST_MAIN(NowWatchingControllerTests)

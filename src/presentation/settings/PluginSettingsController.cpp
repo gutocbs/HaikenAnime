@@ -135,6 +135,8 @@ void PluginSettingsController::Connect() {
     plex_.authentication->beginBrowserLogin([this](const PlexLoginResult &result) {
         connecting_ = false;
         const bool succeeded = result.status == PlexLoginStatus::Succeeded;
+        // Disconnecting stopped the polling; a new login must bring recognition back without a restart.
+        if (succeeded && plex_.plugin) plex_.plugin->resume();
         setMessages(succeeded ? QString() : result.safeMessage, succeeded ? result.safeMessage : QString());
     });
 }
@@ -191,6 +193,7 @@ void PluginSettingsController::SelectServer(const QString &serverId) {
             setMessages(message, {});
             return;
         }
+        if (plex_.plugin) plex_.plugin->resume();
         QString error;
         settings_.setValue(PlexId, ServerKey, serverId, error);
         for (auto &entry : servers_) {

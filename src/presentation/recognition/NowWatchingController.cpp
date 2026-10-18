@@ -34,7 +34,7 @@ NowWatchingController::NowWatchingController(ActiveSessionRegistry &registry, IM
                                              std::function<void(const QString &)> warning, QObject *parent)
     : QObject(parent), registry_(registry), media_(media), warning_(std::move(warning)) {
     // Registry changes arrive inside plugin callbacks; the UI refreshes once they return.
-    registry_.setChangedCallback([this] { QTimer::singleShot(0, this, &NowWatchingController::Refresh); });
+    registry_.setChangedCallback([this] { scheduleRefresh(); });
 }
 
 NowWatchingController::~NowWatchingController() {
@@ -62,20 +62,52 @@ void NowWatchingController::SelectSession(const QString &key) {
     }
 }
 
-void NowWatchingController::Refresh() {
-    const auto active = registry_.sessions();
-    QHash<int, Media> library;
-    const bool needsLibrary = std::any_of(active.cbegin(), active.cend(),
-                                          [](const ActiveSession &entry) { return entry.candidate.mediaId().has_value(); });
-    if (needsLibrary) {
-        QList<Media> media;
-        QString error;
-        if (media_.readAll(media, error)) {
-            for (const auto &item : media) library.insert(item.Id, item);
-        } else if (warning_) {
+void NowWatchingController::InvalidateLibrary() {
+    libraryLoaded_ = false;
+    library_.clear();
+    lookedUpIds_.clear();
+    scheduleRefresh();
+}
+
+void NowWatchingController::scheduleRefresh() {
+    // A burst of registry changes (one Plex poll, pause + details) becomes a single refresh.
+    if (refreshScheduled_) return;
+    refreshScheduled_ = true;
+    QTimer::singleShot(0, this, [this] {
+        refreshScheduled_ = false;
+        Refresh();
+    });
+}
+
+void NowWatchingController::loadLibraryIfNeeded(const QList<ActiveSession> &active) {
+    QSet<int> needed;
+    for (const auto &entry : active) {
+        if (entry.candidate.mediaId()) needed.insert(*entry.candidate.mediaId());
+    }
+    const bool missing = std::any_of(needed.cbegin(), needed.cend(), [this](const int id) {
+        return !library_.contains(id) && !lookedUpIds_.contains(id);
+    });
+    if (needed.isEmpty() || (libraryLoaded_ && !missing)) return;
+    QList<Media> media;
+    QString error;
+    if (!media_.readAll(media, error)) {
+        if (!readFailureWarned_ && warning_) {
             warning_(QStringLiteral("Now watching could not read the local library: %1").arg(error));
         }
+        readFailureWarned_ = true;
+        return;
     }
+    readFailureWarned_ = false;
+    library_.clear();
+    for (const auto &item : media) library_.insert(item.Id, item);
+    lookedUpIds_ = needed;
+    libraryLoaded_ = true;
+}
+
+void NowWatchingController::Refresh() {
+    const auto active = registry_.sessions();
+    loadLibraryIfNeeded(active);
+    const auto &library = library_;
 
     // The selected session survives while it is open; otherwise the most recent one is shown.
     const bool selectionAlive = std::any_of(active.cbegin(), active.cend(), [this](const ActiveSession &entry) {

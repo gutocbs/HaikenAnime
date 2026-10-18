@@ -139,8 +139,12 @@ ou chamar AniList diretamente.
 - Baixa confiança não altera progresso automaticamente.
 - Sessões de usuários não selecionados pelo usuário são ignoradas.
 - O mesmo episódio/sessão não deve gerar múltiplas alterações idênticas.
-- Reconhecimentos incorretos permanecem corrigíveis no histórico.
-- A correção deve permitir escolher o anime/episódio correto ou ignorar o registro.
+- ~~Reconhecimentos incorretos permanecem corrigíveis no histórico.~~
+- ~~A correção deve permitir escolher o anime/episódio correto ou ignorar o registro.~~
+- **Decisão do usuário (2026-10-17, após a validação):** o histórico não oferece Corrigir nem
+  Ignorar. A única ação é **Excluir**: remove o registro do histórico local e descarta da fila do
+  AniList a alteração de progresso que ele enfileirou e que ainda não foi enviada. O progresso local
+  não é alterado. Um reconhecimento errado é desfeito editando o progresso do anime manualmente.
 - Falhas no AniList não desfazem a alteração local; ficam pendentes para retry e
   devem ser visíveis como erro de sincronização.
 

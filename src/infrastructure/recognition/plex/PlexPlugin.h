@@ -26,6 +26,11 @@ struct PlexPluginDependencies final {
 class PlexPlugin final : public IPlaybackPlugin {
 public:
     static constexpr int DefaultPollSeconds = 15;
+    static constexpr int MaximumPollSeconds = 60;
+    /// A rejected token is retried rarely: the server token may have rotated, the account one may be revoked.
+    static constexpr int UnauthorizedRetrySeconds = 300;
+    /// Network hiccups shorter than this many consecutive failed polls keep sessions observed.
+    static constexpr int FailuresBeforeSessionsEnd = 3;
     /// Plex metadata is structured, but the series still has to be matched to the local library.
     static constexpr double StructuredMetadataConfidence = 0.9;
 
@@ -38,6 +43,9 @@ public:
     void observe(IPlaybackObserver &observer) override;
     void testConnection(std::function<void(const ConnectionTestResult &)> completion) override;
     void stop() override;
+    /// Restarts polling after stop() (e.g. after reconnecting the account). No-op while polling.
+    void resume();
+    [[nodiscard]] bool isPolling() const { return polling_; }
 
     void setServer(const PlexServer &server);
     /// Rediscovers the account's servers and selects the one with the given id.
@@ -58,7 +66,7 @@ private:
         EpisodeDetails details;
     };
 
-    void scheduleNextPoll(quint64 generation);
+    void scheduleNextPoll(quint64 generation, int delayMs = -1);
     void applySessions(const QList<PlexSession> &sessions);
     void stopAll(StopReason reason);
     void log(const QString &message) const;
@@ -74,6 +82,9 @@ private:
     bool polling_ = false;
     QString lastError_;
     QString lastPollSummary_;
+    /// Server chosen by the user; kept while it cannot be reached so it is selected again later.
+    QString wantedServerId_;
+    int consecutiveFailures_ = 0;
 };
 
 #endif // HAIKENANIME_PLEXPLUGIN_H

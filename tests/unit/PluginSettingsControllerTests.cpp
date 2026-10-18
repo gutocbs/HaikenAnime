@@ -50,6 +50,13 @@ public:
     void stop() override {}
 };
 
+class NullObserver final : public IPlaybackObserver {
+public:
+    void onSessionStarted(const PlaybackSession &, const EpisodeCandidate &) override {}
+    void onSessionUpdated(const PlaybackSessionId &, const PlaybackSnapshot &) override {}
+    void onSessionStopped(const PlaybackSessionId &, StopReason) override {}
+};
+
 PlexHttpResponse json(const QByteArray &body, const int status = 200) {
     return {.status = status, .body = body};
 }
@@ -73,6 +80,7 @@ private slots:
     void selectingServerStoresItsId();
     void selectingUsersUpdatesObservedUsers();
     void messagesNeverContainTheToken();
+    void reconnectingResumesPlexPolling();
 
 private:
     std::unique_ptr<PluginSettingsController> makeController();
@@ -313,6 +321,24 @@ void PluginSettingsControllerTests::messagesNeverContainTheToken() {
         for (const auto &value : field.toMap()) QVERIFY(!value.toString().contains(Token));
     }
     QVERIFY(!logs.contains(Token));
+}
+
+void PluginSettingsControllerTests::reconnectingResumesPlexPolling() {
+    secrets.secrets[{QStringLiteral("plex"), QStringLiteral("token")}] = Token;
+    http.route(QStringLiteral("POST https://plex.tv/api/v2/pins"), json(R"({"id":7,"code":"c","expiresIn":60})", 201));
+    http.route(QStringLiteral("GET https://plex.tv/api/v2/pins/7"),
+               json(QStringLiteral(R"({"id":7,"authToken":"%1"})").arg(Token).toUtf8()));
+    NullObserver observer;
+    plex->observe(observer);
+    const auto controller = makeController();
+    controller->SelectPlugin(QStringLiteral("plex"));
+    controller->Disconnect();
+    QVERIFY(!plex->isPolling());
+
+    controller->Connect();
+
+    QCOMPARE(controller->connectionState(), QStringLiteral("connected"));
+    QVERIFY(plex->isPolling());
 }
 
 QTEST_MAIN(PluginSettingsControllerTests)

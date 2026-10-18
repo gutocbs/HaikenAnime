@@ -65,7 +65,7 @@ PluginSettingsSchema PlexPlugin::settingsSchema() const {
                         .label = Translate("Polling interval (seconds)"),
                         .defaultValue = DefaultPollSeconds,
                         .minimum = 5,
-                        .maximum = 300}}};
+                        .maximum = MaximumPollSeconds}}};
 }
 
 void PlexPlugin::observe(IPlaybackObserver &observer) {
@@ -103,22 +103,37 @@ void PlexPlugin::stop() {
     stopAll(StopReason::Closed);
 }
 
+void PlexPlugin::resume() {
+    if (polling_ || observer_ == nullptr) return;
+    polling_ = true;
+    ++generation_;
+    consecutiveFailures_ = 0;
+    pollSessions();
+}
+
 void PlexPlugin::setServer(const PlexServer &server) {
     if (server_.has_value() && server_->clientIdentifier != server.clientIdentifier) stopAll(StopReason::Closed);
     server_ = server;
+    wantedServerId_ = server.clientIdentifier;
 }
 
 void PlexPlugin::selectServer(const QString &serverId, std::function<void(bool, const QString &)> completion) {
+    // Remembered even if this attempt fails, so later polls keep trying (e.g. network not up at boot).
+    wantedServerId_ = serverId;
     QString token;
     QString error;
     if (dependencies_.authentication == nullptr || dependencies_.api == nullptr
         || !dependencies_.authentication->readToken(token, error)) {
+        log(QStringLiteral("Plex server selection failed: server=%1 reason=not-connected").arg(serverId));
         completion(false, Translate("Connect your Plex account first."));
         return;
     }
     dependencies_.api->discoverServers(token, [this, serverId, completion = std::move(completion)](
                                                   const PlexApiError result, const QList<PlexServer> &servers) {
         if (result != PlexApiError::None) {
+            log(QStringLiteral("Plex server selection failed: server=%1 reason=%2")
+                    .arg(serverId, result == PlexApiError::Unauthorized ? QStringLiteral("unauthorized")
+                                                                         : QStringLiteral("plex-tv-unavailable")));
             completion(false, Translate("Plex servers could not be listed."));
             return;
         }
@@ -129,6 +144,7 @@ void PlexPlugin::selectServer(const QString &serverId, std::function<void(bool, 
                 return;
             }
         }
+        log(QStringLiteral("Plex server selection failed: server=%1 reason=not-found").arg(serverId));
         completion(false, Translate("The selected Plex server is no longer available."));
     });
 }
@@ -138,14 +154,29 @@ void PlexPlugin::setSelectedUsers(const QSet<QString> &userIds) {
 }
 
 void PlexPlugin::setPollInterval(const int seconds) {
-    pollSeconds_ = qBound(5, seconds, 300);
+    // Observation counts at most 60 s between two snapshots, so slower polling would undercount playback.
+    pollSeconds_ = qBound(5, seconds, MaximumPollSeconds);
 }
 
 void PlexPlugin::pollSessions() {
     const auto generation = generation_;
-    if (!server_.has_value() || selectedUsers_.isEmpty() || dependencies_.api == nullptr) {
+    if (selectedUsers_.isEmpty() || dependencies_.api == nullptr || (!server_ && wantedServerId_.isEmpty())) {
         stopAll(StopReason::Closed);
         scheduleNextPoll(generation);
+        return;
+    }
+    if (!server_.has_value()) {
+        // The chosen server could not be reached before (boot without network, rejected server token).
+        selectServer(wantedServerId_, [this, generation](const bool selected, const QString &message) {
+            if (generation != generation_) return;
+            if (selected) {
+                log(QStringLiteral("Plex server selected: %1").arg(wantedServerId_));
+                pollSessions();
+                return;
+            }
+            lastError_ = message;
+            scheduleNextPoll(generation);
+        });
         return;
     }
     dependencies_.api->listSessions(*server_, [this, generation](const PlexApiError result,
@@ -170,27 +201,33 @@ void PlexPlugin::pollSessions() {
         switch (result) {
         case PlexApiError::None:
             lastError_.clear();
+            consecutiveFailures_ = 0;
             applySessions(sessions);
             scheduleNextPoll(generation);
             return;
         case PlexApiError::Unauthorized:
-            // Polling again with a rejected token would only repeat the failure.
+            // The server token may have rotated: drop it and rediscover the server after a long pause.
             lastError_ = Translate("The Plex server rejected the login. Reconnect Plex.");
             stopAll(StopReason::Unavailable);
+            server_.reset();
+            consecutiveFailures_ = 0;
+            scheduleNextPoll(generation, UnauthorizedRetrySeconds * 1000);
             return;
         case PlexApiError::Unavailable:
         case PlexApiError::InvalidResponse:
             lastError_ = Translate("The Plex server is unavailable.");
-            stopAll(StopReason::Unavailable);
+            // A single timeout must not reset the playback counted so far; the 60 s gap cap
+            // already keeps the missing interval from counting.
+            if (++consecutiveFailures_ >= FailuresBeforeSessionsEnd) stopAll(StopReason::Unavailable);
             scheduleNextPoll(generation);
             return;
         }
     });
 }
 
-void PlexPlugin::scheduleNextPoll(const quint64 generation) {
+void PlexPlugin::scheduleNextPoll(const quint64 generation, const int delayMs) {
     if (!polling_ || generation != generation_ || !dependencies_.schedule) return;
-    dependencies_.schedule(pollSeconds_ * 1000, [this, generation] {
+    dependencies_.schedule(delayMs >= 0 ? delayMs : pollSeconds_ * 1000, [this, generation] {
         if (polling_ && generation == generation_) pollSessions();
     });
 }

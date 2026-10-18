@@ -82,7 +82,11 @@ private slots:
     void vanishedSessionStopsAsClosed();
     void deselectingUserStopsTheirSession();
     void unavailableServerStopsSessionsAndKeepsPolling();
-    void unauthorizedServerStopsPollingSafely();
+    void singleTransientFailureKeepsSessionsObserved();
+    void unauthorizedServerRediscoversAfterBackoff();
+    void serverSelectionRetriesWhileUnavailable();
+    void resumeRestartsPollingAfterStop();
+    void pollIntervalIsCappedAtSixtySeconds();
     void noServerOrNoSelectedUsersMakesNoRequest();
     void observeSchedulesPollingAtConfiguredInterval();
     void stopCancelsPolling();
@@ -262,38 +266,114 @@ void PlexPluginTests::deselectingUserStopsTheirSession() {
 void PlexPluginTests::unavailableServerStopsSessionsAndKeepsPolling() {
     http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("12"), QStringLiteral("1"), 1, 60)})});
     http.route(SessionsKey, {.status = 0});
-    int scheduledPolls = 0;
     std::function<void()> next;
-    PlexPlugin plugin(dependencies([&](int, std::function<void()> callback) {
-        ++scheduledPolls;
+    PlexPlugin plugin(dependencies([&](int, std::function<void()> callback) { next = std::move(callback); }));
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+    plugin.observe(observer);
+
+    std::exchange(next, {})();
+    std::exchange(next, {})();
+    QVERIFY(observer.stops.isEmpty());
+    std::exchange(next, {})();
+
+    QCOMPARE(observer.stops.size(), 1);
+    QCOMPARE(observer.stops.first().second, StopReason::Unavailable);
+    QVERIFY(!plugin.lastError().isEmpty());
+    QVERIFY(next);
+}
+
+void PlexPluginTests::singleTransientFailureKeepsSessionsObserved() {
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("12"), QStringLiteral("1"), 1, 60)})});
+    http.route(SessionsKey, {.status = 0});
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("12"), QStringLiteral("1"), 1, 90)})});
+    std::function<void()> next;
+    PlexPlugin plugin(dependencies([&](int, std::function<void()> callback) { next = std::move(callback); }));
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+    plugin.observe(observer);
+
+    std::exchange(next, {})();
+    std::exchange(next, {})();
+
+    QVERIFY(observer.stops.isEmpty());
+    QCOMPARE(observer.started.size(), 1);
+}
+
+void PlexPluginTests::unauthorizedServerRediscoversAfterBackoff() {
+    secrets.secrets[{QStringLiteral("plex"), QStringLiteral("token")}] = QStringLiteral("account-token");
+    http.route(SessionsKey, {.status = 401});
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("12"), QStringLiteral("1"), 1, 60)})});
+    http.route(ResourcesKey, {.status = 200, .body = PlexFixture(QStringLiteral("plex-resources.json"))});
+    QList<int> delays;
+    std::function<void()> next;
+    PlexPlugin plugin(dependencies([&](const int delay, std::function<void()> callback) {
+        delays.append(delay);
         next = std::move(callback);
     }));
     plugin.setServer(livingRoom());
     plugin.setSelectedUsers({QStringLiteral("1")});
 
     plugin.observe(observer);
-    auto poll = std::exchange(next, {});
-    poll();
-
-    QCOMPARE(observer.stops.size(), 1);
-    QCOMPARE(observer.stops.first().second, StopReason::Unavailable);
     QVERIFY(!plugin.lastError().isEmpty());
-    QVERIFY(next);
-    QCOMPARE(scheduledPolls, 2);
+    QVERIFY(!plugin.lastError().contains(QStringLiteral("server-access-token-xyz")));
+    QCOMPARE(delays, QList<int>({PlexPlugin::UnauthorizedRetrySeconds * 1000}));
+    std::exchange(next, {})();
+
+    QCOMPARE(observer.started.size(), 1);
+    QVERIFY(plugin.lastError().isEmpty());
 }
 
-void PlexPluginTests::unauthorizedServerStopsPollingSafely() {
-    http.route(SessionsKey, {.status = 401});
-    int scheduledPolls = 0;
-    PlexPlugin plugin(dependencies([&scheduledPolls](int, std::function<void()>) { ++scheduledPolls; }));
-    plugin.setServer(livingRoom());
+void PlexPluginTests::serverSelectionRetriesWhileUnavailable() {
+    secrets.secrets[{QStringLiteral("plex"), QStringLiteral("token")}] = QStringLiteral("account-token");
+    http.route(ResourcesKey, {.status = 0});
+    http.route(ResourcesKey, {.status = 200, .body = PlexFixture(QStringLiteral("plex-resources.json"))});
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("12"), QStringLiteral("1"), 1, 60)})});
+    QStringList logs;
+    std::function<void()> next;
+    auto deps = dependencies([&](int, std::function<void()> callback) { next = std::move(callback); });
+    deps.log = [&logs](const QString &message) { logs.append(message); };
+    PlexPlugin plugin(deps);
     plugin.setSelectedUsers({QStringLiteral("1")});
+    std::optional<bool> selected;
+    plugin.selectServer(QStringLiteral("server-abc"), [&selected](const bool value, const QString &) { selected = value; });
+    QVERIFY(!selected.value_or(true));
 
     plugin.observe(observer);
 
-    QVERIFY(!plugin.lastError().isEmpty());
-    QVERIFY(!plugin.lastError().contains(QStringLiteral("server-access-token-xyz")));
-    QCOMPARE(scheduledPolls, 0);
+    QCOMPARE(observer.started.size(), 1);
+    QCOMPARE(plugin.server()->clientIdentifier, QStringLiteral("server-abc"));
+    QVERIFY(logs.join(QStringLiteral(" | ")).contains(QStringLiteral("server")));
+}
+
+void PlexPluginTests::resumeRestartsPollingAfterStop() {
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("12"), QStringLiteral("1"), 1, 60)})});
+    PlexPlugin plugin(dependencies());
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+    plugin.observe(observer);
+    plugin.stop();
+    QVERIFY(!plugin.isPolling());
+
+    plugin.resume();
+
+    QVERIFY(plugin.isPolling());
+    QCOMPARE(observer.started.size(), 2);
+}
+
+void PlexPluginTests::pollIntervalIsCappedAtSixtySeconds() {
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({})});
+    QList<int> delays;
+    PlexPlugin plugin(dependencies([&delays](const int delay, std::function<void()>) { delays.append(delay); }));
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+    plugin.setPollInterval(300);
+
+    plugin.observe(observer);
+
+    QCOMPARE(delays, QList<int>({60000}));
+    const auto schema = plugin.settingsSchema();
+    QCOMPARE(schema.field(QStringLiteral("pollSeconds"))->maximum, std::optional<double>(60));
 }
 
 void PlexPluginTests::noServerOrNoSelectedUsersMakesNoRequest() {

@@ -376,6 +376,9 @@ int main(int argc, char *argv[]) {
                              controller->setPreferredTitleKey(preferences.preferredTitleKey);
                          });
         // Automatic progress changes the library; the Home refreshes after the recognition callback returns.
+        // The Home reloads the library after a sync or an edit; the screen's cached copy follows it.
+        QObject::connect(homeController.fullMediaModel(), &QAbstractItemModel::modelReset, nowWatchingController.get(),
+                         [controller = nowWatchingController.get()] { controller->InvalidateLibrary(); });
         *context.recognitionProgressListener = [&homeController](const Media &) {
             QTimer::singleShot(0, &homeController, [&homeController] { homeController.reload(); });
         };

@@ -1,7 +1,9 @@
 #ifndef HAIKENANIME_NOWWATCHINGCONTROLLER_H
 #define HAIKENANIME_NOWWATCHINGCONTROLLER_H
 
+#include <QHash>
 #include <QObject>
+#include <QSet>
 #include <QVariantList>
 #include <QVariantMap>
 
@@ -37,12 +39,16 @@ public:
     Q_INVOKABLE void SelectSession(const QString &key);
     /// Rebuilds sessions and the selected card from the registry and the library.
     void Refresh();
+    /// The library changed (progress applied, synchronization): reread it on the next refresh.
+    void InvalidateLibrary();
 
 signals:
     void changed();
 
 private:
     [[nodiscard]] QVariantMap buildCurrent(const ActiveSession &session, const QHash<int, Media> &library) const;
+    void scheduleRefresh();
+    void loadLibraryIfNeeded(const QList<ActiveSession> &active);
 
     ActiveSessionRegistry &registry_;
     IMediaReader &media_;
@@ -52,6 +58,13 @@ private:
     QVariantList sessions_;
     QString selectedKey_;
     QVariantMap current_;
+    // Reading the whole library costs ~0.35 s on the GUI thread: it is cached and reread only when a
+    // session needs a media not looked up since the last read, or after InvalidateLibrary().
+    QHash<int, Media> library_;
+    QSet<int> lookedUpIds_;
+    bool libraryLoaded_ = false;
+    bool refreshScheduled_ = false;
+    bool readFailureWarned_ = false;
 };
 
 #endif // HAIKENANIME_NOWWATCHINGCONTROLLER_H
