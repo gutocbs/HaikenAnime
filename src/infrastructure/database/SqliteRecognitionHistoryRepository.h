@@ -4,15 +4,10 @@
 #include <QSqlDatabase>
 
 #include "../../application/recognition/IRecognitionHistoryRepository.h"
-#include "SqliteQueries.h"
 
 class SqliteRecognitionHistoryRepository final : public IRecognitionHistoryRepository {
 public:
-    SqliteRecognitionHistoryRepository(
-        QSqlDatabase database, QString readQuery, QString insertQuery, QString updateQuery,
-        QString deleteQuery = SqliteQueries::DeleteRecognitionRecord,
-        QString discardProgressQuery = SqliteQueries::DiscardRecognitionProgress,
-        QString queuedProgressQuery = SqliteQueries::FindQueuedRecognitionProgress);
+    explicit SqliteRecognitionHistoryRepository(QSqlDatabase database);
 
     bool insert(RecognitionRecord &record, QString &error) override;
     bool update(const RecognitionRecord &record, QString &error) override;
@@ -22,12 +17,6 @@ public:
 
 private:
     QSqlDatabase database_;
-    QString readQuery_;
-    QString insertQuery_;
-    QString updateQuery_;
-    QString deleteQuery_;
-    QString discardProgressQuery_;
-    QString queuedProgressQuery_;
 };
 
 #endif // HAIKENANIME_SQLITERECOGNITIONHISTORYREPOSITORY_H

@@ -9,9 +9,7 @@ namespace {
 const QDateTime Created(QDate(2026, 10, 17), QTime(21, 0), QTimeZone::UTC);
 
 SqliteRecognitionHistoryRepository repositoryFor(SqliteDatabase &database) {
-    return {database.connection(), QStringLiteral(":/sqlite/queries/read-recognition-history.sql"),
-            QStringLiteral(":/sqlite/queries/insert-recognition-record.sql"),
-            QStringLiteral(":/sqlite/queries/update-recognition-record.sql")};
+    return SqliteRecognitionHistoryRepository(database.connection());
 }
 
 RecognitionRecord recordFor(const QString &sessionKey, const int episode,

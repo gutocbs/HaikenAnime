@@ -8,7 +8,6 @@
 #include "../infrastructure/recognition/QtProcessLauncher.h"
 #include "../infrastructure/recognition/mpv/QtLocalSocketMpvTransport.h"
 #include "../infrastructure/secrets/WindowsPluginSecretStore.h"
-#include "../infrastructure/database/SqliteQueries.h"
 
 #include <utility>
 
@@ -87,15 +86,9 @@ std::unique_ptr<RecognitionContext> createRecognitionContext(RecognitionComposit
 
     ctx.secrets = dependencies.secretStore ? std::move(dependencies.secretStore)
                                            : std::make_unique<WindowsPluginSecretStore>();
-    ctx.settingsRepository = std::make_unique<SqlitePluginSettingsRepository>(
-        dependencies.connection, SqliteQueries::ReadPluginSettings,
-        SqliteQueries::UpsertPluginSettings,
-        SqliteQueries::DeletePluginSettings);
+    ctx.settingsRepository = std::make_unique<SqlitePluginSettingsRepository>(dependencies.connection);
     ctx.settings = std::make_unique<PluginSettingsService>(*ctx.settingsRepository, *ctx.secrets);
-    ctx.historyRepository = std::make_unique<SqliteRecognitionHistoryRepository>(
-        dependencies.connection, SqliteQueries::ReadRecognitionHistory,
-        SqliteQueries::InsertRecognitionRecord,
-        SqliteQueries::UpdateRecognitionRecord);
+    ctx.historyRepository = std::make_unique<SqliteRecognitionHistoryRepository>(dependencies.connection);
     ctx.progressWriter = std::make_unique<PersonalListProgressWriter>(*dependencies.changes, dependencies.progressApplied);
     ctx.history = std::make_unique<RecognitionHistoryService>(*ctx.historyRepository, *ctx.progressWriter);
     // Before any plugin runs: records a crash left half-written must not stay "pending" forever.

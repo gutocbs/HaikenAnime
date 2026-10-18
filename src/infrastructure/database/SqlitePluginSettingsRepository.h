@@ -8,17 +8,13 @@
 /// Stores each plugin setting as one JSON-encoded row in plugin_setting.
 class SqlitePluginSettingsRepository final : public IPluginSettingsRepository {
 public:
-    SqlitePluginSettingsRepository(QSqlDatabase database, QString readQuery, QString upsertQuery,
-                                   QString deleteQuery);
+    explicit SqlitePluginSettingsRepository(QSqlDatabase database);
 
     bool read(const QString &pluginId, QVariantMap &values, QString &error) override;
     bool replace(const QString &pluginId, const QVariantMap &values, QString &error) override;
 
 private:
     QSqlDatabase database_;
-    QString readQuery_;
-    QString upsertQuery_;
-    QString deleteQuery_;
 };
 
 #endif // HAIKENANIME_SQLITEPLUGINSETTINGSREPOSITORY_H

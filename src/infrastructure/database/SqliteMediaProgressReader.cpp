@@ -5,11 +5,11 @@
 
 #include <utility>
 
+#include "SqliteQueries.h"
 #include "SqlQueryStore.h"
 #include "SqliteMediaMapper.h"
 
-SqliteMediaProgressReader::SqliteMediaProgressReader(QSqlDatabase database, QString readQuery)
-    : database_(std::move(database)), readQuery_(std::move(readQuery)) {}
+SqliteMediaProgressReader::SqliteMediaProgressReader(QSqlDatabase database) : database_(std::move(database)) {}
 
 bool SqliteMediaProgressReader::find(const int mediaId, std::optional<Media> &media, QString &error) {
     media.reset();
@@ -19,7 +19,7 @@ bool SqliteMediaProgressReader::find(const int mediaId, std::optional<Media> &me
         return false;
     }
     QString sql;
-    if (!SqlQueryStore::loadSource(readQuery_, sql, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadMediaForRecognitionProgress, sql, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(sql)) {
         error = query.lastError().text();

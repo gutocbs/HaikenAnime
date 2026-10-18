@@ -7,9 +7,7 @@
 
 namespace {
 SqlitePluginSettingsRepository repositoryFor(SqliteDatabase &database) {
-    return {database.connection(), QStringLiteral(":/sqlite/queries/read-plugin-settings.sql"),
-            QStringLiteral(":/sqlite/queries/upsert-plugin-settings.sql"),
-            QStringLiteral(":/sqlite/queries/delete-plugin-settings.sql")};
+    return SqlitePluginSettingsRepository(database.connection());
 }
 }
 

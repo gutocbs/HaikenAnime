@@ -23,7 +23,6 @@
 #include "../infrastructure/database/SqliteRecognitionHistoryRepository.h"
 #include "../infrastructure/database/SqliteSyncTaskStateRepository.h"
 #include "../infrastructure/database/SqliteUserPreferencesRepository.h"
-#include "../infrastructure/database/SqliteQueries.h"
 
 #include <QThread>
 #include <QNetworkAccessManager>
@@ -274,9 +273,7 @@ void ApplicationSyncTaskExecutor::RunPendingChangesTask(SqliteDatabase &database
         pendingChanges, updateClient, credentials.userId, authenticatedUserList_.auditLogger,
         [job] { return job->cancelled.load(); });
     // Reports each Progress outcome to the recognition history (Synced / Failed).
-    SqliteRecognitionHistoryRepository recognitionHistoryRepository(
-        database.connection(), SqliteQueries::ReadRecognitionHistory, SqliteQueries::InsertRecognitionRecord,
-        SqliteQueries::UpdateRecognitionRecord);
+    SqliteRecognitionHistoryRepository recognitionHistoryRepository(database.connection());
     NoRecognitionProgressWriter noRecognitionProgress;
     RecognitionHistoryService recognitionHistory(recognitionHistoryRepository, noRecognitionProgress);
     RecognitionSyncFeedback recognitionSyncFeedback(recognitionHistory, authenticatedUserList_.auditLogger);
