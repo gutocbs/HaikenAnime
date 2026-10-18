@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `8a25b93` (`feature/revisao-geral`)
-- **Status:** aprovado (com as duas recomendações) e aplicado — aguardando build do revisor
+- **Status:** aprovado (com as duas recomendações) e aplicado — validado
 - *(`MpvAwareLocalFileOpener` fica para a Parte 9, junto com o reconhecimento de reprodução.)*
 
 ---
@@ -126,3 +126,6 @@ Notas:
   `SqliteLocalFileRepositoryTests::reportsStatementAndTransactionErrors` virou `reportsTransactionErrors`
   (sem a metade do `missing.sql`), e o *helper* `statement()` saiu; os *fakes* dos coordinators e do
   `SettingsControllerTests` implementam só o contrato que usam.
+
+### Validação final (build do revisor)
+- `scripts/validate.ps1`: build MSVC + `ctest` todo verde.
