@@ -66,7 +66,7 @@ ColumnLayout {
 
     Label {
         visible: historyList.count === 0
-        text: qsTr("Nenhum episódio reconhecido ainda. Reproduza um episódio pelo mpv ou pelo Plex.")
+        text: qsTr("Nenhum episódio reconhecido ainda.")
         color: recognitionScreen.muted
         font.pixelSize: 11
         wrapMode: Text.Wrap

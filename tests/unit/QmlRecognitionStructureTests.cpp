@@ -92,8 +92,11 @@ class FakeNowWatchingController final : public QObject {
 public:
     bool active() const { return true; }
     QVariantList sessions() const {
-        return {QVariantMap{{"key", "plex:a"}, {"label", "One Piece · owner · Plex"}},
-                QVariantMap{{"key", "mpv:b"}, {"label", "ep02.mkv · local · mpv"}}};
+        auto first = current();
+        first.insert("key", "plex:a");
+        first.insert("selected", true);
+        return {first, QVariantMap{{"key", "mpv:b"}, {"associated", false}, {"sourceTitle", "ep02.mkv"},
+                                   {"episode", 2}, {"source", "mpv"}, {"user", "local"}, {"selected", false}}};
     }
     QString selectedSessionKey() const { return QStringLiteral("plex:a"); }
     QVariantMap current() const {
@@ -133,6 +136,8 @@ private slots:
     void nowWatchingScreenShowsEmptyMessageAndUnassociatedLabel();
     void homeButtonIsRightOfSettingsAndGuarded();
     void mainHasNowWatchingPage();
+    void nowWatchingUsesHomeLayoutAndAnimeDetailsButton();
+    void recognitionTextsDoNotNamePlugins();
 };
 
 void QmlRecognitionStructureTests::pluginSettingsScreenLoadsWithController() {
@@ -247,6 +252,28 @@ void QmlRecognitionStructureTests::mainHasNowWatchingPage() {
     QVERIFY(text.contains(QStringLiteral("NowWatchingScreen {")));
     QVERIFY(text.contains(QStringLiteral("root.page === \"nowWatching\"")));
     QVERIFY(text.contains(QStringLiteral("onOpenNowWatchingRequested: root.page = \"nowWatching\"")));
+}
+
+void QmlRecognitionStructureTests::nowWatchingUsesHomeLayoutAndAnimeDetailsButton() {
+    const auto text = source(QStringLiteral("NowWatchingScreen.qml"));
+
+    QVERIFY(text.contains(QStringLiteral("qsTr(\"Sessões abertas\")")));
+    QVERIFY(text.contains(QStringLiteral("qsTr(\"DETALHES\")")));
+    QVERIFY(text.contains(QStringLiteral("qsTr(\"Ver detalhes do anime\")")));
+    QVERIFY(text.contains(QStringLiteral("homeController.SelectMedia(")));
+    QVERIFY(text.contains(QStringLiteral("MediaDetailsPanel {")));
+    QVERIFY(text.contains(QStringLiteral("controller.SelectSession(")));
+    QVERIFY(!text.contains(QStringLiteral("ComboBox")));
+    QVERIFY(!text.contains(QStringLiteral("Sua nota")));
+    QVERIFY(!text.contains(QStringLiteral("disponíveis localmente")));
+}
+
+void QmlRecognitionStructureTests::recognitionTextsDoNotNamePlugins() {
+    for (const auto &file : RecognitionFiles) {
+        const auto text = source(file);
+        QVERIFY2(!text.contains(QStringLiteral("pelo mpv"), Qt::CaseInsensitive), qPrintable(file));
+        QVERIFY2(!text.contains(QStringLiteral("pelo Plex"), Qt::CaseInsensitive), qPrintable(file));
+    }
 }
 
 QTEST_MAIN(QmlRecognitionStructureTests)

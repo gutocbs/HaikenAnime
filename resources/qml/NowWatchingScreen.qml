@@ -2,9 +2,9 @@ import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
 
-// "Assistindo agora": what is being recognized right now, one session at a time.
-// Anime data comes from the library; episode data is only what the player reported.
-// Read-only: the controller pushes every change, this screen never polls or parses players.
+// "Assistindo agora", laid out like the Home: open sessions on the left (one card per player
+// instance), details of the selected one on the right. Anime data comes from the library; episode
+// data is only what the player reported. Read-only: the controller pushes every change.
 Item {
     id: nowWatching
 
@@ -12,6 +12,7 @@ Item {
 
     property var controller: nowWatchingController
     readonly property var current: controller ? controller.current : ({})
+    readonly property var openSessions: controller ? controller.sessions : []
     readonly property bool hasSession: controller !== null && controller.active
 
     readonly property color ink: "#172033"
@@ -23,36 +24,37 @@ Item {
     readonly property color accentSoft: "#e2ebf6"
     readonly property string placeholderCover: "qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg"
 
-    function statusLabel(key) {
-        switch (key) {
-        case "current": return qsTr("Assistindo")
-        case "planning": return qsTr("Planejado")
-        case "on-hold": return qsTr("Pausado")
-        case "dropped": return qsTr("Abandonado")
-        case "completed": return qsTr("Completo")
+    function coverOf(item) {
+        return item.coverUrl !== undefined ? item.coverUrl : placeholderCover
+    }
+
+    function titleOf(item) {
+        return item.animeTitle !== undefined ? item.animeTitle : (item.sourceTitle || "")
+    }
+
+    function episodeLine(item) {
+        if (item.episode === undefined) return ""
+        const episode = item.season !== undefined ? qsTr("T%1 · E%2").arg(item.season).arg(item.episode)
+                                                  : qsTr("Episódio %1").arg(item.episode)
+        return item.episodeTitle !== undefined ? episode + " — " + item.episodeTitle : episode
+    }
+
+    function joined(parts) {
+        return parts.filter(function(part) { return part !== undefined && part !== "" }).join("  ·  ")
+    }
+
+    // Pulsing "playing now" marker used on every session card and in the details eyebrow.
+    component LiveDot: Rectangle {
+        width: 8
+        height: 8
+        radius: 4
+        color: nowWatching.accent
+        SequentialAnimation on opacity {
+            running: nowWatching.visible && nowWatching.hasSession
+            loops: Animation.Infinite
+            NumberAnimation { from: 1; to: 0.25; duration: 900; easing.type: Easing.InOutSine }
+            NumberAnimation { from: 0.25; to: 1; duration: 900; easing.type: Easing.InOutSine }
         }
-        return ""
-    }
-
-    function selectedSessionIndex() {
-        const sessions = controller ? controller.sessions : []
-        for (let index = 0; index < sessions.length; ++index) {
-            if (sessions[index].key === controller.selectedSessionKey) return index
-        }
-        return -1
-    }
-
-    function animeFacts() {
-        return [current.progress !== undefined ? qsTr("Progresso %1").arg(current.progress) : undefined,
-                statusLabel(current.listStatus) || undefined]
-               .filter(function(part) { return part !== undefined })
-    }
-
-        function episodeLine() {
-        const episode = current.season !== undefined
-                ? qsTr("T%1 · E%2").arg(current.season).arg(current.episode)
-                : qsTr("Episódio %1").arg(current.episode)
-        return current.episodeTitle !== undefined ? episode + " — " + current.episodeTitle : episode
     }
 
     Rectangle { anchors.fill: parent; color: "#eef2f7" }
@@ -65,7 +67,6 @@ Item {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 2
-
             Label {
                 text: qsTr("HAIKEN ANIME")
                 color: nowWatching.accent
@@ -87,121 +88,44 @@ Item {
             }
         }
 
-        // Several players at once (e.g. mpv here and another selected Plex user): pick one.
-        RowLayout {
-            visible: nowWatching.hasSession && nowWatching.controller.sessions.length > 1
+        Rectangle {
             Layout.fillWidth: true
-            spacing: 10
-            Label {
-                text: qsTr("Sessão")
-                color: nowWatching.muted
-                font.pixelSize: 12
-            }
-            ComboBox {
-                id: sessionSelector
-                Layout.preferredWidth: 380
-                model: nowWatching.controller ? nowWatching.controller.sessions : []
-                textRole: "label"
-                valueRole: "key"
-                currentIndex: nowWatching.selectedSessionIndex()
-                onActivated: nowWatching.controller.SelectSession(currentValue)
-                Accessible.name: qsTr("Sessão em reprodução")
-            }
+            Layout.preferredHeight: 1
+            color: nowWatching.line
         }
 
-        Rectangle {
-            visible: nowWatching.hasSession
+        RowLayout {
             Layout.fillWidth: true
-            Layout.maximumWidth: 920
-            implicitHeight: card.implicitHeight + 48
-            color: nowWatching.surface
-            radius: 7
-            border.color: nowWatching.line
+            Layout.fillHeight: true
+            spacing: 18
 
-            RowLayout {
-                id: card
-                anchors.fill: parent
-                anchors.margins: 24
-                spacing: 24
-
-                Rectangle {
-                    Layout.alignment: Qt.AlignTop
-                    Layout.preferredWidth: 168
-                    Layout.preferredHeight: 244
-                    color: nowWatching.surfaceSoft
-                    radius: 5
-                    border.color: nowWatching.line
-                    clip: true
-
-                    Image {
-                        anchors.fill: parent
-                        anchors.margins: 1
-                        source: nowWatching.current.coverUrl !== undefined ? nowWatching.current.coverUrl
-                                                                           : nowWatching.placeholderCover
-                        fillMode: Image.PreserveAspectCrop
-                    }
-                }
+            // Left: one compact card per open player instance.
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.minimumWidth: 320
+                Layout.horizontalStretchFactor: 2
+                color: nowWatching.surface
+                radius: 8
+                border.color: nowWatching.line
 
                 ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignTop
-                    spacing: 10
+                    anchors.fill: parent
+                    anchors.margins: 18
+                    spacing: 14
 
-                    // Signature: the live marker. The only animation on this screen.
-                    RowLayout {
-                        spacing: 8
-                        Rectangle {
-                            width: 8
-                            height: 8
-                            radius: 4
-                            color: nowWatching.accent
-                            SequentialAnimation on opacity {
-                                running: nowWatching.visible && nowWatching.hasSession
-                                loops: Animation.Infinite
-                                NumberAnimation { from: 1; to: 0.25; duration: 900; easing.type: Easing.InOutSine }
-                                NumberAnimation { from: 0.25; to: 1; duration: 900; easing.type: Easing.InOutSine }
-                            }
-                        }
-                        Label {
-                            text: qsTr("ASSISTINDO AGORA · %1").arg((nowWatching.current.source || "").toUpperCase())
-                            color: nowWatching.accent
-                            font.pixelSize: 11
-                            font.weight: Font.DemiBold
-                            font.letterSpacing: 1.8
-                        }
-                    }
-
-                    Label {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        text: nowWatching.current.animeTitle !== undefined ? nowWatching.current.animeTitle
-                                                                           : (nowWatching.current.sourceTitle || "")
-                        color: nowWatching.ink
-                        font.pixelSize: 24
-                        font.weight: Font.Bold
-                        wrapMode: Text.Wrap
-                    }
-
-                    RowLayout {
-                        spacing: 8
-                        Rectangle {
-                            visible: nowWatching.current.associated === false
-                            implicitWidth: unassociatedLabel.implicitWidth + 16
-                            implicitHeight: unassociatedLabel.implicitHeight + 6
-                            radius: 4
-                            color: nowWatching.surfaceSoft
-                            border.color: nowWatching.line
-                            Label {
-                                id: unassociatedLabel
-                                anchors.centerIn: parent
-                                text: qsTr("não associado à biblioteca")
-                                color: nowWatching.muted
-                                font.pixelSize: 11
-                            }
+                        spacing: 2
+                        Label {
+                            text: qsTr("Sessões abertas")
+                            color: nowWatching.ink
+                            font.pixelSize: 18
+                            font.weight: Font.DemiBold
                         }
                         Label {
-                            readonly property var parts: nowWatching.animeFacts()
-                            visible: parts.length > 0
-                            text: parts.join("  ·  ")
+                            text: nowWatching.openSessions.length === 1 ? qsTr("1 reprodução em andamento")
+                                  : qsTr("%1 reproduções em andamento").arg(nowWatching.openSessions.length)
                             color: nowWatching.muted
                             font.pixelSize: 12
                         }
@@ -209,34 +133,287 @@ Item {
 
                     Rectangle {
                         Layout.fillWidth: true
-                        Layout.topMargin: 6
-                        implicitHeight: episodeBlock.implicitHeight + 28
-                        color: nowWatching.surfaceSoft
-                        radius: 7
-                        border.color: nowWatching.line
+                        Layout.preferredHeight: 1
+                        color: nowWatching.line
+                    }
+
+                    ListView {
+                        id: sessionList
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        visible: nowWatching.hasSession
+                        clip: true
+                        spacing: 10
+                        model: nowWatching.openSessions
+                        delegate: Rectangle {
+                            id: sessionCard
+                            required property var modelData
+                            readonly property bool selected: modelData.selected === true
+
+                            width: ListView.view.width
+                            height: 132
+                            radius: 6
+                            color: selected ? "#edf4fc" : nowWatching.surface
+                            border.color: selected || activeFocus ? nowWatching.accent : "#e0e6ee"
+                            border.width: selected || activeFocus ? 2 : 1
+                            activeFocusOnTab: true
+                            Accessible.role: Accessible.Button
+                            Accessible.name: nowWatching.titleOf(modelData)
+                            Accessible.onPressAction: nowWatching.controller.SelectSession(modelData.key)
+
+                            TapHandler { onTapped: nowWatching.controller.SelectSession(sessionCard.modelData.key) }
+                            Keys.onReturnPressed: nowWatching.controller.SelectSession(modelData.key)
+                            Keys.onSpacePressed: nowWatching.controller.SelectSession(modelData.key)
+
+                            RowLayout {
+                                anchors.fill: parent
+                                anchors.margins: 12
+                                spacing: 14
+
+                                Rectangle {
+                                    Layout.preferredWidth: 76
+                                    Layout.preferredHeight: 108
+                                    radius: 4
+                                    color: "#dbe7f4"
+                                    clip: true
+                                    Image {
+                                        anchors.fill: parent
+                                        source: nowWatching.coverOf(sessionCard.modelData)
+                                        fillMode: Image.PreserveAspectCrop
+                                        asynchronous: true
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    Layout.alignment: Qt.AlignVCenter
+                                    spacing: 5
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+                                        spacing: 7
+                                        LiveDot {}
+                                        Label {
+                                            Layout.fillWidth: true
+                                            text: nowWatching.joined([(sessionCard.modelData.source || "").toUpperCase(),
+                                                                      sessionCard.modelData.user,
+                                                                      sessionCard.modelData.device])
+                                            color: nowWatching.accent
+                                            font.pixelSize: 10
+                                            font.weight: Font.DemiBold
+                                            font.letterSpacing: 1.2
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: nowWatching.titleOf(sessionCard.modelData)
+                                        color: nowWatching.ink
+                                        font.pixelSize: 14
+                                        font.weight: Font.DemiBold
+                                        elide: Text.ElideRight
+                                    }
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: nowWatching.episodeLine(sessionCard.modelData)
+                                        color: nowWatching.muted
+                                        font.pixelSize: 12
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    StatePanel {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        visible: !nowWatching.hasSession
+                        title: qsTr("Nada sendo reproduzido no momento")
+                        description: qsTr("Os episódios em reprodução aparecem aqui.")
+                        stateLabel: qsTr("ESTADO VAZIO")
+                        accentColor: nowWatching.accent
+                    }
+                }
+            }
+
+            // Right: details of the selected session, in the Home's details-panel pattern.
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.minimumWidth: 480
+                Layout.horizontalStretchFactor: 3
+                color: nowWatching.surface
+                radius: 8
+                border.color: nowWatching.line
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: 26
+                    spacing: 18
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        // Fixed height: the header must not shift when the details button appears.
+                        Layout.preferredHeight: 36
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("DETALHES")
+                            color: nowWatching.accent
+                            font.pixelSize: 11
+                            font.weight: Font.DemiBold
+                            font.letterSpacing: 1.5
+                        }
+                        AppButton {
+                            id: animeDetailsButton
+                            text: qsTr("Ver detalhes do anime")
+                            variant: "flat"
+                            visible: nowWatching.current.mediaId !== undefined
+                            onClicked: {
+                                // Same panel as the Home; selecting there keeps both screens consistent.
+                                homeController.SelectMedia(nowWatching.current.mediaId)
+                                animeDetails.active = true
+                                animeDetails.item.openForItem(animeDetailsButton)
+                            }
+                        }
+                    }
+
+                    StatePanel {
+                        visible: !nowWatching.hasSession
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        title: qsTr("Nenhuma sessão selecionada")
+                        description: qsTr("Os detalhes do anime e do episódio aparecem aqui durante a reprodução.")
+                        stateLabel: qsTr("ESTADO VAZIO")
+                        accentColor: nowWatching.accent
+                    }
+
+                    ColumnLayout {
+                        visible: nowWatching.hasSession
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        spacing: 18
+
+                        RowLayout {
+                            Layout.fillWidth: true
+                            spacing: 22
+
+                            Rectangle {
+                                Layout.alignment: Qt.AlignTop
+                                Layout.preferredWidth: 150
+                                Layout.preferredHeight: 214
+                                radius: 6
+                                color: nowWatching.accentSoft
+                                clip: true
+                                Image {
+                                    anchors.fill: parent
+                                    source: nowWatching.coverOf(nowWatching.current)
+                                    fillMode: Image.PreserveAspectCrop
+                                    asynchronous: true
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                Layout.alignment: Qt.AlignTop
+                                spacing: 10
+
+                                TextEdit {
+                                    Layout.fillWidth: true
+                                    text: nowWatching.titleOf(nowWatching.current)
+                                    color: nowWatching.ink
+                                    font.pixelSize: 20
+                                    font.weight: Font.Bold
+                                    readOnly: true
+                                    selectByMouse: true
+                                    wrapMode: TextEdit.Wrap
+                                    Accessible.name: qsTr("Título em reprodução")
+                                }
+
+                                Rectangle {
+                                    visible: nowWatching.current.associated === false
+                                    implicitWidth: unassociatedLabel.implicitWidth + 16
+                                    implicitHeight: unassociatedLabel.implicitHeight + 6
+                                    radius: 4
+                                    color: nowWatching.surfaceSoft
+                                    border.color: nowWatching.line
+                                    Label {
+                                        id: unassociatedLabel
+                                        anchors.centerIn: parent
+                                        text: qsTr("não associado à biblioteca")
+                                        color: nowWatching.muted
+                                        font.pixelSize: 11
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    visible: nowWatching.current.progress !== undefined
+                                    spacing: 4
+                                    Label { text: qsTr("Progresso"); color: nowWatching.muted; font.pixelSize: 11 }
+                                    Label {
+                                        text: nowWatching.current.progress || ""
+                                        color: nowWatching.ink
+                                        font.weight: Font.DemiBold
+                                    }
+                                }
+
+                                Label {
+                                    visible: nowWatching.current.animeSynopsis !== undefined
+                                    Layout.fillWidth: true
+                                    text: nowWatching.current.animeSynopsis || ""
+                                    color: nowWatching.muted
+                                    font.pixelSize: 12
+                                    wrapMode: Text.Wrap
+                                    maximumLineCount: 6
+                                    elide: Text.ElideRight
+                                    lineHeight: 1.15
+                                }
+                            }
+                        }
+
+                        Rectangle {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 1
+                            color: nowWatching.line
+                        }
 
                         ColumnLayout {
-                            id: episodeBlock
-                            anchors.fill: parent
-                            anchors.margins: 14
-                            spacing: 6
+                            Layout.fillWidth: true
+                            spacing: 8
 
-                            Label {
+                            RowLayout {
                                 Layout.fillWidth: true
-                                text: nowWatching.current.episode !== undefined ? nowWatching.episodeLine() : ""
-                                color: nowWatching.ink
-                                font.pixelSize: 15
-                                font.weight: Font.DemiBold
-                                wrapMode: Text.Wrap
+                                spacing: 8
+                                LiveDot {}
+                                Label {
+                                    text: qsTr("EPISÓDIO")
+                                    color: nowWatching.accent
+                                    font.pixelSize: 11
+                                    font.weight: Font.DemiBold
+                                    font.letterSpacing: 1.5
+                                }
                             }
-                            Label {
-                                readonly property var parts: [nowWatching.current.duration, nowWatching.current.airDate]
-                                                             .filter(function(part) { return part !== undefined })
-                                visible: parts.length > 0
-                                text: parts.join("  ·  ")
-                                color: nowWatching.muted
-                                font.pixelSize: 12
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 12
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: nowWatching.episodeLine(nowWatching.current)
+                                    color: nowWatching.ink
+                                    font.pixelSize: 15
+                                    font.weight: Font.DemiBold
+                                    wrapMode: Text.Wrap
+                                }
+                                Label {
+                                    Layout.alignment: Qt.AlignTop
+                                    visible: text.length > 0
+                                    text: nowWatching.joined([nowWatching.current.duration, nowWatching.current.airDate])
+                                    color: nowWatching.muted
+                                    font.pixelSize: 12
+                                }
                             }
+
                             Label {
                                 visible: nowWatching.current.summary !== undefined
                                 Layout.fillWidth: true
@@ -244,53 +421,39 @@ Item {
                                 color: nowWatching.ink
                                 font.pixelSize: 12
                                 wrapMode: Text.Wrap
-                                maximumLineCount: 4
+                                maximumLineCount: 5
                                 elide: Text.ElideRight
                                 lineHeight: 1.2
                             }
+
+                            Label {
+                                visible: text.length > 0
+                                text: nowWatching.joined([nowWatching.current.source, nowWatching.current.user,
+                                                          nowWatching.current.device])
+                                color: nowWatching.muted
+                                font.pixelSize: 11
+                            }
                         }
-                    }
 
-                    Label {
-                        readonly property var parts: [nowWatching.current.user, nowWatching.current.device]
-                                                     .filter(function(part) { return part !== undefined })
-                        visible: parts.length > 0
-                        text: parts.join("  ·  ")
-                        color: nowWatching.muted
-                        font.pixelSize: 11
+                        Item { Layout.fillHeight: true }
                     }
                 }
             }
         }
+    }
 
-        Rectangle {
-            visible: !nowWatching.hasSession
-            Layout.fillWidth: true
-            Layout.maximumWidth: 920
-            implicitHeight: 140
-            color: nowWatching.surfaceSoft
-            radius: 7
-            border.color: nowWatching.line
-
-            ColumnLayout {
-                anchors.centerIn: parent
-                spacing: 6
-                Label {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: qsTr("Nada sendo reproduzido no momento")
-                    color: nowWatching.ink
-                    font.pixelSize: 14
-                    font.weight: Font.DemiBold
-                }
-                Label {
-                    Layout.alignment: Qt.AlignHCenter
-                    text: qsTr("Assista um episódio pelo mpv ou pelo Plex para vê-lo aqui.")
-                    color: nowWatching.muted
-                    font.pixelSize: 11
-                }
-            }
+    // Created on first use: it needs the Home controller, which owns the selected-media details.
+    Loader {
+        id: animeDetails
+        active: false
+        sourceComponent: MediaDetailsPanel {
+            controller: homeController
+            ink: nowWatching.ink
+            muted: nowWatching.muted
+            line: nowWatching.line
+            surface: nowWatching.surface
+            surfaceSoft: nowWatching.surfaceSoft
+            accent: nowWatching.accent
         }
-
-        Item { Layout.fillHeight: true }
     }
 }

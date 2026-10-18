@@ -77,25 +77,24 @@ void NowWatchingController::Refresh() {
         }
     }
 
-    sessions_.clear();
-    QString fallbackKey;
-    bool selectionAlive = false;
-    for (const auto &entry : active) {
-        const auto key = entry.session.id.key();
-        const auto card = buildCurrent(entry, library);
-        const auto title = card.value(QStringLiteral("animeTitle"), card.value(QStringLiteral("sourceTitle"))).toString();
-        sessions_.append(QVariantMap{
-            {QStringLiteral("key"), key},
-            {QStringLiteral("label"), QStringLiteral("%1 · %2 · %3").arg(title, entry.session.userId,
-                                                                          SourceName(entry.session.id.pluginId()))}});
-        fallbackKey = key; // the most recent session wins when nothing valid is selected
-        selectionAlive |= key == selectedKey_;
-    }
-    if (!selectionAlive) selectedKey_ = fallbackKey;
+    // The selected session survives while it is open; otherwise the most recent one is shown.
+    const bool selectionAlive = std::any_of(active.cbegin(), active.cend(), [this](const ActiveSession &entry) {
+        return entry.session.id.key() == selectedKey_;
+    });
+    if (!selectionAlive) selectedKey_ = active.isEmpty() ? QString() : active.last().session.id.key();
 
+    sessions_.clear();
     current_.clear();
     for (const auto &entry : active) {
-        if (entry.session.id.key() == selectedKey_) current_ = buildCurrent(entry, library);
+        auto card = buildCurrent(entry, library);
+        const auto key = entry.session.id.key();
+        const auto title = card.value(QStringLiteral("animeTitle"), card.value(QStringLiteral("sourceTitle"))).toString();
+        card.insert(QStringLiteral("key"), key);
+        card.insert(QStringLiteral("label"), QStringLiteral("%1 · %2 · %3").arg(title, entry.session.userId,
+                                                                                SourceName(entry.session.id.pluginId())));
+        card.insert(QStringLiteral("selected"), key == selectedKey_);
+        if (key == selectedKey_) current_ = card;
+        sessions_.append(card);
     }
     emit changed();
 }
@@ -112,6 +111,8 @@ QVariantMap NowWatchingController::buildCurrent(const ActiveSession &entry, cons
         card.insert(QStringLiteral("animeTitle"), ResolveMediaTitle(media, preferredTitleKey_));
         card.insert(QStringLiteral("progress"), FormatProgress(media.ConsumedChapters, media.TotalChapters));
         if (coverSource_) InsertText(card, QStringLiteral("coverUrl"), coverSource_(media.Id));
+        card.insert(QStringLiteral("mediaId"), media.Id);
+        InsertText(card, QStringLiteral("animeSynopsis"), media.Synopsis);
         InsertText(card, QStringLiteral("listStatus"), ListStatusKey(media.ListStatus));
     }
     if (candidate.season()) card.insert(QStringLiteral("season"), *candidate.season());

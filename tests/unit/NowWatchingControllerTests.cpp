@@ -29,6 +29,7 @@ Media onePiece() {
     media.TotalChapters = 12;
     media.CoverLargeUrl = QStringLiteral("https://img/one-piece-large.jpg");
     media.ListStatus = UserListStatus::Current;
+    media.Synopsis = QStringLiteral("Pirates and a straw hat.");
     return media;
 }
 
@@ -61,6 +62,8 @@ private slots:
     void emitsChangedWhenRegistryChanges();
     void destroyedControllerStopsListeningToRegistry();
     void neverExposesRemoteCoverUrls();
+    void sessionsCarryCardData();
+    void currentCarriesMediaIdAndAnimeSynopsisOnlyWhenAssociated();
 
 private:
     ActiveSessionRegistry registry;
@@ -226,6 +229,39 @@ void NowWatchingControllerTests::neverExposesRemoteCoverUrls() {
     controller.Refresh();
 
     QVERIFY(!controller.current().contains(QStringLiteral("coverUrl")));
+}
+
+void NowWatchingControllerTests::sessionsCarryCardData() {
+    registry.start(session(QStringLiteral("a"), Start), candidate(21));
+    NowWatchingController controller(registry, library);
+    controller.setCoverSource([](int) { return QStringLiteral("file:///cache/21.jpg"); });
+
+    controller.Refresh();
+
+    const auto card = controller.sessions().first().toMap();
+    QCOMPARE(card.value(QStringLiteral("key")).toString(), QStringLiteral("plex:a"));
+    QCOMPARE(card.value(QStringLiteral("animeTitle")).toString(), QStringLiteral("One Piece"));
+    QCOMPARE(card.value(QStringLiteral("coverUrl")).toString(), QStringLiteral("file:///cache/21.jpg"));
+    QCOMPARE(card.value(QStringLiteral("source")).toString(), QStringLiteral("Plex"));
+    QCOMPARE(card.value(QStringLiteral("user")).toString(), QStringLiteral("owner"));
+    QCOMPARE(card.value(QStringLiteral("episode")).toInt(), 6);
+    QCOMPARE(card.value(QStringLiteral("episodeTitle")).toString(), QStringLiteral("Romance Dawn"));
+    QVERIFY(card.value(QStringLiteral("selected")).toBool());
+}
+
+void NowWatchingControllerTests::currentCarriesMediaIdAndAnimeSynopsisOnlyWhenAssociated() {
+    registry.start(session(QStringLiteral("a"), Start), candidate(21));
+    registry.start(session(QStringLiteral("b"), Start.addSecs(60)), candidate(std::nullopt));
+    NowWatchingController controller(registry, library);
+    controller.Refresh();
+
+    QVERIFY(!controller.current().contains(QStringLiteral("mediaId")));
+    QVERIFY(!controller.current().contains(QStringLiteral("animeSynopsis")));
+    controller.SelectSession(QStringLiteral("plex:a"));
+
+    QCOMPARE(controller.current().value(QStringLiteral("mediaId")).toInt(), 21);
+    QCOMPARE(controller.current().value(QStringLiteral("animeSynopsis")).toString(), QStringLiteral("Pirates and a straw hat."));
+    QVERIFY(!controller.sessions().at(1).toMap().value(QStringLiteral("selected")).toBool());
 }
 
 QTEST_MAIN(NowWatchingControllerTests)
