@@ -31,6 +31,13 @@ void ActiveSessionRegistry::updateDetails(const PlaybackSessionId &sessionId, co
     notify();
 }
 
+void ActiveSessionRegistry::updateState(const PlaybackSessionId &sessionId, const PlaybackState state) {
+    const auto found = std::find_if(sessions_.begin(), sessions_.end(), ById(sessionId));
+    if (found == sessions_.end() || found->state == state) return;
+    found->state = state;
+    notify();
+}
+
 void ActiveSessionRegistry::stop(const PlaybackSessionId &sessionId) {
     if (sessions_.removeIf(ById(sessionId)) > 0) notify();
 }

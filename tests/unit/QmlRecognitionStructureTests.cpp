@@ -266,6 +266,8 @@ void QmlRecognitionStructureTests::nowWatchingUsesHomeLayoutAndAnimeDetailsButto
     QVERIFY(!text.contains(QStringLiteral("ComboBox")));
     QVERIFY(!text.contains(QStringLiteral("Sua nota")));
     QVERIFY(!text.contains(QStringLiteral("disponíveis localmente")));
+    QVERIFY(text.contains(QStringLiteral("qsTr(\"Pausado\")")));
+    QVERIFY(text.contains(QStringLiteral(".paused")));
 }
 
 void QmlRecognitionStructureTests::recognitionTextsDoNotNamePlugins() {

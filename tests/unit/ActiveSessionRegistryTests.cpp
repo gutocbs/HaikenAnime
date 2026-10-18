@@ -26,6 +26,7 @@ private slots:
     void sameSessionNewEpisodeReplacesEntry();
     void ignoresDetailsForUnknownSession();
     void clearRemovesAllAndNotifiesOnce();
+    void startsAsPlayingAndTracksStateChangesOnce();
 };
 
 void ActiveSessionRegistryTests::startAddsSessionAndNotifies() {
@@ -108,6 +109,21 @@ void ActiveSessionRegistryTests::clearRemovesAllAndNotifiesOnce() {
     registry.clear();
 
     QVERIFY(registry.sessions().isEmpty());
+    QCOMPARE(changes, 1);
+}
+
+void ActiveSessionRegistryTests::startsAsPlayingAndTracksStateChangesOnce() {
+    ActiveSessionRegistry registry;
+    registry.start(session(QStringLiteral("a")), candidate(1));
+    int changes = 0;
+    registry.setChangedCallback([&changes] { ++changes; });
+    QCOMPARE(registry.sessions().first().state, PlaybackState::Playing);
+
+    registry.updateState(session(QStringLiteral("a")).id, PlaybackState::Paused);
+    registry.updateState(session(QStringLiteral("a")).id, PlaybackState::Paused);
+    registry.updateState(session(QStringLiteral("gone")).id, PlaybackState::Playing);
+
+    QCOMPARE(registry.sessions().first().state, PlaybackState::Paused);
     QCOMPARE(changes, 1);
 }
 

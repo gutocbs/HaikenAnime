@@ -127,6 +127,8 @@ QVariantMap NowWatchingController::buildCurrent(const ActiveSession &entry, cons
         card.insert(QStringLiteral("airDate"), details.airDate->toString(QStringLiteral("dd/MM/yyyy")));
     }
     card.insert(QStringLiteral("source"), SourceName(entry.session.id.pluginId()));
+    // Reported by the player; the card stays active while paused.
+    card.insert(QStringLiteral("paused"), entry.state == PlaybackState::Paused);
     // Names the player reported win; ids are only shown when no name exists.
     const auto &session = entry.session;
     InsertText(card, QStringLiteral("user"), session.userName.isEmpty() ? session.userId : session.userName);

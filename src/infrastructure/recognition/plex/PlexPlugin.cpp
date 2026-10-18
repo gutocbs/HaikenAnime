@@ -11,6 +11,14 @@ QString Translate(const char *text) {
     return QCoreApplication::translate("PlexPlugin", text);
 }
 
+/// Same user, device and episode: two session keys for it mean the older one was closed.
+QString PlaybackKey(const PlexSession &session) {
+    return QStringLiteral("%1|%2|%3|%4|%5")
+        .arg(session.userId, session.playerId, session.showTitle)
+        .arg(session.season.value_or(-1))
+        .arg(session.episode.value_or(-1));
+}
+
 EpisodeDetails DetailsOf(const PlexSession &session) {
     return {.sourceTitle = session.showTitle,
             .title = session.episodeTitle,
@@ -189,10 +197,32 @@ void PlexPlugin::scheduleNextPoll(const quint64 generation) {
 
 void PlexPlugin::applySessions(const QList<PlexSession> &sessions) {
     const auto observedAt = now();
+    // Plex keeps a closed session listed as "paused" for a while and opens a new one when the same
+    // episode is reopened. Per user + device + episode, only the newest session key is real.
+    const auto isNewer = [](const QString &left, const QString &right) {
+        bool leftNumeric = false;
+        bool rightNumeric = false;
+        const auto leftNumber = left.toLongLong(&leftNumeric);
+        const auto rightNumber = right.toLongLong(&rightNumeric);
+        return leftNumeric && rightNumeric ? leftNumber > rightNumber : left > right;
+    };
+    QHash<QString, QString> newestByPlayback;
+    for (const auto &plexSession : sessions) {
+        if (plexSession.type != QStringLiteral("episode") || !plexSession.episode.has_value()) continue;
+        const auto playback = PlaybackKey(plexSession);
+        const auto current = newestByPlayback.value(playback);
+        if (current.isEmpty() || isNewer(plexSession.sessionKey, current)) newestByPlayback.insert(playback, plexSession.sessionKey);
+    }
+    QSet<QString> replaced;
     QSet<QString> seen;
     for (const auto &plexSession : sessions) {
         if (plexSession.type != QStringLiteral("episode") || !selectedUsers_.contains(plexSession.userId)) continue;
         if (!plexSession.episode.has_value()) continue;
+        const auto playback = PlaybackKey(plexSession);
+        if (newestByPlayback.value(playback) != plexSession.sessionKey) {
+            replaced.insert(PluginId + QLatin1Char(':') + server_->clientIdentifier + QLatin1Char(':') + plexSession.sessionKey);
+            continue;
+        }
         const auto candidate = EpisodeCandidate::create(plexSession.showTitle, std::nullopt, plexSession.season,
                                                         *plexSession.episode, StructuredMetadataConfidence);
         // Session keys are only unique per server, so the server id is part of the identity.
@@ -237,9 +267,12 @@ void PlexPlugin::applySessions(const QList<PlexSession> &sessions) {
             continue;
         }
         const auto id = entry->id;
-        log(QStringLiteral("Plex session stopped: %1 reason=no-longer-reported").arg(entry.key()));
+        const bool wasReplaced = replaced.contains(entry.key());
+        log(QStringLiteral("Plex session stopped: %1 reason=%2")
+                .arg(entry.key(), wasReplaced ? QStringLiteral("replaced-by-newer-session")
+                                              : QStringLiteral("no-longer-reported")));
         entry = tracked_.erase(entry);
-        if (observer_) observer_->onSessionStopped(id, StopReason::Closed);
+        if (observer_) observer_->onSessionStopped(id, wasReplaced ? StopReason::Replaced : StopReason::Closed);
     }
 }
 

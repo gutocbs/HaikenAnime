@@ -45,12 +45,16 @@ Item {
 
     // Pulsing "playing now" marker used on every session card and in the details eyebrow.
     component LiveDot: Rectangle {
+        id: dot
+        property bool paused: false
         width: 8
         height: 8
         radius: 4
-        color: nowWatching.accent
+        color: paused ? nowWatching.muted : nowWatching.accent
         SequentialAnimation on opacity {
-            running: nowWatching.visible && nowWatching.hasSession
+            running: nowWatching.visible && nowWatching.hasSession && !dot.paused
+            // A paused or hidden dot rests fully visible instead of freezing mid-pulse.
+            onStopped: dot.opacity = 1
             loops: Animation.Infinite
             NumberAnimation { from: 1; to: 0.25; duration: 900; easing.type: Easing.InOutSine }
             NumberAnimation { from: 0.25; to: 1; duration: 900; easing.type: Easing.InOutSine }
@@ -192,12 +196,14 @@ Item {
                                     RowLayout {
                                         Layout.fillWidth: true
                                         spacing: 7
-                                        LiveDot {}
+                                        LiveDot { paused: sessionCard.modelData.paused === true }
                                         Label {
                                             Layout.fillWidth: true
                                             text: nowWatching.joined([(sessionCard.modelData.source || "").toUpperCase(),
                                                                       sessionCard.modelData.user,
-                                                                      sessionCard.modelData.device])
+                                                                      sessionCard.modelData.device,
+                                                                      sessionCard.modelData.paused === true
+                                                                          ? qsTr("Pausado").toUpperCase() : undefined])
                                             color: nowWatching.accent
                                             font.pixelSize: 10
                                             font.weight: Font.DemiBold
@@ -384,13 +390,28 @@ Item {
                             RowLayout {
                                 Layout.fillWidth: true
                                 spacing: 8
-                                LiveDot {}
+                                LiveDot { paused: nowWatching.current.paused === true }
                                 Label {
                                     text: qsTr("EPISÓDIO")
                                     color: nowWatching.accent
                                     font.pixelSize: 11
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.5
+                                }
+                                Rectangle {
+                                    visible: nowWatching.current.paused === true
+                                    implicitWidth: pausedLabel.implicitWidth + 14
+                                    implicitHeight: pausedLabel.implicitHeight + 6
+                                    radius: 4
+                                    color: nowWatching.surfaceSoft
+                                    border.color: nowWatching.line
+                                    Label {
+                                        id: pausedLabel
+                                        anchors.centerIn: parent
+                                        text: qsTr("Pausado")
+                                        color: nowWatching.muted
+                                        font.pixelSize: 11
+                                    }
                                 }
                             }
 

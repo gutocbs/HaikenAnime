@@ -88,7 +88,9 @@ void EpisodeRecognitionService::onSessionStarted(const PlaybackSession &session,
 }
 
 void EpisodeRecognitionService::onSessionUpdated(const PlaybackSessionId &sessionId, const PlaybackSnapshot &snapshot) {
-    if (running_) observation_->update(sessionId, snapshot);
+    if (!running_) return;
+    observation_->update(sessionId, snapshot);
+    activeSessions_.updateState(sessionId, snapshot.state);
 }
 
 void EpisodeRecognitionService::onSessionStopped(const PlaybackSessionId &sessionId, const StopReason reason) {

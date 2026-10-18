@@ -138,6 +138,7 @@ private slots:
     void detailsChangesReachRegistry();
     void stoppedSessionLeavesRegistry();
     void stopClearsActiveSessions();
+    void playbackStateReachesRegistry();
     void catalogResolverKeepsUnknownTitlesUnresolved();
 
 private:
@@ -346,6 +347,18 @@ void EpisodeRecognitionServiceTests::stopClearsActiveSessions() {
     plex->play(QStringLiteral("srv:13"), onePiece(7), 10);
 
     QVERIFY(service->activeSessions().sessions().isEmpty());
+}
+
+void EpisodeRecognitionServiceTests::playbackStateReachesRegistry() {
+    auto service = makeService();
+    service->start();
+    plex->play(QStringLiteral("srv:12"), onePiece(6), 10);
+    const auto id = PlaybackSessionId::create(QStringLiteral("plex"), QStringLiteral("srv:12")).value();
+
+    plex->observer->onSessionUpdated(id, {.position = std::chrono::seconds(20), .state = PlaybackState::Paused,
+                                          .observedAt = Start.addSecs(20)});
+
+    QCOMPARE(service->activeSessions().sessions().first().state, PlaybackState::Paused);
 }
 
 QTEST_MAIN(EpisodeRecognitionServiceTests)

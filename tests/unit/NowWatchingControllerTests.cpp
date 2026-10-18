@@ -65,6 +65,7 @@ private slots:
     void neverExposesRemoteCoverUrls();
     void sessionsCarryCardData();
     void fallsBackToIdsWithoutDisplayNames();
+    void exposesPausedStateFromThePlayer();
     void currentCarriesMediaIdAndAnimeSynopsisOnlyWhenAssociated();
 
 private:
@@ -277,6 +278,19 @@ void NowWatchingControllerTests::fallsBackToIdsWithoutDisplayNames() {
 
     QCOMPARE(controller.current().value(QStringLiteral("user")).toString(), QStringLiteral("1"));
     QCOMPARE(controller.current().value(QStringLiteral("device")).toString(), QStringLiteral("o9w0fn8zxpq1"));
+}
+
+void NowWatchingControllerTests::exposesPausedStateFromThePlayer() {
+    registry.start(session(QStringLiteral("a"), Start), candidate(21));
+    NowWatchingController controller(registry, library);
+    controller.Refresh();
+    QVERIFY(!controller.current().value(QStringLiteral("paused")).toBool());
+
+    registry.updateState(session(QStringLiteral("a"), Start).id, PlaybackState::Paused);
+    controller.Refresh();
+
+    QVERIFY(controller.current().value(QStringLiteral("paused")).toBool());
+    QVERIFY(controller.sessions().first().toMap().value(QStringLiteral("paused")).toBool());
 }
 
 QTEST_MAIN(NowWatchingControllerTests)

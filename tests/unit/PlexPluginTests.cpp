@@ -93,6 +93,9 @@ private slots:
     void startedSessionCarriesDisplayNames();
     void logsSessionLifecycleWithoutTokens();
     void logsUnchangedPollsOnlyOnce();
+    void newerSessionOfSameEpisodeReplacesOlderOne();
+    void sessionsListedTogetherKeepOnlyTheNewest();
+    void differentDeviceOrEpisodeIsNotReplaced();
     void changedDetailsAreReportedOnce();
     void newEpisodeCarriesItsOwnDetails();
 
@@ -483,6 +486,58 @@ void PlexPluginTests::logsUnchangedPollsOnlyOnce() {
 
     QVERIFY(afterFirst > 0);
     QCOMPARE(logs.size(), afterFirst);
+}
+
+void PlexPluginTests::newerSessionOfSameEpisodeReplacesOlderOne() {
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("11"), QStringLiteral("1"), 2, 60)})});
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("11"), QStringLiteral("1"), 2, 60,
+                                                                         QStringLiteral("paused")),
+                                                                 episode(QStringLiteral("12"), QStringLiteral("1"), 2, 5)})});
+    PlexPlugin plugin(dependencies());
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+
+    plugin.observe(observer);
+    plugin.pollSessions();
+    plugin.pollSessions();
+
+    QCOMPARE(observer.started.size(), 2);
+    QCOMPARE(observer.started.at(1).id.key(), QStringLiteral("plex:server-abc:12"));
+    QCOMPARE(observer.stops.size(), 1);
+    QCOMPARE(observer.stops.first().first, QStringLiteral("plex:server-abc:11"));
+    QCOMPARE(observer.stops.first().second, StopReason::Replaced);
+}
+
+void PlexPluginTests::sessionsListedTogetherKeepOnlyTheNewest() {
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("12"), QStringLiteral("1"), 2, 5),
+                                                                 episode(QStringLiteral("11"), QStringLiteral("1"), 2, 60,
+                                                                         QStringLiteral("paused"))})});
+    PlexPlugin plugin(dependencies());
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+
+    plugin.observe(observer);
+
+    QCOMPARE(observer.started.size(), 1);
+    QCOMPARE(observer.started.first().id.key(), QStringLiteral("plex:server-abc:12"));
+    QVERIFY(observer.stops.isEmpty());
+}
+
+void PlexPluginTests::differentDeviceOrEpisodeIsNotReplaced() {
+    auto otherDevice = episode(QStringLiteral("12"), QStringLiteral("1"), 2, 5);
+    otherDevice.insert(QStringLiteral("Player"), QJsonObject{{QStringLiteral("machineIdentifier"), QStringLiteral("phone")},
+                                                             {QStringLiteral("state"), QStringLiteral("playing")}});
+    http.route(SessionsKey, {.status = 200, .body = sessionsBody({episode(QStringLiteral("11"), QStringLiteral("1"), 2, 60),
+                                                                 otherDevice,
+                                                                 episode(QStringLiteral("13"), QStringLiteral("1"), 3, 5)})});
+    PlexPlugin plugin(dependencies());
+    plugin.setServer(livingRoom());
+    plugin.setSelectedUsers({QStringLiteral("1")});
+
+    plugin.observe(observer);
+
+    QCOMPARE(observer.started.size(), 3);
+    QVERIFY(observer.stops.isEmpty());
 }
 
 QTEST_MAIN(PlexPluginTests)
