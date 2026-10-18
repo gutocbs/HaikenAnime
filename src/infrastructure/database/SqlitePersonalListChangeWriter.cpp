@@ -1,10 +1,10 @@
 #include "SqlitePersonalListChangeWriter.h"
 
 #include "SqlQueryStore.h"
+#include "SqliteMediaMapper.h"
 #include "SqliteQueries.h"
 #include "../logging/AsyncLogger.h"
 
-#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSqlError>
@@ -23,53 +23,6 @@ QString encodeValue(const AniListFieldValue &value) {
         object.insert(QStringLiteral("value"), std::get<QString>(value));
     }
     return QString::fromUtf8(QJsonDocument(object).toJson(QJsonDocument::Compact));
-}
-
-QString serializeLinks(const QList<MediaLink> &links) {
-    QJsonArray array;
-    for (const auto &link : links) {
-        array.append(QJsonObject{{QStringLiteral("site"), link.Site},
-                                 {QStringLiteral("url"), link.Url}});
-    }
-    return QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Compact));
-}
-
-void bindMediaUpsert(QSqlQuery &query, const Media &media) {
-    query.bindValue(QStringLiteral(":id"), media.Id);
-    query.bindValue(QStringLiteral(":name"), media.Name);
-    query.bindValue(QStringLiteral(":english_name"), media.EnglishName);
-    query.bindValue(QStringLiteral(":original_name"), media.OriginalName);
-    query.bindValue(QStringLiteral(":alternative_names"),
-                    QString::fromUtf8(QJsonDocument::fromVariant(media.AlternativeNames).toJson()));
-    query.bindValue(QStringLiteral(":total_chapters"), media.TotalChapters);
-    query.bindValue(QStringLiteral(":consumed_chapters"), media.ConsumedChapters);
-    query.bindValue(QStringLiteral(":average_score"), media.AverageScore);
-    query.bindValue(QStringLiteral(":personal_score"), media.PersonalScore);
-    query.bindValue(QStringLiteral(":cover_url"), media.CoverUrl);
-    query.bindValue(QStringLiteral(":cover_medium_url"), media.CoverMediumUrl);
-    query.bindValue(QStringLiteral(":cover_large_url"), media.CoverLargeUrl);
-    query.bindValue(QStringLiteral(":cover_extra_large_url"), media.CoverExtraLargeUrl);
-    query.bindValue(QStringLiteral(":synopsis"), media.Synopsis);
-    query.bindValue(QStringLiteral(":type"), static_cast<int>(media.Type));
-    query.bindValue(QStringLiteral(":status"), static_cast<int>(media.Status));
-    query.bindValue(QStringLiteral(":user_list_status"), static_cast<int>(media.ListStatus));
-    query.bindValue(QStringLiteral(":local_path"), media.LocalPath.isNull() ? QStringLiteral("") : media.LocalPath);
-    query.bindValue(QStringLiteral(":season"), media.Season);
-    query.bindValue(QStringLiteral(":season_year"), media.SeasonYear.has_value() ? QVariant(*media.SeasonYear) : QVariant());
-    query.bindValue(QStringLiteral(":next_airing_episode"), media.NextAiringEpisode.has_value() ? QVariant(*media.NextAiringEpisode) : QVariant());
-    query.bindValue(QStringLiteral(":next_airing_at"), media.NextAiringAt.has_value() ? QVariant::fromValue(*media.NextAiringAt) : QVariant());
-    query.bindValue(QStringLiteral(":anilist_url"), media.AniListUrl);
-    query.bindValue(QStringLiteral(":external_links"), serializeLinks(media.ExternalLinks));
-}
-
-void bindPersonalListUpdate(QSqlQuery &query, const Media &media) {
-    query.bindValue(QStringLiteral(":id"), media.Id);
-    query.bindValue(QStringLiteral(":consumed_chapters"), media.ConsumedChapters);
-    query.bindValue(QStringLiteral(":personal_score"), media.PersonalScore);
-    query.bindValue(QStringLiteral(":user_list_status"), static_cast<int>(media.ListStatus));
-    query.bindValue(QStringLiteral(":local_path"), media.LocalPath.isNull() ? QStringLiteral("") : media.LocalPath);
-    query.bindValue(QStringLiteral(":alternative_names"),
-                    QString::fromUtf8(QJsonDocument::fromVariant(media.AlternativeNames).toJson()));
 }
 
 void bindPendingChange(QSqlQuery &query, const AniListPendingChange &change) {
@@ -118,7 +71,7 @@ bool SqlitePersonalListChangeWriter::save(const Media &media, const QList<AniLis
         database_.rollback();
         return false;
     }
-    bindPersonalListUpdate(update, media);
+    SqliteMediaMapper::BindPersonalListUpdate(update, media);
     if (!update.exec()) {
         error = update.lastError().text();
         database_.rollback();
@@ -131,7 +84,7 @@ bool SqlitePersonalListChangeWriter::save(const Media &media, const QList<AniLis
             database_.rollback();
             return false;
         }
-        bindMediaUpsert(upsert, media);
+        SqliteMediaMapper::BindUpsert(upsert, media, media.AlternativeNames);
         if (!upsert.exec()) {
             error = upsert.lastError().text();
             database_.rollback();

@@ -1,8 +1,5 @@
 #include "SqliteMediaRepository.h"
 
-#include <QJsonDocument>
-#include <QJsonArray>
-#include <QJsonObject>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
@@ -16,40 +13,10 @@
 
 #include <utility>
 
-namespace {
-QVariant OptionalIntegerValue(const std::optional<int> &value) {
-    return value.has_value() ? QVariant(value.value()) : QVariant();
-}
-
-QVariant OptionalInteger64Value(const std::optional<qint64> &value) {
-    return value.has_value() ? QVariant::fromValue(value.value()) : QVariant();
-}
-
-QString SerializeNames(const QStringList &names) {
-    return QString::fromUtf8(QJsonDocument::fromVariant(names).toJson());
-}
-
-QStringList ParseNames(const QString &json) {
-    QStringList names;
-    for (const auto &value : QJsonDocument::fromJson(json.toUtf8()).array()) {
-        if (value.isString()) names.append(value.toString());
-    }
-    return names;
-}
-
-QString SerializeLinks(const QList<MediaLink> &links) {
-    QJsonArray array;
-    for (const auto &link : links) {
-        array.append(QJsonObject{{QStringLiteral("site"), link.Site},
-                                 {QStringLiteral("url"), link.Url}});
-    }
-    return QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Compact));
-}
-}
-
 SqliteMediaRepository::SqliteMediaRepository(QSqlDatabase database)
     : database_(std::move(database)) {
 }
+
 void SqliteMediaRepository::setLogger(AsyncLogger *logger) { logger_ = logger; }
 
 bool SqliteMediaRepository::readAll(QList<Media> &media, QString &error) {
@@ -119,35 +86,10 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
             database_.rollback();
             return false;
         }
-        if (readNames.next()) existingNames = ParseNames(readNames.value(0).toString());
+        if (readNames.next()) existingNames = SqliteMediaMapper::ParseNames(readNames.value(0).toString());
         readNames.finish();
 
-        query.bindValue(QStringLiteral(":id"), item.Id);
-        query.bindValue(QStringLiteral(":name"), item.Name);
-        query.bindValue(QStringLiteral(":english_name"), item.EnglishName);
-        query.bindValue(QStringLiteral(":original_name"), item.OriginalName);
-        query.bindValue(QStringLiteral(":alternative_names"),
-                        SerializeNames(MergeAlternativeNames(existingNames, item.AlternativeNames)));
-        query.bindValue(QStringLiteral(":total_chapters"), item.TotalChapters);
-        query.bindValue(QStringLiteral(":consumed_chapters"), item.ConsumedChapters);
-        query.bindValue(QStringLiteral(":average_score"), item.AverageScore);
-        query.bindValue(QStringLiteral(":personal_score"), item.PersonalScore);
-        query.bindValue(QStringLiteral(":cover_url"), item.CoverUrl);
-        query.bindValue(QStringLiteral(":cover_medium_url"), item.CoverMediumUrl);
-        query.bindValue(QStringLiteral(":cover_large_url"), item.CoverLargeUrl);
-        query.bindValue(QStringLiteral(":cover_extra_large_url"), item.CoverExtraLargeUrl);
-        query.bindValue(QStringLiteral(":synopsis"), item.Synopsis);
-        query.bindValue(QStringLiteral(":type"), static_cast<int>(item.Type));
-        query.bindValue(QStringLiteral(":status"), static_cast<int>(item.Status));
-        query.bindValue(QStringLiteral(":user_list_status"), static_cast<int>(item.ListStatus));
-        query.bindValue(QStringLiteral(":local_path"), item.LocalPath.isNull() ? QStringLiteral("") : item.LocalPath);
-        query.bindValue(QStringLiteral(":season"), item.Season);
-        query.bindValue(QStringLiteral(":season_year"), OptionalIntegerValue(item.SeasonYear));
-        query.bindValue(QStringLiteral(":next_airing_episode"),
-                        OptionalIntegerValue(item.NextAiringEpisode));
-        query.bindValue(QStringLiteral(":next_airing_at"), OptionalInteger64Value(item.NextAiringAt));
-        query.bindValue(QStringLiteral(":anilist_url"), item.AniListUrl);
-        query.bindValue(QStringLiteral(":external_links"), SerializeLinks(item.ExternalLinks));
+        SqliteMediaMapper::BindUpsert(query, item, MergeAlternativeNames(existingNames, item.AlternativeNames));
 
         if (!query.exec()) {
             error = query.lastError().text();
@@ -181,13 +123,7 @@ bool SqliteMediaRepository::updatePersonalListMedia(const Media &media, QString 
         error = query.lastError().text();
         return false;
     }
-    query.bindValue(QStringLiteral(":id"), media.Id);
-    query.bindValue(QStringLiteral(":consumed_chapters"), media.ConsumedChapters);
-    query.bindValue(QStringLiteral(":personal_score"), media.PersonalScore);
-    query.bindValue(QStringLiteral(":user_list_status"), static_cast<int>(media.ListStatus));
-    query.bindValue(QStringLiteral(":local_path"), media.LocalPath.isNull() ? QStringLiteral("") : media.LocalPath);
-    query.bindValue(QStringLiteral(":alternative_names"),
-                    QString::fromUtf8(QJsonDocument::fromVariant(media.AlternativeNames).toJson()));
+    SqliteMediaMapper::BindPersonalListUpdate(query, media);
     if (!query.exec() || query.numRowsAffected() != 1) {
         error = query.lastError().text();
         if (error.isEmpty()) error = QStringLiteral("Local media record was not found.");
