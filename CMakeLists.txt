@@ -408,14 +408,6 @@ if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
                     "${DXC_RUNTIME} was not found in ${DXC_REDIST_DIR}")
         endif ()
     endforeach ()
-
-    if (EXISTS "${QT_INSTALL_PATH}/bin/windeployqt.exe")
-        add_custom_command(TARGET HaikenAnime POST_BUILD
-                COMMAND "${QT_INSTALL_PATH}/bin/windeployqt.exe"
-                --no-translations
-                --compiler-runtime
-                --qmldir "${CMAKE_CURRENT_SOURCE_DIR}/resources/qml"
-                "$<TARGET_FILE:HaikenAnime>"
-                COMMENT "Deploying Qt and QML runtime dependencies")
-    endif ()
+    # windeployqt is not run here: scripts/build-release.ps1 deploys the release package, and
+    # development builds load Qt from the kit on PATH.
 endif ()
