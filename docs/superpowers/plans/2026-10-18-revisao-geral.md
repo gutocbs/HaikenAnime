@@ -204,6 +204,8 @@ Itens coletados até agora (a lista cresce a cada parte):
 | Parte 7 | `SqliteLocalFileRepository::upsertBatch`/`completeScan`/`failScan`: quando o `.sql` não pode ser lido, o erro do `SqlQueryStore` é sobrescrito por `query.lastError()` (vazio) |
 | Parte 7 | `SqliteLocalEpisodeReader::readAvailableEpisodeCount` devolve `false` sem mensagem quando o `mediaId` é inválido ou a consulta não traz linha |
 | Parte 8 | `CoverDownloadCoordinator` ignora sem log a falha de leitura do cache no construtor e a falha de remoção em `ReportMissingFile` |
+| Parte 9 | Avisos adicionados a `RecognitionContext::warnings` depois da inicialização nunca aparecem (falha ao abrir o mpv, falha assíncrona ao selecionar o servidor Plex) |
+| Parte 9 | `RecognitionSyncFeedback::SafeError` grava no histórico textos fixos em português, que não passam pela tradução |
 
 ---
 
@@ -246,7 +248,7 @@ Perguntas em que há mais de um caminho razoável.
 | 6 | ☑ [report](../reviews/2026-10-18-parte-06-agendamento-sync.md) | ☑ | ☑ validada: `ctest` verde (após `ac42360`) |
 | 7 | ☑ [report](../reviews/2026-10-18-parte-07-biblioteca-local.md) | ☑ | ☑ validada: `ctest` verde |
 | 8 | ☑ [report](../reviews/2026-10-18-parte-08-capas-cache-catalogo.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
-| 9 | ☑ [report](../reviews/2026-10-18-parte-09-reconhecimento.md) | ☐ | ☐ |
+| 9 | ☑ [report](../reviews/2026-10-18-parte-09-reconhecimento.md) | ☑ | ☐ aplicada, aguardando build |
 | 10 | ☐ | ☐ | ☐ |
 | 11 | ☐ | ☐ | ☐ |
 | 12 | ☐ | ☐ | ☐ |

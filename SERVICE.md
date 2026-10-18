@@ -467,7 +467,8 @@ Mapa rápido de suítes por área:
 3. Instanciar/conectar em `main.cpp`, expor como context property e adicionar a navegação em `Main.qml`.
 
 **Novo plugin de player**
-1. Implementar `IPlaybackPlugin` em `src/infrastructure/recognition/<player>/` (declare capacidades e
+1. Implementar `IPlaybackPlugin` em `src/infrastructure/recognition/<player>/` (declare as capacidades que a
+   tela de configurações oferece — login no navegador, teste de conexão, seleção de usuários — e o
    `PluginSettingsSchema`; reporte eventos ao `IPlaybackObserver`, nunca decida progresso).
 2. Registrar em `createRecognitionContext` e aplicar as settings em `applyRecognitionSettings`.
 3. Testes com transporte/HTTP falso e fixtures.

@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `ba89dc5` (`feature/revisao-geral`)
-- **Status:** aguardando aprovação — nenhuma alteração aplicada
+- **Status:** aprovado e aplicado — aguardando build do revisor
 
 ---
 
@@ -97,3 +97,20 @@ P9-04 → P9-03 → P9-05 → P9-01 → P9-02.
 ## 6. Decisões para o revisor
 
 Nenhuma — os itens não têm alternativa relevante.
+
+---
+
+## 7. Aplicação
+
+| Item | Commit |
+| --- | --- |
+| P9-04 `PlexPlugin::selectedUsers()` | `6678b25` |
+| P9-03 capacidades de plugin não consultadas | `0d4a28c` |
+| P9-05 `CatalogEpisodeCandidateResolver` aceita pelo `mediaId` | `7d4dc49` |
+| P9-01 `MediaReaderProgressReader` → `LibraryProgressReader` nos testes | `dd9e74b` |
+| P9-02 repositórios de reconhecimento com queries próprias | `40f89e0` |
+
+Notas:
+- P9-03: as flags que sobraram foram renumeradas (`0x01`, `0x02`, `0x04`). Elas não são persistidas.
+- P9-02: `SqliteRecognitionHistoryRepository.h` e `SqliteMediaProgressReader.h` deixaram de incluir
+  `SqliteQueries.h`; todo arquivo que usa `SqliteQueries::` o inclui diretamente (conferido).
