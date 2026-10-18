@@ -1,7 +1,3 @@
-//
-// Created by gutocbs on 22/09/2026.
-//
-
 #ifndef HAIKENANIME_MEDIASTATUS_H
 #define HAIKENANIME_MEDIASTATUS_H
 
