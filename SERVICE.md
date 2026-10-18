@@ -265,13 +265,17 @@ em `AppLocalDataLocation/covers`) e registra em `cover_cache`. Falhas entram em 
 
 1. **Scan** (`LocalLibraryScanCoordinator` + `LocalLibraryScanner` + `QtDirectoryEnumerator`): para cada
    pasta de `libraryRoots`, enumera arquivos com as extensões configuradas, grava em lotes em `local_files`
-   (registro do scan em `library_scans`) e marca como indisponíveis os arquivos que sumiram.
+   (registro do scan em `library_scans`) e marca como indisponíveis os arquivos que sumiram — só quando o
+   scan da pasta termina bem; uma pasta inacessível não impede as outras. Grava pelo contrato
+   `ILocalFileScanRepository`.
 2. **Reconhecimento** (`LocalLibraryRecognitionCoordinator`): ao fim do scan de uma pasta (ou ao salvar
    pasta/nomes alternativos de uma mídia), lê arquivos pendentes, extrai título/temporada/episódio com
    `AnitomyLocalFileRecognizer` e associa à mídia via `LocalMediaResolver` + `LocalMediaCatalogIndex`
-   (títulos e nomes alternativos normalizados; mangá e novel ignorados). Persiste em lotes e emite sinais
-   que atualizam a Home.
-3. **Assistir** (`LocalEpisodeReader` + `ILocalFileOpener`): a Home mostra o próximo episódio disponível e
+   (a pasta da mídia que contém o arquivo vence; senão, títulos e nomes alternativos normalizados com
+   marcador de temporada; mangá e novel ignorados). Arquivos locais são sempre lidos como anime. Lê e
+   grava pelo contrato `ILocalFileRecognitionRepository`, em lotes, e emite sinais que atualizam a Home.
+   Pedidos durante uma execução viram uma única execução seguinte.
+3. **Assistir** (`ILocalEpisodeReader`, implementado por `SqliteLocalEpisodeReader`, + `ILocalFileOpener`): a Home mostra o próximo episódio disponível e
    abre o arquivo. `MpvAwareLocalFileOpener` abre pelo mpv (com IPC) quando o plugin mpv está habilitado,
    senão usa o handler padrão do sistema.
 
@@ -447,7 +451,7 @@ Mapa rápido de suítes por área:
 | SQLite | `SqliteDatabaseTests`, `SqliteRepositoryTests`, `Sqlite*RepositoryTests`, `SqlQueryStoreTests` |
 | AniList | `AniListGraphQl*Tests`, `AniListFlowTests`, `AniListPendingChange*Tests`, `AniListUpdateClientTests`, `AniListAuthManagerTests`, `AniListOAuth*Tests`, `RemoveAniListAccountUseCaseTests` |
 | Sync | `SyncTaskPolicyTests`, `AdaptiveSyncCoordinatorTests`, `AdaptiveSyncRuntimeTests` |
-| Biblioteca local | `LocalLibraryScanner*Tests`, `LocalLibraryScan*Tests`, `LocalLibraryRecognition*Tests`, `AnitomyLocalFileRecognizerTests`, `LocalMediaResolverTests`, `LocalEpisodeReaderTests` |
+| Biblioteca local | `LocalLibraryScanner*Tests`, `LocalLibraryScan*Tests`, `LocalLibraryRecognition*Tests`, `AnitomyLocalFileRecognizerTests`, `LocalMediaResolverTests`, `SqliteLocalEpisodeReaderTests` |
 | Capas/cache | `Cover*Tests`, `QtCoverDownloaderTests`, `ClearLocalCacheUseCaseTests` |
 | Reconhecimento | `Mpv*Tests`, `Plex*Tests`, `Plugin*Tests`, `PlaybackObservationServiceTests`, `ProgressDecisionServiceTests`, `RecognitionHistory*Tests`, `RecognitionSyncFeedbackTests`, `EpisodeRecognition*Tests`, `RecognitionCompositionTests`, `ActiveSessionRegistryTests`, `NowWatchingControllerTests` |
 | Apresentação | `MediaPresentationTests`, `HomeScreenControllerTests`, `SettingsControllerTests`, `SeasonalCatalog*Tests`, `SynchronizationStatusControllerTests`, `QmlStructureTests`, `QmlRecognitionStructureTests` |

@@ -201,6 +201,8 @@ Itens coletados até agora (a lista cresce a cada parte):
 | Parte 3 | Repositórios releem o `.sql` a cada operação e o `SqlQueryStore` loga `INFO` a cada leitura |
 | Parte 4 | `SqliteMediaRepository::upsert` retorna sem `rollback` se o `prepare` falhar (transação fica aberta) |
 | Parte 4 | `SqliteUserPreferencesRepository::replace` perde a mensagem de erro quando o `.sql` não pode ser lido |
+| Parte 7 | `SqliteLocalFileRepository::upsertBatch`/`completeScan`/`failScan`: quando o `.sql` não pode ser lido, o erro do `SqlQueryStore` é sobrescrito por `query.lastError()` (vazio) |
+| Parte 7 | `SqliteLocalEpisodeReader::readAvailableEpisodeCount` devolve `false` sem mensagem quando o `mediaId` é inválido ou a consulta não traz linha |
 
 ---
 
@@ -241,7 +243,7 @@ Perguntas em que há mais de um caminho razoável.
 | 4 | ☑ [report](../reviews/2026-10-18-parte-04-persistencia-midia-outbox.md) | ☑ | ☑ validada: `ctest` verde, smoke de edição (Home e catálogo, inclusive adição) |
 | 5 | ☑ [report](../reviews/2026-10-18-parte-05-integracao-anilist.md) | ☑ | ☑ validada: `ctest` verde, smoke de sync (lista baixada, edição enviada) |
 | 6 | ☑ [report](../reviews/2026-10-18-parte-06-agendamento-sync.md) | ☑ | ☑ validada: `ctest` verde (após `ac42360`) |
-| 7 | ☑ [report](../reviews/2026-10-18-parte-07-biblioteca-local.md) | ☐ | ☐ |
+| 7 | ☑ [report](../reviews/2026-10-18-parte-07-biblioteca-local.md) | ☑ | ☐ aplicada, aguardando build |
 | 8 | ☐ | ☐ | ☐ |
 | 9 | ☐ | ☐ | ☐ |
 | 10 | ☐ | ☐ | ☐ |

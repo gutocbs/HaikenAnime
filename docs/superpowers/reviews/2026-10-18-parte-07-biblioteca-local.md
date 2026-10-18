@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `8a25b93` (`feature/revisao-geral`)
-- **Status:** aguardando aprovação — nenhuma alteração aplicada
+- **Status:** aprovado (com as duas recomendações) e aplicado — aguardando build do revisor
 - *(`MpvAwareLocalFileOpener` fica para a Parte 9, junto com o reconhecimento de reprodução.)*
 
 ---
@@ -97,3 +97,32 @@ P7-08 → P7-05 → P7-06 → P7-07 → P7-01 → P7-02 → P7-03 → P7-04.
 2. **`LocalMediaKind`** depois do P7-05: só `Anime` passa a ser produzido. Recomendo **manter o enum** como
    está: ele é o tipo do campo `mediaKind`, que vai para a coluna de texto `local_files.media_kind`, e
    reduzi-lo não tira lógica nenhuma. A alternativa é reduzi-lo a `Anime`/`Unsupported`.
+
+---
+
+## 7. Aplicação
+
+| Item | Commit |
+| --- | --- |
+| P7-08 apelido `start`, `<iostream>` e comentário obsoleto | `8065ae7` |
+| P7-05 `requestedKind` e ramos de tipo não suportado | `66d9088` |
+| P7-06 sobrecargas do resolver e `titleCount` | `da71ce3` |
+| P7-07 `ComparablePath` → `NormalizeFolder` | `b12e490` |
+| P7-01 `SqliteLocalEpisodeReader` na infraestrutura | `69e2ade` |
+| P7-02 repositório de arquivos locais com queries próprias | `5604a0c` |
+| P7-03 contratos de varredura e de reconhecimento | `cb5c7dc` |
+| P7-04 ownership por herança | `0a31907` |
+
+Notas:
+- P7-05: o default de `LocalFileRecognition::mediaKind` passou de `Unsupported` para `Anime`, o único valor
+  que o recognizer e o `EpisodeRecognitionService` produzem. Sem isso, um reconhecimento montado com os valores
+  padrão deixaria de ser rejeitado pelo resolver.
+- P7-04 também trocou o `OwnedSyncTaskStateRepository` da Parte 6. Os 3 *wrappers* viraram
+  `OwnedLibraryScanner` (herda o enumerador e o `LocalLibraryScanner`) e o *template*
+  `ConnectionOwningRepository<Repository>` (herda a conexão e o repositório). O `final` saiu de
+  `SqliteLocalFileRepository`, `SqliteSyncTaskStateRepository` e `LocalLibraryScanner`, com um comentário
+  explicando o porquê.
+- Testes: `LocalEpisodeReaderTests` virou `SqliteLocalEpisodeReaderTests`;
+  `SqliteLocalFileRepositoryTests::reportsStatementAndTransactionErrors` virou `reportsTransactionErrors`
+  (sem a metade do `missing.sql`), e o *helper* `statement()` saiu; os *fakes* dos coordinators e do
+  `SettingsControllerTests` implementam só o contrato que usam.
