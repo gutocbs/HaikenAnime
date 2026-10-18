@@ -132,7 +132,7 @@ void composeLibraryRecognition(ApplicationContext &context) {
     QObject::connect(context.localLibraryScan.get(), &LocalLibraryScanCoordinator::succeeded,
                      context.localLibraryRecognition.get(),
                      [recognition = context.localLibraryRecognition.get()](const QString &rootPath, qsizetype) {
-                         recognition->start(rootPath);
+                         recognition->startForPending(rootPath);
                      });
 }
 

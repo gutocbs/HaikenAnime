@@ -43,10 +43,6 @@ void LocalLibraryRecognitionCoordinator::setLogger(AsyncLogger *logger) {
     logger_ = logger;
 }
 
-bool LocalLibraryRecognitionCoordinator::start(const QString &rootPath) {
-    return startForPending(rootPath);
-}
-
 bool LocalLibraryRecognitionCoordinator::startForPending(const QString &rootPath) {
     return submit({false, rootPath});
 }

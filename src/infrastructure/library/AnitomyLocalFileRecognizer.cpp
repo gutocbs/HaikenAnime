@@ -1,7 +1,5 @@
 #include "AnitomyLocalFileRecognizer.h"
 
-#include <iostream>
-
 #include "../../../lib/anitomy/anitomy.h"
 
 #include <QFileInfo>

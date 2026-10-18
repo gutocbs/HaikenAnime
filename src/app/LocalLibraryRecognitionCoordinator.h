@@ -23,8 +23,6 @@ public:
     void setLogger(AsyncLogger *logger);
     // Recognizes the pending files (unprocessed, unrecognized or ambiguous) of the library root.
     bool startForPending(const QString &rootPath);
-    // Same as startForPending; kept for the scan-completed wiring.
-    bool start(const QString &rootPath);
     // Recognizes every available file under the folder, associated ones included, and re-associates them.
     bool startForFolder(const QString &folderPath);
     void shutdown();
