@@ -6,8 +6,9 @@
 #include "../../application/library/ILocalFileScanRepository.h"
 
 // Use only on the thread that owns the injected connection. Statements come from the
-// SQL resources listed in SqliteQueries.
-class SqliteLocalFileRepository final : public ILocalFileScanRepository, public ILocalFileRecognitionRepository {
+// SQL resources listed in SqliteQueries. Not final: the composition derives from it to own the
+// worker connection.
+class SqliteLocalFileRepository : public ILocalFileScanRepository, public ILocalFileRecognitionRepository {
 public:
     explicit SqliteLocalFileRepository(QSqlDatabase database);
     bool beginScan(const QString &rootPath, qint64 &scanId, QString &error) override;

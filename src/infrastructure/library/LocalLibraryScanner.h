@@ -4,7 +4,8 @@
 #include "../../application/library/ILocalLibraryScanner.h"
 #include "IDirectoryEnumerator.h"
 
-class LocalLibraryScanner final : public ILocalLibraryScanner {
+// Not final: the composition derives from it to own the directory enumerator.
+class LocalLibraryScanner : public ILocalLibraryScanner {
 public:
     explicit LocalLibraryScanner(IDirectoryEnumerator &enumerator);
     LocalLibraryScanResult scan(const LocalLibraryScanRequest &request,

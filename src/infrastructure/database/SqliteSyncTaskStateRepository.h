@@ -5,7 +5,8 @@
 
 #include "../../application/scheduling/ISyncTaskStateRepository.h"
 
-class SqliteSyncTaskStateRepository final : public ISyncTaskStateRepository {
+// Not final: the composition derives from it to own the worker connection.
+class SqliteSyncTaskStateRepository : public ISyncTaskStateRepository {
 public:
     explicit SqliteSyncTaskStateRepository(QSqlDatabase database);
 

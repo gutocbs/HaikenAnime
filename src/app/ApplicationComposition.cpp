@@ -37,67 +37,28 @@ QString initializationFailure(const QString &stage, const QString &detail) {
     return QStringLiteral("Application initialization failed while %1: %2").arg(stage, detail);
 }
 
-// Keep borrowed dependencies inside the worker-owned factory products. Member
-// order destroys the scanner/repository before its enumerator/connection owner.
-class OwnedLibraryScanner final : public ILocalLibraryScanner {
-public:
-    OwnedLibraryScanner() : scanner_(enumerator_) {}
-    LocalLibraryScanResult scan(const LocalLibraryScanRequest &request,
-        const std::function<bool(const QList<LocalFileObservation> &, QString &)> &consumer,
-        const std::function<void(const LocalLibraryScanProgress &)> &progress,
-        const std::function<bool()> &stop) override {
-        return scanner_.scan(request, consumer, progress, stop);
-    }
-private:
-    QtDirectoryEnumerator enumerator_;
-    LocalLibraryScanner scanner_;
+// Worker-owned factory products keep their borrowed dependency alive by inheriting it first: a base is
+// built before and destroyed after the class that borrows it, so the scanner/repository always goes
+// before its enumerator/connection.
+struct OwnedEnumerator {
+    QtDirectoryEnumerator enumerator;
 };
 
-class OwnedLocalFileRepository final : public ILocalFileScanRepository, public ILocalFileRecognitionRepository {
+class OwnedLibraryScanner final : private OwnedEnumerator, public LocalLibraryScanner {
 public:
-    explicit OwnedLocalFileRepository(std::unique_ptr<SqliteDatabase> database)
-        : database_(std::move(database)), repository_(database_->connection()) {}
-    bool beginScan(const QString &root, qint64 &id, QString &error) override {
-        return repository_.beginScan(root, id, error);
-    }
-    bool upsertBatch(qint64 id, const QList<LocalFileObservation> &files, QString &error) override {
-        return repository_.upsertBatch(id, files, error);
-    }
-    bool completeScan(qint64 id, qsizetype count, QString &error) override {
-        return repository_.completeScan(id, count, error);
-    }
-    bool failScan(qint64 id, LibraryScanStatus status, qsizetype count,
-                  const QString &diagnostic, QString &error) override {
-        return repository_.failScan(id, status, count, diagnostic, error);
-    }
-    bool readPendingRecognition(const QString &root, QList<LocalFileRecognitionRecord> &records,
-                               QString &error) override {
-        return repository_.readPendingRecognition(root, records, error);
-    }
-    bool readFilesUnderFolder(const QString &folder, QList<LocalFileRecognitionRecord> &records,
-                              QString &error) override {
-        return repository_.readFilesUnderFolder(folder, records, error);
-    }
-    bool readRecognitionCatalog(QList<Media> &media, QString &error) override {
-        return repository_.readRecognitionCatalog(media, error);
-    }
-    bool saveRecognitionBatch(const QList<LocalFileRecognitionRecord> &records, QString &error) override {
-        return repository_.saveRecognitionBatch(records, error);
-    }
-private:
-    std::unique_ptr<SqliteDatabase> database_;
-    SqliteLocalFileRepository repository_;
+    OwnedLibraryScanner() : LocalLibraryScanner(enumerator) {}
 };
 
-class OwnedSyncTaskStateRepository final : public ISyncTaskStateRepository {
+struct OwnedConnection {
+    explicit OwnedConnection(std::unique_ptr<SqliteDatabase> database) : database(std::move(database)) {}
+    std::unique_ptr<SqliteDatabase> database;
+};
+
+template <typename Repository>
+class ConnectionOwningRepository final : private OwnedConnection, public Repository {
 public:
-    explicit OwnedSyncTaskStateRepository(std::unique_ptr<SqliteDatabase> database)
-        : database_(std::move(database)), repository_(database_->connection()) {}
-    bool ReadAll(QList<SyncTaskState> &states, QString &error) override { return repository_.ReadAll(states, error); }
-    bool Upsert(const SyncTaskState &state, QString &error) override { return repository_.Upsert(state, error); }
-private:
-    std::unique_ptr<SqliteDatabase> database_;
-    SqliteSyncTaskStateRepository repository_;
+    explicit ConnectionOwningRepository(std::unique_ptr<SqliteDatabase> database)
+        : OwnedConnection(std::move(database)), Repository(OwnedConnection::database->connection()) {}
 };
 
 // Each scan and recognition worker opens its own SQLite connection on its thread.
@@ -109,7 +70,7 @@ std::function<std::unique_ptr<Repository>(QString &)> localFileRepositoryFactory
             error = database->lastError();
             return {};
         }
-        return std::make_unique<OwnedLocalFileRepository>(std::move(database));
+        return std::make_unique<ConnectionOwningRepository<SqliteLocalFileRepository>>(std::move(database));
     };
 }
 
@@ -304,7 +265,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
                 error = database->lastError();
                 return {};
             }
-            return std::make_unique<OwnedSyncTaskStateRepository>(std::move(database));
+            return std::make_unique<ConnectionOwningRepository<SqliteSyncTaskStateRepository>>(std::move(database));
         },
         [synchronizationDatabasePath, timeoutMs = settings.syncTimeoutMs, userListConfiguration] {
             return std::make_unique<ApplicationSyncTaskExecutor>(
