@@ -11,6 +11,7 @@
 #include "../../application/media/AlternativeNames.h"
 #include "SqliteMediaMapper.h"
 #include "SqlQueryStore.h"
+#include "SqliteQueries.h"
 #include "../logging/AsyncLogger.h"
 
 #include <utility>
@@ -93,7 +94,9 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
         return false;
     }
     QString upsertQuery;
-    if (!SqlQueryStore::loadSource(upsertQuery_, upsertQuery, error, logger_)) {
+    QString readNamesQuery;
+    if (!SqlQueryStore::loadSource(upsertQuery_, upsertQuery, error, logger_)
+        || !SqlQueryStore::loadSource(SqliteQueries::ReadMediaAlternativeNames, readNamesQuery, error, logger_)) {
         return false;
     }
     if (!database_.transaction()) {
@@ -108,7 +111,7 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
     }
 
     QSqlQuery readNames(database_);
-    if (!readNames.prepare(QStringLiteral("SELECT alternative_names FROM media WHERE id = :id"))) {
+    if (!readNames.prepare(readNamesQuery)) {
         error = readNames.lastError().text();
         database_.rollback();
         return false;

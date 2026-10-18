@@ -27,6 +27,7 @@ inline const QString ReadCatalogMediaForRecognition = QStringLiteral(":/sqlite/q
 inline const QString ReadCoverCache = QStringLiteral(":/sqlite/queries/read-cover-cache.sql");
 inline const QString ReadLocalFileRoots = QStringLiteral(":/sqlite/queries/read-local-file-roots.sql");
 inline const QString ReadLocalFilesUnderFolder = QStringLiteral(":/sqlite/queries/read-local-files-under-folder.sql");
+inline const QString ReadMediaAlternativeNames = QStringLiteral(":/sqlite/queries/read-media-alternative-names.sql");
 inline const QString ReadMediaForRecognitionProgress = QStringLiteral(":/sqlite/queries/read-media-for-recognition-progress.sql");
 inline const QString ReadMedia = QStringLiteral(":/sqlite/queries/read-media.sql");
 inline const QString ReadNextLocalEpisode = QStringLiteral(":/sqlite/queries/read-next-local-episode.sql");
