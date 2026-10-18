@@ -1,5 +1,6 @@
 #include "AniListPendingChangeReconciler.h"
 
+#include "AniListListStatus.h"
 #include "AniListMergeService.h"
 #include "AniListPendingChangeCompactor.h"
 
@@ -7,28 +8,6 @@
 #include <utility>
 
 namespace {
-QString AniListStatus(const UserListStatus status) {
-    switch (status) {
-    case UserListStatus::Current: return QStringLiteral("CURRENT");
-    case UserListStatus::Planning: return QStringLiteral("PLANNING");
-    case UserListStatus::OnHold: return QStringLiteral("PAUSED");
-    case UserListStatus::Dropped: return QStringLiteral("DROPPED");
-    case UserListStatus::Completed: return QStringLiteral("COMPLETED");
-    case UserListStatus::Unknown: return {};
-    }
-    return {};
-}
-
-std::optional<UserListStatus> UserStatus(const QString &value) {
-    const auto normalized = value.trimmed().toUpper();
-    if (normalized == QStringLiteral("CURRENT")) return UserListStatus::Current;
-    if (normalized == QStringLiteral("PLANNING")) return UserListStatus::Planning;
-    if (normalized == QStringLiteral("PAUSED")) return UserListStatus::OnHold;
-    if (normalized == QStringLiteral("DROPPED")) return UserListStatus::Dropped;
-    if (normalized == QStringLiteral("COMPLETED")) return UserListStatus::Completed;
-    return std::nullopt;
-}
-
 bool CurrentValue(const Media &media, const AniListField field,
                   AniListFieldValue &value, QString &error) {
     switch (field) {
@@ -39,7 +18,7 @@ bool CurrentValue(const Media &media, const AniListField field,
         value = media.PersonalScore;
         return true;
     case AniListField::ListStatus:
-        value = AniListStatus(media.ListStatus);
+        value = AniListListStatusName(media.ListStatus);
         return true;
     case AniListField::Deletion:
         return false;
@@ -66,7 +45,7 @@ bool ApplyValue(Media &media, const AniListField field,
         break;
     case AniListField::ListStatus:
         if (const auto *status = std::get_if<QString>(&value)) {
-            const auto parsed = UserStatus(*status);
+            const auto parsed = ParseAniListListStatus(*status);
             if (parsed.has_value()) {
                 media.ListStatus = *parsed;
                 return true;

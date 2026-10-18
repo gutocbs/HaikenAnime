@@ -2,6 +2,7 @@
 #include "SyncTaskRequest.h"
 
 #include "../application/anilist/AniListAccountOwnership.h"
+#include "../application/anilist/AniListListStatus.h"
 #include "../application/anilist/AniListSyncService.h"
 #include "../application/anilist/AniListPendingChangeProcessor.h"
 #include "../application/anilist/AniListPendingChangeDrain.h"

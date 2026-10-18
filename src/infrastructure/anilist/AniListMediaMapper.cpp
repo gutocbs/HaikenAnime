@@ -1,5 +1,7 @@
 #include "AniListMediaMapper.h"
 
+#include "../../application/anilist/AniListListStatus.h"
+
 #include <QJsonArray>
 #include <QRegularExpression>
 #include <QSet>
@@ -220,19 +222,6 @@ Media AniListMediaMapper::ToDomainMedia(const AniListMediaDto &externalMedia) {
         media.Status = MediaStatus::Unknown;
     }
 
-    const auto listStatus = externalMedia.listStatus.trimmed().toUpper();
-    if (listStatus == QStringLiteral("CURRENT")) {
-        media.ListStatus = UserListStatus::Current;
-    } else if (listStatus == QStringLiteral("PLANNING")) {
-        media.ListStatus = UserListStatus::Planning;
-    } else if (listStatus == QStringLiteral("PAUSED")) {
-        media.ListStatus = UserListStatus::OnHold;
-    } else if (listStatus == QStringLiteral("DROPPED")) {
-        media.ListStatus = UserListStatus::Dropped;
-    } else if (listStatus == QStringLiteral("COMPLETED")) {
-        media.ListStatus = UserListStatus::Completed;
-    } else {
-        media.ListStatus = UserListStatus::Unknown;
-    }
+    media.ListStatus = ParseAniListListStatus(externalMedia.listStatus).value_or(UserListStatus::Unknown);
     return media;
 }
