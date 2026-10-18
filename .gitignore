@@ -36,3 +36,6 @@
 cmake*/
 /.superpowers
 /dist
+
+# Local validation build script (kept out of the repository)
+/scripts/validate.ps1
