@@ -2,51 +2,19 @@
 
 #include "SqlQueryStore.h"
 #include "SqliteMediaMapper.h"
+#include "SqlitePendingChangeCodec.h"
 #include "SqliteQueries.h"
 #include "../logging/AsyncLogger.h"
 
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QSqlError>
 #include <QSqlQuery>
 
 #include <utility>
 
-namespace {
-QString encodeValue(const AniListFieldValue &value) {
-    QJsonObject object;
-    if (std::holds_alternative<int>(value)) {
-        object.insert(QStringLiteral("type"), QStringLiteral("int"));
-        object.insert(QStringLiteral("value"), std::get<int>(value));
-    } else {
-        object.insert(QStringLiteral("type"), QStringLiteral("string"));
-        object.insert(QStringLiteral("value"), std::get<QString>(value));
-    }
-    return QString::fromUtf8(QJsonDocument(object).toJson(QJsonDocument::Compact));
-}
-
-void bindPendingChange(QSqlQuery &query, const AniListPendingChange &change) {
-    query.bindValue(QStringLiteral(":media_id"), change.mediaId);
-    query.bindValue(QStringLiteral(":field"), static_cast<int>(change.field));
-    query.bindValue(QStringLiteral(":previous_value"), encodeValue(change.previousValue));
-    query.bindValue(QStringLiteral(":new_value"), encodeValue(change.newValue));
-    query.bindValue(QStringLiteral(":created_at"), change.createdAt.toString(Qt::ISODate));
-    query.bindValue(QStringLiteral(":local_updated_at"), change.localUpdatedAt.toString(Qt::ISODate));
-    query.bindValue(QStringLiteral(":remote_observed_at"), change.remoteObservedAt.isValid()
-        ? change.remoteObservedAt.toString(Qt::ISODate) : QVariant());
-    query.bindValue(QStringLiteral(":remote_version"),
-                    change.remoteVersion.isNull() ? QStringLiteral("") : change.remoteVersion);
-    query.bindValue(QStringLiteral(":attempts"), change.attempts);
-    query.bindValue(QStringLiteral(":status"), static_cast<int>(change.status));
-    query.bindValue(QStringLiteral(":last_error"),
-                    change.lastError.isNull() ? QStringLiteral("") : change.lastError);
-    query.bindValue(QStringLiteral(":owner_user_id"), change.ownerUserId);
-}
-}
-
 SqlitePersonalListChangeWriter::SqlitePersonalListChangeWriter(QSqlDatabase database)
     : database_(std::move(database)) {
 }
+
 bool SqlitePersonalListChangeWriter::save(const Media &media, const QList<AniListPendingChange> &changes,
                                           QString &error) {
     error.clear();
@@ -121,7 +89,7 @@ bool SqlitePersonalListChangeWriter::save(const Media &media, const QList<AniLis
         return false;
     }
     for (const auto &change : changes) {
-        bindPendingChange(enqueue, change);
+        SqlitePendingChangeCodec::BindEnqueue(enqueue, change);
         if (!enqueue.exec()) {
             error = enqueue.lastError().text();
             database_.rollback();
@@ -182,7 +150,7 @@ bool SqlitePersonalListChangeWriter::remove(const Media &media, const AniListPen
         database_.rollback();
         return false;
     }
-    bindPendingChange(enqueue, deletion);
+    SqlitePendingChangeCodec::BindEnqueue(enqueue, deletion);
     if (!enqueue.exec()) {
         error = enqueue.lastError().text();
         database_.rollback();
