@@ -4,6 +4,7 @@
 #include <QSqlDatabase>
 
 #include "../../application/anilist/IPendingChangeRepository.h"
+#include "SqliteQueries.h"
 
 /** Persists the AniList update outbox in SQLite. */
 class SqlitePendingChangeRepository final : public IPendingChangeRepository {
@@ -36,9 +37,9 @@ private:
     QString pendingQuery_;
     QString pendingMediaIdsQuery_;
     QString updateStatusQuery_;
-    QString adoptOrphanChangesQuery_ = QStringLiteral(":/sqlite/queries/adopt-orphan-pending-changes.sql");
+    QString adoptOrphanChangesQuery_ = SqliteQueries::AdoptOrphanPendingChanges;
     qint64 ownerUserId_ = 0;
-    QString unsentMediaIdsQuery_ = QStringLiteral(":/sqlite/queries/read-unsent-media-ids.sql");
+    QString unsentMediaIdsQuery_ = SqliteQueries::ReadUnsentMediaIds;
 };
 
 #endif // HAIKENANIME_SQLITEPENDINGCHANGEREPOSITORY_H

@@ -23,6 +23,7 @@
 #include "../infrastructure/database/SqliteRecognitionHistoryRepository.h"
 #include "../infrastructure/database/SqliteSyncTaskStateRepository.h"
 #include "../infrastructure/database/SqliteUserPreferencesRepository.h"
+#include "../infrastructure/database/SqliteQueries.h"
 
 #include <QThread>
 #include <QNetworkAccessManager>
@@ -166,10 +167,10 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                         GraphQlAniListDataSource userListSource(client, queryStore, &authProvider,
                                                                   authenticatedUserList_.perChunk);
                         SqlitePendingChangeRepository pendingChanges(
-                            database.connection(), QStringLiteral(":/sqlite/queries/enqueue-pending-change.sql"),
-                            QStringLiteral(":/sqlite/queries/read-pending-changes.sql"),
-                            QStringLiteral(":/sqlite/queries/read-pending-media-ids.sql"),
-                            QStringLiteral(":/sqlite/queries/update-pending-change.sql"));
+                            database.connection(), SqliteQueries::EnqueuePendingChange,
+                            SqliteQueries::ReadPendingChanges,
+                            SqliteQueries::ReadPendingMediaIds,
+                            SqliteQueries::UpdatePendingChange);
                         AniListPendingChangeReconciler pendingReconciler(
                             pendingChanges, authenticatedUserList_.auditLogger);
                         AniListSyncService service(userListSource, mediaRepository, nullptr,
@@ -283,10 +284,10 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             authenticatedUserList_.httpRetryDelayMs,
                             {.log = authenticatedUserList_.auditLogger, .isCancelled = [job] { return job->cancelled.load(); }});
                         SqlitePendingChangeRepository pendingChanges(
-                            database.connection(), QStringLiteral(":/sqlite/queries/enqueue-pending-change.sql"),
-                            QStringLiteral(":/sqlite/queries/read-pending-changes.sql"),
-                            QStringLiteral(":/sqlite/queries/read-pending-media-ids.sql"),
-                            QStringLiteral(":/sqlite/queries/update-pending-change.sql"));
+                            database.connection(), SqliteQueries::EnqueuePendingChange,
+                            SqliteQueries::ReadPendingChanges,
+                            SqliteQueries::ReadPendingMediaIds,
+                            SqliteQueries::UpdatePendingChange);
                         QString scopeError;
                         const bool scoped = ScopePendingChangesToAccount(
                             pendingChanges, credentials.userId, authenticatedUserList_.auditLogger, scopeError);
@@ -303,9 +304,9 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                             [job] { return job->cancelled.load(); });
                         // Reports each Progress outcome to the recognition history (Synced / Failed).
                         SqliteRecognitionHistoryRepository recognitionHistoryRepository(
-                            database.connection(), QStringLiteral(":/sqlite/queries/read-recognition-history.sql"),
-                            QStringLiteral(":/sqlite/queries/insert-recognition-record.sql"),
-                            QStringLiteral(":/sqlite/queries/update-recognition-record.sql"));
+                            database.connection(), SqliteQueries::ReadRecognitionHistory,
+                            SqliteQueries::InsertRecognitionRecord,
+                            SqliteQueries::UpdateRecognitionRecord);
                         NoRecognitionProgressWriter noRecognitionProgress;
                         RecognitionHistoryService recognitionHistory(recognitionHistoryRepository,
                                                                      noRecognitionProgress);

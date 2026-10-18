@@ -9,6 +9,7 @@
 #include <limits>
 #include <utility>
 #include "SqlQueryStore.h"
+#include "SqliteQueries.h"
 
 namespace {
 QString EncodeValue(const AniListFieldValue &value) {
@@ -54,7 +55,7 @@ SqlitePendingChangeRepository::SqlitePendingChangeRepository(
     QSqlDatabase database, QString enqueueQuery, QString pendingQuery, QString updateStatusQuery)
     : SqlitePendingChangeRepository(std::move(database), std::move(enqueueQuery),
                                     std::move(pendingQuery),
-                                    QStringLiteral(":/sqlite/queries/read-pending-media-ids.sql"),
+                                    SqliteQueries::ReadPendingMediaIds,
                                     std::move(updateStatusQuery)) {
 }
 

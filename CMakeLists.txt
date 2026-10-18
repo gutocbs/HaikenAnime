@@ -104,7 +104,6 @@ foreach (RESOURCE_FILE IN LISTS SQLITE_QUERY_RESOURCES ANILIST_QUERY_RESOURCES A
     get_filename_component(RESOURCE_ALIAS "${RESOURCE_FILE}" NAME)
     set_source_files_properties("${RESOURCE_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${RESOURCE_ALIAS}")
 endforeach ()
-set_source_files_properties(resources/sqlite/sqlite-queries.json PROPERTIES QT_RESOURCE_ALIAS "sqlite-queries.json")
 
 set_source_files_properties(
         Settings.json
@@ -115,7 +114,7 @@ set_source_files_properties(
 
 qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
-        FILES resources/sqlite/sqlite-queries.json ${SQLITE_QUERY_RESOURCES}
+        FILES ${SQLITE_QUERY_RESOURCES}
 )
 
 qt_add_resources(HaikenAnime sqlite_migration_resource_bundle
@@ -282,8 +281,6 @@ haiken_add_test(LocalLibraryScannerTests)
 haiken_add_test(AnitomyLocalFileRecognizerTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 haiken_add_test(LocalMediaResolverTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 haiken_add_test(SqlQueryStoreTests)
-haiken_add_test(SqliteQueryConfigurationTests)
-qt_add_resources(SqliteQueryConfigurationTests sqlite_query_configuration_test_resources PREFIX "/sqlite/queries" FILES resources/sqlite/sqlite-queries.json resources/sqlite/queries/update-personal-list-media.sql ${LIBRARY_SCAN_SQL_RESOURCES})
 haiken_add_test(JsonSettingsReaderTests SOURCE_DIR)
 haiken_add_test(SyncTaskPolicyTests)
 haiken_add_test(UserPreferencesValidatorTests)
@@ -339,10 +336,10 @@ haiken_add_test(AdaptiveSyncRuntimeTests)
 haiken_add_test(LocalLibraryScanCoordinatorTests)
 haiken_add_test(LocalLibraryRecognitionCoordinatorTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 haiken_add_test(LocalLibraryScanCompositionTests QT Gui Network Qml Quick QuickControls2 Sql MIGRATIONS)
-qt_add_resources(LocalLibraryScanCompositionTests composition_sql_resources PREFIX "/sqlite/queries" FILES resources/sqlite/sqlite-queries.json ${SQLITE_QUERY_RESOURCES})
+qt_add_resources(LocalLibraryScanCompositionTests composition_sql_resources PREFIX "/sqlite/queries" FILES ${SQLITE_QUERY_RESOURCES})
 qt_add_resources(LocalLibraryScanCompositionTests composition_config_resources PREFIX "/config" FILES Settings.json)
 haiken_add_test(LocalLibraryRecognitionCompositionTests QT Gui Network Qml Quick QuickControls2 Sql MIGRATIONS)
-qt_add_resources(LocalLibraryRecognitionCompositionTests recognition_composition_sql_resources PREFIX "/sqlite/queries" FILES resources/sqlite/sqlite-queries.json ${SQLITE_QUERY_RESOURCES})
+qt_add_resources(LocalLibraryRecognitionCompositionTests recognition_composition_sql_resources PREFIX "/sqlite/queries" FILES ${SQLITE_QUERY_RESOURCES})
 qt_add_resources(LocalLibraryRecognitionCompositionTests recognition_composition_config_resources PREFIX "/config" FILES Settings.json)
 if (WIN32)
     haiken_add_test(WindowsCredentialStoreTests)

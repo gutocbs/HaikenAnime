@@ -1,7 +1,5 @@
 #include <QtTest>
 #include <QFile>
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QSqlQuery>
 #include <QTemporaryDir>
 #include <QThread>
@@ -23,21 +21,6 @@ void writeFile(const QString &path) {
     QFile file(path);
     if (!file.open(QIODevice::WriteOnly) || file.write("fixture") != 7) qFatal("Cannot write fixture");
 }
-QString alteredConfiguration(const QTemporaryDir &directory, const QString &key, bool remove) {
-    QFile resource(":/sqlite/queries/sqlite-queries.json");
-    if (!resource.open(QIODevice::ReadOnly)) qFatal("Cannot read configuration");
-    auto root = QJsonDocument::fromJson(resource.readAll()).object();
-    auto queries = root.value("queries").toObject();
-    if (remove && key == "upsertLocalFile") queries.insert(key, 42);
-    else if (remove) queries.remove(key);
-    else queries.insert(key, ":/does-not-exist.sql");
-    root.insert("queries", queries);
-    const auto path = directory.filePath("queries.json");
-    QFile output(path);
-    if (!output.open(QIODevice::WriteOnly)) qFatal("Cannot write configuration");
-    output.write(QJsonDocument(root).toJson());
-    return path;
-}
 QString scanLogPath() {
     return QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath(
         QStringLiteral("logs/haikenanime-%1.log").arg(QDate::currentDate().toString(Qt::ISODate)));
@@ -54,9 +37,6 @@ private slots:
     void startupUsesPersistedSnapshotAndSchedulesOnce();
     void disabledAutomaticRecognitionDoesNotScheduleStartupScan();
     void manualRootChangeRetainsOldInventory();
-    void scannerQueryFailureDoesNotDisableMedia_data();
-    void scannerQueryFailureDoesNotDisableMedia();
-    void scannerQueryFailureIsLoggedNonfatally();
     void startupCleanupRemovesAbandonedCoverTemporaryWithoutTouchingCache();
     void manualCleanupUsesComposedCoverTemporaryStore();
     void workerProductsReleaseConnectionsAndShutdownBeforeDatabase();
@@ -216,57 +196,6 @@ void LocalLibraryScanCompositionTests::manualRootChangeRetainsOldInventory() {
     QCOMPARE(query.value(0).toString(), QStringLiteral("old.mkv"));
     QCOMPARE(query.value(1).toInt(), 1);
     QVERIFY(!query.next());
-}
-
-void LocalLibraryScanCompositionTests::scannerQueryFailureDoesNotDisableMedia_data() {
-    QTest::addColumn<QString>("key");
-    QTest::addColumn<bool>("remove");
-    QTest::newRow("missing-entry") << QString("beginLibraryScan") << true;
-    QTest::newRow("invalid-entry-type") << QString("upsertLocalFile") << true;
-    QTest::newRow("missing-resource") << QString("completeLibraryScan") << false;
-}
-
-void LocalLibraryScanCompositionTests::scannerQueryFailureDoesNotDisableMedia() {
-    QFETCH(QString, key);
-    QFETCH(bool, remove);
-    QTemporaryDir directory;
-    auto options = optionsFor(directory);
-    options.queryConfigurationPath = alteredConfiguration(directory, key, remove);
-    auto context = createApplicationContext(options);
-    QVERIFY2(context.isReady(), qPrintable(context.initializationError));
-    QVERIFY(context.mediaRepository);
-    QVERIFY(!context.initialSync);
-    QVERIFY(context.coverCoordinator);
-    QVERIFY(context.localLibraryScan);
-    SettingsController controller(context.userPreferencesRepository.get(), context.userPreferences);
-    controller.SetScanCoordinator(context.localLibraryScan.get());
-    QSignalSpy failed(context.localLibraryScan.get(), &LocalLibraryScanCoordinator::failed);
-    QVERIFY(scheduleStartupLibraryScan(context, &controller));
-    QTRY_COMPARE(failed.count(), 1);
-    QVERIFY(!controller.scanErrorMessage().isEmpty());
-    QVERIFY(!controller.scanRunning());
-    QVERIFY(context.isReady());
-}
-
-void LocalLibraryScanCompositionTests::scannerQueryFailureIsLoggedNonfatally() {
-    QFile::remove(scanLogPath());
-    QTemporaryDir directory;
-    auto options = optionsFor(directory);
-    options.queryConfigurationPath = alteredConfiguration(directory, QStringLiteral("beginLibraryScan"), true);
-    auto context = createApplicationContext(options);
-    QVERIFY2(context.isReady(), qPrintable(context.initializationError));
-    SettingsController controller(context.userPreferencesRepository.get(), context.userPreferences);
-    controller.SetScanCoordinator(context.localLibraryScan.get());
-    QSignalSpy failed(context.localLibraryScan.get(), &LocalLibraryScanCoordinator::failed);
-    QVERIFY(scheduleStartupLibraryScan(context, &controller));
-    QTRY_COMPARE(failed.count(), 1);
-    context.logger->stop();
-    QFile file(scanLogPath());
-    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
-    const auto entries = QString::fromUtf8(file.readAll());
-    QVERIFY(entries.contains(QStringLiteral("[ERROR] [LocalLibrary] Local library scan completed: outcome=failed")));
-    QVERIFY(entries.contains(QStringLiteral("Local library scan query configuration is incomplete.")));
-    QVERIFY(context.isReady());
 }
 
 void LocalLibraryScanCompositionTests::startupCleanupRemovesAbandonedCoverTemporaryWithoutTouchingCache() {

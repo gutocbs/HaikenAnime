@@ -8,7 +8,7 @@
 #include <QWaitCondition>
 
 enum class LogLevel { Info, Warning, Error };
-enum class LogCategory { Application, Configuration, Database, Migration, QueryConfiguration, QueryStore, Sync, Covers, LocalLibrary };
+enum class LogCategory { Application, Configuration, Database, Migration, QueryStore, Sync, Covers, LocalLibrary };
 
 [[nodiscard]] QString toLogString(LogLevel level);
 [[nodiscard]] QString toLogString(LogCategory category);

@@ -4,14 +4,15 @@
 #include <QSqlDatabase>
 
 #include "../../application/recognition/IRecognitionHistoryRepository.h"
+#include "SqliteQueries.h"
 
 class SqliteRecognitionHistoryRepository final : public IRecognitionHistoryRepository {
 public:
     SqliteRecognitionHistoryRepository(
         QSqlDatabase database, QString readQuery, QString insertQuery, QString updateQuery,
-        QString deleteQuery = QStringLiteral(":/sqlite/queries/delete-recognition-record.sql"),
-        QString discardProgressQuery = QStringLiteral(":/sqlite/queries/discard-recognition-progress.sql"),
-        QString queuedProgressQuery = QStringLiteral(":/sqlite/queries/find-queued-recognition-progress.sql"));
+        QString deleteQuery = SqliteQueries::DeleteRecognitionRecord,
+        QString discardProgressQuery = SqliteQueries::DiscardRecognitionProgress,
+        QString queuedProgressQuery = SqliteQueries::FindQueuedRecognitionProgress);
 
     bool insert(RecognitionRecord &record, QString &error) override;
     bool update(const RecognitionRecord &record, QString &error) override;

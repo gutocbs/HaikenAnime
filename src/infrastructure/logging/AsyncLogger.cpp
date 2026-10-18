@@ -24,7 +24,6 @@ QString toLogString(LogCategory category) {
     case LogCategory::Configuration: return QStringLiteral("Configuration");
     case LogCategory::Database: return QStringLiteral("Database");
     case LogCategory::Migration: return QStringLiteral("Migration");
-    case LogCategory::QueryConfiguration: return QStringLiteral("QueryConfiguration");
     case LogCategory::QueryStore: return QStringLiteral("QueryStore");
     case LogCategory::Sync: return QStringLiteral("Sync");
     case LogCategory::Covers: return QStringLiteral("Covers");

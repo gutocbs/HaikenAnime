@@ -92,7 +92,6 @@ struct ApplicationContext final {
 struct ApplicationCompositionOptions final {
     QString databasePath;
     QString settingsPath = QStringLiteral(":/config/Settings.json");
-    QString queryConfigurationPath = QStringLiteral(":/sqlite/queries/sqlite-queries.json");
 };
 [[nodiscard]] ApplicationContext createApplicationContext(const ApplicationCompositionOptions &options);
 // Call only after the settings controller and QML have been initialized.
