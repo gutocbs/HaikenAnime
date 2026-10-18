@@ -231,7 +231,7 @@ Perguntas em que há mais de um caminho razoável.
 | --- | --- | --- | --- |
 | Baseline | — | — | ☑ 80/85 (5 falhas de `PATH`, código verde) |
 | 1 | ☑ [report](../reviews/2026-10-18-parte-01-repositorio-build.md) | ☑ | ☑ validada: `ctest` 85/85, MinGW sem prefixo, release `dist/`, smoke OK |
-| 2 | ☑ [report](../reviews/2026-10-18-parte-02-dominio-midia.md) | ☑ | ☑ aplicada; aguardando build |
+| 2 | ☑ [report](../reviews/2026-10-18-parte-02-dominio-midia.md) | ☑ | ☑ validada: `ctest` 85/85, smoke OK (inclui troca de idioma) |
 | 3 | ☐ | ☐ | ☐ |
 | 4 | ☐ | ☐ | ☐ |
 | 5 | ☐ | ☐ | ☐ |

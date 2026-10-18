@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `cc91cf6` (`feature/revisao-geral`)
-- **Status:** aprovado (com as recomendações das decisões) e aplicado — aguardando o build de validação
+- **Status:** aprovado (com as recomendações das decisões) e aplicado — validado
 
 ---
 
@@ -132,3 +132,7 @@ P2-05 → P2-06 → P2-04 (+ teste) → P2-01 → P2-02 + P2-03 (juntos, porque 
 
 Decisões: `Media` mantida como está, com a convenção registrada no `SERVICE.md`; `ISettingsReader`
 removida; `src/presentation/media/` criada. Os itens fora de escopo foram para a **Parte 13** do plano.
+
+### Validação (build do revisor)
+- `scripts/validate.ps1`: build MSVC + `ctest` **85/85**.
+- Smoke manual do app, incluindo troca de idioma: OK.
