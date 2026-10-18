@@ -128,3 +128,10 @@ Notas sobre os testes:
   `UserList` (antes usava uma de catálogo só para ler as variáveis de catálogo, que deixaram de existir).
 - `AniListPendingChangeProcessorTests::groupsChangesByMedia` virou `sendsEveryChangeOfTheMediaInOneUpdate`.
 - `JsonSettingsReaderTests`: a chave `mediaQueryFile` saiu dos JSONs de teste (o leitor não a lê mais).
+
+### Correção após o primeiro build
+- `AniListGraphQlParsingTests` falhou: o P5-01 tirou do `AniListMediaMapper` o apelido `ON_HOLD`,
+  apresentado no report como exclusivo do formato de fixture em arquivo. Na verdade, ele também chega pelo
+  formato GraphQL (`graphql/page-response.json` tem 2 entradas assim), e as entradas viravam `Unknown`.
+  O apelido foi restaurado em `1cff615`. Os outros apelidos removidos ("PLAN TO WATCH", "PLAN TO READ",
+  "Finished Airing", "RELEASED") não aparecem em nenhuma entrada restante.
