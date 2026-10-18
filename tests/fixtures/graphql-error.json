@@ -1,9 +1,0 @@
-{
-  "data": null,
-  "errors": [
-    {
-      "message": "The AniList API is temporarily unavailable.",
-      "path": ["Page"]
-    }
-  ]
-}
