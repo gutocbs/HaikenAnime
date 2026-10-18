@@ -200,6 +200,8 @@ Itens coletados até agora (a lista cresce a cada parte):
 | Parte 2 | Traduções em inglês faltando: estações do ano, "%1 de %2", "Episódio %1" |
 | Parte 3 | Falha de migração sobrescreve o erro específico por uma mensagem genérica que cita "versions 1 through 15" |
 | Parte 3 | Repositórios releem o `.sql` a cada operação e o `SqlQueryStore` loga `INFO` a cada leitura |
+| Parte 4 | `SqliteMediaRepository::upsert` retorna sem `rollback` se o `prepare` falhar (transação fica aberta) |
+| Parte 4 | `SqliteUserPreferencesRepository::replace` perde a mensagem de erro quando o `.sql` não pode ser lido |
 
 ---
 
@@ -237,7 +239,7 @@ Perguntas em que há mais de um caminho razoável.
 | 1 | ☑ [report](../reviews/2026-10-18-parte-01-repositorio-build.md) | ☑ | ☑ validada: `ctest` 85/85, MinGW sem prefixo, release `dist/`, smoke OK |
 | 2 | ☑ [report](../reviews/2026-10-18-parte-02-dominio-midia.md) | ☑ | ☑ validada: `ctest` 85/85, smoke OK (inclui troca de idioma) |
 | 3 | ☑ [report](../reviews/2026-10-18-parte-03-infraestrutura-base.md) | ☑ | ☑ validada: `ctest` verde, smoke com o banco real (migrou e funcionou) |
-| 4 | ☐ | ☐ | ☐ |
+| 4 | ☑ [report](../reviews/2026-10-18-parte-04-persistencia-midia-outbox.md) | ☐ | ☐ |
 | 5 | ☐ | ☐ | ☐ |
 | 6 | ☐ | ☐ | ☐ |
 | 7 | ☐ | ☐ | ☐ |
