@@ -7,7 +7,7 @@
 
 enum class CoverPriority { Visible, Prefetch };
 enum class CoverState { Missing, Queued, Downloading, Available, Failed };
-enum class CoverFailureCategory { Transport, HttpTemporary, HttpPermanent, InvalidContent, FileSystem, Persistence, Cancelled };
+enum class CoverFailureCategory { Transport, HttpTemporary, HttpPermanent, InvalidContent, FileSystem, Cancelled };
 
 struct CoverRequest {
     int mediaId = 0;

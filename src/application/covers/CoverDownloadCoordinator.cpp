@@ -80,7 +80,7 @@ void CoverDownloadCoordinator::Pump()
         quint64 id = downloader_.Start(request, [this, key, generation = generation_, attempt](CoverDownloadResult result) {
             Complete(key, generation, attempt, std::move(result));
         });
-        active_.insert(key, {id, request, 0});
+        active_.insert(key, {id, request});
     }
 }
 

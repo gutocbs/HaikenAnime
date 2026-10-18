@@ -40,7 +40,7 @@ signals:
     void ClearCompleted();
 
 private:
-    struct Active { quint64 id; CoverRequest request; int attempt; };
+    struct Active { quint64 id; CoverRequest request; };
     QString Key(const CoverRequest &request) const;
     void Enqueue(const CoverRequest &request);
     void Pump();
