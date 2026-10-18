@@ -2,11 +2,6 @@ cmake_minimum_required(VERSION 3.21)
 
 project(HaikenAnime LANGUAGES CXX)
 
-if (MINGW AND (NOT CMAKE_PREFIX_PATH OR CMAKE_PREFIX_PATH MATCHES "/msvc"))
-    set(CMAKE_PREFIX_PATH "C:/Qt/6.8.3/mingw_64" CACHE PATH
-            "Qt installation compatible with the MinGW compiler" FORCE)
-endif ()
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
