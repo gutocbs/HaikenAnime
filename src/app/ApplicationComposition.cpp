@@ -56,12 +56,7 @@ private:
 class OwnedLocalFileRepository final : public ILocalFileRepository {
 public:
     explicit OwnedLocalFileRepository(std::unique_ptr<SqliteDatabase> database)
-        : database_(std::move(database)), repository_(database_->connection(),
-          SqliteQueries::BeginLibraryScan, SqliteQueries::UpsertLocalFile, SqliteQueries::CompleteLibraryScan,
-          SqliteQueries::FailLibraryScan, SqliteQueries::MarkLocalFilesUnavailable,
-          SqliteQueries::ReadPendingLocalFiles, SqliteQueries::ReadCatalogMediaForRecognition,
-          SqliteQueries::SaveLocalFileRecognition, SqliteQueries::ReadLocalFilesUnderFolder,
-          SqliteQueries::ReadLocalFileRoots) {}
+        : database_(std::move(database)), repository_(database_->connection()) {}
     bool beginScan(const QString &root, qint64 &id, QString &error) override {
         return repository_.beginScan(root, id, error);
     }

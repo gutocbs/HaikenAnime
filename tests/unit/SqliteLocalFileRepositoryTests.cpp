@@ -29,7 +29,7 @@ private slots:
     void rollsBackReconciliationWhenCompletionFails();
     void rejectsInvalidOrTerminalScans();
     void rejectsInvalidInput();
-    void reportsStatementAndTransactionErrors();
+    void reportsTransactionErrors();
     void rejectsIgnoredScanInsert();
     void rollsBackWhenCommitFails();
     void readsRecognitionQueueInPriorityOrder();
@@ -40,16 +40,11 @@ private slots:
     void ignoresFoldersUnderOtherRoots();
 private:
     QVariant scalar(const QString &sql);
-    QString statement(const QString &name);
     std::unique_ptr<QTemporaryDir> directory_;
     std::unique_ptr<SqliteDatabase> database_;
     std::unique_ptr<SqliteLocalFileRepository> repository_;
     QString error_;
 };
-
-QString SqliteLocalFileRepositoryTests::statement(const QString &name) {
-    return QStringLiteral(":/sqlite/queries/%1.sql").arg(name);
-}
 
 QVariant SqliteLocalFileRepositoryTests::scalar(const QString &sql) {
     QSqlQuery query(database_->connection());
@@ -62,15 +57,7 @@ void SqliteLocalFileRepositoryTests::init() {
     database_ = std::make_unique<SqliteDatabase>(directory_->filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database_->open());
     QVERIFY2(database_->migrate(), qPrintable(database_->lastError()));
-    repository_ = std::make_unique<SqliteLocalFileRepository>(database_->connection(),
-        statement(QStringLiteral("begin-library-scan")), statement(QStringLiteral("upsert-local-file")),
-        statement(QStringLiteral("complete-library-scan")), statement(QStringLiteral("fail-library-scan")),
-        statement(QStringLiteral("mark-local-files-unavailable")),
-        statement(QStringLiteral("read-pending-local-files")),
-        statement(QStringLiteral("read-catalog-media-for-recognition")),
-        statement(QStringLiteral("save-local-file-recognition")),
-        statement(QStringLiteral("read-local-files-under-folder")),
-        statement(QStringLiteral("read-local-file-roots")));
+    repository_ = std::make_unique<SqliteLocalFileRepository>(database_->connection());
     error_.clear();
 }
 
@@ -354,12 +341,8 @@ void SqliteLocalFileRepositoryTests::rejectsInvalidInput() {
     QCOMPARE(scalar(QStringLiteral("SELECT COUNT(*) FROM local_files")).toInt(), 0);
 }
 
-void SqliteLocalFileRepositoryTests::reportsStatementAndTransactionErrors() {
-    SqliteLocalFileRepository broken(database_->connection(), QStringLiteral(":/sqlite/queries/missing.sql"), {}, {}, {}, {});
-    qint64 id = 17;
-    QVERIFY(!broken.beginScan(QStringLiteral("Q:/"), id, error_));
-    QCOMPARE(id, 0);
-    QVERIFY(!error_.isEmpty());
+void SqliteLocalFileRepositoryTests::reportsTransactionErrors() {
+    qint64 id = 0;
     QVERIFY(repository_->beginScan(QStringLiteral("Q:/"), id, error_));
     QVERIFY(database_->connection().transaction());
     QVERIFY(!repository_->upsertBatch(id, {Observation(QStringLiteral("Episode.mkv"))}, error_));
