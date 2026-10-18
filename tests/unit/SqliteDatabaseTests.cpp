@@ -1,4 +1,5 @@
 #include <QCoreApplication>
+#include <QFile>
 #include <QFileInfo>
 #include <QSqlQuery>
 #include <QTemporaryDir>
@@ -21,17 +22,17 @@ private slots:
     void configuresConcurrentAccessPragmas();
     void migrationFailureExposesDiagnostic();
     void migrationRequiresVersionToBeRecorded();
+    void migrationProducesTheExpectedSchema();
+    void migrationRollsBackWhenAVersionIsNotRecorded_data();
+    void migrationRollsBackWhenAVersionIsNotRecorded();
     void migrationCreatesCoverCacheVersionTwo();
     void migrationCreatesSourceRemovalVersionThree();
     void migrationUpgradesVersionTwoWithoutDataLoss();
     void migrationCreatesUserPreferencesVersionFive();
     void migrationCreatesLibraryInventory();
     void migrationUpgradesVersionSixWithoutDataLoss();
-    void migrationRequiresVersionSevenAndRollsBack();
     void migrationUpgradesLegacyScannerPreferences();
-    void migrationRequiresVersionEightAndRollsBack();
     void migrationAddsHomeSortKeyWithoutLosingExistingData();
-    void migrationRequiresVersionNineAndRollsBack();
     void migrationAddsCardStatusPresentationWithoutLosingExistingData();
     void migrationAddsLanguageWithoutLosingExistingData();
     void migrationAddsPreferredTitleWithoutLosingExistingData();
@@ -266,6 +267,56 @@ void SqliteDatabaseTests::migrationRequiresVersionToBeRecorded() {
     QVERIFY(!database.lastError().isEmpty());
 }
 
+void SqliteDatabaseTests::migrationProducesTheExpectedSchema() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+
+    // One line per schema object (whitespace collapsed) plus the recorded versions.
+    QStringList actual;
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral(
+        "SELECT type, name, tbl_name, COALESCE(sql, '') FROM sqlite_master ORDER BY type, name")));
+    while (query.next()) {
+        actual.append(QStringLiteral("%1|%2|%3|%4").arg(query.value(0).toString(), query.value(1).toString(),
+                                                        query.value(2).toString(),
+                                                        query.value(3).toString().simplified()));
+    }
+    QStringList versions;
+    QVERIFY(query.exec(QStringLiteral("SELECT version FROM schema_version ORDER BY version")));
+    while (query.next()) versions.append(query.value(0).toString());
+    actual.append(QStringLiteral("versions|") + versions.join(QLatin1Char(',')));
+
+    QFile expectedFile(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/tests/fixtures/sqlite/migrated-schema.txt"));
+    QVERIFY(expectedFile.open(QIODevice::ReadOnly | QIODevice::Text));
+    const auto expected = QString::fromUtf8(expectedFile.readAll()).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+    QCOMPARE(actual, expected);
+}
+
+void SqliteDatabaseTests::migrationRollsBackWhenAVersionIsNotRecorded_data() {
+    QTest::addColumn<int>("version");
+    for (int version = 1; version <= 26; ++version) QTest::addRow("version %d", version) << version;
+}
+
+void SqliteDatabaseTests::migrationRollsBackWhenAVersionIsNotRecorded() {
+    QFETCH(int, version);
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)")));
+    QVERIFY(query.exec(QStringLiteral("CREATE TRIGGER reject_version BEFORE INSERT ON schema_version "
+                                      "WHEN NEW.version = %1 BEGIN SELECT RAISE(IGNORE); END").arg(version)));
+
+    QVERIFY(!database.migrate());
+    QVERIFY(!database.lastError().isEmpty());
+    QVERIFY(query.exec(QStringLiteral(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name <> 'schema_version'")));
+    QVERIFY(query.next());
+    QCOMPARE(query.value(0).toInt(), 0);
+}
+
 void SqliteDatabaseTests::migrationCreatesCoverCacheVersionTwo() {
     QTemporaryDir temporaryDirectory;
     SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
@@ -444,21 +495,6 @@ void SqliteDatabaseTests::migrationUpgradesVersionSixWithoutDataLoss() {
     QCOMPARE(query.value(0).toInt(), 1);
 }
 
-void SqliteDatabaseTests::migrationRequiresVersionSevenAndRollsBack() {
-    QTemporaryDir directory;
-    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
-    QVERIFY(database.open());
-    QSqlQuery query(database.connection());
-    QVERIFY(query.exec(QStringLiteral("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)")));
-    QVERIFY(query.exec(QStringLiteral("CREATE TRIGGER reject_seven BEFORE INSERT ON schema_version "
-                                      "WHEN NEW.version = 7 BEGIN SELECT RAISE(IGNORE); END")));
-    QVERIFY(!database.migrate());
-    QVERIFY(!database.lastError().isEmpty());
-    QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM sqlite_master WHERE name IN ('local_files', 'library_scans', 'media')")));
-    QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 0);
-}
-
 void SqliteDatabaseTests::migrationUpgradesLegacyScannerPreferences() {
     QTemporaryDir directory;
     SqliteDatabase database(directory.filePath("legacy.sqlite"));
@@ -476,20 +512,6 @@ void SqliteDatabaseTests::migrationUpgradesLegacyScannerPreferences() {
     QVERIFY(query.exec("SELECT COUNT(*) FROM schema_version WHERE version = 8"));
     QVERIFY(query.next());
     QCOMPARE(query.value(0).toInt(), 1);
-}
-
-void SqliteDatabaseTests::migrationRequiresVersionEightAndRollsBack() {
-    QTemporaryDir directory;
-    SqliteDatabase database(directory.filePath("legacy.sqlite"));
-    QVERIFY(database.open());
-    QSqlQuery query(database.connection());
-    QVERIFY(query.exec("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)"));
-    QVERIFY(query.exec("CREATE TRIGGER reject_eight BEFORE INSERT ON schema_version WHEN NEW.version = 8 BEGIN SELECT RAISE(IGNORE); END"));
-    QVERIFY(!database.migrate());
-    QVERIFY(!database.lastError().isEmpty());
-    QVERIFY(query.exec("SELECT COUNT(*) FROM sqlite_master WHERE name = 'user_preferences'"));
-    QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 0);
 }
 
 void SqliteDatabaseTests::migrationAddsHomeSortKeyWithoutLosingExistingData() {
@@ -517,20 +539,6 @@ void SqliteDatabaseTests::migrationAddsHomeSortKeyWithoutLosingExistingData() {
     QVERIFY(query.exec("SELECT COUNT(*) FROM cover_cache")); QVERIFY(query.next()); QCOMPARE(query.value(0).toInt(), 1);
     QVERIFY(query.exec("SELECT COUNT(*) FROM local_files")); QVERIFY(query.next()); QCOMPARE(query.value(0).toInt(), 1);
     QVERIFY(query.exec("SELECT COUNT(*) FROM schema_version WHERE version = 9")); QVERIFY(query.next()); QCOMPARE(query.value(0).toInt(), 1);
-}
-
-void SqliteDatabaseTests::migrationRequiresVersionNineAndRollsBack() {
-    QTemporaryDir directory;
-    SqliteDatabase database(directory.filePath("legacy.sqlite"));
-    QVERIFY(database.open());
-    QSqlQuery query(database.connection());
-    QVERIFY(query.exec("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)"));
-    QVERIFY(query.exec("CREATE TRIGGER reject_nine BEFORE INSERT ON schema_version WHEN NEW.version = 9 BEGIN SELECT RAISE(IGNORE); END"));
-    QVERIFY(!database.migrate());
-    QVERIFY(!database.lastError().isEmpty());
-    QVERIFY(query.exec("SELECT COUNT(*) FROM sqlite_master WHERE name = 'user_preferences'"));
-    QVERIFY(query.next());
-    QCOMPARE(query.value(0).toInt(), 0);
 }
 
 void SqliteDatabaseTests::migrationAddsCardStatusPresentationWithoutLosingExistingData() {
