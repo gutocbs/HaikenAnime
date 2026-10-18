@@ -32,20 +32,24 @@ The source tree is organized around explicit application boundaries:
 
 ```text
 .
-├── QML/                    # User interface and reusable QML components
+├── main.cpp                # Qt/QML startup
 ├── src/app/                # Application composition and workflow coordination
 ├── src/application/        # Use cases, services, ports, and presentation contracts
-├── src/domain/             # Media and AniList domain types and policies
-├── src/infrastructure/     # Qt, SQLite, AniList, filesystem, and platform adapters
+├── src/domain/             # Media, AniList and recognition domain types and policies
+├── src/infrastructure/     # Qt, SQLite, AniList, filesystem, player, and platform adapters
+├── src/presentation/       # Controllers and list models exposed to QML
+├── resources/qml/          # User interface and reusable QML components
 ├── resources/sqlite/       # SQL queries, configuration, and migrations
+├── resources/anilist/      # AniList GraphQL queries and mutations
 ├── tests/unit/             # CTest-backed unit tests
+├── tests/fixtures/         # Recorded responses used by the tests
 ├── translations/           # Qt translation sources
 ├── lib/anitomy/            # Local file-name parsing library
 ├── CMakeLists.txt          # Application and test targets
-└── codex.md                # Repository guidance for AI-assisted development
+└── SERVICE.md              # Program reference: flows, persistence, development and test patterns
 ```
 
-Presentation code should remain focused on rendering and interaction. Synchronization, persistence, filtering, ordering, recognition, and player decisions belong to the application, domain, or infrastructure layers.
+Presentation code should remain focused on rendering and interaction. Synchronization, persistence, filtering, ordering, recognition, and player decisions belong to the application, domain, or infrastructure layers. See [`SERVICE.md`](SERVICE.md) for how each flow works and how to extend it.
 
 ## Requirements
 
