@@ -375,6 +375,12 @@ Para adicionar uma migração:
 - **Inglês** em nomes de classes, métodos, variáveis, chaves JSON e APIs internas. Textos de interface em
   `qsTr()` (QML) / `tr()`.
 - Uma classe por par `.h`/`.cpp` no módulo a que pertence; *include guards* `HAIKENANIME_<NOME>_H`.
+- **Métodos em `PascalCase`** (`Reload`, `SetMedia`, `ConfigureScoreScale`). Exceções da convenção Qt/QML:
+  *getters* de `Q_PROPERTY`, sinais e os *overrides* do Qt (`rowCount`, `data`, `roleNames`) ficam em
+  camelCase. Os repositórios que já seguem o par `read`/`replace` e os nomes de interface existentes não
+  mudam.
+- Controllers só expõem ao QML (`Q_PROPERTY`/`Q_INVOKABLE`) o que o QML usa; o que só C++ ou os testes leem
+  é um método comum.
 - Entidades de domínio são structs/classes de dados com campos públicos em `PascalCase` (`Media::Name`,
   `MediaLink::Url`); conversões enum ↔ chave ficam no header do enum (`UserListStatusKey`,
   `CardStatusPresentationKey`) e não são reescritas nos controllers.

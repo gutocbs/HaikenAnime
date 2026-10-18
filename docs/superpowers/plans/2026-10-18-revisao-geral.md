@@ -251,7 +251,7 @@ Perguntas em que há mais de um caminho razoável.
 | 7 | ☑ [report](../reviews/2026-10-18-parte-07-biblioteca-local.md) | ☑ | ☑ validada: `ctest` verde |
 | 8 | ☑ [report](../reviews/2026-10-18-parte-08-capas-cache-catalogo.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
 | 9 | ☑ [report](../reviews/2026-10-18-parte-09-reconhecimento.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
-| 10 | ☑ [report](../reviews/2026-10-18-parte-10-controllers.md) | ☐ | ☐ |
+| 10 | ☑ [report](../reviews/2026-10-18-parte-10-controllers.md) | ☑ | ☐ aplicada, aguardando build |
 | 11 | ☐ | ☐ | ☐ |
 | 12 | ☐ | ☐ | ☐ |
 | 13 | ☐ | ☐ | ☐ |

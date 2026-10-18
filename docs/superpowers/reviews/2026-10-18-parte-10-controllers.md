@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `06992a8` (`feature/revisao-geral`)
-- **Status:** aguardando aprovação — nenhuma alteração aplicada
+- **Status:** aprovado (com a recomendação) e aplicado — aguardando build do revisor
 
 ---
 
@@ -79,3 +79,19 @@ Nada novo.
 1. **Não fazer o objeto de seleção** nem mover os `Configure*` para o construtor (recomendo), pelos motivos da
    seção 2. A alternativa é um `MediaSelection` exposto como `QObject` com as propriedades de detalhe,
    compartilhado por Home e catálogo, reescrevendo os *bindings* do QML na Parte 11.
+
+---
+
+## 7. Aplicação
+
+| Item | Commit |
+| --- | --- |
+| P10-01 `Preview*Metadata` e `ClearCoverCache` | `dddbbff` |
+| P10-02 8 `Q_PROPERTY` e 2 `Q_INVOKABLE` fora do QML | `269b460` |
+| P10-03 métodos em PascalCase | `7a7e21e` |
+
+Notas:
+- P10-01: as duas sobrecargas de `cardStatusLabel` viraram uma só, que usa `media.ListStatus`.
+- P10-03: `NowWatchingController::setPreferredTitleKey` virou `ConfigurePreferredTitle`, o mesmo nome usado na
+  Home e no catálogo. A regra de nomes entrou no `SERVICE.md` (§ 8.1).
+- O objeto de seleção e a mudança dos `Configure*` não foram feitos (decisão 1).
