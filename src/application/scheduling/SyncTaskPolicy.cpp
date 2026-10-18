@@ -128,10 +128,6 @@ SyncTaskPolicyDecision SyncTaskPolicy::Decide(const SyncTaskState &state, const 
         decision.promotion = SyncTaskPromotion::LocalChange;
     }
 
-    if (request.retryAfter.has_value() && request.retryAfter->isValid() && *request.retryAfter > now) {
-        decision.schedule.nextRunAt = request.retryAfter->toUTC();
-        return decision;
-    }
 
     if (request.trigger == SyncTaskTrigger::ManualRun || request.trigger == SyncTaskTrigger::LocalChange
         || request.trigger == SyncTaskTrigger::CompletedToActive) {

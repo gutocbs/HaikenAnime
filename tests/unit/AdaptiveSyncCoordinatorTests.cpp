@@ -144,7 +144,6 @@ private slots:
     void ignoresExecutorCallbacksAfterTheCoordinatorIsDestroyed();
     void doesNotExecuteWhenRunningGenerationCannotBePersisted();
     void retainsExistingActivePartitionDuringCompletedPromotion();
-    void forwardsRetryAfterToTheSchedulingPolicy();
     void waitsForCancellationAndExecutorShutdownAcknowledgements();
     void holdsPendingChangesUntilUserListSynchronizationSucceeds();
     void republishesExecutorProgressInOrder();
@@ -620,22 +619,6 @@ void AdaptiveSyncCoordinatorTests::retainsExistingActivePartitionDuringCompleted
     QTRY_COMPARE(repository.State(SyncPartition::ActiveCatalog).status, SyncTaskStatus::Succeeded);
     QCOMPARE(repository.State(SyncPartition::ActiveCatalog).generation, activeGeneration);
     QCOMPARE(executor.started.count(SyncPartition::ActiveCatalog), 1);
-}
-
-void AdaptiveSyncCoordinatorTests::forwardsRetryAfterToTheSchedulingPolicy() {
-    FakeClock clock;
-    FakeTaskStateRepository repository;
-    repository.states = {DueState(SyncTaskKind::PendingChange, SyncPartition::PendingChanges)};
-    FakeTaskExecutor executor;
-    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
-
-    coordinator.Start();
-    const auto retryAfter = clock.CurrentTime().addSecs(90);
-    executor.Complete(SyncPartition::PendingChanges,
-                      {.succeeded = false, .errorCategory = AniListSyncErrorCategory::RateLimit,
-                       .retryAfter = retryAfter});
-
-    QTRY_COMPARE(repository.State(SyncPartition::PendingChanges).nextRunAt, retryAfter);
 }
 
 void AdaptiveSyncCoordinatorTests::waitsForCancellationAndExecutorShutdownAcknowledgements() {

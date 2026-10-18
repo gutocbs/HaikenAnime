@@ -298,8 +298,7 @@ void AdaptiveSyncCoordinator::CompleteTask(const SyncPartition partition, const 
         completed.status = SyncTaskStatus::RetryScheduled;
     }
 
-    const auto decision = SyncTaskPolicy::Decide(completed, PolicyFor(completed.kind), Now(),
-                                                  {.retryAfter = result.retryAfter});
+    const auto decision = SyncTaskPolicy::Decide(completed, PolicyFor(completed.kind), Now(), {});
     completed = decision.proposedState;
     completed.nextRunAt = decision.schedule.nextRunAt;
     if (!result.succeeded && decision.schedule.shouldRunNow) ++completed.consecutiveImmediateRetries;

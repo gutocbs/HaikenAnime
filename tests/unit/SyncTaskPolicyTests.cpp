@@ -14,7 +14,6 @@ private slots:
     void preservesEmptyMediaFilterBehaviorWhileIdentifyingItsPartition();
     void selectsDistinctDefaultPoliciesForEveryTaskKind();
     void defersFreshCacheUntilItsNormalInterval();
-    void honorsRetryAfterWithoutApplyingJitter();
     void marksAgedFreshCacheAsStaleOrExpired();
     void appliesInjectedJitterToNormalIntervals();
     void limitsConsecutiveImmediateRetries();
@@ -27,7 +26,6 @@ private slots:
     void promotesCompletedCatalogToActiveCatalog();
     void clampsBackwardClockJumpsToANewCadenceFromNow();
     void runsExpiredWorkAfterAForwardClockJump();
-    void honorsRetryAfterBeforeEveryRunNowTrigger();
     void saturatesInjectedJitterWithoutCreatingImmediateWork();
     void derivesScheduledPriorityFromPartition();
     void appliesDistinctDefaultCadencesAtDecisionLevel();
@@ -97,21 +95,6 @@ void SyncTaskPolicyTests::defersFreshCacheUntilItsNormalInterval() {
 
     QVERIFY(!decision.shouldRunNow);
     QCOMPARE(decision.nextRunAt, succeededAt.addSecs(30 * 60));
-}
-
-void SyncTaskPolicyTests::honorsRetryAfterWithoutApplyingJitter() {
-    SyncTaskState state;
-    state.kind = SyncTaskKind::PendingChange;
-    state.lastErrorCategory = AniListSyncErrorCategory::RateLimit;
-    const auto now = QDateTime::fromMSecsSinceEpoch(2'000'000, QTimeZone::UTC);
-    const auto retryAfter = now.addSecs(90);
-    SyncSchedulePolicy policy;
-    policy.jitterRatio = 0.5;
-
-    const auto decision = SyncTaskPolicy::Decide(state, policy, now, {.retryAfter = retryAfter}).schedule;
-
-    QVERIFY(!decision.shouldRunNow);
-    QCOMPARE(decision.nextRunAt, retryAfter);
 }
 
 void SyncTaskPolicyTests::marksAgedFreshCacheAsStaleOrExpired() {
@@ -305,29 +288,6 @@ void SyncTaskPolicyTests::runsExpiredWorkAfterAForwardClockJump() {
     QVERIFY(decision.shouldRunNow);
     QCOMPARE(decision.nextRunAt, now);
     QCOMPARE(decision.cacheValidity, CacheValidity::Expired);
-}
-
-void SyncTaskPolicyTests::honorsRetryAfterBeforeEveryRunNowTrigger() {
-    const auto now = QDateTime::fromMSecsSinceEpoch(12'000'000, QTimeZone::UTC);
-    const auto retryAfter = now.addSecs(90);
-    const QList<SyncTaskTrigger> triggers{SyncTaskTrigger::ManualRun, SyncTaskTrigger::LocalChange,
-                                           SyncTaskTrigger::CompletedToActive};
-    const QList<SyncTaskPromotion> promotions{SyncTaskPromotion::None, SyncTaskPromotion::LocalChange,
-                                                SyncTaskPromotion::CompletedToActive};
-
-    for (qsizetype index = 0; index < triggers.size(); ++index) {
-        SyncTaskState state;
-        state.kind = SyncTaskKind::CompletedCatalog;
-        state.partition = SyncPartition::CompletedCatalog;
-        state.lastErrorCategory = AniListSyncErrorCategory::RateLimit;
-
-        const auto decision = SyncTaskPolicy::Decide(
-            state, SyncSchedulePolicy{}, now, {.trigger = triggers.at(index), .retryAfter = retryAfter});
-
-        QVERIFY(!decision.schedule.shouldRunNow);
-        QCOMPARE(decision.schedule.nextRunAt, retryAfter);
-        QCOMPARE(decision.promotion, promotions.at(index));
-    }
 }
 
 void SyncTaskPolicyTests::saturatesInjectedJitterWithoutCreatingImmediateWork() {

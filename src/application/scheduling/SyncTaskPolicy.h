@@ -8,7 +8,6 @@ enum class SyncTaskPromotion { None, LocalChange, CompletedToActive };
 
 struct SyncTaskPolicyRequest final {
     SyncTaskTrigger trigger = SyncTaskTrigger::Scheduled;
-    std::optional<QDateTime> retryAfter;
     std::chrono::milliseconds jitter = std::chrono::milliseconds::zero();
 };
 

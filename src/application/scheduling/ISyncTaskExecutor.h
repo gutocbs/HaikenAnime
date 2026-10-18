@@ -13,7 +13,6 @@ struct SyncTaskExecutionResult final {
     bool succeeded = false;
     AniListSyncErrorCategory errorCategory = AniListSyncErrorCategory::None;
     QString safeErrorDetail;
-    std::optional<QDateTime> retryAfter;
     std::optional<int> confirmedPage;
     std::optional<QString> confirmedCursor;
 };
