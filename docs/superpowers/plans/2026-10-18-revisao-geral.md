@@ -240,7 +240,7 @@ Perguntas em que há mais de um caminho razoável.
 | 2 | ☑ [report](../reviews/2026-10-18-parte-02-dominio-midia.md) | ☑ | ☑ validada: `ctest` 85/85, smoke OK (inclui troca de idioma) |
 | 3 | ☑ [report](../reviews/2026-10-18-parte-03-infraestrutura-base.md) | ☑ | ☑ validada: `ctest` verde, smoke com o banco real (migrou e funcionou) |
 | 4 | ☑ [report](../reviews/2026-10-18-parte-04-persistencia-midia-outbox.md) | ☑ | ☑ validada: `ctest` verde, smoke de edição (Home e catálogo, inclusive adição) |
-| 5 | ☐ | ☐ | ☐ |
+| 5 | ☑ [report](../reviews/2026-10-18-parte-05-integracao-anilist.md) | ☐ | ☐ |
 | 6 | ☐ | ☐ | ☐ |
 | 7 | ☐ | ☐ | ☐ |
 | 8 | ☐ | ☐ | ☐ |
