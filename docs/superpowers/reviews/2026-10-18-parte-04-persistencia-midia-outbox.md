@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `8daf391` (`feature/revisao-geral`)
-- **Status:** aprovado e aplicado — aguardando o build de validação
+- **Status:** aprovado e aplicado — validado
 
 ---
 
@@ -132,3 +132,7 @@ Notas:
   `IPersonalListChangeWriter` e um `PersonalListChangeService` real fica entre eles e o controller (8 casos
   da Home, 10 do catálogo). Os 3 testes de `updatePersonalListMedia` do repositório agora usam
   `SqlitePersonalListChangeWriter::save` sem mudanças de outbox (mesma query e mesmo *bind*).
+
+### Validação (build do revisor)
+- `scripts/validate.ps1`: build MSVC + `ctest` todo verde.
+- Smoke: edição pela Home, edição e adição pelo catálogo sazonal.
