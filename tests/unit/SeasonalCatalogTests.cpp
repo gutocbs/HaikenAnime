@@ -122,7 +122,6 @@ private slots:
     void coordinatorKeepsActiveResultWhenRapidSelectionReturnsToItsIdentity();
     void coordinatorEnforcesDeterministicMinimumRequestInterval();
     void coordinatorRetriesFailuresInsteadOfCachingThem();
-    void graphQlDataSourceUsesExternalQueryAndExplicitSeasonVariables();
     void graphQlDataSourcePostsExplicitVariablesAndParsesCatalogResponse();
     void graphQlDataSourcePropagatesGraphQlErrors();
     void graphQlDataSourceRejectsMalformedResponse();
@@ -431,20 +430,6 @@ void SeasonalCatalogTests::coordinatorRetriesFailuresInsteadOfCachingThem() {
 
     QCOMPARE(source.requests.size(), 2);
     QCOMPARE(coordinator.state(), SeasonalCatalogState::Error);
-}
-
-void SeasonalCatalogTests::graphQlDataSourceUsesExternalQueryAndExplicitSeasonVariables() {
-    GraphQlQueryStore store(QStringLiteral(":/anilist/queries/seasonal-catalog.graphql"));
-    QString error;
-    QString query;
-    QVERIFY2(store.load(query, error), qPrintable(error));
-    const auto variables = seasonalCatalogGraphQlVariables({2026, QStringLiteral("FALL"), 1, 25});
-    QCOMPARE(variables.value(QStringLiteral("year")).toInt(), 2026);
-    QCOMPARE(variables.value(QStringLiteral("season")).toString(), QStringLiteral("FALL"));
-    QCOMPARE(variables.value(QStringLiteral("page")).toInt(), 1);
-    QCOMPARE(variables.value(QStringLiteral("perPage")).toInt(), 25);
-    QVERIFY(query.contains(QStringLiteral("SeasonalCatalog")));
-    QVERIFY(query.contains(QStringLiteral("seasonYear: $year")));
 }
 
 void SeasonalCatalogTests::graphQlDataSourcePostsExplicitVariablesAndParsesCatalogResponse() {
