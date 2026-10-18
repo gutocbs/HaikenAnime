@@ -11,11 +11,9 @@ bool isPersonalListStatus(const UserListStatus status) {
 }
 }
 
-SeasonalPersonalListService::SeasonalPersonalListService(IMediaReader *reader, IMediaWriter *writer,
-                                                         IPersonalListMediaWriter *personalListWriter,
+SeasonalPersonalListService::SeasonalPersonalListService(IMediaReader *reader,
                                                          PersonalListChangeService *personalListChangeService)
-    : reader_(reader), writer_(writer), personalListWriter_(personalListWriter),
-      personalListChangeService_(personalListChangeService) {}
+    : reader_(reader), personalListChangeService_(personalListChangeService) {}
 
 bool SeasonalPersonalListService::find(const int mediaId, Media &media, bool &found,
                                        QString &error) const {
@@ -51,46 +49,24 @@ bool SeasonalPersonalListService::save(const Media &catalogMedia, const Personal
     Media existing;
     bool found = false;
     if (!find(catalogMedia.Id, existing, found, error)) return false;
-    if (found) {
-        if (!personalListWriter_) {
-            error = QStringLiteral("Local media repository is unavailable.");
-            return false;
-        }
-        saved = existing;
-        saved.ConsumedChapters = edit.progress;
-        saved.PersonalScore = edit.score;
-        saved.ListStatus = edit.status;
-        saved.LocalPath = edit.path;
-        saved.AlternativeNames = edit.alternativeNames;
-        const bool savedLocally = personalListChangeService_
-            ? personalListChangeService_->save(existing, saved, error)
-            : personalListWriter_->updatePersonalListMedia(saved, error);
-        if (!savedLocally) {
-            saved = {};
-            return false;
-        }
-        return true;
-    }
-    if (!writer_) {
+    if (!personalListChangeService_) {
         error = QStringLiteral("Local media repository is unavailable.");
         return false;
     }
-
-    saved = catalogMedia;
+    // A media already in the library keeps its local data; a new one starts from the catalog.
+    Media previous;
+    previous.Id = catalogMedia.Id;
+    if (found) previous = existing;
+    saved = found ? existing : catalogMedia;
     saved.ConsumedChapters = edit.progress;
     saved.PersonalScore = edit.score;
     saved.ListStatus = edit.status;
     saved.LocalPath = edit.path;
     saved.AlternativeNames = edit.alternativeNames;
-    Media previous;
-    previous.Id = saved.Id;
-    const bool savedLocally = personalListChangeService_
-        ? personalListChangeService_->save(previous, saved, error)
-        : writer_->upsert({saved}, error);
-    if (!savedLocally) {
+    if (!personalListChangeService_->save(previous, saved, error)) {
         saved = {};
         return false;
     }
-    created = true;
+    created = !found;
     return true;
 }

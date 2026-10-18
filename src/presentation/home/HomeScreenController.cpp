@@ -4,7 +4,6 @@
 #include "../../application/library/LocalEpisodeReader.h"
 #include "../../application/library/LocalRecognitionRequest.h"
 #include "../media/MediaPresentation.h"
-#include "../../application/media/IPersonalListMediaWriter.h"
 #include "../../application/media/PersonalListChangeService.h"
 
 #include <QCoreApplication>
@@ -433,10 +432,6 @@ void HomeScreenController::SetLocalEpisodeServices(ILocalEpisodeReader *episodeR
     emit selectionChanged();
 }
 
-void HomeScreenController::SetPersonalListMediaWriter(IPersonalListMediaWriter *personalListWriter) {
-    personalListWriter_ = personalListWriter;
-}
-
 void HomeScreenController::SetPersonalListChangeService(PersonalListChangeService *personalListChangeService) {
     personalListChangeService_ = personalListChangeService;
 }
@@ -595,7 +590,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
         setMediaOperationError(std::move(error));
         return false;
     };
-    if (!hasSelection_ || (personalListWriter_ == nullptr && personalListChangeService_ == nullptr)) {
+    if (!hasSelection_ || personalListChangeService_ == nullptr) {
         return setSaveError(QStringLiteral("A lista local não está disponível."));
     }
     const auto status = UserListStatusFromKey(statusKey);
@@ -616,10 +611,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
     updated.LocalPath = path.trimmed();
     updated.AlternativeNames = alternativeNames;
     QString error;
-    const bool saved = personalListChangeService_
-        ? personalListChangeService_->save(*current, updated, error)
-        : personalListWriter_->updatePersonalListMedia(updated, error);
-    if (!saved) return setSaveError(std::move(error));
+    if (!personalListChangeService_->save(*current, updated, error)) return setSaveError(std::move(error));
     const auto recognitionRequest = LocalRecognitionRequest::Between(*current, updated);
 
     const auto destination = std::find_if(allMedia_.begin(), allMedia_.end(), [id = updated.Id](const Media &media) {

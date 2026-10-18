@@ -2,8 +2,6 @@
 #define HAIKENANIME_SEASONALPERSONALLISTSERVICE_H
 
 #include "IMediaReader.h"
-#include "IMediaWriter.h"
-#include "IPersonalListMediaWriter.h"
 
 class PersonalListChangeService;
 
@@ -18,9 +16,7 @@ struct PersonalListMediaEdit final {
 /** Adds catalog media to the local personal list without invoking remote AniList mutations. */
 class SeasonalPersonalListService final {
 public:
-    SeasonalPersonalListService(IMediaReader *reader, IMediaWriter *writer,
-                                IPersonalListMediaWriter *personalListWriter,
-                                PersonalListChangeService *personalListChangeService = nullptr);
+    SeasonalPersonalListService(IMediaReader *reader, PersonalListChangeService *personalListChangeService);
 
     [[nodiscard]] bool find(int mediaId, Media &media, bool &found, QString &error) const;
     [[nodiscard]] bool save(const Media &catalogMedia, const PersonalListMediaEdit &edit, Media &saved,
@@ -28,8 +24,6 @@ public:
 
 private:
     IMediaReader *reader_ = nullptr;
-    IMediaWriter *writer_ = nullptr;
-    IPersonalListMediaWriter *personalListWriter_ = nullptr;
     PersonalListChangeService *personalListChangeService_ = nullptr;
 };
 

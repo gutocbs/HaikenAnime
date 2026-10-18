@@ -15,7 +15,6 @@ public:
 
     /** Upserts external media in one transaction while preserving local user fields. */
     [[nodiscard]] bool upsert(const QList<Media> &media, QString &error) override;
-    [[nodiscard]] bool updatePersonalListMedia(const Media &media, QString &error) override;
 
     /** Reads persisted media using the supplied ordered SELECT query. */
     [[nodiscard]] bool readAll(QList<Media> &media, QString &error) override;

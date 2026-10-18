@@ -5,7 +5,6 @@
 #include "../../src/presentation/home/HomeScreenController.h"
 #include "../../src/application/library/ILocalFileOpener.h"
 #include "../../src/application/library/LocalEpisodeReader.h"
-#include "../../src/application/media/IPersonalListMediaWriter.h"
 #include "../../src/application/media/IPersonalListChangeWriter.h"
 #include "../../src/application/media/PersonalListChangeService.h"
 
@@ -22,13 +21,17 @@ public:
 
 };
 
-class FakePersonalListMediaWriter final : public IPersonalListMediaWriter {
+class CapturingPersonalListChangeWriter final : public IPersonalListChangeWriter {
 public:
-    bool updatePersonalListMedia(const Media &media, QString &error) override {
+    bool save(const Media &media, const QList<AniListPendingChange> &, QString &error) override {
         received = media;
         ++calls;
         error = failure;
         return failure.isEmpty();
+    }
+    bool remove(const Media &, const AniListPendingChange &, QString &error) override {
+        error = QStringLiteral("Removal is not expected in this test.");
+        return false;
     }
 
     Media received;
@@ -1122,10 +1125,11 @@ void HomeScreenControllerTests::persistsSelectedMediaEditsAndRefreshesBothModels
     media.ConsumedChapters = 5;
     media.PersonalScore = 7;
     reader.result = {media};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
     controller.reload();
     controller.SelectMedia(media.Id);
 
@@ -1163,10 +1167,11 @@ void HomeScreenControllerTests::exposesSelectedLocalPathAfterSavingAndReloading(
     media.Type = MediaType::Anime;
     media.ListStatus = UserListStatus::Current;
     reader.result = {media};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
     controller.reload();
     QVERIFY(controller.selectedLocalPath().isEmpty());
     controller.SelectMedia(media.Id);
@@ -1199,10 +1204,11 @@ Media RecognitionMedia(const QString &path = QString(), const QStringList &names
 void HomeScreenControllerTests::requestsFolderRecognitionWhenTheLocalPathChanges() {
     FakeMediaReader reader;
     reader.result = {RecognitionMedia(QStringLiteral("D:/Old"))};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
     controller.reload();
     controller.SelectMedia(42);
     QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
@@ -1219,10 +1225,11 @@ void HomeScreenControllerTests::requestsFolderRecognitionWhenTheLocalPathChanges
 void HomeScreenControllerTests::requestsPendingRecognitionWhenOnlyAlternativeNamesChange() {
     FakeMediaReader reader;
     reader.result = {RecognitionMedia(QString(), {QStringLiteral("Old")})};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
     controller.reload();
     controller.SelectMedia(42);
     QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
@@ -1238,10 +1245,11 @@ void HomeScreenControllerTests::requestsPendingRecognitionWhenOnlyAlternativeNam
 void HomeScreenControllerTests::requestsNoRecognitionWhenNothingRelevantChanged() {
     FakeMediaReader reader;
     reader.result = {RecognitionMedia(QString(), {QStringLiteral("Same")})};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
     controller.reload();
     controller.SelectMedia(42);
     QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
@@ -1259,10 +1267,11 @@ void HomeScreenControllerTests::requestsNoRecognitionWhenNothingRelevantChanged(
 void HomeScreenControllerTests::requestsFolderRecognitionOnEverySaveWhenThePathIsUnchanged() {
     FakeMediaReader reader;
     reader.result = {RecognitionMedia(QStringLiteral("D:/Anime/Frieren"), {QStringLiteral("Same")})};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
     controller.reload();
     controller.SelectMedia(42);
     QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
@@ -1279,10 +1288,11 @@ void HomeScreenControllerTests::requestsFolderRecognitionOnEverySaveWhenThePathI
 void HomeScreenControllerTests::requestsTheOldFolderWhenThePathIsClearedOrMoved() {
     FakeMediaReader reader;
     reader.result = {RecognitionMedia(QStringLiteral("D:/Old"))};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
     controller.reload();
     controller.SelectMedia(42);
     QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
@@ -1331,10 +1341,11 @@ void HomeScreenControllerTests::keepsModelsAndSelectionUnchangedWhenPersistingSe
     media.ConsumedChapters = 5;
     media.PersonalScore = 7;
     reader.result = {media};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     writer.failure = QStringLiteral("disk unavailable");
     HomeScreenController controller(reader);
-    controller.SetPersonalListMediaWriter(&writer);
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
     controller.reload();
     controller.SelectMedia(media.Id);
 

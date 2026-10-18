@@ -108,31 +108,6 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
     return true;
 }
 
-bool SqliteMediaRepository::updatePersonalListMedia(const Media &media, QString &error) {
-    error.clear();
-    if (!database_.isOpen()) {
-        error = QStringLiteral("SQLite database is not open.");
-        return false;
-    }
-    QString updatePersonalListQuery;
-    if (!SqlQueryStore::loadSource(SqliteQueries::UpdatePersonalListMedia, updatePersonalListQuery, error, logger_)) {
-        return false;
-    }
-    QSqlQuery query(database_);
-    if (!query.prepare(updatePersonalListQuery)) {
-        error = query.lastError().text();
-        return false;
-    }
-    SqliteMediaMapper::BindPersonalListUpdate(query, media);
-    if (!query.exec() || query.numRowsAffected() != 1) {
-        error = query.lastError().text();
-        if (error.isEmpty()) error = QStringLiteral("Local media record was not found.");
-        if (logger_) logger_->error(LogCategory::Database, error);
-        return false;
-    }
-    return true;
-}
-
 bool SqliteMediaRepository::reconcileAuthoritativeSnapshot(
     const QSet<int> &observedMediaIds, const QSet<int> &excludedMediaIds,
     int &removedCount, QString &error) {

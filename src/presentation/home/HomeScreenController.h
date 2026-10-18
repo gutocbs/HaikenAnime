@@ -13,7 +13,6 @@
 
 class ILocalEpisodeReader;
 class ILocalFileOpener;
-class IPersonalListMediaWriter;
 class PersonalListChangeService;
 
 class HomeMediaModel final : public QAbstractListModel {
@@ -161,7 +160,6 @@ public:
     void ConfigureCardStatusPresentation(CardStatusPresentation presentation);
     void ConfigurePreferredTitle(QString key);
     void SetLocalEpisodeServices(ILocalEpisodeReader *episodeReader, ILocalFileOpener *fileOpener);
-    void SetPersonalListMediaWriter(IPersonalListMediaWriter *personalListWriter);
     void SetPersonalListChangeService(PersonalListChangeService *personalListChangeService);
     void RefreshLocalEpisode();
 
@@ -231,7 +229,6 @@ private:
     bool hasSelection_ = false;
     ILocalEpisodeReader *episodeReader_ = nullptr;
     ILocalFileOpener *fileOpener_ = nullptr;
-    IPersonalListMediaWriter *personalListWriter_ = nullptr;
     PersonalListChangeService *personalListChangeService_ = nullptr;
     int nextLocalEpisode_ = 0;
     int availableLocalEpisodeCount_ = 0;

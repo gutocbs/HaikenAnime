@@ -183,6 +183,7 @@ void SqliteRepositoryTests::personalListUpdatePersistsEditorFieldsWithoutOverwri
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     SqliteMediaRepository repository(database.connection());
+    SqlitePersonalListChangeWriter editor(database.connection());
 
     Media existing;
     existing.Id = 80;
@@ -203,7 +204,7 @@ void SqliteRepositoryTests::personalListUpdatePersistsEditorFieldsWithoutOverwri
     edited.ListStatus = UserListStatus::Completed;
     edited.LocalPath = QStringLiteral("D:\\Anime\\edited.mkv");
     edited.AlternativeNames = {QStringLiteral("Edited title"), QStringLiteral("Localized title")};
-    QVERIFY2(repository.updatePersonalListMedia(edited, error), qPrintable(error));
+    QVERIFY2(editor.save(edited, {}, error), qPrintable(error));
 
     QList<Media> actual;
     QVERIFY2(repository.readAll(actual, error), qPrintable(error));
@@ -810,6 +811,7 @@ void SqliteRepositoryTests::editorUpdateStillReplacesAndRemovesAlternativeNames(
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     SqliteMediaRepository repository(database.connection());
+    SqlitePersonalListChangeWriter editor(database.connection());
 
     Media media;
     media.Id = 6;
@@ -819,7 +821,7 @@ void SqliteRepositoryTests::editorUpdateStillReplacesAndRemovesAlternativeNames(
     QVERIFY2(repository.upsert({media}, error), qPrintable(error));
 
     media.AlternativeNames = {QStringLiteral("Keep")};
-    QVERIFY2(repository.updatePersonalListMedia(media, error), qPrintable(error));
+    QVERIFY2(editor.save(media, {}, error), qPrintable(error));
 
     QList<Media> actual;
     QVERIFY2(repository.readAll(actual, error), qPrintable(error));
@@ -832,13 +834,14 @@ void SqliteRepositoryTests::editedLocalPathSurvivesSynchronizationUpsertWithEmpt
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     SqliteMediaRepository repository(database.connection());
+    SqlitePersonalListChangeWriter editor(database.connection());
     Media media;
     media.Id = 81;
     media.Name = QStringLiteral("Folder media");
     QString error;
     QVERIFY2(repository.upsert({media}, error), qPrintable(error));
     media.LocalPath = QStringLiteral("D:/Anime/Folder media");
-    QVERIFY2(repository.updatePersonalListMedia(media, error), qPrintable(error));
+    QVERIFY2(editor.save(media, {}, error), qPrintable(error));
 
     QList<Media> afterEdit;
     QVERIFY2(repository.readAll(afterEdit, error), qPrintable(error));

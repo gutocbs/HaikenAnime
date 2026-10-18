@@ -143,7 +143,6 @@ int main(int argc, char *argv[]) {
     HomeScreenController homeController(context.mediaRepository.get(), context.coverCoordinator.get(),
                                         context.userPreferences.coverQuality, context.initializationError);
     homeController.SetLocalEpisodeServices(context.localEpisodeReader.get(), context.localFileOpener.get());
-    homeController.SetPersonalListMediaWriter(context.mediaRepository.get());
     homeController.SetPersonalListChangeService(context.personalListChangeService.get());
     if (context.personalListChangeService && context.adaptiveSync) {
         context.personalListChangeService->setPendingChangesNotifier(
@@ -153,8 +152,7 @@ int main(int argc, char *argv[]) {
                 }
             });
     }
-    SeasonalPersonalListService personalLists(context.mediaRepository.get(), context.mediaRepository.get(),
-                                              context.mediaRepository.get(), context.personalListChangeService.get());
+    SeasonalPersonalListService personalLists(context.mediaRepository.get(), context.personalListChangeService.get());
     SeasonalCatalogController seasonalCatalogController(context.seasonalCatalogCoordinator.get(),
                                                         context.userPreferences.coverQuality,
                                                         context.userPreferences.preferredTitleKey, nullptr,
