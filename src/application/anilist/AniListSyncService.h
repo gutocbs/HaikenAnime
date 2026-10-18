@@ -2,7 +2,6 @@
 #define HAIKENANIME_ANILIST_SYNCSERVICE_H
 
 #include "../media/IMediaWriter.h"
-#include "../media/IMediaSnapshotReconciler.h"
 #include "../media/MediaPage.h"
 #include "../media/MediaSyncFilter.h"
 #include "IAniListDataSource.h"
@@ -12,7 +11,6 @@
 
 #include <functional>
 
-class AniListPendingChangeProcessor;
 class AniListPendingChangeReconciler;
 
 struct AniListSyncOutcome final {
@@ -25,15 +23,14 @@ public:
     using CheckpointCommitter = std::function<bool(int confirmedPage, QString &error)>;
     using CancellationProbe = std::function<bool()>;
     using ProgressReporter = std::function<void(int processedItems)>;
-    /** Creates a synchronization service from a data source and media repository. */
-    AniListSyncService(IAniListDataSource &dataSource, IMediaWriter &mediaWriter,
-                       IMediaSnapshotReconciler *snapshotReconciler = nullptr,
-                       AniListPendingChangeProcessor *pendingProcessor = nullptr,
-                       int timeoutMs = 0,
+    /**
+     * Creates a synchronization service from a data source and media repository. pendingReconciler, when
+     * given, reconciles local pending changes with each page before it is persisted.
+     */
+    AniListSyncService(IAniListDataSource &dataSource, IMediaWriter &mediaWriter, int timeoutMs = 0,
                        AniListPendingChangeReconciler *pendingReconciler = nullptr)
-        : dataSource_(dataSource), mediaWriter_(mediaWriter),
-          snapshotReconciler_(snapshotReconciler), pendingProcessor_(pendingProcessor),
-          pendingReconciler_(pendingReconciler), timeoutMs_(timeoutMs) {
+        : dataSource_(dataSource), mediaWriter_(mediaWriter), pendingReconciler_(pendingReconciler),
+          timeoutMs_(timeoutMs) {
     }
 
     /** Fetches and persists every page of the request, starting at its page. */
@@ -49,8 +46,6 @@ public:
 private:
     IAniListDataSource &dataSource_;
     IMediaWriter &mediaWriter_;
-    IMediaSnapshotReconciler *snapshotReconciler_;
-    AniListPendingChangeProcessor *pendingProcessor_;
     AniListPendingChangeReconciler *pendingReconciler_;
     int timeoutMs_;
     AniListSyncErrorCategory lastErrorCategory_ = AniListSyncErrorCategory::None;

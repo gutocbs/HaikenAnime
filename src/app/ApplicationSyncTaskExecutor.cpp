@@ -157,8 +157,7 @@ void ApplicationSyncTaskExecutor::Execute(const SyncTaskState &state, const qint
                         SqlitePendingChangeRepository pendingChanges(database.connection());
                         AniListPendingChangeReconciler pendingReconciler(
                             pendingChanges, authenticatedUserList_.auditLogger);
-                        AniListSyncService service(userListSource, mediaRepository, nullptr,
-                                                    nullptr, timeoutMs_, &pendingReconciler);
+                        AniListSyncService service(userListSource, mediaRepository, timeoutMs_, &pendingReconciler);
                         UserPreferences preferences;
                         bool found = false;
                         SqliteUserPreferencesRepository preferencesRepository(database.connection());

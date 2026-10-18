@@ -1,5 +1,4 @@
 #include "AniListSyncService.h"
-#include "AniListPendingChangeProcessor.h"
 #include "AniListPendingChangeReconciler.h"
 #include "AniListSyncErrorClassifier.h"
 
@@ -27,7 +26,6 @@ bool AniListSyncService::synchronize(const AniListDataSourceRequest &request, QS
         return false;
     }
     AniListDataSourceRequest pageRequest = request;
-    bool receivedCompleteAuthoritativeSnapshot = false;
     QList<int> synchronizedMediaIds;
     QSet<int> seenMediaIds;
     QSet<int> observedMediaIds;
@@ -97,8 +95,6 @@ bool AniListSyncService::synchronize(const AniListDataSourceRequest &request, QS
 
         if (progressReporter_) progressReporter_(static_cast<int>(synchronizedMediaIds.size()));
 
-        receivedCompleteAuthoritativeSnapshot = receivedCompleteAuthoritativeSnapshot
-            || sourceResult.isCompleteAuthoritativeSnapshot;
         observedMediaIds.unite(sourceResult.observedMediaIds);
         if (isFirstPage) {
             firstPageWasCompleteSnapshot = sourceResult.isCompleteAuthoritativeSnapshot;
@@ -122,33 +118,6 @@ bool AniListSyncService::synchronize(const AniListDataSourceRequest &request, QS
     observedMediaIds.unite(seenMediaIds);
     lastOutcome_.observedMediaIds = observedMediaIds;
 
-    if (pendingProcessor_ != nullptr) {
-        for (const int mediaId : synchronizedMediaIds) {
-            if (isCancelled && isCancelled()) {
-                error = QStringLiteral("AniList synchronization cancelled.");
-                lastErrorCategory_ = AniListSyncErrorCategory::Cancelled;
-                return false;
-            }
-            if (HasTimedOut(timer, timeoutMs_)) {
-                error = QStringLiteral("AniList synchronization timed out.");
-                lastErrorCategory_ = AniListSyncErrorCategory::Timeout;
-                return false;
-            }
-            if (!pendingProcessor_->process(mediaId, error)) {
-                lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
-                return false;
-            }
-        }
-    }
-    if (request.filter.startingPage == 1 && receivedCompleteAuthoritativeSnapshot
-        && snapshotReconciler_ != nullptr) {
-        int removedCount = 0;
-        if (!snapshotReconciler_->reconcileAuthoritativeSnapshot(
-                observedMediaIds, {}, removedCount, error)) {
-            lastErrorCategory_ = AniListSyncErrorClassifier::Classify(error);
-            return false;
-        }
-    }
     // Only a run that finished every chunk without error, cancellation or timeout is complete.
     lastOutcome_.completeSnapshot = request.filter.startingPage == 1 && firstPageWasCompleteSnapshot;
     return true;
