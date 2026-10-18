@@ -100,6 +100,7 @@ private slots:
     void nativeButtonsAreNotUsed();
     void nativeInputsAreNotUsed();
     void settingsListsEveryLibraryFolder();
+    void settingsHasNoDownloadsSection();
     void appButtonVariantsExist();
     void syncProgressBarUsesAniListColor();
     void mainWindowStartsMaximized();
@@ -223,6 +224,14 @@ void QmlStructureTests::settingsListsEveryLibraryFolder() {
     QVERIFY(source.contains(QStringLiteral("controller.RemoveLibraryRoot(folderField.index)")));
     QVERIFY(source.contains(QStringLiteral("controller.SetLibraryRoot(folderField.index, text)")));
     QVERIFY(!source.contains(QStringLiteral("PASTA PRINCIPAL DA BIBLIOTECA")));
+}
+
+void QmlStructureTests::settingsHasNoDownloadsSection() {
+    // Downloads are out of the project's scope; the settings menu must not offer them.
+    const QString source = qmlSource(QStringLiteral("SettingsScreen.qml"));
+    QVERIFY(!source.isEmpty());
+    QVERIFY(!source.contains(QStringLiteral("key: \"downloads\"")));
+    QVERIFY(!source.contains(QStringLiteral("downloadsContent")));
 }
 
 void QmlStructureTests::appButtonVariantsExist() {

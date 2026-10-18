@@ -38,8 +38,6 @@ Item {
           title: qsTr("Reprodutores e plugins"), description: qsTr("Configure o mpv e o Plex para reconhecer automaticamente os episódios assistidos.") },
         { key: "filters", label: qsTr("Filtros e listas"), eyebrow: qsTr("ORGANIZAÇÃO"),
           title: qsTr("Filtros e listas"), description: qsTr("Escolha quais estados participam das visualizações e automações da biblioteca.") },
-        { key: "downloads", label: qsTr("Downloads"), eyebrow: qsTr("DOWNLOADS"),
-          title: qsTr("Downloads"), description: qsTr("Prepare preferências de torrent, qualidade, legendas e destino dos arquivos.") },
         { key: "appearance", label: qsTr("Aparência"), eyebrow: qsTr("INTERFACE"),
           title: qsTr("Aparência"), description: qsTr("Personalize a leitura da interface com opções de tema, fonte e capas.") },
         { key: "history", label: qsTr("Histórico"), eyebrow: qsTr("ATIVIDADE"),
@@ -298,7 +296,6 @@ Item {
                                            : activeSection === "library" ? libraryContent
                                            : activeSection === "plugins" ? pluginsContent
                                            : activeSection === "filters" ? filtersContent
-                                           : activeSection === "downloads" ? downloadsContent
                                            : activeSection === "appearance" ? appearanceContent
                                            : historyContent
                         }
@@ -797,27 +794,6 @@ Item {
                     checked: controller.includeAdultContent
                     onToggled: function(checked) { controller.SetIncludeAdultContent(checked) }
                 }
-            }
-        }
-    }
-
-    Component {
-        id: downloadsContent
-        ColumnLayout {
-            spacing: 16
-            SectionCard {
-                Label { text: qsTr("Downloads automáticos"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
-                SettingSwitch { enabled: false; title: qsTr("Ativar downloads automáticos"); description: qsTr("Disponível em uma etapa futura.") }
-                GridLayout { Layout.fillWidth: true; columns: 2; columnSpacing: 12
-                    StaticField { label: qsTr("Qualidade preferida"); value: "1080p" }
-                    StaticField { label: qsTr("Legenda preferida"); value: qsTr("Português") }
-                }
-                StaticField { label: qsTr("Pasta de destino"); value: qsTr("Nenhuma pasta selecionada") }
-            }
-            SectionCard {
-                Label { text: qsTr("Fontes"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
-                StaticField { label: qsTr("Feed geral"); value: qsTr("Nenhuma fonte configurada") }
-                StaticField { label: qsTr("Feed específico por título"); value: qsTr("Nenhuma fonte configurada") }
             }
         }
     }
