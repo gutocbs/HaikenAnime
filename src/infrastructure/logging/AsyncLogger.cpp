@@ -145,3 +145,14 @@ void AsyncLogger::pruneOldFiles() const {
         }
     }
 }
+
+std::function<void(const QString &)> LogSink(AsyncLogger *logger, const LogCategory category, const LogLevel level) {
+    return [logger, category, level](const QString &message) {
+        if (!logger) return;
+        switch (level) {
+        case LogLevel::Info: logger->info(category, message); break;
+        case LogLevel::Warning: logger->warning(category, message); break;
+        case LogLevel::Error: logger->error(category, message); break;
+        }
+    };
+}

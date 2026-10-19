@@ -65,9 +65,7 @@ int main(int argc, char *argv[]) {
     auto context = createApplicationContext();
     AniListOAuthCallbackReceiver oauthCallbackReceiver(
         QStringLiteral("HaikenAnime.AniListOAuthCallback"));
-    oauthCallbackReceiver.setAuditLogger([logger = context.logger.get()](const QString &event) {
-        if (logger) logger->info(LogCategory::Application, event);
-    });
+    oauthCallbackReceiver.setAuditLogger(LogSink(context.logger.get(), LogCategory::Application));
     const auto initialOAuthCallback = AniListOAuthCallbackReceiver::callbackFromArguments(app.arguments());
     if (initialOAuthCallback.has_value()) {
         QString callbackReceiverError;
@@ -309,9 +307,7 @@ int main(int argc, char *argv[]) {
                 settingsController.ApplyExternalLastAniListUserId(userId);
                 return true;
             },
-            [logger = context.logger.get()](const QString &event) {
-                if (logger) logger->info(LogCategory::Application, event);
-            });
+            LogSink(context.logger.get(), LogCategory::Application));
         settingsController.SetAniListAccountRemoval(removeAniListAccount.get());
     }
     // Accounts connected before this release (or loaded from the secret store) must also be remembered.
@@ -365,9 +361,7 @@ int main(int argc, char *argv[]) {
             *recognition.history, *context.mediaRepository);
         nowWatchingController = std::make_unique<NowWatchingController>(
             recognition.recognition->activeSessions(), *context.mediaRepository,
-            [logger = context.logger.get()](const QString &message) {
-                if (logger) logger->warning(LogCategory::Application, message);
-            });
+            LogSink(context.logger.get(), LogCategory::Application, LogLevel::Warning));
         nowWatchingController->ConfigurePreferredTitle(context.userPreferences.preferredTitleKey);
         nowWatchingController->SetCoverSource([&homeController](const int mediaId) {
             return homeController.fullMediaModel()->CoverSource(mediaId);

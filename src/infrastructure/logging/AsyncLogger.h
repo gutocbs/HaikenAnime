@@ -7,6 +7,8 @@
 #include <QThread>
 #include <QWaitCondition>
 
+#include <functional>
+
 enum class LogLevel { Info, Warning, Error };
 enum class LogCategory { Application, Configuration, Database, Migration, QueryStore, Sync, Covers, LocalLibrary };
 
@@ -50,5 +52,10 @@ private:
     bool running_ = false;
     bool stopping_ = false;
 };
+
+/// Callback writing each message to logger at level, for components that take a plain logging function.
+/// Does nothing when logger is null.
+[[nodiscard]] std::function<void(const QString &)> LogSink(AsyncLogger *logger, LogCategory category,
+                                                         LogLevel level = LogLevel::Info);
 
 #endif // HAIKENANIME_ASYNCLOGGER_H

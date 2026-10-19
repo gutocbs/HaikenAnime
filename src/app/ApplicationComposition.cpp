@@ -99,12 +99,8 @@ void composeEpisodeRecognition(ApplicationContext &context) {
         {.connection = context.database->connection(),
          .mediaReader = context.mediaRepository.get(),
          .changes = context.personalListChangeService.get(),
-         .diagnostics = [logger = context.logger.get()](const QString &message) {
-             if (logger) logger->warning(LogCategory::Application, message);
-         },
-         .info = [logger = context.logger.get()](const QString &message) {
-             if (logger) logger->info(LogCategory::Application, message);
-         },
+         .diagnostics = LogSink(context.logger.get(), LogCategory::Application, LogLevel::Warning),
+         .info = LogSink(context.logger.get(), LogCategory::Application),
          .progressApplied = [listener = context.recognitionProgressListener](const Media &media) {
              if (*listener) (*listener)(media);
          }});
@@ -214,9 +210,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         *context.coverCoordinator, *context.coverTemporaryStore);
     context.aniListSecretStore = std::make_unique<WindowsCredentialStore>();
     context.aniListAuthManager = std::make_unique<AniListAuthManager>(*context.aniListSecretStore);
-    context.aniListAuthManager->setAuditLogger([logger = context.logger.get()](const QString &event) {
-        if (logger) logger->info(LogCategory::Application, event);
-    });
+    context.aniListAuthManager->setAuditLogger(LogSink(context.logger.get(), LogCategory::Application));
     QString credentialsError;
     static_cast<void>(context.aniListAuthManager->load(credentialsError));
     if (!settings.aniList.oauthClientId.trimmed().isEmpty()
@@ -226,9 +220,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
                                                   settings.aniList.oauthRedirectUri);
         context.aniListNetworkManager = std::make_unique<QNetworkAccessManager>();
         const AniListGraphQlClient::Diagnostics oauthDiagnostics{
-            .log = [logger = context.logger.get()](const QString &event) {
-                if (logger) logger->info(LogCategory::Sync, event);
-            }};
+            .log = LogSink(context.logger.get(), LogCategory::Sync)};
         context.aniListGraphQlClient = std::make_unique<AniListGraphQlClient>(
             *context.aniListNetworkManager, context.aniListAuthManager.get(),
             QUrl(settings.aniList.endpoint), settings.http.timeoutMs,
@@ -246,9 +238,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         [authProvider] { return authProvider ? authProvider->credentials() : AniListCredentials{}; },
         settings.aniList.userListPerChunk, settings.http.timeoutMs, settings.http.maxRetries,
         settings.http.retryDelayMs,
-        [logger = context.logger.get()](const QString &event) {
-            if (logger) logger->info(LogCategory::Sync, event);
-        }};
+        LogSink(context.logger.get(), LogCategory::Sync)};
     context.adaptiveSync = std::make_unique<AdaptiveSyncRuntime>(
         [synchronizationDatabasePath](QString &error) -> std::unique_ptr<ISyncTaskStateRepository> {
             auto database = std::make_unique<SqliteDatabase>(synchronizationDatabasePath);
@@ -264,9 +254,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         }, settings.syncTaskPolicies);
     context.seasonalNetworkManager = std::make_unique<QNetworkAccessManager>();
     const AniListGraphQlClient::Diagnostics seasonalDiagnostics{
-        .log = [logger = context.logger.get()](const QString &event) {
-            if (logger) logger->info(LogCategory::Sync, event);
-        }};
+        .log = LogSink(context.logger.get(), LogCategory::Sync)};
     context.seasonalGraphQlClient = std::make_unique<AniListGraphQlClient>(
         *context.seasonalNetworkManager, nullptr, QUrl(settings.aniList.endpoint), settings.http.timeoutMs,
         settings.http.maxRetries, settings.http.retryDelayMs, seasonalDiagnostics);
