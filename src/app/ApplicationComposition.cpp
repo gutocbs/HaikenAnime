@@ -282,3 +282,17 @@ bool scheduleStartupLibraryScan(ApplicationContext &context, QObject *lifetime) 
     });
     return true;
 }
+
+bool UpdateUserPreferences(ApplicationContext &context, const std::function<void(UserPreferences &)> &change,
+                           QString &error) {
+    error.clear();
+    if (!context.userPreferencesRepository) {
+        error = QStringLiteral("User preferences are unavailable.");
+        return false;
+    }
+    UserPreferences updated = context.userPreferences;
+    change(updated);
+    if (!context.userPreferencesRepository->replace(updated, error)) return false;
+    context.userPreferences = std::move(updated);
+    return true;
+}

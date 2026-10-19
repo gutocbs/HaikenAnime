@@ -29,34 +29,6 @@ namespace {
 constexpr qint64 AdaptiveSyncShutdownTimeoutMs = 5'000;
 }
 
-bool persistHomeSortPreference(ApplicationContext &context, const QString &key, QString &error) {
-    error.clear();
-    if (!context.userPreferencesRepository) {
-        error = QStringLiteral("Home ordering preferences are unavailable.");
-        return false;
-    }
-
-    UserPreferences updated = context.userPreferences;
-    updated.homeSortKey = key;
-    if (!context.userPreferencesRepository->replace(updated, error)) return false;
-    context.userPreferences = std::move(updated);
-    return true;
-}
-
-bool persistLastAniListUserId(ApplicationContext &context, const qint64 userId, QString &error) {
-    error.clear();
-    if (!context.userPreferencesRepository) {
-        error = QStringLiteral("User preferences are unavailable.");
-        return false;
-    }
-
-    UserPreferences updated = context.userPreferences;
-    updated.lastAniListUserId = userId;
-    if (!context.userPreferencesRepository->replace(updated, error)) return false;
-    context.userPreferences = std::move(updated);
-    return true;
-}
-
 int main(int argc, char *argv[]) {
     QGuiApplication app(argc, argv);
     app.setWindowIcon(QIcon(QStringLiteral(":/icons/HaikenAnime.png")));
@@ -228,7 +200,7 @@ int main(int argc, char *argv[]) {
     QObject::connect(&homeController, &HomeScreenController::sortPreferenceChanged,
                      [&context, &settingsController](const QString &key) {
         QString error;
-        if (persistHomeSortPreference(context, key, error)) {
+        if (UpdateUserPreferences(context, [&key](UserPreferences &preferences) { preferences.homeSortKey = key; }, error)) {
             settingsController.ApplyExternalHomeSortKey(key);
         } else if (context.logger) {
             context.logger->warning(LogCategory::Configuration, error);
@@ -278,7 +250,7 @@ int main(int argc, char *argv[]) {
             context.userPreferences.lastAniListUserId);
         if (userId <= 0) return;
         QString error;
-        if (persistLastAniListUserId(context, userId, error)) {
+        if (UpdateUserPreferences(context, [userId](UserPreferences &preferences) { preferences.lastAniListUserId = userId; }, error)) {
             settingsController.ApplyExternalLastAniListUserId(userId);
         } else if (context.logger) {
             context.logger->warning(LogCategory::Configuration, error);
@@ -303,7 +275,11 @@ int main(int argc, char *argv[]) {
             *context.aniListAuthManager,
             [&context, &settingsController](const qint64 userId, QString &error) {
                 // Edits made offline after the removal still belong to the removed account.
-                if (!persistLastAniListUserId(context, userId, error)) return false;
+                if (!UpdateUserPreferences(context, [userId](UserPreferences &preferences) {
+                        preferences.lastAniListUserId = userId;
+                    }, error)) {
+                    return false;
+                }
                 settingsController.ApplyExternalLastAniListUserId(userId);
                 return true;
             },

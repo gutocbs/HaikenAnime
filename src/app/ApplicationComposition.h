@@ -1,6 +1,7 @@
 #ifndef HAIKENANIME_APPLICATIONCOMPOSITION_H
 #define HAIKENANIME_APPLICATIONCOMPOSITION_H
 
+#include <functional>
 #include <memory>
 #include <optional>
 
@@ -94,5 +95,8 @@ struct ApplicationCompositionOptions final {
 [[nodiscard]] ApplicationContext createApplicationContext(const ApplicationCompositionOptions &options);
 // Call only after the settings controller and QML have been initialized.
 bool scheduleStartupLibraryScan(ApplicationContext &context, QObject *lifetime);
+/// Applies change to a copy of the user preferences and stores it; on success the copy becomes current.
+bool UpdateUserPreferences(ApplicationContext &context, const std::function<void(UserPreferences &)> &change,
+                           QString &error);
 
 #endif // HAIKENANIME_APPLICATIONCOMPOSITION_H
