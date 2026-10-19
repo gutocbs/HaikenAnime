@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `921c631` (`feature/revisao-geral`)
-- **Status:** aguardando aprovação — nenhuma alteração aplicada
+- **Status:** aprovado (com as duas recomendações) e aplicado — aguardando build e `update_translations`
 
 ---
 
@@ -83,3 +83,50 @@ P11-03 (teste novo, commit próprio) → P11-01 → P11-04 → P11-02 → P11-05
    `appButtonVariantsExist`, `syncProgressBarUsesAniListColor` e vários outros. A alternativa é mantê-los e
    ajustá-los aos novos textos a cada mudança.
 2. **P11-02 (Theme singleton)**: recomendo fazer. A alternativa é deixar a paleta copiada.
+
+---
+
+## 7. Aplicação
+
+| Item | Commit |
+| --- | --- |
+| P11-03 `QmlScreensLoadTests` (antes das mudanças) | `9f5097e` |
+| P11-01 propriedades QML sem uso | `ee7ddb0` |
+| P11-04 retratos de texto e o duplicado | `64cffc5` |
+| P11-02 paleta única (`Theme.qml`) | `d552bbf` |
+| P11-05 `.ts` regenerados | pendente: alvo `update_translations`, rodado pelo revisor |
+
+### Mudança na aplicação do P11-02: componente em vez de *singleton*
+Um *singleton* QML só é reconhecido com uma entrada `singleton` no `qmldir`, e esse arquivo só existe no
+módulo gerado pelo build. Os testes de QML carregam os arquivos direto de `resources/qml`, onde o
+`Theme.ink` de um *singleton* não resolveria. `Theme.qml` virou um `QtObject` comum, e cada arquivo cria a
+própria instância (`readonly property Theme theme: Theme {}`, uma linha). O objetivo se mantém: a paleta
+existe em um lugar só e o repasse pai → filho sumiu (−~120 linhas em 15 arquivos). Os valores são os mesmos
+de antes. A troca foi feita por script, só em código QML (strings e comentários intactos).
+
+### Testes apagados (P11-04)
+- Duplicado (critério **b**): `scanExtensionGridUsesItsAvailableWidth`.
+- Retratos de texto (critério **c**), em `QmlStructureTests`: `settingsModeUsesNarrowMinimumWidth`,
+  `browseControlsShowConfiguredLabelsAfterInitialization`, `homeRestoresListFilterSelectionAfterReturningFromSettings`,
+  `homeErrorDetailStaysWithSynchronizationStatus`, `screensReadSynchronizationFromDedicatedStatusController`,
+  `mediaCardAndSettingsUseControllerPreparedCardPresentation`, `previewCardsUseControllerPreparedMetadataInBothGrids`,
+  `compactDetailsUseSeparatePreviewMetadata`, `compactDetailsAreReadOnlyAndSelectable`,
+  `browseControlsClearFocusWithoutResettingCriteria`, `completeLibraryStaysOpenOutsideExplicitCloseAction`,
+  `externalLinksUseVisibleInteractiveButtonStates`, `completeLibraryAllowsInteractionWithDetailsActions`,
+  `coverPreviewReusesSelectedCoverSourceWithoutRequestingDownloads`, `preferredTitleSelectionUsesBackendOptions`,
+  `seasonalCatalogRequiresExplicitFiltersAndHasResponsiveContent`, `seasonalCatalogPublishesCardsOnlyAfterResultsAreReady`,
+  `secondaryScreenNavigationMatchesLibraryHeaderPlacement`, `settingsHeaderReservesMessageSpaceAfterSaveAction`,
+  `settingsAccountSectionUsesAniListAuthenticationControllerState`,
+  `seasonalDetailsKeepAddAndEditFlowsExplicitAndStatusGated`, `homeEditorOffersConfirmedRemovalFromPersonalList`,
+  `mainKeepsSeasonalCatalogAsSeparateNavigation`, `localCacheCleanupStaysInLibrarySettingsAndUsesControllerState`,
+  `settingsListsEveryLibraryFolder`, `settingsHasNoDownloadsSection`, `appButtonVariantsExist`,
+  `syncProgressBarUsesAniListColor`, `mainWindowStartsMaximized`; em `QmlRecognitionStructureTests`:
+  `recognitionScreenIsNotAConfirmationQueue`, `settingsScreenHostsPluginsAndHistory`,
+  `nowWatchingScreenShowsEmptyMessageAndUnassociatedLabel`, `homeButtonIsRightOfSettingsAndGuarded`,
+  `mainHasNowWatchingPage`, `nowWatchingUsesHomeLayoutAndAnimeDetailsButton`.
+- Ficaram 12: os 5 que carregam QML e as 7 regras gerais (lista na seção 3).
+
+### Nota sobre o `QmlScreensLoadTests`
+O teste foi escrito antes das mudanças, mas o primeiro build é o deste conjunto. Se ele falhar, o aviso de
+QML apontado (arquivo e linha na mensagem) pode já existir hoje; nesse caso o corrijo antes de seguir, sem
+afrouxar o teste.

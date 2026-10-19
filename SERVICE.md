@@ -408,6 +408,9 @@ Para adicionar uma migração:
 - O QML não decide regras: recebe dados prontos (rótulos, *flags* `can*`, opções de combo).
 - Componentes próprios (`AppButton`, `AppTextField`, `AppSpinBox`, `AppComboBox`) em vez dos controles
   nativos; parâmetros de sinal sempre declarados (`onToggled: function(checked) { … }`).
+- Cores só pelo `Theme.qml`: cada arquivo declara `readonly property Theme theme: Theme {}` e usa
+  `theme.ink`, `theme.accent`… Nada de copiar a paleta nem repassá-la de pai para filho. Cores próprias de um
+  componente (por exemplo, o azul do AniList na barra de sync) ficam no componente.
 - Novos botões de cabeçalho/barra entram **à direita**, com um único ponto de entrada por feature.
 - Todo texto visível em `qsTr()`; após mudar textos, atualizar os `.ts` (alvo `update_translations`).
 
@@ -443,8 +446,11 @@ Para adicionar uma migração:
 - Persistência sempre em **banco temporário** (`QTemporaryDir`); nunca o banco real do usuário.
 - Rede e players nunca reais: fixtures em `tests/fixtures/` e transportes/HTTP falsos
   (ex.: `PlexTestSupport.h`, transporte mpv falso).
-- Testes de QML (`QmlStructureTests`, `QmlRecognitionStructureTests`) carregam os arquivos de
-  `resources/qml` com controllers falsos.
+- Testes de QML carregam os arquivos de `resources/qml` direto da pasta: `QmlScreensLoadTests` monta Home,
+  catálogo e Configurações com os controllers reais sobre *fakes* e falha em qualquer aviso de QML;
+  `QmlRecognitionStructureTests` e `QmlStructureTests` carregam as telas de reconhecimento e a grade de
+  extensões, e guardam as regras gerais (sem controles nativos, parâmetros de sinal declarados, sem
+  segredos/rede/timers no QML). Não se testa o **texto** do QML.
 - Nome do teste descreve comportamento e resultado esperado (`deletionRequiresConfirmation`); um
   comportamento por teste; cobrir erros e cancelamentos, não só o caminho feliz.
 - Toda mudança concluída tem teste correspondente; rode a suíte afetada e depois o `ctest` completo.
