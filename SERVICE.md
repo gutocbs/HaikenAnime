@@ -22,8 +22,8 @@ HaikenAnime é um aplicativo desktop (Qt 6 / QML, Windows) para organizar uma bi
 | **Catálogo sazonal** | Navega pelo catálogo de uma temporada no AniList (sem login) e permite adicionar/editar mídias na lista pessoal. |
 | **Capas** | Baixa, valida e mantém em cache (disco + SQLite) as capas em três qualidades. |
 | **Biblioteca local** | Varre pastas configuradas, registra os arquivos de vídeo, reconhece título/temporada/episódio com Anitomy e associa à mídia do catálogo. Permite "assistir próximo episódio". |
-| **Reconhecimento de episódios** | Plugins de player (**mpv** via IPC e **Plex** via API) observam a reprodução; ao completar um episódio o progresso é atualizado automaticamente e entra no outbox. Telas de histórico de reconhecimento e "Assistindo agora". |
-| **Configurações** | Preferências do usuário (pastas, extensões, escala de nota, qualidade de capa, idioma, título preferido, listas sincronizadas, conteúdo adulto, …), configurações dinâmicas de plugins, limpeza de cache. |
+| **Reconhecimento de episódios** | Plugins de player (**mpv** via IPC e **Plex** via API) observam a reprodução; ao completar um episódio o progresso é atualizado automaticamente e entra no outbox. Telas "Histórico de atualizações" (reconhecimentos e edições manuais) e "Assistindo agora". |
+| **Configurações** | Preferências do usuário (pastas, extensões, escala de nota, qualidade de capa, idioma, título preferido, listas sincronizadas, conteúdo adulto, …), configurações dinâmicas de plugins, limpeza de cache, pasta de logs. |
 | **Idiomas** | Interface em pt-BR e en (Qt Linguist). |
 
 Princípio central: **o banco local é sempre a fonte exibida**. A janela abre com os dados persistidos e a
@@ -58,14 +58,18 @@ Estrutura do build:
 - Queries SQL, GraphQL e migrações entram por `GLOB` e são expostas pelo nome do arquivo
   (`:/sqlite/queries/<arquivo>.sql`); criar um arquivo novo não exige mexer no CMake (basta reconfigurar).
 - O `POST_BUILD` só copia plugins (`platforms`, `sqldrivers`), runtime MinGW e DXC. O `windeployqt` roda
-  apenas no `scripts/build-release.ps1`; builds de desenvolvimento carregam o Qt do kit que está no `PATH`.
+  apenas no `scripts/build-release.ps1`, que instala o runtime em `dist/` e também ao lado do executável de
+  `cmake-build-release` (assim ele não carrega outro Qt do `PATH`); builds de desenvolvimento carregam o Qt
+  do kit que está no `PATH`.
+- Traduções: `cmake --build <dir> --target update_translations` roda o `lupdate` nos `.ts` (não compila);
+  o `cmake` precisa estar no `PATH` (por exemplo, `C:/Qt/Tools/CMake_64/bin`).
 
 ---
 
 ## 3. Mapa do repositório
 
 ```text
-main.cpp                  # Entrada: cria o contexto, os controllers, faz a fiação de sinais e carrega o QML
+main.cpp                  # Entrada Qt/QML: app, callback OAuth, tradução, engine; a montagem fica em src/app/
 src/
 ├── domain/               # Entidades e regras puras (sem Qt SQL/QML/rede)
 │   ├── media/            #   Media, MediaType, MediaStatus, UserListStatus, MediaLink
@@ -198,12 +202,16 @@ abrem sua própria conexão (`SqliteDatabase(databasePath)`). Resultados voltam 
 - `HomeScreenController` lê todas as mídias (`IMediaReader::readAll`) e mantém dois `HomeMediaModel`:
   `mediaModel` (filtrado/ordenado) e `fullMediaModel` (biblioteca completa).
 - Filtros, busca e ordenação são aplicados no controller; a ordenação escolhida é salva em
-  `UserPreferences.homeSortKey` (sinal `sortPreferenceChanged` → `main.cpp`).
+  `UserPreferences.homeSortKey` (sinal `sortPreferenceChanged` → `PresentationComposition`).
 - Títulos exibidos seguem `preferredTitleKey` (`MediaTitleResolver`); progresso com total desconhecido é
   exibido como `?` (`FormatProgress`). Rótulos de status/tipo e o mapa do painel de detalhes vêm de
   `presentation/media/MediaPresentation` (um único lugar para todas as telas).
 - Recarrega quando: sync de `UserList` termina, catálogo sazonal salva uma edição, reconhecimento aplica
-  progresso, reconhecimento local persiste um lote.
+  progresso, reconhecimento local persiste um lote. O reload mantém a mídia selecionada (com os dados novos)
+  e só limpa a seleção quando ela sumiu da biblioteca.
+- O cartão mostra "Assistindo" para anime e "Lendo" para mangá/novel na lista em andamento.
+- Quando a mídia tem pasta local reconhecida, o painel de detalhes mostra "Abrir pasta" junto dos links
+  (`selectedLocalFolderUrl`, também no catálogo e em "Assistindo agora").
 
 ### 6.2 Edição da lista pessoal e outbox
 
@@ -215,12 +223,20 @@ abrem sua própria conexão (`SqliteDatabase(databasePath)`). Resultados voltam 
 - Após salvar, o serviço notifica o runtime (`requestNow(PendingChanges)`) se houver token.
 - Remoção: a mídia fica oculta (`personal_list_removed_at`) e uma deleção é enfileirada; sincronizações
   posteriores não a trazem de volta; editar de novo pelo catálogo/editor a re-adiciona.
+- **Histórico das edições manuais**: a Home e o catálogo emitem `personalListEdited(previous, updated)` e a
+  Home `personalListRemoved(media)`; o `PresentationComposition` grava no histórico com origem `manual`
+  (`RecognitionHistoryService::recordManualProgress`/`recordManualRemoval`): aumento de progresso →
+  `MarkedWatched`, diminuição → `ProgressReduced`, remoção → `Removed`. Edição sem mudança de progresso não
+  grava nada. Não é feito no `PersonalListChangeService` porque o progresso reconhecido também passa por ele
+  e já é registrado pelo reconhecimento.
 
 ### 6.3 Sincronização AniList
 
 **Agendamento** (`src/app/AdaptiveSync*`, `src/application/scheduling`):
 
-- Só existem duas partições: `UserList` (intervalo padrão 1 h, prioridade maior) e `PendingChanges` (1 min).
+- Só existem duas partições: `UserList` (intervalo das Configurações, padrão 1 h, prioridade maior) e
+  `PendingChanges` (1 min). Mudar o intervalo (`preferencesApplied` → `AdaptiveSyncRuntime::setNormalInterval`)
+  reagenda a próxima `UserList` a partir do último sucesso.
   O estado de cada uma (`SyncTaskState`: status, próxima execução, falhas, checkpoint de página, geração) é
   persistido em `sync_task_state`; linhas de outros tipos (restos de versões antigas) são ignoradas na leitura.
 - Uma tarefa por vez. `PendingChanges` só roda depois da primeira `UserList` bem-sucedida. Um pedido feito
@@ -241,7 +257,10 @@ abrem sua própria conexão (`SqliteDatabase(databasePath)`). Resultados voltam 
 - `PendingChanges`: adota mudanças sem dono, e `AniListPendingChangeDrain` → `AniListPendingChangeProcessor`
   envia os grupos via `AniListUpdateClient` (mutations GraphQL). Uma mudança só sai da fila após
   confirmação da API; cancelamento devolve a mudança à fila sem contar tentativa. O resultado de cada
-  envio de progresso é refletido no histórico de reconhecimento (`RecognitionSyncFeedback`).
+  envio de progresso e de cada exclusão (o observador recebe as duas) é refletido no histórico
+  (`RecognitionSyncFeedback`): um progresso fecha os `MarkedWatched`/`Corrected` até aquele episódio e todos
+  os `ProgressReduced` da mídia; uma exclusão fecha os `Removed`. O histórico guarda só chaves de erro
+  (`retryable`, `unauthorized`, `rejected`, `persistence`, `unknown`), traduzidas pela tela.
 - Erros são classificados (`AniListSyncErrorClassifier` → `AniListSyncErrorCategory`) para decidir retry.
 
 **Conta** (`AniListAuthManager`, `RemoveAniListAccountUseCase`): login abre o navegador com a URL OAuth, o
@@ -268,7 +287,7 @@ temporários abandonados, e informa contagens e falhas parciais; nunca toca nos 
 ### 6.6 Biblioteca local
 
 1. **Scan** (`LocalLibraryScanCoordinator` + `LocalLibraryScanner` + `QtDirectoryEnumerator`): para cada
-   pasta de `libraryRoots`, enumera arquivos com as extensões configuradas, grava em lotes em `local_files`
+   pasta de `libraryRoots` (nenhuma por padrão: uma instalação nova começa sem pastas), enumera arquivos com as extensões configuradas, grava em lotes em `local_files`
    (registro do scan em `library_scans`) e marca como indisponíveis os arquivos que sumiram — só quando o
    scan da pasta termina bem; uma pasta inacessível não impede as outras. Grava pelo contrato
    `ILocalFileScanRepository`.
@@ -301,7 +320,9 @@ mídia) → `PlaybackObservationService` + `RecognitionPolicy` (reprodução con
   `PluginSettingsService` valida e persiste em `plugin_setting` (segredos no Credential Manager via
   `WindowsPluginSecretStore`); `applyRecognitionSettings` empurra os valores para o runtime.
 - `ActiveSessionRegistry` mantém as sessões em andamento, exibidas por `NowWatchingController`.
-- `EpisodeRecognitionController` + `RecognitionListModel` exibem e apagam o histórico.
+- Uma sessão encerrada antes do tempo mínimo não gera registro.
+- `EpisodeRecognitionController` + `RecognitionListModel` exibem e apagam o histórico (tela "Histórico de
+  atualizações"; registros manuais aparecem com "Manual" no lugar do player).
 
 ### 6.8 Configurações e preferências
 
@@ -309,7 +330,7 @@ mídia) → `PlaybackObservationService` + `RecognitionPolicy` (reprodução con
   catálogo sazonal, sync, retenção de logs e **defaults** de `UserPreferences`.
 - **`UserPreferences`** (tabela `user_preferences`, uma linha): tudo que o usuário altera em
   Configurações. `UserPreferencesValidator` valida antes de salvar.
-- `SettingsController` mantém um *draft*, valida, salva e emite `preferencesApplied`; `main.cpp` repassa as
+- `SettingsController` mantém um *draft*, valida, salva e emite `preferencesApplied`; o `PresentationComposition` repassa as
   novas preferências aos demais controllers.
 
 ### 6.9 Logging
@@ -318,7 +339,8 @@ mídia) → `PlaybackObservationService` + `RecognitionPolicy` (reprodução con
 retenção em dias (`logging.retentionDays`). Níveis `Info`/`Warning`/`Error` e categorias `LogCategory`
 (Application, Configuration, Database, Migration, QueryStore, Sync, Covers,
 LocalLibrary). Camadas internas recebem *callbacks* (`std::function<void(const QString&)>`: `auditLogger`,
-`diagnostics`, `info`) em vez do logger concreto.
+`diagnostics`, `info`) em vez do logger concreto. As Configurações têm "Abrir pasta de logs" no rodapé
+"Suporte" da barra lateral (`SettingsController::OpenLogsFolder`, pasta de `AsyncLogger::logDirectory()`).
 
 **Nunca registrar** tokens, códigos/fragmentos de callback OAuth, tokens Plex ou segredos de plugin.
 
@@ -483,7 +505,8 @@ Mapa rápido de suítes por área:
 **Nova tela**
 1. Controller em `src/presentation/<area>/` (propriedades + `Q_INVOKABLE`), testado em `<Nome>ControllerTests`.
 2. QML em `resources/qml/`, registrado em `qt_add_qml_module`.
-3. Instanciar/conectar em `main.cpp`, expor como context property e adicionar a navegação em `Main.qml`.
+3. Instanciar/conectar em `src/app/PresentationComposition.cpp`, expor em `ExposeToQml` e adicionar a
+   navegação em `Main.qml`.
 
 **Novo plugin de player**: siga o guia [`docs/plugins/README.md`](docs/plugins/README.md) (contrato,
 regras de tempo e identidade, configurações, registro e testes).
