@@ -54,6 +54,7 @@ private slots:
     void returnsEmptyCredentialsWhileSuspendedAndRealOnesAfterResume();
     void loadsCredentialsFromStore();
     void doesNotReplaceCacheWhenLoadFails();
+    void logsWhyCredentialsCouldNotBeRestored();
     void savesCredentialsThroughStore();
     void savesAndLoadsSessionIdentity();
     void clearsStoredCredentialsAndCache();
@@ -103,6 +104,22 @@ void AniListAuthManagerTests::doesNotReplaceCacheWhenLoadFails() {
     QVERIFY(!manager.load(error));
     QCOMPARE(manager.credentials().username, expected.username);
     QCOMPARE(manager.credentials().token, expected.token);
+}
+
+void AniListAuthManagerTests::logsWhyCredentialsCouldNotBeRestored() {
+    InMemorySecretStore store;
+    store.available = false;
+    AniListAuthManager manager(store);
+    QStringList auditEvents;
+    manager.setAuditLogger([&auditEvents](const QString &event) { auditEvents.append(event); });
+    QString error;
+
+    QVERIFY(!manager.load(error));
+
+    QVERIFY2(auditEvents.join(QLatin1Char('
+')).contains(QStringLiteral("credentials unavailable")),
+             qPrintable(auditEvents.join(QLatin1Char('
+'))));
 }
 
 void AniListAuthManagerTests::savesCredentialsThroughStore() {

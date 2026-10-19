@@ -14,7 +14,8 @@ bool AniListAuthManager::load(QString &error) {
     error.clear();
     AniListCredentials loadedCredentials;
     if (!secretStore_.loadAniListCredentials(loadedCredentials, error)) {
-        audit(QStringLiteral("AniList credentials could not be restored."));
+        // The store reports why (e.g. no account saved yet); never the credential itself.
+        audit(QStringLiteral("AniList credentials could not be restored: %1").arg(error));
         return false;
     }
 
