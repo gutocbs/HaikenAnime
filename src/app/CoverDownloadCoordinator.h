@@ -60,6 +60,8 @@ private:
     QHash<QString, int> attempts_;
     quint64 generation_ = 1;
     bool cleanupInProgress_ = false;
+    // Read before the logger exists; logged when setLogger arrives.
+    QString cacheReadError_;
     AsyncLogger *logger_ = nullptr;
 };
 #endif

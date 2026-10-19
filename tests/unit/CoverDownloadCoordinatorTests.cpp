@@ -1,5 +1,9 @@
 #include "app/CoverDownloadCoordinator.h"
+#include "infrastructure/logging/AsyncLogger.h"
+#include <QDate>
+#include <QDir>
 #include <QFile>
+#include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QtTest>
 
@@ -11,12 +15,18 @@ public:
 };
 class FakeCache final : public ICoverCacheRepository {
 public:
-    bool ReadAll(QHash<int,CoverCacheEntry>& out, QString&) override { out=entries; return true; }
+    bool ReadAll(QHash<int,CoverCacheEntry>& out, QString& error) override {
+        if (failRead) { error = "cache read failure"; return false; }
+        out=entries; return true;
+    }
     bool Upsert(const CoverCacheEntry& e, QString& error) override {
         if (failUpsert) { error = "cache failure"; return false; }
         entries[e.mediaId]=e; return true;
     }
-    bool Remove(int id, QString&) override { entries.remove(id); return true; }
+    bool Remove(int id, QString& error) override {
+        if (failRemove) { error = "cache remove failure"; return false; }
+        entries.remove(id); return true;
+    }
     bool Clear(int &removedEntries, QString &error) override {
         if (failClear) { removedEntries = 0; error = "cache clear failure"; return false; }
         removedEntries = entries.size(); entries.clear(); error.clear(); return true;
@@ -24,6 +34,8 @@ public:
     QHash<int,CoverCacheEntry> entries;
     bool failUpsert = false;
     bool failClear = false;
+    bool failRead = false;
+    bool failRemove = false;
 };
 class FakeFiles final : public ICoverFileStore {
 public:
@@ -56,6 +68,7 @@ private slots:
     void replacesOldFileOnlyAfterPersistence();
     void removesTemporaryFileWhenPublicationFails();
     void removesTemporaryFileWhenPersistenceFails();
+    void logsCacheReadAndRemovalFailures();
 };
 static CoverRequest Req(int id, CoverPriority p=CoverPriority::Prefetch) { return {id,QUrl("https://example/"+QString::number(id)+".png"),CoverQuality::Medium,p,0}; }
 static CoverDownloadResult Success(CoverRequest r) { CoverDownloadResult x; x.request=r; x.succeeded=true; x.temporaryPath="temp"; x.mimeType="image/png"; return x; }
@@ -179,5 +192,31 @@ void CoverDownloadCoordinatorTests::removesTemporaryFileWhenPersistenceFails()
 
     QVERIFY(!QFileInfo::exists(temporaryPath));
 }
+void CoverDownloadCoordinatorTests::logsCacheReadAndRemovalFailures()
+{
+    QStandardPaths::setTestModeEnabled(true);
+    const auto logPath = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath(
+        QStringLiteral("logs/haikenanime-%1.log").arg(QDate::currentDate().toString(Qt::ISODate)));
+    QFile::remove(logPath);
+    FakeDownloader downloader;
+    FakeCache cache;
+    cache.failRead = true;
+    cache.failRemove = true;
+    FakeFiles files;
+    AsyncLogger logger(1);
+    logger.start();
+    CoverDownloadCoordinator coordinator(downloader, cache, files, {});
+
+    coordinator.setLogger(&logger);
+    coordinator.ReportMissingFile(7);
+    logger.stop();
+
+    QFile log(logPath);
+    QVERIFY(log.open(QIODevice::ReadOnly | QIODevice::Text));
+    const auto text = QString::fromUtf8(log.readAll());
+    QVERIFY2(text.contains(QStringLiteral("cache read failure")), qPrintable(text));
+    QVERIFY2(text.contains(QStringLiteral("cache remove failure")), qPrintable(text));
+}
+
 QTEST_MAIN(CoverDownloadCoordinatorTests)
 #include "CoverDownloadCoordinatorTests.moc"

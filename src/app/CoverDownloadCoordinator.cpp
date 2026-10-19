@@ -7,13 +7,18 @@ CoverDownloadCoordinator::CoverDownloadCoordinator(ICoverDownloader &downloader,
                                                    ICoverFileStore &files, CoverSettings settings, QObject *parent)
     : QObject(parent), downloader_(downloader), cache_(cache), files_(files), settings_(settings)
 {
-    QString ignored;
-    cache_.ReadAll(entries_, ignored);
+    if (!cache_.ReadAll(entries_, cacheReadError_) && cacheReadError_.isEmpty()) {
+        cacheReadError_ = QStringLiteral("Unknown error.");
+    }
 }
 
 void CoverDownloadCoordinator::setLogger(AsyncLogger *logger)
 {
     logger_ = logger;
+    if (logger_ && !cacheReadError_.isEmpty()) {
+        logger_->warning(LogCategory::Covers, QStringLiteral("Could not read the cover cache: %1").arg(cacheReadError_));
+        cacheReadError_.clear();
+    }
 }
 
 QString CoverDownloadCoordinator::Key(const CoverRequest &r) const
@@ -162,7 +167,10 @@ void CoverDownloadCoordinator::ReportMissingFile(int mediaId)
 {
     QString error;
     entries_.remove(mediaId);
-    cache_.Remove(mediaId, error);
+    if (!cache_.Remove(mediaId, error) && logger_) {
+        logger_->warning(LogCategory::Covers,
+                         QStringLiteral("Could not remove the cover cache entry of media %1: %2").arg(mediaId).arg(error));
+    }
     emit CoverStateChanged(mediaId, CoverState::Missing);
 }
 
