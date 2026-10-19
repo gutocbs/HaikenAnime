@@ -27,7 +27,7 @@ QString scanLogPath() {
 }
 }
 
-class LocalLibraryScanCompositionTests final : public QObject {
+class ApplicationCompositionTests final : public QObject {
     Q_OBJECT
 private slots:
     void initTestCase() { QStandardPaths::setTestModeEnabled(true); }
@@ -44,7 +44,7 @@ private slots:
     void composesAdaptiveSynchronization();
 };
 
-void LocalLibraryScanCompositionTests::persistedPreferencesOverrideDefaultsAfterRestart() {
+void ApplicationCompositionTests::persistedPreferencesOverrideDefaultsAfterRestart() {
     QTemporaryDir directory;
     const auto options = optionsFor(directory);
     {
@@ -68,7 +68,7 @@ void LocalLibraryScanCompositionTests::persistedPreferencesOverrideDefaultsAfter
     QVERIFY(restarted.localLibraryScan);
 }
 
-void LocalLibraryScanCompositionTests::invalidPreferredTitleFallsBackAndLogsConfigurationWarning() {
+void ApplicationCompositionTests::invalidPreferredTitleFallsBackAndLogsConfigurationWarning() {
     QTemporaryDir directory;
     const auto options = optionsFor(directory);
     {
@@ -98,7 +98,7 @@ void LocalLibraryScanCompositionTests::invalidPreferredTitleFallsBackAndLogsConf
         "falling back to 'romaji'.")));
 }
 
-void LocalLibraryScanCompositionTests::restartPreservesExternalHomeSortForControllerFallback() {
+void ApplicationCompositionTests::restartPreservesExternalHomeSortForControllerFallback() {
     QTemporaryDir directory;
     const auto options = optionsFor(directory);
     {
@@ -132,7 +132,7 @@ void LocalLibraryScanCompositionTests::restartPreservesExternalHomeSortForContro
     QCOMPARE(controller.activeSort(), QStringLiteral("progress"));
 }
 
-void LocalLibraryScanCompositionTests::startupUsesPersistedSnapshotAndSchedulesOnce() {
+void ApplicationCompositionTests::startupUsesPersistedSnapshotAndSchedulesOnce() {
     QTemporaryDir directory;
     writeFile(directory.filePath("selected.webm"));
     writeFile(directory.filePath("excluded.mkv"));
@@ -161,7 +161,7 @@ void LocalLibraryScanCompositionTests::startupUsesPersistedSnapshotAndSchedulesO
     QVERIFY(!query.next());
 }
 
-void LocalLibraryScanCompositionTests::disabledAutomaticRecognitionDoesNotScheduleStartupScan() {
+void ApplicationCompositionTests::disabledAutomaticRecognitionDoesNotScheduleStartupScan() {
     QTemporaryDir directory;
     auto context = createApplicationContext(optionsFor(directory));
     context.userPreferences.automaticLocalFileRecognition = false;
@@ -169,7 +169,7 @@ void LocalLibraryScanCompositionTests::disabledAutomaticRecognitionDoesNotSchedu
     QVERIFY(!scheduleStartupLibraryScan(context, &lifetime));
 }
 
-void LocalLibraryScanCompositionTests::manualRootChangeRetainsOldInventory() {
+void ApplicationCompositionTests::manualRootChangeRetainsOldInventory() {
     QTemporaryDir directory, oldRoot, newRoot;
     writeFile(oldRoot.filePath("old.mkv"));
     writeFile(newRoot.filePath("new.mkv"));
@@ -197,7 +197,7 @@ void LocalLibraryScanCompositionTests::manualRootChangeRetainsOldInventory() {
     QVERIFY(!query.next());
 }
 
-void LocalLibraryScanCompositionTests::startupCleanupRemovesAbandonedCoverTemporaryWithoutTouchingCache() {
+void ApplicationCompositionTests::startupCleanupRemovesAbandonedCoverTemporaryWithoutTouchingCache() {
     const QString temporaryRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation))
                                       .filePath("HaikenAnime/covers");
     const QString cacheRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
@@ -218,7 +218,7 @@ void LocalLibraryScanCompositionTests::startupCleanupRemovesAbandonedCoverTempor
     QVERIFY(QFile::remove(persistent));
 }
 
-void LocalLibraryScanCompositionTests::manualCleanupUsesComposedCoverTemporaryStore() {
+void ApplicationCompositionTests::manualCleanupUsesComposedCoverTemporaryStore() {
     QTemporaryDir directory;
     auto context = createApplicationContext(optionsFor(directory));
     QVERIFY2(context.isReady(), qPrintable(context.initializationError));
@@ -239,7 +239,7 @@ void LocalLibraryScanCompositionTests::manualCleanupUsesComposedCoverTemporarySt
     QVERIFY(!QFileInfo::exists(temporaryPath));
 }
 
-void LocalLibraryScanCompositionTests::workerProductsReleaseConnectionsAndShutdownBeforeDatabase() {
+void ApplicationCompositionTests::workerProductsReleaseConnectionsAndShutdownBeforeDatabase() {
     QTemporaryDir directory, root;
     for (int i = 0; i < 205; ++i) writeFile(root.filePath(QString::number(i) + ".mkv"));
     const auto before = QSqlDatabase::connectionNames();
@@ -278,7 +278,7 @@ void LocalLibraryScanCompositionTests::workerProductsReleaseConnectionsAndShutdo
     QCOMPARE(QSqlDatabase::connectionNames(), before);
 }
 
-void LocalLibraryScanCompositionTests::destroyedLifetimeCancelsScheduledStartup() {
+void ApplicationCompositionTests::destroyedLifetimeCancelsScheduledStartup() {
     QTemporaryDir directory;
     auto context = createApplicationContext(optionsFor(directory));
     QVERIFY(context.localLibraryScan);
@@ -291,7 +291,7 @@ void LocalLibraryScanCompositionTests::destroyedLifetimeCancelsScheduledStartup(
     QCOMPARE(started.count(), 0);
 }
 
-void LocalLibraryScanCompositionTests::composesAdaptiveSynchronization() {
+void ApplicationCompositionTests::composesAdaptiveSynchronization() {
     QTemporaryDir directory;
 
     auto context = createApplicationContext(optionsFor(directory));
@@ -300,5 +300,5 @@ void LocalLibraryScanCompositionTests::composesAdaptiveSynchronization() {
     QVERIFY(context.adaptiveSync);
 }
 
-QTEST_GUILESS_MAIN(LocalLibraryScanCompositionTests)
-#include "LocalLibraryScanCompositionTests.moc"
+QTEST_GUILESS_MAIN(ApplicationCompositionTests)
+#include "ApplicationCompositionTests.moc"

@@ -3,12 +3,9 @@
 #include "ApplicationSyncTaskExecutor.h"
 
 #include "../infrastructure/database/SqliteLocalEpisodeReader.h"
-#include "../infrastructure/database/SqlQueryStore.h"
-#include "../infrastructure/database/SqliteDatabase.h"
 #include "../infrastructure/database/SqliteMediaRepository.h"
 #include "../infrastructure/database/SqlitePendingChangeRepository.h"
 #include "../infrastructure/database/SqlitePersonalListChangeWriter.h"
-#include "../infrastructure/database/SqliteQueries.h"
 #include "../infrastructure/configuration/JsonSettingsReader.h"
 #include "../infrastructure/database/SqliteCoverCacheRepository.h"
 #include "../infrastructure/database/SqliteUserPreferencesRepository.h"
@@ -21,8 +18,6 @@
 #include "../infrastructure/library/QtDirectoryEnumerator.h"
 #include "../infrastructure/database/SqliteLocalFileRepository.h"
 #include "../infrastructure/database/SqliteSyncTaskStateRepository.h"
-#include "../infrastructure/anilist/AniListViewerClient.h"
-#include "../infrastructure/anilist/WindowsAniListOAuthLauncher.h"
 #include "../infrastructure/secrets/WindowsCredentialStore.h"
 #include <QStandardPaths>
 #include <QDir>
