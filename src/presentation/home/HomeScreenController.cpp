@@ -613,6 +613,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
     QString error;
     if (!personalListChangeService_->save(*current, updated, error)) return setSaveError(std::move(error));
     const auto recognitionRequest = LocalRecognitionRequest::Between(*current, updated);
+    const Media previous = *current;
 
     const auto destination = std::find_if(allMedia_.begin(), allMedia_.end(), [id = updated.Id](const Media &media) {
         return media.Id == id;
@@ -628,6 +629,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
     if (recognitionRequest.isRequired()) {
         emit localRecognitionRequested(recognitionRequest.folderPaths, recognitionRequest.alternativeNamesChanged);
     }
+    emit personalListEdited(previous, updated);
     return true;
 }
 
@@ -656,6 +658,7 @@ bool HomeScreenController::RemoveSelectedMedia() {
     QString error;
     if (!personalListChangeService_->remove(*current, error)) return fail(std::move(error));
 
+    const Media removed = *current;
     allMedia_.erase(current);
     mediaOperationErrorMessage_.clear();
     rebuildMediaModels();
@@ -666,6 +669,7 @@ bool HomeScreenController::RemoveSelectedMedia() {
         setState(QStringLiteral("empty"));
         setStatusMessage(QStringLiteral("Nenhum dado disponível."));
     }
+    emit personalListRemoved(removed);
     return true;
 }
 

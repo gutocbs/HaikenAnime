@@ -261,7 +261,7 @@ bool SeasonalCatalogController::SaveSelectedToPersonalList(const int progress, c
     }
 
     const auto recognitionRequest = LocalRecognitionRequest::Between(previous, saved);
-    selectedLocalMedia_ = std::move(saved);
+    selectedLocalMedia_ = saved;
     personalListErrorMessage_.clear();
     emit personalListChanged();
     emit selectionChanged();
@@ -269,6 +269,7 @@ bool SeasonalCatalogController::SaveSelectedToPersonalList(const int progress, c
     if (recognitionRequest.isRequired()) {
         emit localRecognitionRequested(recognitionRequest.folderPaths, recognitionRequest.alternativeNamesChanged);
     }
+    emit personalListEdited(previous, saved);
     return true;
 }
 

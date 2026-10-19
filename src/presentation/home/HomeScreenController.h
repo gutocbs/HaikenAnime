@@ -191,6 +191,9 @@ signals:
     void selectionChanged();
     // A saved edit asks to re-evaluate media folders (folderPaths) and/or its alternative names.
     void localRecognitionRequested(QStringList folderPaths, bool alternativeNamesChanged);
+    // A manual edit or removal was saved; the history records it.
+    void personalListEdited(Media previous, Media updated);
+    void personalListRemoved(Media removed);
 
 private:
     void setState(QString state);

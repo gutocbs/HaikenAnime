@@ -178,6 +178,7 @@ private slots:
     void keepsModelsAndSelectionUnchangedWhenPersistingSelectedMediaFails();
     void removesSelectedMediaFromLibraryWithoutRestart();
     void keepsMediaAndReportsOperationErrorWhenRemovalFails();
+    void announcesSavedEditsAndRemovalsForTheHistory();
     void selectedCoverFallsBackWhenCachedFileIsMissing();
     void updatesOnlyOneCoverRowAndPreservesOldCoverOnFailure();
     void coverQualityChangesFutureRequestsWithoutClearingDisplayedCover();
@@ -1427,6 +1428,42 @@ void HomeScreenControllerTests::keepsMediaAndReportsOperationErrorWhenRemovalFai
     QCOMPARE(controller.mediaCount(), 1);
     QCOMPARE(controller.mediaOperationErrorMessage(), QStringLiteral("disk unavailable"));
     QVERIFY(controller.errorMessage().isEmpty());
+}
+
+void HomeScreenControllerTests::announcesSavedEditsAndRemovalsForTheHistory() {
+    // Arrange
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    media.ConsumedChapters = 3;
+    reader.result = {media};
+    RecordingPersonalListChangeWriter writer;
+    PersonalListChangeService changes(writer);
+    HomeScreenController controller(reader);
+    controller.SetPersonalListChangeService(&changes);
+    controller.Reload();
+    controller.SelectMedia(media.Id);
+    QList<std::pair<Media, Media>> edits;
+    QList<Media> removals;
+    connect(&controller, &HomeScreenController::personalListEdited, this,
+            [&edits](const Media &previous, const Media &updated) { edits.append({previous, updated}); });
+    connect(&controller, &HomeScreenController::personalListRemoved, this,
+            [&removals](const Media &removed) { removals.append(removed); });
+
+    // Act
+    QVERIFY(controller.SaveSelectedMediaFromEditor(5, QStringLiteral("current"), 0.0, QString(), {}));
+    QVERIFY(controller.RemoveSelectedMedia());
+
+    // Assert
+    QCOMPARE(edits.size(), 1);
+    QCOMPARE(edits.first().first.ConsumedChapters, 3);
+    QCOMPARE(edits.first().second.ConsumedChapters, 5);
+    QCOMPARE(removals.size(), 1);
+    QCOMPARE(removals.first().Id, 42);
+    QCOMPARE(removals.first().ConsumedChapters, 5);
 }
 
 void HomeScreenControllerTests::selectedCoverFallsBackWhenCachedFileIsMissing() {

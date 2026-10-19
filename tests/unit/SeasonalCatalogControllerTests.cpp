@@ -106,6 +106,7 @@ private slots:
     void retainsTheDraftWhenLocalPersistenceFails();
     void requestsFolderRecognitionWhenTheSavedPathChanges();
     void requestsPendingRecognitionWhenOnlyAlternativeNamesChange();
+    void announcesSavedEditsForTheHistory();
     void requestsNoRecognitionWhenNothingRelevantChanged();
     void requestsFolderRecognitionOnEverySaveWhenThePathIsUnchanged();
     void requestsTheOldFolderWhenThePathMoves();
@@ -565,6 +566,34 @@ void SeasonalCatalogControllerTests::requestsTheOldFolderWhenThePathMoves() {
     QCOMPARE(requested.count(), 1);
     QCOMPARE(requested.first().at(0).toStringList(),
              (QStringList{QStringLiteral("D:/New"), QStringLiteral("D:/Old")}));
+}
+
+void SeasonalCatalogControllerTests::announcesSavedEditsForTheHistory() {
+    // Arrange: a catalog media not yet in the personal list.
+    RecordingSource source;
+    Media selected = media(7);
+    source.responses.insert(1, page(1, {selected}));
+    InMemoryMediaRepository repository;
+    PersonalListChangeService changes(repository);
+    SeasonalPersonalListService personalLists(&repository, &changes);
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
+                                         DefaultPreferredTitleKey(), nullptr, &personalLists);
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+    controller.SelectMedia(selected.Id);
+    QList<std::pair<Media, Media>> edits;
+    connect(&controller, &SeasonalCatalogController::personalListEdited, this,
+            [&edits](const Media &previous, const Media &updated) { edits.append({previous, updated}); });
+
+    // Act
+    QVERIFY(controller.SaveSelectedToPersonalList(2, QStringLiteral("current"), 0.0, QString(), {}));
+
+    // Assert: a new entry has no previous progress.
+    QCOMPARE(edits.size(), 1);
+    QCOMPARE(edits.first().first.ConsumedChapters, 0);
+    QCOMPARE(edits.first().second.Id, 7);
+    QCOMPARE(edits.first().second.ConsumedChapters, 2);
 }
 
 QTEST_GUILESS_MAIN(SeasonalCatalogControllerTests)

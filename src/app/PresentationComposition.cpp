@@ -129,6 +129,30 @@ std::unique_ptr<PresentationContext> CreatePresentationContext(ApplicationContex
     }
     QObject::connect(&seasonalCatalogController, &SeasonalCatalogController::personalListSaved,
                      &homeController, &HomeScreenController::Reload);
+    if (context.recognition && context.recognition->history) {
+        // Manual edits enter the history here, not in PersonalListChangeService: recognized progress also
+        // goes through that service and is already recorded by the recognition itself.
+        auto *history = context.recognition->history.get();
+        const auto logHistoryFailure = LogSink(context.logger.get(), LogCategory::Application, LogLevel::Warning);
+        const auto recordEdit = [history, logHistoryFailure](const Media &previous, const Media &updated) {
+            QString error;
+            if (!history->recordManualProgress(previous, updated, error) && !error.isEmpty()) {
+                logHistoryFailure(QStringLiteral("Manual progress of media %1 not recorded in the history: %2.")
+                                      .arg(updated.Id).arg(error));
+            }
+        };
+        QObject::connect(&homeController, &HomeScreenController::personalListEdited, &homeController, recordEdit);
+        QObject::connect(&seasonalCatalogController, &SeasonalCatalogController::personalListEdited,
+                         &homeController, recordEdit);
+        QObject::connect(&homeController, &HomeScreenController::personalListRemoved, &homeController,
+                         [history, logHistoryFailure](const Media &removed) {
+                             QString error;
+                             if (!history->recordManualRemoval(removed, error)) {
+                                 logHistoryFailure(QStringLiteral("Removal of media %1 not recorded in the history: %2.")
+                                                       .arg(removed.Id).arg(error));
+                             }
+                         });
+    }
     if (context.localLibraryRecognition) {
         // Saving a folder or alternative names re-evaluates the local files in the background; the
         // coordinator queues overlapping requests and the Home refreshes on its batch signals.

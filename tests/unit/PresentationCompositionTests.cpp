@@ -8,6 +8,7 @@
 #include "../../src/app/ApplicationComposition.h"
 #include "../../src/app/ApplicationShutdown.h"
 #include "../../src/app/PresentationComposition.h"
+#include "../../src/application/recognition/RecognitionHistoryService.h"
 
 namespace {
 ApplicationCompositionOptions OptionsFor(const QTemporaryDir &directory) {
@@ -29,6 +30,7 @@ private slots:
     void initTestCase() { QStandardPaths::setTestModeEnabled(true); }
     void homeSortChangeIsStoredInTheUserPreferences();
     void completedUserListSynchronizationReloadsTheHome();
+    void manualHomeEditsAreRecordedInTheHistory();
     void exposesEveryControllerUnderItsQmlName();
     void shutdownStopsTheServicesOnlyOnce();
 };
@@ -71,6 +73,40 @@ void PresentationCompositionTests::completedUserListSynchronizationReloadsTheHom
     emit context.adaptiveSync->BackgroundTaskCompleted(SyncPartition::UserList);
 
     QCOMPARE(presentation->home->mediaCount(), 1);
+}
+
+void PresentationCompositionTests::manualHomeEditsAreRecordedInTheHistory() {
+    // Arrange
+    QTemporaryDir directory;
+    auto context = createApplicationContext(OptionsFor(directory));
+    QVERIFY2(context.isReady(), qPrintable(context.initializationError));
+    QVERIFY(context.recognition && context.recognition->history);
+    AniListOAuthCallbackReceiver receiver(ReceiverName());
+    QObject lifetime;
+    const auto presentation = CreatePresentationContext(context, receiver, lifetime);
+    Media media;
+    media.Id = 7;
+    media.Name = QStringLiteral("Frieren");
+    media.ListStatus = UserListStatus::Current;
+    media.ConsumedChapters = 3;
+    QString error;
+    QVERIFY2(context.mediaRepository->upsert({media}, error), qPrintable(error));
+    presentation->home->Reload();
+    presentation->home->SelectMedia(media.Id);
+
+    // Act
+    QVERIFY(presentation->home->SaveSelectedMediaFromEditor(5, QStringLiteral("current"), 0.0, QString(), {}));
+    QVERIFY(presentation->home->RemoveSelectedMedia());
+
+    // Assert
+    auto &history = *context.recognition->history;
+    QList<RecognitionRecord> watched;
+    QVERIFY2(history.findAwaitingSync(media.Id, 5, watched, error), qPrintable(error));
+    QCOMPARE(watched.size(), 1);
+    QCOMPARE(watched.first().sessionId().pluginId(), ManualPluginId);
+    QList<RecognitionRecord> removals;
+    QVERIFY2(history.findAwaitingRemovalSync(media.Id, removals, error), qPrintable(error));
+    QCOMPARE(removals.size(), 1);
 }
 
 void PresentationCompositionTests::exposesEveryControllerUnderItsQmlName() {
