@@ -22,8 +22,9 @@ function Invoke-Checked([string]$File, [string[]]$Arguments) {
     if ($LASTEXITCODE -ne 0) { throw "$File failed with exit code $LASTEXITCODE" }
 }
 
-# Load the MSVC x64 toolchain unless the shell already has it (e.g. Developer PowerShell).
-if (-not (Get-Command cl.exe -ErrorAction SilentlyContinue)) {
+# Load the MSVC x64 toolchain unless the shell already has it (e.g. Developer PowerShell). A cl.exe on
+# PATH is not enough: without INCLUDE/LIB it cannot find the standard headers.
+if (-not ($env:VCToolsInstallDir -and $env:INCLUDE)) {
     $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
     $vsPath = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
     if (-not $vsPath) { throw 'Visual Studio with the C++ x64 tools was not found.' }
