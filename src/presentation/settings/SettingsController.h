@@ -110,6 +110,9 @@ public:
     QString aniListUsername() const;
     QString aniListAuthenticationMessage() const;
     void SetScanCoordinator(LocalLibraryScanCoordinator *coordinator);
+    using FolderOpener = std::function<bool(const QUrl &)>;
+    /** Folder opened by OpenLogsFolder; opener defaults to the system file explorer. */
+    void SetLogsFolder(QString path, FolderOpener opener = {});
     void SetAniListAuthenticationServices(AniListAuthManager *authManager,
                                            AniListOAuthConfig configuration,
                                            AniListAuthorizationLauncher launcher,
@@ -144,6 +147,8 @@ public:
     Q_INVOKABLE void ConnectAniList();
     void HandleAniListOAuthCallback(const QUrl &callback);
     Q_INVOKABLE void RemoveAniListAccount();
+    /** Opens the logs folder in the file explorer; failures are shown through errorMessage. */
+    Q_INVOKABLE bool OpenLogsFolder();
 signals:
     void changed();
     void scanChanged();
@@ -173,6 +178,8 @@ private:
     bool saving_ = false;
     QString statusMessage_;
     QString errorMessage_;
+    QString logsFolder_;
+    FolderOpener logsFolderOpener_;
     QPointer<LocalLibraryScanCoordinator> scanCoordinator_;
     bool extensionInputValid_ = true;
     bool scanRunning_ = false;

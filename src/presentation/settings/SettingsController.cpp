@@ -1,5 +1,9 @@
 #include "SettingsController.h"
 
+#include <QDesktopServices>
+#include <QDir>
+#include <QUrl>
+
 #include "../../app/ClearLocalCacheUseCase.h"
 #include "../../application/anilist/AniListAuthManager.h"
 #include "../../application/anilist/RemoveAniListAccountUseCase.h"
@@ -62,6 +66,21 @@ void SettingsController::SetAniListAuthenticationServices(
     aniListOAuthReceiverStopper_ = std::move(receiverStopper);
     refreshAniListPresentation();
     emit changed();
+}
+
+void SettingsController::SetLogsFolder(QString path, FolderOpener opener) {
+    logsFolder_ = std::move(path);
+    logsFolderOpener_ = std::move(opener);
+}
+
+bool SettingsController::OpenLogsFolder() {
+    const auto opener = logsFolderOpener_ ? logsFolderOpener_
+                                          : FolderOpener([](const QUrl &url) { return QDesktopServices::openUrl(url); });
+    const bool opened = !logsFolder_.isEmpty() && QDir().mkpath(logsFolder_)
+        && opener(QUrl::fromLocalFile(logsFolder_));
+    errorMessage_ = opened ? QString() : tr("Não foi possível abrir a pasta de logs.");
+    emit changed();
+    return opened;
 }
 
 void SettingsController::SetScanCoordinator(LocalLibraryScanCoordinator *coordinator) {

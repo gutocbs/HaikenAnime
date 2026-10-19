@@ -870,9 +870,24 @@ Item {
 
     Component {
         id: historyContent
-        Loader {
-            active: recognitionController !== null
-            sourceComponent: Component { EpisodeRecognitionScreen {} }
+        ColumnLayout {
+            spacing: 12
+
+            RowLayout {
+                Layout.fillWidth: true
+                Item { Layout.fillWidth: true }
+                AppButton {
+                    text: qsTr("Abrir pasta de logs")
+                    variant: "secondary"
+                    onClicked: controller.OpenLogsFolder()
+                }
+            }
+
+            Loader {
+                Layout.fillWidth: true
+                active: recognitionController !== null
+                sourceComponent: Component { EpisodeRecognitionScreen {} }
+            }
         }
     }
 

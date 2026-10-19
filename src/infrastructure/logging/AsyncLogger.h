@@ -19,6 +19,8 @@ class AsyncLogger final {
 public:
     explicit AsyncLogger(int retentionDays = 7);
     ~AsyncLogger();
+    /// Folder that holds the daily log files.
+    [[nodiscard]] QString logDirectory() const { return logDirectory_; }
 
     AsyncLogger(const AsyncLogger &) = delete;
     AsyncLogger &operator=(const AsyncLogger &) = delete;

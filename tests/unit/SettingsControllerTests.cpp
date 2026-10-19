@@ -1,4 +1,5 @@
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QtTest>
 #include <limits>
 #include <QMutexLocker>
@@ -184,6 +185,8 @@ private slots:
     void publishesAniListAuthenticationFailureWithoutToken();
     void clearsLocalCacheWithoutChangingUnsavedDraft();
     void reportsPartialCleanupAndIgnoresConcurrentRequest();
+    void opensTheLogsFolderInTheFileExplorer();
+    void reportsWhenTheLogsFolderIsUnavailable();
 };
 
 void SettingsControllerTests::editsSavesAndEmitsCompletePreferences() {
@@ -792,6 +795,34 @@ void SettingsControllerTests::reportsPartialCleanupAndIgnoresConcurrentRequest()
     QCOMPARE(partial.count(), 1);
     QVERIFY(controller.cacheCleanupStatusMessage().isEmpty());
     QVERIFY(controller.cacheCleanupErrorMessage().contains(QStringLiteral("parcial"), Qt::CaseInsensitive));
+}
+
+void SettingsControllerTests::opensTheLogsFolderInTheFileExplorer() {
+    FakePreferencesRepository repository;
+    SettingsController controller(&repository, {});
+    QTemporaryDir directory;
+    QUrl opened;
+    controller.SetLogsFolder(directory.path(), [&opened](const QUrl &url) {
+        opened = url;
+        return true;
+    });
+
+    QVERIFY(controller.OpenLogsFolder());
+
+    QCOMPARE(opened, QUrl::fromLocalFile(directory.path()));
+    QVERIFY(controller.errorMessage().isEmpty());
+}
+
+void SettingsControllerTests::reportsWhenTheLogsFolderIsUnavailable() {
+    FakePreferencesRepository repository;
+    SettingsController controller(&repository, {});
+    bool opened = false;
+    controller.SetLogsFolder({}, [&opened](const QUrl &) { return opened = true; });
+
+    QVERIFY(!controller.OpenLogsFolder());
+
+    QVERIFY(!opened);
+    QVERIFY(!controller.errorMessage().isEmpty());
 }
 
 QTEST_MAIN(SettingsControllerTests)

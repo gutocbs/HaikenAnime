@@ -62,6 +62,7 @@ std::unique_ptr<PresentationContext> CreatePresentationContext(ApplicationContex
     QObject::connect(&oauthCallbackReceiver, &AniListOAuthCallbackReceiver::callbackReceived,
                      &settingsController, &SettingsController::HandleAniListOAuthCallback);
     settingsController.SetScanCoordinator(context.localLibraryScan.get());
+    settingsController.SetLogsFolder(context.logger ? context.logger->logDirectory() : QString());
     presentation->synchronizationStatus = std::make_unique<SynchronizationStatusController>();
     auto &synchronizationStatus = *presentation->synchronizationStatus;
     if (context.adaptiveSync) {
