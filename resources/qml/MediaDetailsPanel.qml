@@ -209,8 +209,11 @@ Popup {
                     }
 
                     ColumnLayout {
+                        // "Assistindo agora" passes a plain map without the folder field.
+                        readonly property string localFolderUrl: controller.selectedLocalFolderUrl || ""
+                        id: linksSection
                         Layout.fillWidth: true
-                        visible: controller.selectedMediaLinks.length > 0
+                        visible: controller.selectedMediaLinks.length > 0 || localFolderUrl.length > 0
                         spacing: 5
 
                         Label {
@@ -246,6 +249,15 @@ Popup {
                                     Accessible.name: qsTr("Abrir %1").arg(modelData.site)
                                     onClicked: Qt.openUrlExternally(modelData.url)
                                 }
+                            }
+
+                            AppButton {
+                                visible: linksSection.localFolderUrl.length > 0
+                                Layout.fillWidth: true
+                                text: qsTr("Abrir pasta")
+                                variant: "secondary"
+                                Accessible.name: qsTr("Abrir a pasta local")
+                                onClicked: Qt.openUrlExternally(linksSection.localFolderUrl)
                             }
                         }
                     }

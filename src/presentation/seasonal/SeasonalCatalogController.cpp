@@ -163,6 +163,9 @@ double SeasonalCatalogController::selectedScoreValue() const {
 QString SeasonalCatalogController::selectedLocalPath() const {
     return selectedLocalMedia_ ? selectedLocalMedia_->LocalPath : QString();
 }
+QString SeasonalCatalogController::selectedLocalFolderUrl() const {
+    return PresentLocalFolderUrl(selectedLocalPath());
+}
 QString SeasonalCatalogController::personalListErrorMessage() const { return personalListErrorMessage_; }
 double SeasonalCatalogController::scoreMinimum() const { return scoreMinimum_; }
 double SeasonalCatalogController::scoreMaximum() const { return scoreMaximum_; }

@@ -2,8 +2,10 @@
 
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QFileInfo>
 #include <QSet>
 #include <QTimeZone>
+#include <QUrl>
 
 #include <algorithm>
 
@@ -75,6 +77,12 @@ QVariantList PresentMediaLinks(const Media &media) {
     return links;
 }
 
+QString PresentLocalFolderUrl(const QString &localPath) {
+    const auto path = localPath.trimmed();
+    if (path.isEmpty() || !QFileInfo(path).isDir()) return {};
+    return QUrl::fromLocalFile(QFileInfo(path).absoluteFilePath()).toString();
+}
+
 QVariantMap PresentMediaDetails(const Media &media, const QString &title, const QString &coverSource) {
     return {{QStringLiteral("selectedTitle"), title},
             {QStringLiteral("selectedSynopsis"), media.Synopsis},
@@ -88,6 +96,7 @@ QVariantMap PresentMediaDetails(const Media &media, const QString &title, const 
             {QStringLiteral("selectedSeasonLabel"), PresentMediaSeason(media)},
             {QStringLiteral("selectedNextAiringLabel"), PresentMediaNextAiring(media)},
             {QStringLiteral("selectedMediaLinks"), PresentMediaLinks(media)},
+            {QStringLiteral("selectedLocalFolderUrl"), PresentLocalFolderUrl(media.LocalPath)},
             {QStringLiteral("selectedAlternativeNames"), media.AlternativeNames},
             {QStringLiteral("selectedCoverSource"), coverSource},
             {QStringLiteral("selectedMediaInPersonalList"), media.ListStatus != UserListStatus::Unknown}};

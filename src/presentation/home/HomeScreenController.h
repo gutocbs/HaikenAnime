@@ -91,6 +91,7 @@ class HomeScreenController final : public QObject {
     Q_PROPERTY(QString selectedListStatusLabel READ selectedListStatusLabel NOTIFY selectionChanged)
     Q_PROPERTY(QStringList selectedAlternativeNames READ selectedAlternativeNames NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedLocalPath READ selectedLocalPath NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedLocalFolderUrl READ selectedLocalFolderUrl NOTIFY selectionChanged)
     Q_PROPERTY(bool canWatch READ canWatch NOTIFY selectionChanged)
     Q_PROPERTY(int availableLocalEpisodeCount READ availableLocalEpisodeCount NOTIFY selectionChanged)
     Q_PROPERTY(QString localLibraryStatusMessage READ localLibraryStatusMessage NOTIFY selectionChanged)
@@ -141,6 +142,7 @@ public:
     QString selectedListStatusLabel() const;
     QStringList selectedAlternativeNames() const;
     QString selectedLocalPath() const;
+    QString selectedLocalFolderUrl() const;
     bool canWatch() const;
     int nextLocalEpisode() const;
     int availableLocalEpisodeCount() const;

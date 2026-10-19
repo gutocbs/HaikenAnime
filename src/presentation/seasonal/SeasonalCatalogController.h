@@ -70,6 +70,7 @@ class SeasonalCatalogController final : public QObject {
     Q_PROPERTY(int selectedProgressMaximum READ selectedProgressMaximum NOTIFY selectionChanged)
     Q_PROPERTY(double selectedScoreValue READ selectedScoreValue NOTIFY personalListChanged)
     Q_PROPERTY(QString selectedLocalPath READ selectedLocalPath NOTIFY personalListChanged)
+    Q_PROPERTY(QString selectedLocalFolderUrl READ selectedLocalFolderUrl NOTIFY personalListChanged)
     Q_PROPERTY(QString personalListErrorMessage READ personalListErrorMessage NOTIFY personalListChanged)
     Q_PROPERTY(double scoreMinimum READ scoreMinimum NOTIFY editingOptionsChanged)
     Q_PROPERTY(double scoreMaximum READ scoreMaximum NOTIFY editingOptionsChanged)
@@ -113,6 +114,7 @@ public:
     int selectedProgressMaximum() const;
     double selectedScoreValue() const;
     QString selectedLocalPath() const;
+    QString selectedLocalFolderUrl() const;
     QString personalListErrorMessage() const;
     double scoreMinimum() const;
     double scoreMaximum() const;

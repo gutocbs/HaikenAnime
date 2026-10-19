@@ -1,5 +1,6 @@
 #include <QFile>
 #include <QRegularExpression>
+#include <QTemporaryDir>
 #include <QtTest>
 
 #include "../../src/presentation/home/HomeScreenController.h"
@@ -141,6 +142,7 @@ private slots:
     void exposesNineItemPreviewAndCompleteFilteredLibrary();
     void reloadReflectsANewLocalPersonalListEntryInPreviewAndFullList();
     void reloadKeepsTheSelectedMediaWithItsNewData();
+    void selectionExposesTheRecognizedLocalFolder();
     void currentCardSaysWatchingForAnimeAndReadingForManga();
     void reloadClearsTheSelectionWhenTheMediaIsGone();
     void changesMediaTypeUsingStableKeys();
@@ -215,6 +217,25 @@ void HomeScreenControllerTests::currentCardSaysWatchingForAnimeAndReadingForMang
     QCOMPARE(label(), QStringLiteral("Minha lista: Assistindo"));
     controller.SetMediaType(QStringLiteral("manga"));
     QCOMPARE(label(), QStringLiteral("Minha lista: Lendo"));
+}
+
+void HomeScreenControllerTests::selectionExposesTheRecognizedLocalFolder() {
+    QTemporaryDir directory;
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 5;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    media.LocalPath = directory.path();
+    reader.result = {media};
+    HomeScreenController controller(reader);
+    controller.Reload();
+
+    QVERIFY(controller.selectedLocalFolderUrl().isEmpty());
+    controller.SelectMedia(5);
+
+    QCOMPARE(controller.selectedLocalFolderUrl(), QUrl::fromLocalFile(directory.path()).toString());
 }
 
 void HomeScreenControllerTests::reloadKeepsTheSelectedMediaWithItsNewData() {

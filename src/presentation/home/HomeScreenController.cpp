@@ -375,6 +375,9 @@ QStringList HomeScreenController::selectedAlternativeNames() const {
 QString HomeScreenController::selectedLocalPath() const {
     return hasSelection_ ? selectedMedia_.LocalPath : QString();
 }
+QString HomeScreenController::selectedLocalFolderUrl() const {
+    return hasSelection_ ? PresentLocalFolderUrl(selectedMedia_.LocalPath) : QString();
+}
 bool HomeScreenController::canWatch() const {
     return nextLocalEpisode_ > 0 && !nextLocalEpisodePath_.isEmpty() && fileOpener_ != nullptr;
 }

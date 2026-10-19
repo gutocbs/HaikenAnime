@@ -1,3 +1,5 @@
+#include <QDir>
+#include <QTemporaryDir>
 #include <QtTest>
 
 #include "../../src/presentation/media/MediaPresentation.h"
@@ -9,6 +11,8 @@ private slots:
     void formatProgressShowsKnownTotal();
     void formatProgressShowsQuestionMarkForUnknownTotal();
     void formatProgressClampsNegativeConsumedToZero();
+    void localFolderUrlPointsToAnExistingFolder();
+    void localFolderUrlIsEmptyForAMissingFolder();
 };
 
 void MediaPresentationTests::formatProgressShowsKnownTotal() {
@@ -22,6 +26,20 @@ void MediaPresentationTests::formatProgressShowsQuestionMarkForUnknownTotal() {
 
 void MediaPresentationTests::formatProgressClampsNegativeConsumedToZero() {
     QCOMPARE(FormatProgress(-2, 5), QStringLiteral("0/5"));
+}
+
+void MediaPresentationTests::localFolderUrlPointsToAnExistingFolder() {
+    QTemporaryDir directory;
+
+    QCOMPARE(PresentLocalFolderUrl(QDir::toNativeSeparators(directory.path())),
+             QUrl::fromLocalFile(directory.path()).toString());
+}
+
+void MediaPresentationTests::localFolderUrlIsEmptyForAMissingFolder() {
+    QTemporaryDir directory;
+
+    QVERIFY(PresentLocalFolderUrl({}).isEmpty());
+    QVERIFY(PresentLocalFolderUrl(directory.filePath(QStringLiteral("missing"))).isEmpty());
 }
 
 QTEST_MAIN(MediaPresentationTests)

@@ -16,6 +16,8 @@
 [[nodiscard]] QString PresentMediaSeason(const Media &media);
 [[nodiscard]] QString PresentMediaNextAiring(const Media &media);
 [[nodiscard]] QVariantList PresentMediaLinks(const Media &media);
+/// File URL of the media's local folder, or empty when it is not set or no longer exists.
+[[nodiscard]] QString PresentLocalFolderUrl(const QString &localPath);
 /// The selected* fields MediaDetailsPanel reads, for screens that show a media without selecting it on the Home.
 [[nodiscard]] QVariantMap PresentMediaDetails(const Media &media, const QString &title, const QString &coverSource);
 
