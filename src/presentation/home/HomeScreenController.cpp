@@ -50,10 +50,12 @@ QString cardScore(const Media &media, const double scoreMaximum) {
         .arg(QString::number(scoreMaximum, 'g', 15));
 }
 
-QString userListStatusLabel(const UserListStatus status) {
-    switch (status) {
+QString userListStatusLabel(const Media &media) {
+    switch (media.ListStatus) {
     case UserListStatus::Current:
-        return QCoreApplication::translate("HomeMediaModel", "Em andamento");
+        // Same words as the "current" list filter: anime is watched, manga and novels are read.
+        return media.Type == MediaType::Anime ? QCoreApplication::translate("HomeMediaModel", "Assistindo")
+                                              : QCoreApplication::translate("HomeMediaModel", "Lendo");
     case UserListStatus::Planning:
         return QCoreApplication::translate("HomeMediaModel", "Planejando");
     case UserListStatus::OnHold:
@@ -74,7 +76,7 @@ QString cardStatusLabel(const Media &media, const CardStatusPresentation present
             .arg(MediaStatusLabel(media.Status));
     }
     return QCoreApplication::translate("HomeMediaModel", "Minha lista: %1")
-        .arg(userListStatusLabel(media.ListStatus));
+        .arg(userListStatusLabel(media));
 }
 
 QVariantMap option(const QString &key, const QString &label) {

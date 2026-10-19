@@ -436,7 +436,7 @@
     <message>
         <location filename="../src/presentation/home/HomeScreenController.cpp" line="81"/>
         <source>Em andamento</source>
-        <translation>Assistindo</translation>
+        <translation>Em andamento</translation>
     </message>
     <message>
         <location filename="../src/presentation/home/HomeScreenController.cpp" line="83"/>

@@ -141,6 +141,7 @@ private slots:
     void exposesNineItemPreviewAndCompleteFilteredLibrary();
     void reloadReflectsANewLocalPersonalListEntryInPreviewAndFullList();
     void reloadKeepsTheSelectedMediaWithItsNewData();
+    void currentCardSaysWatchingForAnimeAndReadingForManga();
     void reloadClearsTheSelectionWhenTheMediaIsGone();
     void changesMediaTypeUsingStableKeys();
     void exposesBackendDrivenBrowseOptions();
@@ -190,6 +191,30 @@ QString HomeScreenControllerTests::qmlSource(const QString &name) {
     QFile file(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/resources/qml/") + name);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return {};
     return QString::fromUtf8(file.readAll());
+}
+
+void HomeScreenControllerTests::currentCardSaysWatchingForAnimeAndReadingForManga() {
+    FakeMediaReader reader;
+    Media anime;
+    anime.Id = 1;
+    anime.Name = QStringLiteral("Frieren");
+    anime.Type = MediaType::Anime;
+    anime.ListStatus = UserListStatus::Current;
+    Media manga = anime;
+    manga.Id = 2;
+    manga.Name = QStringLiteral("Berserk");
+    manga.Type = MediaType::Manga;
+    reader.result = {anime, manga};
+    HomeScreenController controller(reader);
+    controller.Reload();
+    const auto label = [&controller] {
+        return controller.mediaModel()->data(controller.mediaModel()->index(0, 0),
+                                             HomeMediaModel::StatusLabelRole).toString();
+    };
+
+    QCOMPARE(label(), QStringLiteral("Minha lista: Assistindo"));
+    controller.SetMediaType(QStringLiteral("manga"));
+    QCOMPARE(label(), QStringLiteral("Minha lista: Lendo"));
 }
 
 void HomeScreenControllerTests::reloadKeepsTheSelectedMediaWithItsNewData() {
