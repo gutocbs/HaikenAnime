@@ -23,7 +23,8 @@ public:
     void changesSent(const QList<AniListPendingChange> &changes) override;
     void changesFailed(const QList<AniListPendingChange> &changes, AniListSyncErrorCategory category) override;
 
-    /// User-facing, credential-free explanation of a synchronization failure category.
+    /// Credential-free key of a synchronization failure ("retryable", "unauthorized", "rejected",
+    /// "persistence", "unknown"), stored in the history and translated by the history screen.
     [[nodiscard]] static QString SafeError(AniListSyncErrorCategory category);
 
 private:

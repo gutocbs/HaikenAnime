@@ -199,7 +199,7 @@ void RecognitionSyncFeedbackTests::retryableFailureMarksRecordFailedWithRetryMes
     const auto &record = repository->byId(recordId);
     QCOMPARE(record.syncState(), RecognitionSyncState::Failed);
     QCOMPARE(record.syncError(), RecognitionSyncFeedback::SafeError(AniListSyncErrorCategory::Network));
-    QCOMPARE(record.syncError(), QStringLiteral("falha temporária de comunicação; nova tentativa automática"));
+    QCOMPARE(record.syncError(), QStringLiteral("retryable"));
     QCOMPARE(record.status(), RecognitionStatus::MarkedWatched);
 }
 
@@ -214,7 +214,7 @@ void RecognitionSyncFeedbackTests::definitiveFailureMarksRecordFailedWithAccount
     // Assert
     const auto &record = repository->byId(recordId);
     QCOMPARE(record.syncState(), RecognitionSyncState::Failed);
-    QCOMPARE(record.syncError(), QStringLiteral("conta do AniList não autorizada; reconecte a conta"));
+    QCOMPARE(record.syncError(), QStringLiteral("unauthorized"));
     QCOMPARE(record.status(), RecognitionStatus::MarkedWatched);
 }
 
@@ -234,7 +234,7 @@ void RecognitionSyncFeedbackTests::failureMessageNeverContainsRawErrorOrToken() 
         QVERIFY(!message.isEmpty());
         QVERIFY(!message.contains(QStringLiteral("Bearer"), Qt::CaseInsensitive));
         QVERIFY(!message.contains(QStringLiteral("token"), Qt::CaseInsensitive));
-        QCOMPARE(message.contains(QStringLiteral("nova tentativa")), IsRetryable(category));
+        QCOMPARE(message == QStringLiteral("retryable"), IsRetryable(category));
     }
 }
 

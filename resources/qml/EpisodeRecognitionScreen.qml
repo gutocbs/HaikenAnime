@@ -24,9 +24,21 @@ ColumnLayout {
         return key
     }
 
+    function syncErrorLabel(key) {
+        switch (key) {
+        case "retryable": return qsTr("falha temporária de comunicação; nova tentativa automática")
+        case "unauthorized": return qsTr("conta do AniList não autorizada; reconecte a conta")
+        case "rejected": return qsTr("o AniList recusou a alteração de progresso")
+        case "persistence": return qsTr("falha ao registrar o envio localmente")
+        case "unknown": return qsTr("falha desconhecida ao enviar o progresso")
+        }
+        // Records from older versions stored the sentence itself.
+        return key
+    }
+
     function syncLabel(state, error) {
         if (state === "pending") return qsTr("Sincronização com o AniList pendente")
-        if (state === "failed") return qsTr("Falha ao sincronizar com o AniList: %1").arg(error)
+        if (state === "failed") return qsTr("Falha ao sincronizar com o AniList: %1").arg(syncErrorLabel(error))
         if (state === "synced") return qsTr("Sincronizado com o AniList")
         return ""
     }

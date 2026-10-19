@@ -17,21 +17,20 @@ void RecognitionSyncFeedback::changesFailed(const QList<AniListPendingChange> &c
 }
 
 QString RecognitionSyncFeedback::SafeError(const AniListSyncErrorCategory category) {
-    // Fixed texts only: the outbox error may echo request headers, so it never reaches the history.
-    if (IsRetryable(category)) {
-        return QStringLiteral("falha temporária de comunicação; nova tentativa automática");
-    }
+    // Fixed keys only: the outbox error may echo request headers, so it never reaches the history. The
+    // history screen translates each key; records from older versions keep their stored sentence.
+    if (IsRetryable(category)) return QStringLiteral("retryable");
     switch (category) {
     case AniListSyncErrorCategory::Authentication:
     case AniListSyncErrorCategory::Authorization:
-        return QStringLiteral("conta do AniList não autorizada; reconecte a conta");
+        return QStringLiteral("unauthorized");
     case AniListSyncErrorCategory::GraphQl:
     case AniListSyncErrorCategory::InvalidData:
-        return QStringLiteral("o AniList recusou a alteração de progresso");
+        return QStringLiteral("rejected");
     case AniListSyncErrorCategory::Persistence:
-        return QStringLiteral("falha ao registrar o envio localmente");
+        return QStringLiteral("persistence");
     default:
-        return QStringLiteral("falha desconhecida ao enviar o progresso");
+        return QStringLiteral("unknown");
     }
 }
 
