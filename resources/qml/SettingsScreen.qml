@@ -224,6 +224,41 @@ Item {
 
                     Item { Layout.fillHeight: true }
 
+                    // Support tools are app diagnostics, not preferences: they stay reachable
+                    // from every category, apart from the settings that need saving.
+                    Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.line }
+
+                    Label {
+                        Layout.leftMargin: 10
+                        Layout.topMargin: 8
+                        text: qsTr("SUPORTE")
+                        color: theme.muted
+                        font.pixelSize: 10
+                        font.weight: Font.DemiBold
+                        font.letterSpacing: 1.4
+                    }
+
+                    AppButton {
+                        id: openLogsFolderButton
+                        objectName: "openLogsFolderButton"
+                        variant: "flat"
+                        text: qsTr("Abrir pasta de logs")
+                        font.pixelSize: 12
+                        Accessible.description: openLogsFolderHint.text
+                        onClicked: controller.OpenLogsFolder()
+                    }
+
+                    Label {
+                        id: openLogsFolderHint
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 14
+                        Layout.rightMargin: 10
+                        Layout.bottomMargin: 4
+                        text: qsTr("Registros técnicos para investigar problemas.")
+                        color: theme.muted
+                        font.pixelSize: 10
+                        wrapMode: Text.Wrap
+                    }
                 }
             }
 
@@ -870,24 +905,9 @@ Item {
 
     Component {
         id: historyContent
-        ColumnLayout {
-            spacing: 12
-
-            RowLayout {
-                Layout.fillWidth: true
-                Item { Layout.fillWidth: true }
-                AppButton {
-                    text: qsTr("Abrir pasta de logs")
-                    variant: "secondary"
-                    onClicked: controller.OpenLogsFolder()
-                }
-            }
-
-            Loader {
-                Layout.fillWidth: true
-                active: recognitionController !== null
-                sourceComponent: Component { EpisodeRecognitionScreen {} }
-            }
+        Loader {
+            active: recognitionController !== null
+            sourceComponent: Component { EpisodeRecognitionScreen {} }
         }
     }
 

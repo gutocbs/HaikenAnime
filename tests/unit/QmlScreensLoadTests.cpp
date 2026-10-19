@@ -2,6 +2,7 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 #include <QRegularExpression>
+#include <QTemporaryDir>
 #include <QtTest>
 
 #include <memory>
@@ -76,6 +77,7 @@ private slots:
     void homeLoadsWithoutQmlWarnings();
     void seasonalCatalogLoadsWithoutQmlWarnings();
     void settingsLoadsWithoutQmlWarnings();
+    void settingsOpensTheLogsFolderFromTheSidebarOfEveryCategory();
 
 private:
     static void Load(QQmlEngine &engine, const QString &screen);
@@ -134,6 +136,36 @@ void QmlScreensLoadTests::settingsLoadsWithoutQmlWarnings() {
     engine.rootContext()->setContextProperty(QStringLiteral("recognitionController"), nullptr);
 
     Load(engine, QStringLiteral("SettingsScreen.qml"));
+}
+
+void QmlScreensLoadTests::settingsOpensTheLogsFolderFromTheSidebarOfEveryCategory() {
+    PreferencesRepository repository;
+    SettingsController settings(&repository, UserPreferences{});
+    QTemporaryDir logs;
+    QVERIFY(logs.isValid());
+    QUrl openedUrl;
+    settings.SetLogsFolder(logs.path(), [&openedUrl](const QUrl &url) {
+        openedUrl = url;
+        return true;
+    });
+    SynchronizationStatusController status;
+    QQmlEngine engine;
+    engine.rootContext()->setContextProperty(QStringLiteral("settingsController"), &settings);
+    engine.rootContext()->setContextProperty(QStringLiteral("synchronizationStatus"), &status);
+    engine.rootContext()->setContextProperty(QStringLiteral("pluginSettingsController"), nullptr);
+    engine.rootContext()->setContextProperty(QStringLiteral("recognitionController"), nullptr);
+    QQmlComponent component(&engine, ScreenUrl(QStringLiteral("SettingsScreen.qml")));
+    const std::unique_ptr<QObject> screen(component.create());
+    QVERIFY2(screen, qPrintable(component.errorString()));
+
+    // The screen opens on the overview, so a visible button there lives outside any category.
+    QCOMPARE(screen->property("activeSection").toString(), QStringLiteral("overview"));
+    auto *button = screen->findChild<QObject *>(QStringLiteral("openLogsFolderButton"));
+    QVERIFY(button);
+    QVERIFY(button->property("visible").toBool());
+    QVERIFY(QMetaObject::invokeMethod(button, "clicked"));
+
+    QCOMPARE(openedUrl, QUrl::fromLocalFile(logs.path()));
 }
 
 QTEST_MAIN(QmlScreensLoadTests)
