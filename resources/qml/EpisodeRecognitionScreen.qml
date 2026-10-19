@@ -20,8 +20,14 @@ ColumnLayout {
         case "uncertain": return qsTr("Reconhecimento incerto")
         case "ignored": return qsTr("Ignorado")
         case "corrected": return qsTr("Corrigido")
+        case "removed": return qsTr("Removido da lista")
         }
         return key
+    }
+
+    // Manual edits (Home and seasonal catalog) are recorded with the "manual" source.
+    function pluginLabel(pluginId) {
+        return pluginId === "manual" ? qsTr("Manual") : pluginId
     }
 
     function syncErrorLabel(key) {
@@ -116,7 +122,9 @@ ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 3
                     Label {
-                        text: row.season !== undefined && row.season !== null
+                        // A removal concerns the whole entry, not an episode.
+                        text: row.statusKey === "removed" ? row.title
+                              : row.season !== undefined && row.season !== null
                               ? qsTr("%1 — T%2 E%3").arg(row.title).arg(row.season).arg(row.episode)
                               : qsTr("%1 — Episódio %2").arg(row.title).arg(row.episode)
                         color: theme.ink
@@ -126,7 +134,8 @@ ColumnLayout {
                         Layout.fillWidth: true
                     }
                     Label {
-                        text: recognitionScreen.statusLabel(row.statusKey) + " · " + row.pluginId + " · " + row.updatedAt
+                        text: recognitionScreen.statusLabel(row.statusKey) + " · "
+                              + recognitionScreen.pluginLabel(row.pluginId) + " · " + row.updatedAt
                         color: theme.muted
                         font.pixelSize: 11
                     }
