@@ -27,7 +27,6 @@ Basic.Button {
     readonly property bool isFlat: variant === "flat"
     readonly property bool isSecondary: variant === "secondary"
     readonly property bool isDanger: variant === "danger"
-    readonly property bool isPrimary: !isFlat && !isSecondary && !isDanger
 
     readonly property color fillColor: {
         if (!enabled) return isFlat ? "transparent" : surfaceSoft

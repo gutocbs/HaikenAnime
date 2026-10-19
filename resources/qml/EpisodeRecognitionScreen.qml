@@ -87,8 +87,6 @@ ColumnLayout {
             required property int episode
             required property string statusKey
             required property string pluginId
-            required property string userId
-            required property string diagnostic
             required property string syncState
             required property string syncError
             required property string updatedAt
