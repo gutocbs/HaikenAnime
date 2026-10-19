@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `921c631` (`feature/revisao-geral`)
-- **Status:** aprovado (com as duas recomendações) e aplicado — aguardando build e `update_translations`
+- **Status:** aprovado (com as duas recomendações) e aplicado — validado (P11-05 movido para a Parte 13)
 
 ---
 
@@ -94,7 +94,7 @@ P11-03 (teste novo, commit próprio) → P11-01 → P11-04 → P11-02 → P11-05
 | P11-01 propriedades QML sem uso | `ee7ddb0` |
 | P11-04 retratos de texto e o duplicado | `64cffc5` |
 | P11-02 paleta única (`Theme.qml`) | `d552bbf` |
-| P11-05 `.ts` regenerados | pendente: alvo `update_translations`, rodado pelo revisor |
+| P11-05 `.ts` regenerados | movido para a Parte 13, junto com o preenchimento do inglês |
 
 ### Mudança na aplicação do P11-02: componente em vez de *singleton*
 Um *singleton* QML só é reconhecido com uma entrada `singleton` no `qmldir`, e esse arquivo só existe no
@@ -130,3 +130,13 @@ de antes. A troca foi feita por script, só em código QML (strings e comentári
 O teste foi escrito antes das mudanças, mas o primeiro build é o deste conjunto. Se ele falhar, o aviso de
 QML apontado (arquivo e linha na mensagem) pode já existir hoje; nesse caso o corrijo antes de seguir, sem
 afrouxar o teste.
+
+### Correção após o primeiro build
+- `QmlScreensLoadTests` falhou só porque a imagem `cover-placeholder.svg` existe no módulo QML do app, mas
+  não no executável de teste (`Cannot open: qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg`).
+  A imagem foi adicionada ao teste no mesmo caminho (`24f6e36`). Nenhum *binding* estava quebrado.
+
+### Validação final (build do revisor)
+- `scripts/validate.ps1`: build MSVC + `ctest` 81/81 (após `24f6e36`); smoke visual OK.
+- O revisor observou que só parte da UI aparece em inglês. A causa são as entradas não traduzidas no `.ts`,
+  não o código. A regeneração (P11-05) e o preenchimento ficaram juntos na Parte 13.

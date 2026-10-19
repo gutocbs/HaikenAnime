@@ -196,7 +196,7 @@ Itens coletados até agora (a lista cresce a cada parte):
 | Parte 1 | `scripts/build-release.ps1` só carrega o ambiente do MSVC quando não acha `cl.exe`; com `cl.exe` no `PATH` sem `INCLUDE`/`LIB`, o build falha (o `validate.ps1` já checa `VCToolsInstallDir`/`INCLUDE`) |
 | Parte 1 | `Settings.json` usa `Q:\` como pasta padrão da biblioteca — avaliar um default neutro |
 | Parte 2 | O intervalo de sincronização escolhido em Configurações (`synchronizationIntervalMs`) é salvo, mas o agendador não o usa |
-| Parte 2 | Traduções em inglês faltando: estações do ano, "%1 de %2", "Episódio %1" — na Parte 11, `HaikenAnime_en.ts` tinha 86 entradas `unfinished` |
+| Parte 2 / 11 | Inglês incompleto: só parte da UI é traduzida (estações do ano, "%1 de %2", "Episódio %1"…; `HaikenAnime_en.ts` tem 86 entradas `unfinished`). Começa regenerando os `.ts` (`update_translations`, o P11-05 da Parte 11, que também tira os textos que saíram do código), depois preenche as traduções e valida a UI em inglês |
 | Parte 3 | Falha de migração sobrescreve o erro específico por uma mensagem genérica que cita "versions 1 through 15" |
 | Parte 3 | Repositórios releem o `.sql` a cada operação e o `SqlQueryStore` loga `INFO` a cada leitura |
 | Parte 4 | `SqliteMediaRepository::upsert` retorna sem `rollback` se o `prepare` falhar (transação fica aberta) |
@@ -253,6 +253,6 @@ Perguntas em que há mais de um caminho razoável.
 | 8 | ☑ [report](../reviews/2026-10-18-parte-08-capas-cache-catalogo.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
 | 9 | ☑ [report](../reviews/2026-10-18-parte-09-reconhecimento.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
 | 10 | ☑ [report](../reviews/2026-10-18-parte-10-controllers.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
-| 11 | ☑ [report](../reviews/2026-10-18-parte-11-qml-traducoes.md) | ☑ | ☐ aplicada, aguardando build e `update_translations` |
+| 11 | ☑ [report](../reviews/2026-10-18-parte-11-qml-traducoes.md) | ☑ | ☑ validada: `ctest` 81/81 (P11-05 foi para a Parte 13) |
 | 12 | ☐ | ☐ | ☐ |
 | 13 | ☐ | ☐ | ☐ |
