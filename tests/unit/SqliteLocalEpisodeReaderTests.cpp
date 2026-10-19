@@ -12,6 +12,7 @@ private slots:
     void selectsSmallestEligibleEpisodeAndDeterministicCopy();
     void skipsUnavailableAndNonAssociatedFiles();
     void returnsNoEpisodeWhenProgressIsCurrent();
+    void episodeCountRejectsInvalidMediaWithAMessage();
 };
 
 namespace {
@@ -77,6 +78,21 @@ void SqliteLocalEpisodeReaderTests::returnsNoEpisodeWhenProgressIsCurrent() {
     seedFile(database.connection(), 1, 10, 3, QStringLiteral("03.mkv"));
     auto episodeReader = reader(database.connection()); LocalEpisode episode; QString error;
     QVERIFY(!episodeReader.readNextEpisode(10, 3, episode, error)); QVERIFY(error.isEmpty());
+}
+
+void SqliteLocalEpisodeReaderTests::episodeCountRejectsInvalidMediaWithAMessage() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    auto episodeReader = reader(database.connection());
+    int count = 7;
+    QString error;
+
+    QVERIFY(!episodeReader.readAvailableEpisodeCount(0, count, error));
+
+    QCOMPARE(count, 0);
+    QVERIFY(!error.isEmpty());
 }
 
 QTEST_MAIN(SqliteLocalEpisodeReaderTests)

@@ -12,12 +12,20 @@ SqliteLocalEpisodeReader::SqliteLocalEpisodeReader(QSqlDatabase database) : data
 
 bool SqliteLocalEpisodeReader::readAvailableEpisodeCount(int mediaId, int &count, QString &error) {
     count = 0; error.clear();
+    if (mediaId <= 0) {
+        error = QStringLiteral("Counting local episodes requires a valid media id.");
+        return false;
+    }
     QString querySource;
-    if (mediaId <= 0 || !SqlQueryStore::loadSource(SqliteQueries::ReadAvailableEpisodeCount, querySource, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadAvailableEpisodeCount, querySource, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(querySource)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":media_id"), mediaId);
-    if (!query.exec() || !query.next()) { error = query.lastError().text(); return false; }
+    if (!query.exec()) { error = query.lastError().text(); return false; }
+    if (!query.next()) {
+        error = QStringLiteral("The local episode count query returned no row.");
+        return false;
+    }
     count = query.value(0).toInt(); return true;
 }
 
