@@ -210,6 +210,9 @@ Itens coletados até agora (a lista cresce a cada parte):
 | Revisor (Parte 9) | Sessões encerradas antes do tempo mínimo não devem ser gravadas no histórico (hoje viram registros `Incomplete`) |
 | Revisor (Parte 10) | Cards de mangá e light novel mostram "Assistindo" no status da lista; devem mostrar "Lendo" |
 | Parte 12 | `createApplicationContext` descarta o erro de `AniListAuthManager::load`: falha ao ler a conta do Credential Manager não aparece no log |
+| Revisor (Parte 13) | Docs: não versionar `docs/superpowers/`, só as referências; decidir o destino da doc do mpv/Plex |
+| Revisor (Parte 13) | Botão para abrir a pasta de logs na tela de Configurações |
+| Revisor (Parte 13) | Abrir os detalhes durante a sync: ao terminar, a tela perde a referência e apaga os dados; deve manter os dados |
 
 ---
 
@@ -256,4 +259,4 @@ Perguntas em que há mais de um caminho razoável.
 | 10 | ☑ [report](../reviews/2026-10-18-parte-10-controllers.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
 | 11 | ☑ [report](../reviews/2026-10-18-parte-11-qml-traducoes.md) | ☑ | ☑ validada: `ctest` 81/81 (P11-05 foi para a Parte 13) |
 | 12 | ☑ [report](../reviews/2026-10-18-parte-12-composicao-entrada.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
-| 13 | ☐ | ☐ | ☐ |
+| 13 | ☑ [report](../reviews/2026-10-18-parte-13-correcoes.md) | ☐ | ☐ |
