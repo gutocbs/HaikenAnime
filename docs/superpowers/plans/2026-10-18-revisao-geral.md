@@ -253,6 +253,6 @@ Perguntas em que há mais de um caminho razoável.
 | 8 | ☑ [report](../reviews/2026-10-18-parte-08-capas-cache-catalogo.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
 | 9 | ☑ [report](../reviews/2026-10-18-parte-09-reconhecimento.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
 | 10 | ☑ [report](../reviews/2026-10-18-parte-10-controllers.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
-| 11 | ☐ | ☐ | ☐ |
+| 11 | ☑ [report](../reviews/2026-10-18-parte-11-qml-traducoes.md) | ☐ | ☐ |
 | 12 | ☐ | ☐ | ☐ |
 | 13 | ☐ | ☐ | ☐ |
