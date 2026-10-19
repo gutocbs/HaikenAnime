@@ -326,7 +326,7 @@ haiken_add_test(AniListAccountOwnershipTests)
 haiken_add_test(RemoveAniListAccountUseCaseTests)
 haiken_add_test(SettingsControllerTests)
 haiken_add_test(SynchronizationStatusControllerTests)
-haiken_add_test(QmlStructureTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
+haiken_add_test(QmlStructureTests SOURCE_DIR)
 haiken_add_test(QmlRecognitionStructureTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
 haiken_add_test(QmlScreensLoadTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
 # The screens point at the placeholder cover inside the app's QML module; give the test the same path.
