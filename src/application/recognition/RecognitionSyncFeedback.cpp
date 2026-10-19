@@ -37,13 +37,19 @@ QString RecognitionSyncFeedback::SafeError(const AniListSyncErrorCategory catego
 void RecognitionSyncFeedback::settle(const QList<AniListPendingChange> &changes,
                                      const std::optional<QString> &safeError) {
     for (const auto &change : changes) {
-        if (change.field != AniListField::Progress) continue;
-        const auto *progress = std::get_if<int>(&change.newValue);
-        if (progress == nullptr) continue;
-
         QString error;
         QList<RecognitionRecord> records;
-        if (!history_.findAwaitingSync(change.mediaId, *progress, records, error)) {
+        bool loaded = false;
+        if (change.field == AniListField::Deletion) {
+            // A list deletion settles the manual removals of the media.
+            loaded = history_.findAwaitingRemovalSync(change.mediaId, records, error);
+        } else if (const auto *progress = std::get_if<int>(&change.newValue);
+                   change.field == AniListField::Progress && progress != nullptr) {
+            loaded = history_.findAwaitingSync(change.mediaId, *progress, records, error);
+        } else {
+            continue;
+        }
+        if (!loaded) {
             log(QStringLiteral("Recognition sync outcome not recorded for media %1: %2.").arg(change.mediaId).arg(error));
             continue;
         }

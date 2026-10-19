@@ -105,7 +105,10 @@ bool RecognitionHistoryService::findAwaitingRemovalSync(const int mediaId, QList
     for (auto &record : found) {
         const bool awaiting = record.syncState() == RecognitionSyncState::Pending
             || record.syncState() == RecognitionSyncState::Failed;
-        if (record.effectiveCandidate().mediaId() == mediaId && awaiting) records.append(std::move(record));
+        if (record.status() == RecognitionStatus::Removed && record.effectiveCandidate().mediaId() == mediaId
+            && awaiting) {
+            records.append(std::move(record));
+        }
     }
     return true;
 }

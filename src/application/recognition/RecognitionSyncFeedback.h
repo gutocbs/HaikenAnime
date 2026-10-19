@@ -9,12 +9,13 @@
 #include "../anilist/IAniListPendingChangeObserver.h"
 #include "RecognitionHistoryService.h"
 
-/// Feeds the AniList outbox outcome of Progress changes back into the recognition history, so the
+/// Feeds the AniList outbox outcome of Progress and Deletion changes back into the recognition history, so the
 /// history shows whether the local progress reached AniList. Never touches the outbox or local progress.
 ///
 /// A Progress change of media M with value P settles every MarkedWatched/Corrected record awaiting sync
 /// whose effective media is M and effective episode is <= P: the outbox compacts consecutive progress
-/// edits into the latest one, so earlier episodes travel inside it.
+/// edits into the latest one, so earlier episodes travel inside it. A Deletion change of media M settles
+/// the manual Removed records of M awaiting sync.
 class RecognitionSyncFeedback final : public IAniListPendingChangeObserver {
 public:
     explicit RecognitionSyncFeedback(RecognitionHistoryService &history,
