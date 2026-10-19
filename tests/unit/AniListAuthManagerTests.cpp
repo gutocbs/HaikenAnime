@@ -116,10 +116,8 @@ void AniListAuthManagerTests::logsWhyCredentialsCouldNotBeRestored() {
 
     QVERIFY(!manager.load(error));
 
-    QVERIFY2(auditEvents.join(QLatin1Char('
-')).contains(QStringLiteral("credentials unavailable")),
-             qPrintable(auditEvents.join(QLatin1Char('
-'))));
+    const auto events = auditEvents.join(QStringLiteral("; "));
+    QVERIFY2(events.contains(QStringLiteral("credentials unavailable")), qPrintable(events));
 }
 
 void AniListAuthManagerTests::savesCredentialsThroughStore() {
