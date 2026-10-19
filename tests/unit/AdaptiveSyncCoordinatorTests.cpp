@@ -120,6 +120,7 @@ private slots:
     void resumesAnIncompleteTaskFromItsPersistedCheckpoint();
     void restartsPersistedRetryScheduledTaskWithoutWaitingForPreviousProcessCooldown();
     void reschedulesSuccessfulWorkAtItsAdaptivePolicyCadence();
+    void newUserListIntervalReschedulesTheNextRun();
     void turnsPersistedCheckpointIntoTheNextPartitionRequestPage();
     void schedulesRetryAtThePolicyDueTime();
     void runsManualRequestsForFreshPartitionsImmediately();
@@ -348,6 +349,22 @@ void AdaptiveSyncCoordinatorTests::restartsPersistedRetryScheduledTaskWithoutWai
 
     QCOMPARE(executor.started, QList<SyncPartition>({SyncPartition::UserList}));
     QCOMPARE(executor.requests.at(SyncPartition::UserList).state.confirmedPage, std::optional<int>{});
+}
+
+void AdaptiveSyncCoordinatorTests::newUserListIntervalReschedulesTheNextRun() {
+    FakeClock clock;
+    FakeTaskStateRepository repository;
+    repository.states = {DueState(SyncTaskKind::UserList, SyncPartition::UserList)};
+    FakeTaskExecutor executor;
+    AdaptiveSyncCoordinator coordinator(repository, executor, [&clock] { return clock.CurrentTime(); });
+    QVERIFY(coordinator.Start());
+    executor.Complete(SyncPartition::UserList, {.succeeded = true});
+    QTRY_COMPARE(repository.State(SyncPartition::UserList).nextRunAt, clock.CurrentTime().addSecs(60 * 60));
+
+    // The interval chosen in Settings replaces the one-hour default without waiting for the old run.
+    coordinator.SetNormalInterval(SyncTaskKind::UserList, std::chrono::minutes(15));
+
+    QCOMPARE(repository.State(SyncPartition::UserList).nextRunAt, clock.CurrentTime().addSecs(15 * 60));
 }
 
 void AdaptiveSyncCoordinatorTests::reschedulesSuccessfulWorkAtItsAdaptivePolicyCadence() {

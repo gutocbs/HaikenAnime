@@ -30,6 +30,8 @@ public:
     [[nodiscard]] bool Start();
     void Stop();
     void RequestNow(SyncPartition partition);
+    /** Changes how often the kind runs and reschedules its idle task from the last success. */
+    void SetNormalInterval(SyncTaskKind kind, std::chrono::milliseconds interval);
     /**
      * Cancels the partition's active task, if any, and invalidates its generation so a late completion is
      * ignored. `acknowledged` runs on this object's thread once the executor has accounted for the task;

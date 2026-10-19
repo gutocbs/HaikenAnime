@@ -4,6 +4,7 @@
 #include <QDateTime>
 #include <QString>
 
+#include <algorithm>
 #include <chrono>
 #include <map>
 #include <optional>
@@ -114,6 +115,13 @@ inline SyncSchedulePolicy DefaultSyncSchedulePolicy(SyncTaskKind kind) {
         policy.staleProtectionTtl = std::chrono::hours(1);
         break;
     }
+    return policy;
+}
+
+/// Policy with another normal interval; the stale-data TTL grows with it so it never ends before the next run.
+inline SyncSchedulePolicy WithNormalInterval(SyncSchedulePolicy policy, const std::chrono::milliseconds interval) {
+    policy.normalInterval = interval;
+    policy.staleProtectionTtl = std::max(policy.staleProtectionTtl, interval);
     return policy;
 }
 

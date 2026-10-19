@@ -216,6 +216,10 @@ std::unique_ptr<PresentationContext> CreatePresentationContext(ApplicationContex
     QObject::connect(&settingsController, &SettingsController::preferencesApplied,
                      [&homeController, &seasonalCatalogController, &context](const UserPreferences &preferences) {
         context.userPreferences = preferences;
+        if (context.adaptiveSync) {
+            context.adaptiveSync->setNormalInterval(SyncTaskKind::UserList,
+                                                    std::chrono::milliseconds(preferences.synchronizationIntervalMs));
+        }
         homeController.ConfigureScoreScale(preferences.scoreMinimum,
                                            preferences.scoreMaximum,
                                            preferences.scoreStep);

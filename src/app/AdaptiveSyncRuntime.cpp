@@ -72,6 +72,21 @@ void AdaptiveSyncRuntime::requestNow(const SyncPartition partition) {
     }
 }
 
+void AdaptiveSyncRuntime::setNormalInterval(const SyncTaskKind kind, const std::chrono::milliseconds interval) {
+    QObject *owner = nullptr;
+    {
+        QMutexLocker lock(&stateMutex_);
+        if (state_ == State::Stopped || state_ == State::Failed || stopRequested_) return;
+        owner = owner_;
+    }
+    // Queued after Initialize on the same object, so the coordinator already exists when this runs.
+    if (owner) {
+        QMetaObject::invokeMethod(owner, [this, kind, interval] {
+            if (coordinator_) coordinator_->SetNormalInterval(kind, interval);
+        }, Qt::QueuedConnection);
+    }
+}
+
 void AdaptiveSyncRuntime::cancel(const SyncPartition partition, std::function<void()> acknowledged) {
     QObject *owner = nullptr;
     {

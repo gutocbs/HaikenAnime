@@ -29,6 +29,7 @@ private slots:
     void derivesScheduledPriorityFromPartition();
     void appliesDistinctDefaultCadencesAtDecisionLevel();
     void classifiesExactCacheValidityBoundariesAsDue();
+    void newNormalIntervalKeepsStaleTtlAtLeastAsLong();
 };
 
 void SyncTaskPolicyTests::providesStablePersistedNamesForEveryTaskKind() {
@@ -327,6 +328,20 @@ void SyncTaskPolicyTests::classifiesExactCacheValidityBoundariesAsDue() {
     const auto staleBoundary = SyncTaskPolicy::Decide(state, policy, now, {}).schedule;
     QVERIFY(staleBoundary.shouldRunNow);
     QCOMPARE(staleBoundary.cacheValidity, CacheValidity::Expired);
+}
+
+void SyncTaskPolicyTests::newNormalIntervalKeepsStaleTtlAtLeastAsLong() {
+    SyncSchedulePolicy policy;
+    policy.normalInterval = std::chrono::hours(1);
+    policy.staleProtectionTtl = std::chrono::hours(24);
+
+    const auto shorter = WithNormalInterval(policy, std::chrono::minutes(15));
+    const auto longer = WithNormalInterval(policy, std::chrono::hours(48));
+
+    QCOMPARE(shorter.normalInterval, std::chrono::milliseconds(std::chrono::minutes(15)));
+    QCOMPARE(shorter.staleProtectionTtl, std::chrono::milliseconds(std::chrono::hours(24)));
+    QCOMPARE(longer.normalInterval, std::chrono::milliseconds(std::chrono::hours(48)));
+    QCOMPARE(longer.staleProtectionTtl, std::chrono::milliseconds(std::chrono::hours(48)));
 }
 
 QTEST_MAIN(SyncTaskPolicyTests)

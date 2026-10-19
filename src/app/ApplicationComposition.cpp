@@ -229,6 +229,11 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         context.aniListOAuthLauncher = std::make_unique<WindowsAniListOAuthLauncher>();
     }
     const auto synchronizationDatabasePath = context.database->databasePath();
+    // The user list follows the interval chosen in Settings; Settings.json only gives the other limits.
+    auto synchronizationPolicies = settings.syncTaskPolicies;
+    synchronizationPolicies[SyncTaskKind::UserList] = WithNormalInterval(
+        synchronizationPolicies[SyncTaskKind::UserList],
+        std::chrono::milliseconds(context.userPreferences.synchronizationIntervalMs));
     auto *authProvider = context.aniListAuthManager.get();
     const auto userListConfiguration = ApplicationSyncTaskExecutor::AuthenticatedUserListConfiguration{
         QUrl(settings.aniList.endpoint),
@@ -248,7 +253,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         [synchronizationDatabasePath, timeoutMs = settings.syncTimeoutMs, userListConfiguration] {
             return std::make_unique<ApplicationSyncTaskExecutor>(
                 synchronizationDatabasePath, timeoutMs, userListConfiguration);
-        }, settings.syncTaskPolicies);
+        }, synchronizationPolicies);
     context.seasonalNetworkManager = std::make_unique<QNetworkAccessManager>();
     const AniListGraphQlClient::Diagnostics seasonalDiagnostics{
         .log = LogSink(context.logger.get(), LogCategory::Sync)};

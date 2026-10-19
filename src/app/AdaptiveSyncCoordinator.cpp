@@ -119,6 +119,21 @@ void AdaptiveSyncCoordinator::RequestNow(const SyncPartition partition) {
     Request(partition, SyncTaskTrigger::ManualRun);
 }
 
+void AdaptiveSyncCoordinator::SetNormalInterval(const SyncTaskKind kind, const std::chrono::milliseconds interval) {
+    policies_[kind] = WithNormalInterval(PolicyFor(kind), interval);
+    if (!started_ || stopped_) return;
+    const auto partition = PartitionFor(kind);
+    const auto iterator = states_.find(partition);
+    // A running task picks the new interval up when it completes.
+    if (iterator == states_.end() || activeGenerations_.contains(partition)) return;
+    const auto decision = SyncTaskPolicy::Decide(iterator->second, policies_.at(kind), Now(), {});
+    auto state = decision.proposedState;
+    state.nextRunAt = decision.schedule.nextRunAt;
+    if (!Persist(state)) return;
+    iterator->second = state;
+    ProcessDueTasks();
+}
+
 void AdaptiveSyncCoordinator::Cancel(const SyncPartition partition, std::function<void()> acknowledged) {
     const auto active = activeGenerations_.find(partition);
     const auto state = states_.find(partition);

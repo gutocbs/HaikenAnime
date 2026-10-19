@@ -27,6 +27,8 @@ public:
 
     void start();
     void requestNow(SyncPartition partition);
+    /// Changes how often the kind synchronizes (the Settings interval); applied on the worker thread.
+    void setNormalInterval(SyncTaskKind kind, std::chrono::milliseconds interval);
     /**
      * Cancels the partition's active task on the worker thread. `acknowledged` is delivered through a
      * queued call on this runtime object, which lives on the thread that created it (the GUI thread), so
