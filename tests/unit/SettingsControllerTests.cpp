@@ -436,7 +436,9 @@ void SettingsControllerTests::savesEnabledUserListsAndRestoresThemOnDiscard() {
 
 void SettingsControllerTests::invalidLibraryDraftCannotSave() {
     FakePreferencesRepository repository;
-    SettingsController controller(&repository, {});
+    UserPreferences initial;
+    initial.libraryRoots = {QStringLiteral("Q:\\")};
+    SettingsController controller(&repository, initial);
     controller.SetLibraryRoot(0, QStringLiteral("   "));
     QVERIFY(!controller.valid());
     controller.Save();
@@ -770,7 +772,7 @@ void SettingsControllerTests::clearsLocalCacheWithoutChangingUnsavedDraft() {
     SettingsController controller(&repository, {}, &cleanup);
     QSignalSpy completed(&controller, &SettingsController::cacheCleanupCompleted);
 
-    controller.SetLibraryRoot(0, QStringLiteral("D:\\Draft"));
+    controller.AddLibraryRoot(QStringLiteral("D:\\Draft"));
     controller.ClearLocalCache();
 
     QVERIFY(!controller.cacheCleanupRunning());
