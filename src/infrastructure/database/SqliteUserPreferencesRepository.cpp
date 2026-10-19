@@ -153,7 +153,9 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
         QJsonDocument(QJsonArray::fromStringList(preferences.enabledUserLists)).toJson(QJsonDocument::Compact)));
     query.bindValue(QStringLiteral(":last_anilist_user_id"), preferences.lastAniListUserId);
     // library_root keeps the first folder so older builds still read a usable value.
-    query.bindValue(QStringLiteral(":library_root"), preferences.libraryRoots.value(0));
+    // Non-null even without folders: library_root is NOT NULL (a null QString would bind as SQL NULL).
+    query.bindValue(QStringLiteral(":library_root"),
+                    preferences.libraryRoots.isEmpty() ? QStringLiteral("") : preferences.libraryRoots.first());
     query.bindValue(QStringLiteral(":library_roots"), QString::fromUtf8(
         QJsonDocument(QJsonArray::fromStringList(preferences.libraryRoots)).toJson(QJsonDocument::Compact)));
     query.bindValue(QStringLiteral(":scan_extensions"), QString::fromUtf8(

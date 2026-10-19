@@ -20,8 +20,8 @@ private slots:
     void rejectsEmptyLibraryRoot();
     void acceptsNoLibraryFolderYet();
     void acceptsMultipleIndependentLibraryRoots();
-    void rejectsDuplicateNestedOrMissingLibraryRoots_data();
-    void rejectsDuplicateNestedOrMissingLibraryRoots();
+    void rejectsDuplicateNestedOrBlankLibraryRoots_data();
+    void rejectsDuplicateNestedOrBlankLibraryRoots();
     void validatesEnabledUserLists();
 };
 
@@ -174,9 +174,8 @@ void UserPreferencesValidatorTests::acceptsMultipleIndependentLibraryRoots() {
     QVERIFY(ValidateUserPreferences(preferences).valid);
 }
 
-void UserPreferencesValidatorTests::rejectsDuplicateNestedOrMissingLibraryRoots_data() {
+void UserPreferencesValidatorTests::rejectsDuplicateNestedOrBlankLibraryRoots_data() {
     QTest::addColumn<QStringList>("roots");
-    QTest::newRow("none") << QStringList{};
     QTest::newRow("blank second") << QStringList{QStringLiteral("Q:\\"), QStringLiteral("  ")};
     QTest::newRow("duplicate ignoring case and slash")
         << QStringList{QStringLiteral("R:\\Anime"), QStringLiteral("r:/anime/")};
@@ -185,7 +184,7 @@ void UserPreferencesValidatorTests::rejectsDuplicateNestedOrMissingLibraryRoots_
         << QStringList{QStringLiteral("R:\\Anime\\Movies"), QStringLiteral("R:\\Anime")};
 }
 
-void UserPreferencesValidatorTests::rejectsDuplicateNestedOrMissingLibraryRoots() {
+void UserPreferencesValidatorTests::rejectsDuplicateNestedOrBlankLibraryRoots() {
     QFETCH(QStringList, roots);
     UserPreferences preferences;
     preferences.libraryRoots = roots;
