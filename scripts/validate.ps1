@@ -82,6 +82,7 @@ if ($Release -and -not $testsFailed) {
 Write-Host "Executado em: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
 Write-Host ''
 Write-Host '=== Validation summary ==='
+cd scripts
 $summary | ForEach-Object { Write-Host $_ }
 Write-Host ("Elapsed: {0:mm\:ss}" -f ((Get-Date) - $started))
 if ($testsFailed) { exit 1 }
