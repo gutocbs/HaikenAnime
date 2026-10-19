@@ -87,12 +87,14 @@ void PresentationCompositionTests::manualHomeEditsAreRecordedInTheHistory() {
     Media media;
     media.Id = 7;
     media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
     media.ListStatus = UserListStatus::Current;
     media.ConsumedChapters = 3;
     QString error;
     QVERIFY2(context.mediaRepository->upsert({media}, error), qPrintable(error));
     presentation->home->Reload();
     presentation->home->SelectMedia(media.Id);
+    QVERIFY(presentation->home->hasSelection());
 
     // Act
     QVERIFY(presentation->home->SaveSelectedMediaFromEditor(5, QStringLiteral("current"), 0.0, QString(), {}));
