@@ -208,6 +208,7 @@ Itens coletados até agora (a lista cresce a cada parte):
 | Parte 9 | `RecognitionSyncFeedback::SafeError` grava no histórico textos fixos em português, que não passam pela tradução |
 | Revisor (Parte 9) | O histórico só registra progresso reconhecido pelos players; deve registrar também as alterações manuais de progresso (Home e catálogo) |
 | Revisor (Parte 9) | Sessões encerradas antes do tempo mínimo não devem ser gravadas no histórico (hoje viram registros `Incomplete`) |
+| Revisor (Parte 10) | Cards de mangá e light novel mostram "Assistindo" no status da lista; devem mostrar "Lendo" |
 
 ---
 
@@ -251,7 +252,7 @@ Perguntas em que há mais de um caminho razoável.
 | 7 | ☑ [report](../reviews/2026-10-18-parte-07-biblioteca-local.md) | ☑ | ☑ validada: `ctest` verde |
 | 8 | ☑ [report](../reviews/2026-10-18-parte-08-capas-cache-catalogo.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
 | 9 | ☑ [report](../reviews/2026-10-18-parte-09-reconhecimento.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
-| 10 | ☑ [report](../reviews/2026-10-18-parte-10-controllers.md) | ☑ | ☐ aplicada, aguardando build |
+| 10 | ☑ [report](../reviews/2026-10-18-parte-10-controllers.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
 | 11 | ☐ | ☐ | ☐ |
 | 12 | ☐ | ☐ | ☐ |
 | 13 | ☐ | ☐ | ☐ |

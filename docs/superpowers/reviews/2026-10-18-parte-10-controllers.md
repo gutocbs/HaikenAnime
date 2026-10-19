@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `06992a8` (`feature/revisao-geral`)
-- **Status:** aprovado (com a recomendação) e aplicado — aguardando build do revisor
+- **Status:** aprovado (com a recomendação) e aplicado — validado
 
 ---
 
@@ -95,3 +95,8 @@ Notas:
 - P10-03: `NowWatchingController::setPreferredTitleKey` virou `ConfigurePreferredTitle`, o mesmo nome usado na
   Home e no catálogo. A regra de nomes entrou no `SERVICE.md` (§ 8.1).
 - O objeto de seleção e a mudança dos `Configure*` não foram feitos (decisão 1).
+
+### Validação final (build do revisor)
+- `scripts/validate.ps1`: build MSVC + `ctest` todo verde; smoke das telas OK.
+- O revisor apontou que os cards de mangá e light novel mostram "Assistindo" em vez de "Lendo"; o item foi
+  registrado na Parte 13.
