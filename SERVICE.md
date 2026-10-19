@@ -6,8 +6,7 @@
 >
 > - Visão de usuário, build e execução: [`README.md`](README.md)
 > - Regras para assistentes de IA: [`AGENTS.md`](AGENTS.md)
-> - Specs, planos e validações de features: `docs/superpowers/` (pasta ignorada pelo `.gitignore`; arquivos
->   versionados com `git add -f`)
+> - Plugins de player (contrato genérico, mpv e Plex): [`docs/plugins/`](docs/plugins/README.md)
 
 ---
 
@@ -286,6 +285,8 @@ temporários abandonados, e informa contagens e falhas parciais; nunca toca nos 
 
 ### 6.7 Reconhecimento de episódios (players)
 
+Contrato dos plugins e detalhes do mpv e do Plex: [`docs/plugins/`](docs/plugins/README.md).
+
 Pipeline (`EpisodeRecognitionService`):
 `IPlaybackPlugin` (mpv/Plex) → `IPlaybackObserver` → `CatalogEpisodeCandidateResolver` (associa título à
 mídia) → `PlaybackObservationService` + `RecognitionPolicy` (reprodução contínua / limiar de conclusão) →
@@ -484,12 +485,8 @@ Mapa rápido de suítes por área:
 2. QML em `resources/qml/`, registrado em `qt_add_qml_module`.
 3. Instanciar/conectar em `main.cpp`, expor como context property e adicionar a navegação em `Main.qml`.
 
-**Novo plugin de player**
-1. Implementar `IPlaybackPlugin` em `src/infrastructure/recognition/<player>/` (declare as capacidades que a
-   tela de configurações oferece — login no navegador, teste de conexão, seleção de usuários — e o
-   `PluginSettingsSchema`; reporte eventos ao `IPlaybackObserver`, nunca decida progresso).
-2. Registrar em `createRecognitionContext` e aplicar as settings em `applyRecognitionSettings`.
-3. Testes com transporte/HTTP falso e fixtures.
+**Novo plugin de player**: siga o guia [`docs/plugins/README.md`](docs/plugins/README.md) (contrato,
+regras de tempo e identidade, configurações, registro e testes).
 
 **Nova chamada AniList**
 1. Arquivo `.graphql` em `resources/anilist/…` + recurso no CMake.

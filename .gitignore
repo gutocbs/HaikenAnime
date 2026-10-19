@@ -32,9 +32,11 @@
 # ==========================================
 # Build Directories (CMake & Project Specific)
 # ==========================================
-# Build folders start with "cmake"; /.superpowers is local working state (docs/ is versioned)
+# Build folders start with "cmake". Superpowers working state (plans, specs, reviews) stays local;
+# only docs/plugins and the root documents are versioned.
 cmake*/
 /.superpowers
+/docs/superpowers
 /dist
 
 # Local validation build script (kept out of the repository)
