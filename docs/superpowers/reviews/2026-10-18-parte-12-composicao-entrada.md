@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `00b33c6` (`feature/revisao-geral`)
-- **Status:** aguardando aprovação — nenhuma alteração aplicada
+- **Status:** aprovado (com a recomendação) e aplicado — aguardando build do revisor
 
 ---
 
@@ -85,3 +85,29 @@ P12-04 → P12-03 → P12-02 → teste de caracterização → P12-01 → P12-05
 
 1. **P12-01 com o teste de caracterização novo** (recomendo). A alternativa é mover a fiação sem teste,
    confiando só no smoke.
+
+---
+
+## 7. Aplicação
+
+| Item | Commit |
+| --- | --- |
+| P12-04 *includes* e `ApplicationCompositionTests` | `42cf338` |
+| P12-03 `LogSink` | `598d847` |
+| P12-02 `UpdateUserPreferences` | `9ae5c5b` |
+| P12-01 `PresentationComposition` + `ApplicationShutdown` | `3b5b469` |
+| Teste de caracterização `PresentationCompositionTests` | `8be91fe` |
+| P12-05 `AGENTS.md`, `README.md`, `SERVICE.md` | este commit |
+
+Notas:
+- **Ordem do teste**: o teste de caracterização veio logo **depois** da mudança, não antes. Antes do P12-01 a
+  fiação estava dentro do `main()` e não havia o que chamar num teste. Por isso a mudança foi uma
+  transcrição literal: o mesmo código e a mesma ordem, com os controllers virando membros do
+  `PresentationContext` e `&app` virando o `QObject &lifetime` recebido. O teste e a mudança são validados no
+  mesmo build. O teste cobre ordenação → preferência gravada, sync da lista concluída → Home recarregada,
+  nomes das *context properties* e encerramento idempotente.
+- `main.cpp`: de 435 para 68 linhas. `PresentationContext` declara os controllers na mesma ordem em que eram
+  declarados no `main()`, então a destruição segue igual.
+- P12-02: as duas mensagens de "preferências indisponíveis" viraram uma ("User preferences are
+  unavailable."), que só aparece no log.
+- `ApplicationContext` ganhou `servicesShutdown`, a mesma guarda que antes era uma variável local do `main()`.

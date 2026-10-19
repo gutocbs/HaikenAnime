@@ -154,10 +154,14 @@ Regras de dependência (obrigatórias):
    Falha ao abrir/migrar o banco ou ao carregar queries → `initializationError` preenchido e repositórios
    nulos; a janela abre mesmo assim e mostra o erro.
 3. Registra o protocolo `haikenanime` no registro do Windows e instala a tradução do idioma salvo.
-4. Cria os controllers (`HomeScreenController`, `SeasonalCatalogController`, `SettingsController`,
+4. `CreatePresentationContext` (`src/app/PresentationComposition.cpp`) cria os controllers
+   (`HomeScreenController`, `SeasonalCatalogController`, `SettingsController`,
    `SynchronizationStatusController`, `PluginSettingsController`, `EpisodeRecognitionController`,
-   `NowWatchingController`) e conecta sinais entre eles e o runtime de sync.
-5. Expõe os controllers como **context properties** e carrega `HaikenAnime/Main.qml`.
+   `NowWatchingController`) num `PresentationContext` e faz toda a fiação: recarregar a Home após sync ou
+   edição, pedidos de reconhecimento local, ordenação e última conta AniList gravadas nas preferências
+   (`UpdateUserPreferences`), remoção da conta e preferências aplicadas em tempo real.
+5. `ExposeToQml` registra os controllers como **context properties**, e o `main.cpp` carrega
+   `HaikenAnime/Main.qml`.
 6. Se há conta conectada e a sync está habilitada, agenda `UserList` + `PendingChanges`; se o
    reconhecimento automático está ligado, agenda o scan inicial das pastas (`scheduleStartupLibraryScan`).
 
@@ -167,8 +171,9 @@ Context properties disponíveis no QML: `homeController`, `settingsController`, 
 
 ### 5.2 Desligamento
 
-`QCoreApplication::aboutToQuit` é o caminho único de saída: para o runtime de sync (espera até 5 s), depois
-scan, reconhecimento local, reconhecimento de episódios, capas e por fim o logger. A ordem dos membros do
+`QCoreApplication::aboutToQuit` é o caminho único de saída e chama `ShutdownApplication`
+(`src/app/ApplicationShutdown.cpp`): para o runtime de sync (espera até 5 s), depois scan, reconhecimento
+local, reconhecimento de episódios, capas e por fim o logger. A ordem dos membros do
 `ApplicationContext` garante que *workers* sejam destruídos (e suas threads unidas) antes das dependências.
 
 ### 5.3 Threads e conexões SQLite
@@ -463,10 +468,11 @@ Mapa rápido de suítes por área:
 | SQLite | `SqliteDatabaseTests`, `SqliteRepositoryTests`, `Sqlite*RepositoryTests`, `SqlQueryStoreTests` |
 | AniList | `AniListGraphQl*Tests`, `AniListFlowTests`, `AniListPendingChange*Tests`, `AniListUpdateClientTests`, `AniListAuthManagerTests`, `AniListOAuth*Tests`, `RemoveAniListAccountUseCaseTests` |
 | Sync | `SyncTaskPolicyTests`, `AdaptiveSyncCoordinatorTests`, `AdaptiveSyncRuntimeTests` |
-| Biblioteca local | `LocalLibraryScanner*Tests`, `LocalLibraryScan*Tests`, `LocalLibraryRecognition*Tests`, `AnitomyLocalFileRecognizerTests`, `LocalMediaResolverTests`, `SqliteLocalEpisodeReaderTests` |
+| Biblioteca local | `LocalLibraryScanner*Tests`, `LocalLibraryScanCoordinatorTests`, `LocalLibraryRecognitionCoordinatorTests`, `AnitomyLocalFileRecognizerTests`, `LocalMediaResolverTests`, `SqliteLocalEpisodeReaderTests` |
 | Capas/cache | `Cover*Tests`, `QtCoverDownloaderTests`, `ClearLocalCacheUseCaseTests` |
 | Reconhecimento | `Mpv*Tests`, `Plex*Tests`, `Plugin*Tests`, `PlaybackObservationServiceTests`, `ProgressDecisionServiceTests`, `RecognitionHistory*Tests`, `RecognitionSyncFeedbackTests`, `EpisodeRecognition*Tests`, `RecognitionCompositionTests`, `ActiveSessionRegistryTests`, `NowWatchingControllerTests` |
-| Apresentação | `MediaPresentationTests`, `HomeScreenControllerTests`, `SettingsControllerTests`, `SeasonalCatalog*Tests`, `SynchronizationStatusControllerTests`, `QmlStructureTests`, `QmlRecognitionStructureTests` |
+| Apresentação | `MediaPresentationTests`, `HomeScreenControllerTests`, `SettingsControllerTests`, `SeasonalCatalog*Tests`, `SynchronizationStatusControllerTests`, `QmlScreensLoadTests`, `QmlStructureTests`, `QmlRecognitionStructureTests` |
+| Composição | `ApplicationCompositionTests`, `PresentationCompositionTests`, `LocalLibraryRecognitionCompositionTests`, `RecognitionCompositionTests` |
 | Configuração/plataforma | `JsonSettingsReaderTests`, `UserPreferencesValidatorTests`, `TranslationLoaderTests`, `Windows*Tests` |
 
 ---

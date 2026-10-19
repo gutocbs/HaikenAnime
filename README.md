@@ -1,8 +1,8 @@
-# HaikenAnime V2
+# HaikenAnime
 
 HaikenAnime is a Qt desktop application for organizing an anime library, keeping personal lists synchronized with [AniList](https://anilist.co/), and connecting catalog data with files stored locally on the computer.
 
-V2 is the current application architecture: it separates presentation, application workflows, domain rules, and infrastructure while keeping local data available when remote synchronization is unavailable.
+The application separates presentation, application workflows, domain rules, and infrastructure, and keeps local data available when remote synchronization is unavailable. It also recognizes episodes watched in mpv or Plex and updates their progress.
 
 ## What it does
 
@@ -33,7 +33,7 @@ The source tree is organized around explicit application boundaries:
 ```text
 .
 ├── main.cpp                # Qt/QML startup
-├── src/app/                # Application composition and workflow coordination
+├── src/app/                # Application and presentation composition, shutdown, workflow coordinators
 ├── src/application/        # Use cases, services, ports, and presentation contracts
 ├── src/domain/             # Media, AniList and recognition domain types and policies
 ├── src/infrastructure/     # Qt, SQLite, AniList, filesystem, player, and platform adapters
@@ -91,7 +91,7 @@ cmake --build build --config Debug --parallel
 ctest --test-dir build -C Debug --output-on-failure
 ```
 
-The tests cover, among other areas, media rules, AniList parsing and synchronization, SQLite repositories, local-library scanning and recognition, settings, covers, translations, and QML structure.
+The tests cover, among other areas, media rules, AniList parsing and synchronization, SQLite repositories, local-library scanning and recognition, player recognition, settings, covers, translations, composition, and loading the QML screens.
 
 ## Running the application
 
@@ -123,4 +123,4 @@ The media details panel has a remove-from-list action that asks for confirmation
 
 ## Development
 
-When changing a signal, slot, context property, or application contract, update its consumers and the relevant unit tests. Prefer adding tests under [`tests/unit`](tests/unit) and running the focused target before the complete CTest suite.
+When changing a signal, slot, context property, or application contract, update its consumers and the relevant unit tests. Prefer adding tests under [`tests/unit`](tests/unit) and running the focused target before the complete CTest suite. Development patterns are described in [`SERVICE.md`](SERVICE.md); rules for AI assistants are in [`AGENTS.md`](AGENTS.md).
