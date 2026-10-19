@@ -346,8 +346,10 @@ if (WIN32)
     haiken_add_test(WindowsPluginSecretStoreTests)
 endif ()
 
+# QML suites render with the software backend. The unescaped ";" makes QT_QUICK_BACKEND its own
+# environment entry; escaped, it was only text at the end of PATH and was never set.
 set_tests_properties(QmlStructureTests QmlRecognitionStructureTests QmlScreensLoadTests PROPERTIES
-        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}\\;QT_QUICK_BACKEND=software"
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH};QT_QUICK_BACKEND=software"
 )
 endif ()
 
