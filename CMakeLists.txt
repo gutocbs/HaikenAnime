@@ -324,6 +324,7 @@ haiken_add_test(SettingsControllerTests)
 haiken_add_test(SynchronizationStatusControllerTests)
 haiken_add_test(QmlStructureTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
 haiken_add_test(QmlRecognitionStructureTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
+haiken_add_test(QmlScreensLoadTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
 haiken_add_test(AdaptiveSyncCoordinatorTests MIGRATIONS)
 haiken_add_test(AdaptiveSyncRuntimeTests)
 haiken_add_test(LocalLibraryScanCoordinatorTests)
@@ -339,7 +340,7 @@ if (WIN32)
     haiken_add_test(WindowsPluginSecretStoreTests)
 endif ()
 
-set_tests_properties(QmlStructureTests QmlRecognitionStructureTests PROPERTIES
+set_tests_properties(QmlStructureTests QmlRecognitionStructureTests QmlScreensLoadTests PROPERTIES
         ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}\\;QT_QUICK_BACKEND=software"
 )
 endif ()
