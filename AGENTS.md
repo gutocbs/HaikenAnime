@@ -8,7 +8,8 @@ padrões de desenvolvimento e de teste. Leia a seção da área antes de mudá-l
 ## Como trabalhar
 
 - **Não rode build nem `ctest`.** O build é lento: quando precisar compilar ou testar, pare e peça ao revisor.
-  Ele roda `scripts/validate.ps1` (script local, fora do Git) e informa o resultado. Os logs ficam em
+  Ele roda `scripts/validate.ps1` (build MSVC com testes + `ctest`; `-Tests <regex>` filtra suítes) e
+  informa o resultado. Os logs ficam em
   `cmake-build-validation/Testing/Temporary/LastTest.log` e podem ser lidos.
 - **Um item = um commit pequeno** (`refactor:`, `fix:`, `test:`, `docs:`, `build:`), adicionando os arquivos
   explicitamente (nunca `git add -a`).
