@@ -17,34 +17,39 @@ void RecognitionSyncFeedback::changesFailed(const QList<AniListPendingChange> &c
 }
 
 QString RecognitionSyncFeedback::SafeError(const AniListSyncErrorCategory category) {
-    // Fixed texts only: the outbox error may echo request headers, so it never reaches the history.
-    if (IsRetryable(category)) {
-        return QStringLiteral("falha temporária de comunicação; nova tentativa automática");
-    }
+    // Fixed keys only: the outbox error may echo request headers, so it never reaches the history. The
+    // history screen translates each key; records from older versions keep their stored sentence.
+    if (IsRetryable(category)) return QStringLiteral("retryable");
     switch (category) {
     case AniListSyncErrorCategory::Authentication:
     case AniListSyncErrorCategory::Authorization:
-        return QStringLiteral("conta do AniList não autorizada; reconecte a conta");
+        return QStringLiteral("unauthorized");
     case AniListSyncErrorCategory::GraphQl:
     case AniListSyncErrorCategory::InvalidData:
-        return QStringLiteral("o AniList recusou a alteração de progresso");
+        return QStringLiteral("rejected");
     case AniListSyncErrorCategory::Persistence:
-        return QStringLiteral("falha ao registrar o envio localmente");
+        return QStringLiteral("persistence");
     default:
-        return QStringLiteral("falha desconhecida ao enviar o progresso");
+        return QStringLiteral("unknown");
     }
 }
 
 void RecognitionSyncFeedback::settle(const QList<AniListPendingChange> &changes,
                                      const std::optional<QString> &safeError) {
     for (const auto &change : changes) {
-        if (change.field != AniListField::Progress) continue;
-        const auto *progress = std::get_if<int>(&change.newValue);
-        if (progress == nullptr) continue;
-
         QString error;
         QList<RecognitionRecord> records;
-        if (!history_.findAwaitingSync(change.mediaId, *progress, records, error)) {
+        bool loaded = false;
+        if (change.field == AniListField::Deletion) {
+            // A list deletion settles the manual removals of the media.
+            loaded = history_.findAwaitingRemovalSync(change.mediaId, records, error);
+        } else if (const auto *progress = std::get_if<int>(&change.newValue);
+                   change.field == AniListField::Progress && progress != nullptr) {
+            loaded = history_.findAwaitingSync(change.mediaId, *progress, records, error);
+        } else {
+            continue;
+        }
+        if (!loaded) {
             log(QStringLiteral("Recognition sync outcome not recorded for media %1: %2.").arg(change.mediaId).arg(error));
             continue;
         }

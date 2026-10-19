@@ -12,6 +12,9 @@
 #include "IRecognitionProgressWriter.h"
 #include "ProgressDecisionService.h"
 
+/// Player shown for history entries made by manual edits (Home and seasonal catalog).
+inline const QString ManualPluginId = QStringLiteral("manual");
+
 struct RecognitionHistoryFilter final {
     std::optional<RecognitionStatus> status;
     QString pluginId;
@@ -33,9 +36,15 @@ public:
     /// existing record and never applies progress again.
     std::optional<RecognitionRecord> record(const PlaybackSession &session, const EpisodeCandidate &candidate,
                                             const ProgressDecision &decision, QString &error);
-    /// Records an observation that ended before the threshold; progress is never touched.
-    std::optional<RecognitionRecord> recordIncomplete(const PlaybackSession &session,
-                                                      const EpisodeCandidate &candidate, QString &error);
+
+    /// Records a manual progress edit by ManualPluginId, awaiting its AniList sync: a raise as MarkedWatched,
+    /// a decrease as ProgressReduced. Edits that keep the progress record nothing (std::nullopt, empty error).
+    std::optional<RecognitionRecord> recordManualProgress(const Media &previous, const Media &updated,
+                                                          QString &error);
+    /// Records a manual removal from the personal list, awaiting its AniList sync.
+    std::optional<RecognitionRecord> recordManualRemoval(const Media &removed, QString &error);
+    /// Removed records of mediaId whose AniList sync is pending or failed.
+    bool findAwaitingRemovalSync(int mediaId, QList<RecognitionRecord> &records, QString &error);
 
     bool list(const RecognitionHistoryFilter &filter, const RecognitionPage &page,
               QList<RecognitionRecord> &records, QString &error);
@@ -52,13 +61,16 @@ public:
     /// Durable, visible AniList failure. Local progress stays as it is.
     bool markSyncFailure(qint64 recordId, const QString &safeError, QString &error);
     bool markSynced(qint64 recordId, QString &error);
-    /// MarkedWatched/Corrected records whose AniList sync is pending or failed for mediaId, up to an episode.
+    /// Records whose AniList sync is pending or failed for mediaId and that a sent progress settles:
+    /// MarkedWatched/Corrected up to an episode, and every ProgressReduced (compaction may change the value).
     bool findAwaitingSync(int mediaId, int upToEpisode, QList<RecognitionRecord> &records, QString &error);
 
 private:
     [[nodiscard]] QDateTime now() const;
     std::optional<RecognitionRecord> load(qint64 recordId, QString &error);
     bool applyProgress(RecognitionRecord &record, const ProgressDecision &decision);
+    std::optional<RecognitionRecord> recordManual(const Media &media, int episode, RecognitionStatus status,
+                                                  QString &error);
 
     IRecognitionHistoryRepository &repository_;
     IRecognitionProgressWriter &progress_;

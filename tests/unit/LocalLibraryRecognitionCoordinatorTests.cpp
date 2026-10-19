@@ -27,7 +27,7 @@ struct SharedState final {
     QList<LocalFileRecognitionRecord> saved;
 };
 
-class SlowFakeRepository final : public ILocalFileRepository {
+class SlowFakeRepository final : public ILocalFileRecognitionRepository {
 public:
     explicit SlowFakeRepository(SharedState &state) : state_(state) {
         const auto alive = ++state_.aliveRepositories;
@@ -35,11 +35,6 @@ public:
         while (alive > previous && !state_.maxAliveRepositories.compare_exchange_weak(previous, alive)) {}
     }
     ~SlowFakeRepository() override { --state_.aliveRepositories; }
-
-    bool beginScan(const QString &, qint64 &, QString &) override { return false; }
-    bool upsertBatch(qint64, const QList<LocalFileObservation> &, QString &) override { return false; }
-    bool completeScan(qint64, qsizetype, QString &) override { return false; }
-    bool failScan(qint64, LibraryScanStatus, qsizetype, const QString &, QString &) override { return false; }
 
     bool readFilesUnderFolder(const QString &folderPath, QList<LocalFileRecognitionRecord> &records,
                               QString &) override {
@@ -112,7 +107,7 @@ void LocalLibraryRecognitionCoordinatorTests::shutdownDuringALongRunReturnsQuick
         LocalLibraryRecognitionCoordinator coordinator(
             [&state](QString &) { return std::make_unique<SlowFakeRepository>(state); });
         QSignalSpy completed(&coordinator, &LocalLibraryRecognitionCoordinator::completed);
-        QVERIFY(coordinator.start(QStringLiteral("D:/Library")));
+        QVERIFY(coordinator.startForPending(QStringLiteral("D:/Library")));
         QTRY_VERIFY_WITH_TIMEOUT(state.saveCalls.load() >= 1, 20000);
         QTest::qWait(10 + attempt * 7);
 
@@ -137,7 +132,7 @@ void LocalLibraryRecognitionCoordinatorTests::completesAndPersistsEveryRecordWhe
         [&state](QString &) { return std::make_unique<SlowFakeRepository>(state); });
     QSignalSpy completed(&coordinator, &LocalLibraryRecognitionCoordinator::completed);
 
-    QVERIFY(coordinator.start(QStringLiteral("D:/Library")));
+    QVERIFY(coordinator.startForPending(QStringLiteral("D:/Library")));
 
     QTRY_COMPARE_WITH_TIMEOUT(completed.count(), 1, 20000);
     QCOMPARE(completed.first().at(0).value<qsizetype>(), 450);

@@ -19,12 +19,8 @@ class SynchronizationStatusController final : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool running READ running NOTIFY changed)
     Q_PROPERTY(QString outcome READ outcome NOTIFY changed)
-    Q_PROPERTY(QString stageKey READ stageKey NOTIFY changed)
     Q_PROPERTY(QString stageLabel READ stageLabel NOTIFY changed)
-    Q_PROPERTY(int stageIndex READ stageIndex NOTIFY changed)
-    Q_PROPERTY(int stageCount READ stageCount NOTIFY changed)
     Q_PROPERTY(int processedItems READ processedItems NOTIFY changed)
-    Q_PROPERTY(int totalItems READ totalItems NOTIFY changed)
     Q_PROPERTY(bool progressKnown READ progressKnown NOTIFY changed)
     Q_PROPERTY(int percent READ percent NOTIFY changed)
     Q_PROPERTY(QString message READ message NOTIFY changed)
@@ -59,7 +55,6 @@ signals:
     void changed();
 
 private:
-    static bool isTracked(SyncPartition partition);
     void beginRoundIfSettled();
     void settleIfIdle();
     void publishOutcome();

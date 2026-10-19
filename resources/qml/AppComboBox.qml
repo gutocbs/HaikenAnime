@@ -10,12 +10,7 @@ Basic.ComboBox {
     property string caption
     property string placeholderText
 
-    readonly property color ink: "#172033"
-    readonly property color muted: "#68758a"
-    readonly property color line: "#d7dee8"
-    readonly property color surface: "#ffffff"
-    readonly property color surfaceSoft: "#f6f8fb"
-    readonly property color accent: "#315d91"
+    readonly property Theme theme: Theme {}
     readonly property bool hasSelection: currentIndex >= 0
     // Long lists (anos do catálogo sazonal) rolam dentro do popup em vez de crescer até a borda.
     property int visibleItemCount: 8
@@ -28,10 +23,10 @@ Basic.ComboBox {
 
     background: Rectangle {
         radius: 5
-        color: combo.enabled ? combo.surface : combo.surfaceSoft
+        color: combo.enabled ? theme.surface : theme.surfaceSoft
         border.width: combo.activeFocus ? 2 : 1
-        border.color: combo.activeFocus ? combo.accent
-                    : combo.hovered && combo.enabled ? "#b9c6d6" : combo.line
+        border.color: combo.activeFocus ? theme.accent
+                    : combo.hovered && combo.enabled ? "#b9c6d6" : theme.line
     }
 
     contentItem: Item {
@@ -44,7 +39,7 @@ Basic.ComboBox {
             Text {
                 visible: combo.caption.length > 0
                 text: combo.caption
-                color: combo.muted
+                color: theme.muted
                 font.pixelSize: 9
                 font.weight: Font.DemiBold
                 font.letterSpacing: 0.7
@@ -53,7 +48,7 @@ Basic.ComboBox {
             Text {
                 width: parent.width
                 text: combo.hasSelection ? combo.displayText : combo.placeholderText
-                color: combo.enabled && combo.hasSelection ? combo.ink : combo.muted
+                color: combo.enabled && combo.hasSelection ? theme.ink : theme.muted
                 font.pixelSize: 12
                 font.weight: combo.hasSelection ? Font.DemiBold : Font.Normal
                 elide: Text.ElideRight
@@ -65,7 +60,7 @@ Basic.ComboBox {
         x: combo.width - width - 12
         anchors.verticalCenter: parent.verticalCenter
         text: "⌄"
-        color: combo.enabled ? combo.accent : combo.muted
+        color: combo.enabled ? theme.accent : theme.muted
         font.pixelSize: 15
     }
 
@@ -79,7 +74,7 @@ Basic.ComboBox {
 
         contentItem: Text {
             text: model[combo.textRole]
-            color: combo.ink
+            color: theme.ink
             font.pixelSize: 12
             font.weight: combo.currentIndex === index ? Font.DemiBold : Font.Normal
             verticalAlignment: Text.AlignVCenter
@@ -88,7 +83,7 @@ Basic.ComboBox {
 
         background: Rectangle {
             color: parent.highlighted ? "#eaf1f8"
-                                      : combo.currentIndex === index ? "#f4f7fb" : combo.surface
+                                      : combo.currentIndex === index ? "#f4f7fb" : theme.surface
         }
     }
 
@@ -117,15 +112,15 @@ Basic.ComboBox {
                 contentItem: Rectangle {
                     implicitWidth: 6
                     radius: 3
-                    color: parent.pressed ? combo.accent : parent.hovered ? "#9fb0c5" : "#c3cedb"
+                    color: parent.pressed ? theme.accent : parent.hovered ? "#9fb0c5" : "#c3cedb"
                 }
             }
         }
 
         background: Rectangle {
             radius: 6
-            color: combo.surface
-            border.color: combo.line
+            color: theme.surface
+            border.color: theme.line
         }
     }
 }

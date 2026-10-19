@@ -89,11 +89,6 @@ int SyncTaskPolicy::PriorityFor(const SyncPartition partition) {
     switch (partition) {
     case SyncPartition::UserList: return 700;
     case SyncPartition::PendingChanges: return 600;
-    case SyncPartition::ActiveCatalog: return 500;
-    case SyncPartition::InactiveCatalog: return 300;
-    case SyncPartition::CompletedCatalog: return 200;
-    case SyncPartition::Covers: return 100;
-    case SyncPartition::DerivedMetadata: return 50;
     }
     return 0;
 }
@@ -117,24 +112,7 @@ SyncTaskPolicyDecision SyncTaskPolicy::Decide(const SyncTaskState &state, const 
         decision.proposedState.consecutiveImmediateRetries = 0;
     }
 
-    if (request.trigger == SyncTaskTrigger::CompletedToActive) {
-        decision.proposedState.kind = SyncTaskKind::ActiveCatalog;
-        decision.proposedState.partition = SyncPartition::ActiveCatalog;
-        decision.proposedState.priority = PriorityFor(SyncPartition::ActiveCatalog);
-        decision.promotion = SyncTaskPromotion::CompletedToActive;
-    }
-
-    if (request.trigger == SyncTaskTrigger::LocalChange) {
-        decision.promotion = SyncTaskPromotion::LocalChange;
-    }
-
-    if (request.retryAfter.has_value() && request.retryAfter->isValid() && *request.retryAfter > now) {
-        decision.schedule.nextRunAt = request.retryAfter->toUTC();
-        return decision;
-    }
-
-    if (request.trigger == SyncTaskTrigger::ManualRun || request.trigger == SyncTaskTrigger::LocalChange
-        || request.trigger == SyncTaskTrigger::CompletedToActive) {
+    if (request.trigger == SyncTaskTrigger::ManualRun || request.trigger == SyncTaskTrigger::LocalChange) {
         decision.schedule = immediateDecision(now, decision.schedule.cacheValidity);
         return decision;
     }
@@ -170,9 +148,4 @@ SyncTaskPolicyDecision SyncTaskPolicy::Decide(const SyncTaskState &state, const 
 
     decision.schedule = immediateDecision(now, decision.schedule.cacheValidity);
     return decision;
-}
-
-SyncScheduleDecision SyncTaskPolicy::Evaluate(const SyncTaskState &state, const SyncSchedulePolicy &policy,
-                                              QDateTime now, std::optional<QDateTime> retryAfter) {
-    return Decide(state, policy, now, {.retryAfter = std::move(retryAfter)}).schedule;
 }

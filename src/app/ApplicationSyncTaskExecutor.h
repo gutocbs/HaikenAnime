@@ -13,13 +13,13 @@
 #include "../application/anilist/AniListCredentials.h"
 
 class QThread;
+class SqliteDatabase;
 
 /** Creates each synchronization task's network and SQLite dependencies on its worker thread. */
 class ApplicationSyncTaskExecutor final : public ISyncTaskExecutor {
 public:
     struct AuthenticatedUserListConfiguration final {
         QUrl endpoint;
-        AniListCredentials credentials;
         std::function<AniListCredentials()> credentialsProvider;
         int perChunk = 100;
         int httpTimeoutMs = 30000;
@@ -28,12 +28,7 @@ public:
         std::function<void(const QString &)> auditLogger;
     };
 
-    ApplicationSyncTaskExecutor(QString databasePath, QString upsertQueryPath,
-                                QString readQueryPath, QString readActiveMediaIdsQueryPath,
-                                QString markSourceRemovedQueryPath, QString readTaskStatesQueryPath,
-                                QString upsertTaskStateQueryPath, QString deleteTaskStateQueryPath,
-                                QString readUserPreferencesQueryPath,
-                                QString upsertUserPreferencesQueryPath, int timeoutMs,
+    ApplicationSyncTaskExecutor(QString databasePath, int timeoutMs,
                                 AuthenticatedUserListConfiguration authenticatedUserList);
     ~ApplicationSyncTaskExecutor() override;
 
@@ -49,20 +44,23 @@ private:
         CancellationAcknowledgement cancellationAcknowledgement;
     };
 
+    using StagePublisher = std::function<void(const QString &stageKey, int stageIndex, int stageCount,
+                                              int processedItems, int totalItems)>;
+
+    /** Downloads the enabled anime and manga lists, checkpointing each page, then reconciles the snapshot. */
+    void RunUserListTask(SqliteDatabase &database, const AniListCredentials &credentials,
+                         const std::shared_ptr<Job> &job, SyncTaskState &checkpointState,
+                         const StagePublisher &publish, SyncTaskExecutionResult &result, QString &error) const;
+    /** Drains the account's outbox to AniList and reports progress outcomes to the recognition history. */
+    void RunPendingChangesTask(SqliteDatabase &database, const AniListCredentials &credentials,
+                               const std::shared_ptr<Job> &job, const StagePublisher &publish,
+                               SyncTaskExecutionResult &result, QString &error) const;
+    void Audit(const QString &message) const;
     void Finish(const std::shared_ptr<Job> &job, SyncPartition partition,
                 const Completion &completion, SyncTaskExecutionResult result);
     void NotifyShutdownIfIdle();
 
     QString databasePath_;
-    QString upsertQueryPath_;
-    QString readQueryPath_;
-    QString readActiveMediaIdsQueryPath_;
-    QString markSourceRemovedQueryPath_;
-    QString readTaskStatesQueryPath_;
-    QString upsertTaskStateQueryPath_;
-    QString deleteTaskStateQueryPath_;
-    QString readUserPreferencesQueryPath_;
-    QString upsertUserPreferencesQueryPath_;
     int timeoutMs_ = 0;
     AuthenticatedUserListConfiguration authenticatedUserList_;
     std::mutex mutex_;

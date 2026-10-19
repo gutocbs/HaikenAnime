@@ -1,6 +1,7 @@
 #ifndef HAIKENANIME_APPLICATIONCOMPOSITION_H
 #define HAIKENANIME_APPLICATIONCOMPOSITION_H
 
+#include <functional>
 #include <memory>
 #include <optional>
 
@@ -11,16 +12,15 @@
 #include "../application/media/IPersonalListChangeWriter.h"
 #include "../application/media/PersonalListChangeService.h"
 #include "../application/library/ILocalFileOpener.h"
-#include "../application/library/LocalEpisodeReader.h"
+#include "../application/library/ILocalEpisodeReader.h"
 #include "../infrastructure/database/SqliteDatabase.h"
-#include "InitialSyncCoordinator.h"
 #include "AdaptiveSyncRuntime.h"
 #include "LocalLibraryScanCoordinator.h"
 #include "LocalLibraryRecognitionCoordinator.h"
 #include "../infrastructure/logging/AsyncLogger.h"
-#include "../application/covers/CoverDownloadCoordinator.h"
+#include "CoverDownloadCoordinator.h"
 #include "../application/covers/ICoverTemporaryStore.h"
-#include "../application/cache/ClearLocalCacheUseCase.h"
+#include "ClearLocalCacheUseCase.h"
 #include "../application/configuration/IUserPreferencesRepository.h"
 #include "../application/configuration/UserPreferences.h"
 #include "../infrastructure/anilist/AniListGraphQlClient.h"
@@ -49,7 +49,6 @@ struct ApplicationContext final {
     std::unique_ptr<GraphQlQueryStore> aniListViewerQueryStore;
     std::unique_ptr<AniListViewerClient> aniListViewerClient;
     std::unique_ptr<WindowsAniListOAuthLauncher> aniListOAuthLauncher;
-    std::unique_ptr<InitialSyncCoordinator> initialSync;
     std::unique_ptr<AdaptiveSyncRuntime> adaptiveSync;
     std::unique_ptr<ICoverCacheRepository> coverCacheRepository;
     std::unique_ptr<ICoverFileStore> coverFileStore;
@@ -59,7 +58,6 @@ struct ApplicationContext final {
     std::unique_ptr<ClearLocalCacheUseCase> clearLocalCache;
     std::unique_ptr<IUserPreferencesRepository> userPreferencesRepository;
     UserPreferences userPreferences;
-    CoverQuality coverQuality = CoverQuality::Medium;
     std::unique_ptr<QNetworkAccessManager> seasonalNetworkManager;
     std::unique_ptr<AniListGraphQlClient> seasonalGraphQlClient;
     std::unique_ptr<GraphQlQueryStore> seasonalQueryStore;
@@ -75,6 +73,7 @@ struct ApplicationContext final {
     std::unique_ptr<ILocalFileOpener> localFileOpener;
     QString initializationError;
     bool startupLibraryScanScheduled = false;
+    bool servicesShutdown = false;
     // Declared last so destruction joins worker threads before other dependencies.
     std::unique_ptr<LocalLibraryRecognitionCoordinator> localLibraryRecognition;
     std::unique_ptr<LocalLibraryScanCoordinator> localLibraryScan;
@@ -93,10 +92,12 @@ struct ApplicationContext final {
 struct ApplicationCompositionOptions final {
     QString databasePath;
     QString settingsPath = QStringLiteral(":/config/Settings.json");
-    QString queryConfigurationPath = QStringLiteral(":/sqlite/queries/sqlite-queries.json");
 };
 [[nodiscard]] ApplicationContext createApplicationContext(const ApplicationCompositionOptions &options);
 // Call only after the settings controller and QML have been initialized.
 bool scheduleStartupLibraryScan(ApplicationContext &context, QObject *lifetime);
+/// Applies change to a copy of the user preferences and stores it; on success the copy becomes current.
+bool UpdateUserPreferences(ApplicationContext &context, const std::function<void(UserPreferences &)> &change,
+                           QString &error);
 
 #endif // HAIKENANIME_APPLICATIONCOMPOSITION_H

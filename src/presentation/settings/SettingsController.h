@@ -57,7 +57,6 @@ class SettingsController final : public QObject {
     Q_PROPERTY(bool aniListAuthenticationInProgress READ aniListAuthenticationInProgress NOTIFY changed)
     Q_PROPERTY(bool aniListConnected READ aniListConnected NOTIFY changed)
     Q_PROPERTY(bool aniListRemovalInProgress READ aniListRemovalInProgress NOTIFY changed)
-    Q_PROPERTY(QString aniListAuthenticationState READ aniListAuthenticationState NOTIFY changed)
     Q_PROPERTY(QString aniListUsername READ aniListUsername NOTIFY changed)
     Q_PROPERTY(QString aniListAuthenticationMessage READ aniListAuthenticationMessage NOTIFY changed)
 public:
@@ -111,6 +110,9 @@ public:
     QString aniListUsername() const;
     QString aniListAuthenticationMessage() const;
     void SetScanCoordinator(LocalLibraryScanCoordinator *coordinator);
+    using FolderOpener = std::function<bool(const QUrl &)>;
+    /** Folder opened by OpenLogsFolder; opener defaults to the system file explorer. */
+    void SetLogsFolder(QString path, FolderOpener opener = {});
     void SetAniListAuthenticationServices(AniListAuthManager *authManager,
                                            AniListOAuthConfig configuration,
                                            AniListAuthorizationLauncher launcher,
@@ -143,8 +145,10 @@ public:
     Q_INVOKABLE void SynchronizeNow();
     Q_INVOKABLE void ClearLocalCache();
     Q_INVOKABLE void ConnectAniList();
-    Q_INVOKABLE void HandleAniListOAuthCallback(const QUrl &callback);
+    void HandleAniListOAuthCallback(const QUrl &callback);
     Q_INVOKABLE void RemoveAniListAccount();
+    /** Opens the logs folder in the file explorer; failures are shown through errorMessage. */
+    Q_INVOKABLE bool OpenLogsFolder();
 signals:
     void changed();
     void scanChanged();
@@ -174,6 +178,8 @@ private:
     bool saving_ = false;
     QString statusMessage_;
     QString errorMessage_;
+    QString logsFolder_;
+    FolderOpener logsFolderOpener_;
     QPointer<LocalLibraryScanCoordinator> scanCoordinator_;
     bool extensionInputValid_ = true;
     bool scanRunning_ = false;

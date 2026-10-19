@@ -2,6 +2,8 @@
 
 #include "../../src/app/SeasonalCatalogCoordinator.h"
 #include "../../src/application/catalog/ISeasonalCatalogDataSource.h"
+#include "../../src/application/media/IPersonalListChangeWriter.h"
+#include "../../src/application/media/PersonalListChangeService.h"
 #include "../../src/application/media/SeasonalPersonalListService.h"
 #include "../../src/presentation/seasonal/SeasonalCatalogController.h"
 
@@ -46,8 +48,7 @@ public:
     std::function<void(const SeasonalCatalogRequest &)> onFetch;
 };
 
-class InMemoryMediaRepository final : public IMediaReader, public IMediaWriter,
-                                      public IPersonalListMediaWriter {
+class InMemoryMediaRepository final : public IMediaReader, public IPersonalListChangeWriter {
 public:
     bool readAll(QList<Media> &result, QString &error) override {
         result = media;
@@ -55,24 +56,7 @@ public:
         return true;
     }
 
-    bool upsert(const QList<Media> &items, QString &error) override {
-        if (!failure.isEmpty()) {
-            error = failure;
-            return false;
-        }
-        for (const Media &item : items) {
-            const auto found = std::find_if(media.begin(), media.end(), [&item](const Media &existing) {
-                return existing.Id == item.Id;
-            });
-            if (found == media.end()) media.append(item);
-            else *found = item;
-        }
-        ++upsertCalls;
-        error.clear();
-        return true;
-    }
-
-    bool updatePersonalListMedia(const Media &item, QString &error) override {
+    bool save(const Media &item, const QList<AniListPendingChange> &, QString &error) override {
         if (!failure.isEmpty()) {
             error = failure;
             return false;
@@ -81,13 +65,19 @@ public:
             return existing.Id == item.Id;
         });
         if (found == media.end()) {
-            error = QStringLiteral("Local media record was not found.");
-            return false;
+            media.append(item);
+            ++upsertCalls;
+        } else {
+            *found = item;
+            ++personalListUpdateCalls;
         }
-        *found = item;
-        ++personalListUpdateCalls;
         error.clear();
         return true;
+    }
+
+    bool remove(const Media &, const AniListPendingChange &, QString &error) override {
+        error = QStringLiteral("Removal is not expected in this test.");
+        return false;
     }
 
     QList<Media> media;
@@ -116,6 +106,7 @@ private slots:
     void retainsTheDraftWhenLocalPersistenceFails();
     void requestsFolderRecognitionWhenTheSavedPathChanges();
     void requestsPendingRecognitionWhenOnlyAlternativeNamesChange();
+    void announcesSavedEditsForTheHistory();
     void requestsNoRecognitionWhenNothingRelevantChanged();
     void requestsFolderRecognitionOnEverySaveWhenThePathIsUnchanged();
     void requestsTheOldFolderWhenThePathMoves();
@@ -132,7 +123,8 @@ void SeasonalCatalogControllerTests::Should_ShowQuestionMarkProgress_When_TotalC
     existing.ConsumedChapters = 3;
     existing.ListStatus = UserListStatus::Current;
     repository.media.append(existing);
-    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    PersonalListChangeService changes(repository);
+    SeasonalPersonalListService personalLists(&repository, &changes);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -219,7 +211,7 @@ void SeasonalCatalogControllerTests::seasonalMediaModelPublishesCompleteRowsAndR
     item.CoverMediumUrl = QStringLiteral("https://example.test/7-medium.jpg");
     item.CoverLargeUrl = QStringLiteral("https://example.test/7-large.jpg");
 
-    model.setMedia({item});
+    model.SetMedia({item});
     const QModelIndex index = model.index(0, 0);
     QVERIFY(index.isValid());
     QCOMPARE(model.data(index, SeasonalCatalogMediaModel::TitleRole), QStringLiteral("Seasonal title"));
@@ -229,7 +221,7 @@ void SeasonalCatalogControllerTests::seasonalMediaModelPublishesCompleteRowsAndR
              QStringLiteral("https://example.test/7-medium.jpg"));
 
     QSignalSpy coverUpdated(&model, &QAbstractItemModel::dataChanged);
-    model.configurePresentation(CoverQuality::Large, DefaultPreferredTitleKey());
+    model.ConfigurePresentation(CoverQuality::Large, DefaultPreferredTitleKey());
     QCOMPARE(coverUpdated.size(), 1);
     QCOMPARE(model.data(index, SeasonalCatalogMediaModel::CoverSourceRole),
              QStringLiteral("https://example.test/7-large.jpg"));
@@ -327,7 +319,8 @@ void SeasonalCatalogControllerTests::blocksAnAbsentSelectionUntilOnePersonalStat
     Media selected = media(7);
     source.responses.insert(1, page(1, {selected}));
     InMemoryMediaRepository repository;
-    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    PersonalListChangeService changes(repository);
+    SeasonalPersonalListService personalLists(&repository, &changes);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -350,7 +343,8 @@ void SeasonalCatalogControllerTests::addsAbsentSelectionIdempotentlyAndKeepsCata
     selected.ExternalLinks = {{QStringLiteral("Official"), QStringLiteral("https://example.test/official")}};
     source.responses.insert(1, page(1, {selected}));
     InMemoryMediaRepository repository;
-    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    PersonalListChangeService changes(repository);
+    SeasonalPersonalListService personalLists(&repository, &changes);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -390,7 +384,8 @@ void SeasonalCatalogControllerTests::reusesAnExistingLocalEntryWithoutOverwritin
     existing.AlternativeNames = {QStringLiteral("My custom title")};
     existing.ListStatus = UserListStatus::Current;
     repository.media.append(existing);
-    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    PersonalListChangeService changes(repository);
+    SeasonalPersonalListService personalLists(&repository, &changes);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -425,7 +420,8 @@ void SeasonalCatalogControllerTests::retainsTheDraftWhenLocalPersistenceFails() 
     source.responses.insert(1, page(1, {selected}));
     InMemoryMediaRepository repository;
     repository.failure = QStringLiteral("disk full");
-    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    PersonalListChangeService changes(repository);
+    SeasonalPersonalListService personalLists(&repository, &changes);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -444,7 +440,8 @@ void SeasonalCatalogControllerTests::requestsFolderRecognitionWhenTheSavedPathCh
     Media selected = media(7);
     source.responses.insert(1, page(1, {selected}));
     InMemoryMediaRepository repository;
-    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    PersonalListChangeService changes(repository);
+    SeasonalPersonalListService personalLists(&repository, &changes);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -470,7 +467,8 @@ void SeasonalCatalogControllerTests::requestsPendingRecognitionWhenOnlyAlternati
     existing.LocalPath = QStringLiteral("D:/Anime/Show");
     existing.ListStatus = UserListStatus::Current;
     repository.media.append(existing);
-    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    PersonalListChangeService changes(repository);
+    SeasonalPersonalListService personalLists(&repository, &changes);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -498,7 +496,8 @@ void SeasonalCatalogControllerTests::requestsNoRecognitionWhenNothingRelevantCha
     existing.AlternativeNames = {QStringLiteral("Same")};
     existing.ListStatus = UserListStatus::Current;
     repository.media.append(existing);
-    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    PersonalListChangeService changes(repository);
+    SeasonalPersonalListService personalLists(&repository, &changes);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -523,7 +522,8 @@ void SeasonalCatalogControllerTests::requestsFolderRecognitionOnEverySaveWhenThe
     existing.AlternativeNames = {QStringLiteral("Same")};
     existing.ListStatus = UserListStatus::Current;
     repository.media.append(existing);
-    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    PersonalListChangeService changes(repository);
+    SeasonalPersonalListService personalLists(&repository, &changes);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -550,7 +550,8 @@ void SeasonalCatalogControllerTests::requestsTheOldFolderWhenThePathMoves() {
     existing.AlternativeNames = {QStringLiteral("Same")};
     existing.ListStatus = UserListStatus::Current;
     repository.media.append(existing);
-    SeasonalPersonalListService personalLists(&repository, &repository, &repository);
+    PersonalListChangeService changes(repository);
+    SeasonalPersonalListService personalLists(&repository, &changes);
     SeasonalCatalogCoordinator coordinator(source);
     SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
                                          DefaultPreferredTitleKey(), nullptr, &personalLists);
@@ -565,6 +566,34 @@ void SeasonalCatalogControllerTests::requestsTheOldFolderWhenThePathMoves() {
     QCOMPARE(requested.count(), 1);
     QCOMPARE(requested.first().at(0).toStringList(),
              (QStringList{QStringLiteral("D:/New"), QStringLiteral("D:/Old")}));
+}
+
+void SeasonalCatalogControllerTests::announcesSavedEditsForTheHistory() {
+    // Arrange: a catalog media not yet in the personal list.
+    RecordingSource source;
+    Media selected = media(7);
+    source.responses.insert(1, page(1, {selected}));
+    InMemoryMediaRepository repository;
+    PersonalListChangeService changes(repository);
+    SeasonalPersonalListService personalLists(&repository, &changes);
+    SeasonalCatalogCoordinator coordinator(source);
+    SeasonalCatalogController controller(&coordinator, CoverQuality::Medium,
+                                         DefaultPreferredTitleKey(), nullptr, &personalLists);
+    controller.SetYear(2026);
+    controller.SetSeason(QStringLiteral("SPRING"));
+    controller.SelectMedia(selected.Id);
+    QList<std::pair<Media, Media>> edits;
+    connect(&controller, &SeasonalCatalogController::personalListEdited, this,
+            [&edits](const Media &previous, const Media &updated) { edits.append({previous, updated}); });
+
+    // Act
+    QVERIFY(controller.SaveSelectedToPersonalList(2, QStringLiteral("current"), 0.0, QString(), {}));
+
+    // Assert: a new entry has no previous progress.
+    QCOMPARE(edits.size(), 1);
+    QCOMPARE(edits.first().first.ConsumedChapters, 0);
+    QCOMPARE(edits.first().second.Id, 7);
+    QCOMPARE(edits.first().second.ConsumedChapters, 2);
 }
 
 QTEST_GUILESS_MAIN(SeasonalCatalogControllerTests)

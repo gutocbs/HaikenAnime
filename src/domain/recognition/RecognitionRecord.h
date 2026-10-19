@@ -16,7 +16,11 @@ enum class RecognitionStatus {
     AlreadyWatched,
     Uncertain,
     Ignored,
-    Corrected
+    Corrected,
+    /// A manual removal from the personal list (only manual history entries use it).
+    Removed,
+    /// A manual edit that lowered the progress (only manual history entries use it).
+    ProgressReduced
 };
 
 /// AniList synchronization state of the local progress change made by a recognition.

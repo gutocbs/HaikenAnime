@@ -1,11 +1,11 @@
 #include <QFile>
 #include <QRegularExpression>
+#include <QTemporaryDir>
 #include <QtTest>
 
 #include "../../src/presentation/home/HomeScreenController.h"
 #include "../../src/application/library/ILocalFileOpener.h"
-#include "../../src/application/library/LocalEpisodeReader.h"
-#include "../../src/application/media/IPersonalListMediaWriter.h"
+#include "../../src/application/library/ILocalEpisodeReader.h"
 #include "../../src/application/media/IPersonalListChangeWriter.h"
 #include "../../src/application/media/PersonalListChangeService.h"
 
@@ -22,13 +22,17 @@ public:
 
 };
 
-class FakePersonalListMediaWriter final : public IPersonalListMediaWriter {
+class CapturingPersonalListChangeWriter final : public IPersonalListChangeWriter {
 public:
-    bool updatePersonalListMedia(const Media &media, QString &error) override {
+    bool save(const Media &media, const QList<AniListPendingChange> &, QString &error) override {
         received = media;
         ++calls;
         error = failure;
         return failure.isEmpty();
+    }
+    bool remove(const Media &, const AniListPendingChange &, QString &error) override {
+        error = QStringLiteral("Removal is not expected in this test.");
+        return false;
     }
 
     Media received;
@@ -116,7 +120,6 @@ public:
     bool Clear(int &removedFiles, QString &error) override {
         removedFiles = 0; error.clear(); return true;
     }
-    bool RemoveOrphans(const QSet<QString> &, int, int &, QString &) override { return true; }
     QString AbsolutePath(const QString &path) const override { return QStringLiteral("C:/covers/") + path; }
 };
 
@@ -135,12 +138,13 @@ private slots:
     void exposesPresentationReadyStatus();
     void exposesSelfDescribingCardValues();
     void exposesPlaceholdersAndConfiguredScoreMaximumOnCards();
-    void preparesPreviewCardMetadataForBothStatusPresentations();
-    void preparesCompactDetailPreviewMetadataSeparatelyFromCards();
-    void preparesCompactDetailPreviewProgressWithZeroTotal();
     void Should_ShowQuestionMarkProgress_When_TotalChaptersIsUnknown();
     void exposesNineItemPreviewAndCompleteFilteredLibrary();
     void reloadReflectsANewLocalPersonalListEntryInPreviewAndFullList();
+    void reloadKeepsTheSelectedMediaWithItsNewData();
+    void selectionExposesTheRecognizedLocalFolder();
+    void currentCardSaysWatchingForAnimeAndReadingForManga();
+    void reloadClearsTheSelectionWhenTheMediaIsGone();
     void changesMediaTypeUsingStableKeys();
     void exposesBackendDrivenBrowseOptions();
     void restoresConfiguredSortBeforeFirstModelPublication();
@@ -174,6 +178,7 @@ private slots:
     void keepsModelsAndSelectionUnchangedWhenPersistingSelectedMediaFails();
     void removesSelectedMediaFromLibraryWithoutRestart();
     void keepsMediaAndReportsOperationErrorWhenRemovalFails();
+    void announcesSavedEditsAndRemovalsForTheHistory();
     void selectedCoverFallsBackWhenCachedFileIsMissing();
     void updatesOnlyOneCoverRowAndPreservesOldCoverOnFailure();
     void coverQualityChangesFutureRequestsWithoutClearingDisplayedCover();
@@ -191,11 +196,94 @@ QString HomeScreenControllerTests::qmlSource(const QString &name) {
     return QString::fromUtf8(file.readAll());
 }
 
+void HomeScreenControllerTests::currentCardSaysWatchingForAnimeAndReadingForManga() {
+    FakeMediaReader reader;
+    Media anime;
+    anime.Id = 1;
+    anime.Name = QStringLiteral("Frieren");
+    anime.Type = MediaType::Anime;
+    anime.ListStatus = UserListStatus::Current;
+    Media manga = anime;
+    manga.Id = 2;
+    manga.Name = QStringLiteral("Berserk");
+    manga.Type = MediaType::Manga;
+    reader.result = {anime, manga};
+    HomeScreenController controller(reader);
+    controller.Reload();
+    const auto label = [&controller] {
+        return controller.mediaModel()->data(controller.mediaModel()->index(0, 0),
+                                             HomeMediaModel::StatusLabelRole).toString();
+    };
+
+    QCOMPARE(label(), QStringLiteral("Minha lista: Assistindo"));
+    controller.SetMediaType(QStringLiteral("manga"));
+    QCOMPARE(label(), QStringLiteral("Minha lista: Lendo"));
+}
+
+void HomeScreenControllerTests::selectionExposesTheRecognizedLocalFolder() {
+    QTemporaryDir directory;
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 5;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    media.LocalPath = directory.path();
+    reader.result = {media};
+    HomeScreenController controller(reader);
+    controller.Reload();
+
+    QVERIFY(controller.selectedLocalFolderUrl().isEmpty());
+    controller.SelectMedia(5);
+
+    QCOMPARE(controller.selectedLocalFolderUrl(), QUrl::fromLocalFile(directory.path()).toString());
+}
+
+void HomeScreenControllerTests::reloadKeepsTheSelectedMediaWithItsNewData() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 5;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    media.ConsumedChapters = 3;
+    reader.result = {media};
+    HomeScreenController controller(reader);
+    controller.Reload();
+    controller.SelectMedia(5);
+
+    // A synchronization finishes while the details are open and brings new progress.
+    reader.result.first().ConsumedChapters = 4;
+    controller.Reload();
+
+    QVERIFY(controller.hasSelection());
+    QCOMPARE(controller.selectedMediaId(), 5);
+    QCOMPARE(controller.selectedProgressValue(), 4);
+}
+
+void HomeScreenControllerTests::reloadClearsTheSelectionWhenTheMediaIsGone() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 5;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    reader.result = {media};
+    HomeScreenController controller(reader);
+    controller.Reload();
+    controller.SelectMedia(5);
+
+    reader.result.clear();
+    controller.Reload();
+
+    QVERIFY(!controller.hasSelection());
+}
+
 void HomeScreenControllerTests::reloadReflectsANewLocalPersonalListEntryInPreviewAndFullList() {
     FakeMediaReader reader;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.reload();
+    controller.Reload();
     QCOMPARE(controller.mediaModel()->rowCount(), 0);
     QCOMPARE(controller.fullMediaModel()->rowCount(), 0);
 
@@ -205,7 +293,7 @@ void HomeScreenControllerTests::reloadReflectsANewLocalPersonalListEntryInPrevie
     added.Type = MediaType::Anime;
     added.ListStatus = UserListStatus::Planning;
     reader.result.append(added);
-    controller.reload();
+    controller.Reload();
 
     QCOMPARE(controller.mediaModel()->rowCount(), 1);
     QCOMPARE(controller.fullMediaModel()->rowCount(), 1);
@@ -230,7 +318,7 @@ void HomeScreenControllerTests::coverQualityChangesFutureRequestsWithoutClearing
     CoverSettings settings;
     CoverDownloadCoordinator covers(downloader, cache, files, settings);
     HomeScreenController controller(&reader, &covers, CoverQuality::Medium);
-    controller.reload();
+    controller.Reload();
     controller.RequestCoverWindow(QStringLiteral("preview"), 0, 0, 0);
     QCOMPARE(downloader.requests.constLast().remoteUrl, QUrl(media.CoverMediumUrl));
 
@@ -253,7 +341,7 @@ void HomeScreenControllerTests::exposesReadyMedia() {
     reader.result.append(media);
 
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
 
     QCOMPARE(controller.state(), QStringLiteral("ready"));
     QCOMPARE(controller.statusMessage(), QStringLiteral("Dados locais carregados."));
@@ -269,7 +357,7 @@ void HomeScreenControllerTests::exposesEmptyState() {
     FakeMediaReader reader;
     HomeScreenController controller(reader);
 
-    controller.reload();
+    controller.Reload();
 
     QCOMPARE(controller.state(), QStringLiteral("empty"));
     QCOMPARE(controller.mediaCount(), 0);
@@ -280,7 +368,7 @@ void HomeScreenControllerTests::exposesErrorState() {
     reader.failure = QStringLiteral("Database unavailable");
     HomeScreenController controller(reader);
 
-    controller.reload();
+    controller.Reload();
 
     QCOMPARE(controller.state(), QStringLiteral("error"));
     QCOMPARE(controller.errorMessage(), QStringLiteral("Database unavailable"));
@@ -290,7 +378,7 @@ void HomeScreenControllerTests::exposesErrorState() {
 void HomeScreenControllerTests::exposesInitializationErrorWithoutRepository() {
     HomeScreenController controller(nullptr, QStringLiteral("Database initialization failed"));
 
-    controller.reload();
+    controller.Reload();
 
     QCOMPARE(controller.state(), QStringLiteral("error"));
     QCOMPARE(controller.errorMessage(), QStringLiteral("Database initialization failed"));
@@ -307,7 +395,7 @@ void HomeScreenControllerTests::reloadAfterSynchronizationLoadsMedia() {
     reader.result.append(media);
     HomeScreenController controller(reader);
 
-    controller.reload();
+    controller.Reload();
 
     QCOMPARE(controller.state(), QStringLiteral("ready"));
     QCOMPARE(controller.mediaCount(), 1);
@@ -327,12 +415,12 @@ void HomeScreenControllerTests::doesNotExposeSynchronizationState() {
 void HomeScreenControllerTests::errorStateComesOnlyFromReadFailure() {
     FakeMediaReader reader;
     HomeScreenController healthy(reader);
-    healthy.reload();
+    healthy.Reload();
     QCOMPARE(healthy.state(), QStringLiteral("empty"));
     QVERIFY(healthy.errorMessage().isEmpty());
 
     HomeScreenController failing(nullptr, QStringLiteral("Database initialization failed"));
-    failing.reload();
+    failing.Reload();
     QCOMPARE(failing.state(), QStringLiteral("error"));
     QCOMPARE(failing.errorMessage(), QStringLiteral("Database initialization failed"));
 }
@@ -366,7 +454,7 @@ void HomeScreenControllerTests::exposesPresentationReadyStatus() {
     HomeScreenController controller(reader);
     controller.ConfigureCardStatusPresentation(CardStatusPresentation::MediaReleaseStatus);
 
-    controller.reload();
+    controller.Reload();
 
     const auto index = controller.mediaModel()->index(0, 0);
     QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::StatusLabelRole).toString(),
@@ -391,7 +479,7 @@ void HomeScreenControllerTests::exposesNineItemPreviewAndCompleteFilteredLibrary
     reader.result.append(manga);
 
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
 
     QCOMPARE(controller.mediaModel()->rowCount(), 9);
     QCOMPARE(controller.fullMediaModel()->rowCount(), 12);
@@ -420,7 +508,7 @@ void HomeScreenControllerTests::changesMediaTypeUsingStableKeys() {
     reader.result = {anime, manga, novel};
 
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
     controller.SetMediaType(QStringLiteral("manga"));
 
     QCOMPARE(controller.activeMediaType(), QStringLiteral("manga"));
@@ -480,7 +568,7 @@ void HomeScreenControllerTests::exposesSelfDescribingCardValues() {
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
 
-    controller.reload();
+    controller.Reload();
 
     const auto index = controller.mediaModel()->index(0, 0);
     QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::StatusLabelRole).toString(),
@@ -505,7 +593,7 @@ void HomeScreenControllerTests::exposesPlaceholdersAndConfiguredScoreMaximumOnCa
     HomeScreenController controller(reader);
     controller.ConfigureScoreScale(0.0, 100.0, 5.0);
 
-    controller.reload();
+    controller.Reload();
 
     const auto index = controller.mediaModel()->index(0, 0);
     QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::ProgressRole).toString(),
@@ -513,79 +601,10 @@ void HomeScreenControllerTests::exposesPlaceholdersAndConfiguredScoreMaximumOnCa
     QCOMPARE(controller.mediaModel()->data(index, HomeMediaModel::ScoreRole).toString(),
              QStringLiteral("Nota —"));
     reader.result.first().PersonalScore = 85;
-    controller.reload();
+    controller.Reload();
     QCOMPARE(controller.mediaModel()->data(controller.mediaModel()->index(0, 0),
                                             HomeMediaModel::ScoreRole).toString(),
              QStringLiteral("Nota 85/100"));
-}
-
-void HomeScreenControllerTests::preparesPreviewCardMetadataForBothStatusPresentations() {
-    FakeMediaReader reader;
-    Media media;
-    media.Id = 42;
-    media.Name = QStringLiteral("Frieren");
-    media.Type = MediaType::Anime;
-    media.Status = MediaStatus::Released;
-    media.TotalChapters = 24;
-    reader.result.append(media);
-    HomeScreenController controller(reader);
-    controller.ConfigureScoreScale(0.0, 100.0, 5.0);
-    controller.reload();
-    controller.SelectMedia(42);
-
-    const auto personal = controller.PreviewCardMetadata(12, QStringLiteral("completed"), 85);
-    QCOMPARE(personal.value(QStringLiteral("status")).toString(),
-             QStringLiteral("Minha lista: Concluído"));
-    QCOMPARE(personal.value(QStringLiteral("progress")).toString(),
-             QStringLiteral("Progresso 12/24"));
-    QCOMPARE(personal.value(QStringLiteral("score")).toString(), QStringLiteral("Nota 85/100"));
-
-    controller.ConfigureCardStatusPresentation(CardStatusPresentation::MediaReleaseStatus);
-    const auto release = controller.PreviewCardMetadata(12, QStringLiteral("completed"), 85);
-    QCOMPARE(release.value(QStringLiteral("status")).toString(), QStringLiteral("Exibição: Concluído"));
-    QCOMPARE(release.value(QStringLiteral("progress")).toString(), QStringLiteral("Progresso 12/24"));
-    QCOMPARE(release.value(QStringLiteral("score")).toString(), QStringLiteral("Nota 85/100"));
-}
-
-void HomeScreenControllerTests::preparesCompactDetailPreviewMetadataSeparatelyFromCards() {
-    FakeMediaReader reader;
-    Media media;
-    media.Id = 42;
-    media.Name = QStringLiteral("Frieren");
-    media.Type = MediaType::Anime;
-    media.Status = MediaStatus::Released;
-    media.TotalChapters = 24;
-    reader.result.append(media);
-    HomeScreenController controller(reader);
-    controller.ConfigureScoreScale(0.0, 100.0, 5.0);
-    controller.reload();
-    controller.SelectMedia(42);
-
-    const auto detail = controller.PreviewCompactDetailMetadata(12, QStringLiteral("completed"), 85);
-    QCOMPARE(detail.value(QStringLiteral("status")).toString(), QStringLiteral("Concluídas"));
-    QCOMPARE(detail.value(QStringLiteral("progress")).toString(), QStringLiteral("12/24"));
-    QCOMPARE(detail.value(QStringLiteral("score")).toString(), QStringLiteral("85"));
-
-    controller.ConfigureCardStatusPresentation(CardStatusPresentation::MediaReleaseStatus);
-    const auto detailWithReleaseCards = controller.PreviewCompactDetailMetadata(
-        12, QStringLiteral("completed"), 85);
-    QCOMPARE(detailWithReleaseCards, detail);
-}
-
-void HomeScreenControllerTests::preparesCompactDetailPreviewProgressWithZeroTotal() {
-    FakeMediaReader reader;
-    Media media;
-    media.Id = 43;
-    media.Name = QStringLiteral("Unknown total");
-    media.Type = MediaType::Anime;
-    media.TotalChapters = 0;
-    reader.result.append(media);
-    HomeScreenController controller(reader);
-    controller.reload();
-    controller.SelectMedia(43);
-
-    const auto detail = controller.PreviewCompactDetailMetadata(12, QStringLiteral("current"), 0.0);
-    QCOMPARE(detail.value(QStringLiteral("progress")).toString(), QStringLiteral("12/?"));
 }
 
 void HomeScreenControllerTests::Should_ShowQuestionMarkProgress_When_TotalChaptersIsUnknown() {
@@ -599,16 +618,10 @@ void HomeScreenControllerTests::Should_ShowQuestionMarkProgress_When_TotalChapte
     media.ConsumedChapters = 3;
     reader.result.append(media);
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
     controller.SelectMedia(44);
 
     QCOMPARE(controller.selectedProgress(), QStringLiteral("3/?"));
-    QCOMPARE(controller.PreviewCardMetadata(3, QStringLiteral("current"), 0.0)
-                 .value(QStringLiteral("progress")).toString(),
-             QStringLiteral("Progresso 3/?"));
-    QCOMPARE(controller.PreviewCompactDetailMetadata(3, QStringLiteral("current"), 0.0)
-                 .value(QStringLiteral("progress")).toString(),
-             QStringLiteral("3/?"));
     QCOMPARE(controller.mediaModel()->data(controller.mediaModel()->index(0, 0),
                                             HomeMediaModel::ProgressRole).toString(),
              QStringLiteral("Progresso 3/?"));
@@ -624,7 +637,7 @@ void HomeScreenControllerTests::restoresConfiguredSortBeforeFirstModelPublicatio
     HomeScreenController controller(reader);
 
     controller.ConfigureInitialSort(QStringLiteral("title_desc"));
-    controller.reload();
+    controller.Reload();
 
     QCOMPARE(controller.activeSort(), QStringLiteral("title_desc"));
     QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(0, 0),
@@ -678,7 +691,7 @@ void HomeScreenControllerTests::reconcilesActiveCriteriaWhenBackendOptionsChange
     manga.ListStatus = UserListStatus::Planning;
     reader.result.append(manga);
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
     controller.SetListFilter(QStringLiteral("completed"));
     controller.SetSort(QStringLiteral("title_desc"));
 
@@ -716,7 +729,7 @@ void HomeScreenControllerTests::appliesListSearchAndSortToBothLibraries() {
     }
 
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
     controller.SetListFilter(QStringLiteral("current"));
     controller.SetSort(QStringLiteral("personal_score"));
     controller.SetSearchQuery(QStringLiteral("title"));
@@ -762,7 +775,7 @@ void HomeScreenControllerTests::sortsBySeasonYearAndRankInBothDirections() {
 
     HomeScreenController controller(reader);
     controller.ConfigureInitialSort(QStringLiteral("season_asc"));
-    controller.reload();
+    controller.Reload();
 
     QCOMPARE(controller.activeSort(), QStringLiteral("season_asc"));
     QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(0, 0),
@@ -805,7 +818,7 @@ void HomeScreenControllerTests::usesResolvedTitleConsistentlyAfterStartupConfigu
 
     HomeScreenController controller(reader);
     controller.ConfigurePreferredTitle(QStringLiteral("english"));
-    controller.reload();
+    controller.Reload();
 
     QCOMPARE(controller.fullMediaModel()->data(controller.fullMediaModel()->index(0, 0),
                                                 HomeMediaModel::TitleRole).toString(),
@@ -829,7 +842,7 @@ void HomeScreenControllerTests::clearsBrowseCriteriaWithoutChangingMediaType() {
     manga.ListStatus = UserListStatus::Planning;
     reader.result.append(manga);
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
     controller.SetMediaType(QStringLiteral("manga"));
     controller.SetListFilter(QStringLiteral("completed"));
     controller.SetSort(QStringLiteral("title_desc"));
@@ -898,7 +911,7 @@ void HomeScreenControllerTests::Should_ShowOnlyCurrentMedia_When_Started() {
     reader.result = {watching, completed};
     HomeScreenController controller(reader);
 
-    controller.reload();
+    controller.Reload();
 
     QCOMPARE(controller.filteredMediaCount(), 1);
 }
@@ -919,7 +932,7 @@ void HomeScreenControllerTests::selectsMediaAndExposesItsDetails() {
     media.AlternativeNames = {QStringLiteral("Frieren at the Funeral"), QStringLiteral("Frieren")};
     reader.result.append(media);
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
 
     controller.SelectMedia(42);
 
@@ -963,7 +976,7 @@ void HomeScreenControllerTests::presentsCompleteExtendedMediaDetails() {
     media.ExternalLinks = {{QStringLiteral("Crunchyroll"), QStringLiteral("https://www.crunchyroll.com/frieren")}};
     reader.result.append(media);
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
     controller.SelectMedia(media.Id);
 
     QCOMPARE(controller.selectedSeasonLabel(), QStringLiteral("Outono de 2026"));
@@ -983,7 +996,7 @@ void HomeScreenControllerTests::presentsMissingExtendedMediaDetailsDeterministic
     media.Type = MediaType::Anime;
     reader.result.append(media);
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
     controller.SelectMedia(media.Id);
 
     QCOMPARE(controller.selectedSeasonLabel(), QString());
@@ -1000,7 +1013,7 @@ void HomeScreenControllerTests::keepsLongSynopsisAvailableForDetailsPresentation
     media.Synopsis = QString(1200, QLatin1Char('x'));
     reader.result.append(media);
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
     controller.SelectMedia(media.Id);
 
     QCOMPARE(controller.selectedSynopsis().size(), 1200);
@@ -1017,7 +1030,7 @@ void HomeScreenControllerTests::presentsNextAiringEpisodeAndTimestamp() {
     media.NextAiringAt = 0;
     reader.result.append(media);
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
     controller.SelectMedia(media.Id);
 
     QCOMPARE(controller.selectedNextAiringLabel(), QStringLiteral("Episódio 7 · 01/01/1970 00:00 UTC"));
@@ -1037,7 +1050,7 @@ void HomeScreenControllerTests::exposesControllerApprovedDeduplicatedMediaLinks(
     };
     reader.result.append(media);
     HomeScreenController controller(reader);
-    controller.reload();
+    controller.Reload();
     controller.SelectMedia(media.Id);
 
     const QVariantList links = controller.selectedMediaLinks();
@@ -1122,11 +1135,12 @@ void HomeScreenControllerTests::persistsSelectedMediaEditsAndRefreshesBothModels
     media.ConsumedChapters = 5;
     media.PersonalScore = 7;
     reader.result = {media};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
-    controller.reload();
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
+    controller.Reload();
     controller.SelectMedia(media.Id);
 
     QVERIFY(controller.SaveSelectedMediaFromEditor(
@@ -1163,11 +1177,12 @@ void HomeScreenControllerTests::exposesSelectedLocalPathAfterSavingAndReloading(
     media.Type = MediaType::Anime;
     media.ListStatus = UserListStatus::Current;
     reader.result = {media};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
-    controller.reload();
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
+    controller.Reload();
     QVERIFY(controller.selectedLocalPath().isEmpty());
     controller.SelectMedia(media.Id);
     QVERIFY(controller.selectedLocalPath().isEmpty());
@@ -1178,7 +1193,7 @@ void HomeScreenControllerTests::exposesSelectedLocalPathAfterSavingAndReloading(
 
     // Simulates a restart: the repository now returns the persisted path.
     reader.result = {writer.received};
-    controller.reload();
+    controller.Reload();
     controller.SelectMedia(media.Id);
     QCOMPARE(controller.selectedLocalPath(), QStringLiteral("D:/Anime/Frieren"));
 }
@@ -1199,11 +1214,12 @@ Media RecognitionMedia(const QString &path = QString(), const QStringList &names
 void HomeScreenControllerTests::requestsFolderRecognitionWhenTheLocalPathChanges() {
     FakeMediaReader reader;
     reader.result = {RecognitionMedia(QStringLiteral("D:/Old"))};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
-    controller.reload();
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
+    controller.Reload();
     controller.SelectMedia(42);
     QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
 
@@ -1219,11 +1235,12 @@ void HomeScreenControllerTests::requestsFolderRecognitionWhenTheLocalPathChanges
 void HomeScreenControllerTests::requestsPendingRecognitionWhenOnlyAlternativeNamesChange() {
     FakeMediaReader reader;
     reader.result = {RecognitionMedia(QString(), {QStringLiteral("Old")})};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
-    controller.reload();
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
+    controller.Reload();
     controller.SelectMedia(42);
     QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
 
@@ -1238,11 +1255,12 @@ void HomeScreenControllerTests::requestsPendingRecognitionWhenOnlyAlternativeNam
 void HomeScreenControllerTests::requestsNoRecognitionWhenNothingRelevantChanged() {
     FakeMediaReader reader;
     reader.result = {RecognitionMedia(QString(), {QStringLiteral("Same")})};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
-    controller.reload();
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
+    controller.Reload();
     controller.SelectMedia(42);
     QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
 
@@ -1259,11 +1277,12 @@ void HomeScreenControllerTests::requestsNoRecognitionWhenNothingRelevantChanged(
 void HomeScreenControllerTests::requestsFolderRecognitionOnEverySaveWhenThePathIsUnchanged() {
     FakeMediaReader reader;
     reader.result = {RecognitionMedia(QStringLiteral("D:/Anime/Frieren"), {QStringLiteral("Same")})};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
-    controller.reload();
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
+    controller.Reload();
     controller.SelectMedia(42);
     QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
 
@@ -1279,11 +1298,12 @@ void HomeScreenControllerTests::requestsFolderRecognitionOnEverySaveWhenThePathI
 void HomeScreenControllerTests::requestsTheOldFolderWhenThePathIsClearedOrMoved() {
     FakeMediaReader reader;
     reader.result = {RecognitionMedia(QStringLiteral("D:/Old"))};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
-    controller.SetPersonalListMediaWriter(&writer);
-    controller.reload();
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
+    controller.Reload();
     controller.SelectMedia(42);
     QSignalSpy requested(&controller, &HomeScreenController::localRecognitionRequested);
 
@@ -1308,7 +1328,7 @@ void HomeScreenControllerTests::persistsSelectedMediaEditsToTheOfflineOutbox() {
     HomeScreenController controller(reader);
     controller.SetListFilter(QStringLiteral("all"));
     controller.SetPersonalListChangeService(&offlineChanges);
-    controller.reload();
+    controller.Reload();
     controller.SelectMedia(media.Id);
 
     QVERIFY(controller.SaveSelectedMediaFromEditor(12, QStringLiteral("completed"), 9.0,
@@ -1331,11 +1351,12 @@ void HomeScreenControllerTests::keepsModelsAndSelectionUnchangedWhenPersistingSe
     media.ConsumedChapters = 5;
     media.PersonalScore = 7;
     reader.result = {media};
-    FakePersonalListMediaWriter writer;
+    CapturingPersonalListChangeWriter writer;
     writer.failure = QStringLiteral("disk unavailable");
     HomeScreenController controller(reader);
-    controller.SetPersonalListMediaWriter(&writer);
-    controller.reload();
+    PersonalListChangeService changes(writer);
+    controller.SetPersonalListChangeService(&changes);
+    controller.Reload();
     controller.SelectMedia(media.Id);
 
     QVERIFY(!controller.SaveSelectedMediaFromEditor(
@@ -1367,7 +1388,7 @@ void HomeScreenControllerTests::removesSelectedMediaFromLibraryWithoutRestart() 
     PersonalListChangeService changes(writer);
     HomeScreenController controller(reader);
     controller.SetPersonalListChangeService(&changes);
-    controller.reload();
+    controller.Reload();
     controller.SelectMedia(media.Id);
     QCOMPARE(controller.mediaCount(), 2);
     QSignalSpy countSpy(&controller, &HomeScreenController::mediaCountChanged);
@@ -1398,7 +1419,7 @@ void HomeScreenControllerTests::keepsMediaAndReportsOperationErrorWhenRemovalFai
     PersonalListChangeService changes(writer);
     HomeScreenController controller(reader);
     controller.SetPersonalListChangeService(&changes);
-    controller.reload();
+    controller.Reload();
     controller.SelectMedia(media.Id);
 
     QVERIFY(!controller.RemoveSelectedMedia());
@@ -1407,6 +1428,42 @@ void HomeScreenControllerTests::keepsMediaAndReportsOperationErrorWhenRemovalFai
     QCOMPARE(controller.mediaCount(), 1);
     QCOMPARE(controller.mediaOperationErrorMessage(), QStringLiteral("disk unavailable"));
     QVERIFY(controller.errorMessage().isEmpty());
+}
+
+void HomeScreenControllerTests::announcesSavedEditsAndRemovalsForTheHistory() {
+    // Arrange
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 42;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    media.ConsumedChapters = 3;
+    reader.result = {media};
+    RecordingPersonalListChangeWriter writer;
+    PersonalListChangeService changes(writer);
+    HomeScreenController controller(reader);
+    controller.SetPersonalListChangeService(&changes);
+    controller.Reload();
+    controller.SelectMedia(media.Id);
+    QList<std::pair<Media, Media>> edits;
+    QList<Media> removals;
+    connect(&controller, &HomeScreenController::personalListEdited, this,
+            [&edits](const Media &previous, const Media &updated) { edits.append({previous, updated}); });
+    connect(&controller, &HomeScreenController::personalListRemoved, this,
+            [&removals](const Media &removed) { removals.append(removed); });
+
+    // Act
+    QVERIFY(controller.SaveSelectedMediaFromEditor(5, QStringLiteral("current"), 0.0, QString(), {}));
+    QVERIFY(controller.RemoveSelectedMedia());
+
+    // Assert
+    QCOMPARE(edits.size(), 1);
+    QCOMPARE(edits.first().first.ConsumedChapters, 3);
+    QCOMPARE(edits.first().second.ConsumedChapters, 5);
+    QCOMPARE(removals.size(), 1);
+    QCOMPARE(removals.first().Id, 42);
+    QCOMPARE(removals.first().ConsumedChapters, 5);
 }
 
 void HomeScreenControllerTests::selectedCoverFallsBackWhenCachedFileIsMissing() {
@@ -1427,7 +1484,7 @@ void HomeScreenControllerTests::selectedCoverFallsBackWhenCachedFileIsMissing() 
     CoverSettings settings;
     CoverDownloadCoordinator covers(downloader, cache, files, settings);
     HomeScreenController controller(&reader, &covers, CoverQuality::Medium);
-    controller.reload();
+    controller.Reload();
     controller.RequestCoverWindow(QStringLiteral("preview"), 0, 0, 0);
     controller.SelectMedia(42);
     QCOMPARE(controller.selectedCoverSource(), QStringLiteral("file:///C:/covers/42.jpg"));
@@ -1442,7 +1499,7 @@ void HomeScreenControllerTests::updatesOnlyOneCoverRowAndPreservesOldCoverOnFail
     HomeMediaModel model;
     Media first; first.Id = 42; first.CoverUrl = QStringLiteral("https://example/42.jpg");
     Media second; second.Id = 43;
-    model.setMedia({first, second});
+    model.SetMedia({first, second});
     const auto index = model.index(0, 0);
     QCOMPARE(model.data(index, HomeMediaModel::CoverSourceRole).toString(),
              QStringLiteral("qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg"));
@@ -1469,7 +1526,7 @@ void HomeScreenControllerTests::exposesAndOpensNextLocalEpisodeForSelectedAnime(
     FakeLocalFileOpener opener;
     HomeScreenController controller(reader);
     controller.SetLocalEpisodeServices(&episodes, &opener);
-    controller.reload(); controller.SelectMedia(42);
+    controller.Reload(); controller.SelectMedia(42);
     QVERIFY(controller.canWatch());
     QCOMPARE(controller.nextLocalEpisode(), 3);
     QCOMPARE(episodes.requestedMediaId, 42);
@@ -1489,7 +1546,7 @@ void HomeScreenControllerTests::reportsLocalEpisodeLookupAndOpenFailures() {
     FakeLocalFileOpener opener;
     HomeScreenController controller(reader);
     controller.SetLocalEpisodeServices(&episodes, &opener);
-    controller.reload(); controller.SelectMedia(42);
+    controller.Reload(); controller.SelectMedia(42);
     QVERIFY(!controller.canWatch());
     QCOMPARE(controller.localLibraryErrorMessage(), QStringLiteral("Lookup failed"));
 
@@ -1509,7 +1566,7 @@ void HomeScreenControllerTests::refreshesNextLocalEpisodeAfterRecognitionComplet
     FakeLocalFileOpener opener;
     HomeScreenController controller(reader);
     controller.SetLocalEpisodeServices(&episodes, &opener);
-    controller.reload(); controller.SelectMedia(42);
+    controller.Reload(); controller.SelectMedia(42);
     QVERIFY(!controller.canWatch());
     QCOMPARE(controller.localLibraryStatusMessage(), QStringLiteral("Nenhum episódio disponível."));
 

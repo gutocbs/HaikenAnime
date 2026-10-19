@@ -100,7 +100,7 @@ void NowWatchingControllerTests::inactiveWithoutSessions() {
 void NowWatchingControllerTests::associatedSessionShowsAnimeFromDatabase() {
     registry.start(session(QStringLiteral("a"), Start), candidate(21));
     NowWatchingController controller(registry, library);
-    controller.setCoverSource([](const int mediaId) {
+    controller.SetCoverSource([](const int mediaId) {
         return mediaId == 21 ? QStringLiteral("file:///cache/21.jpg") : QString();
     });
 
@@ -245,7 +245,7 @@ void NowWatchingControllerTests::neverExposesRemoteCoverUrls() {
 void NowWatchingControllerTests::sessionsCarryCardData() {
     registry.start(session(QStringLiteral("a"), Start), candidate(21));
     NowWatchingController controller(registry, library);
-    controller.setCoverSource([](int) { return QStringLiteral("file:///cache/21.jpg"); });
+    controller.SetCoverSource([](int) { return QStringLiteral("file:///cache/21.jpg"); });
 
     controller.Refresh();
 
@@ -371,7 +371,7 @@ void NowWatchingControllerTests::persistentReadFailureWarnsOnce() {
 void NowWatchingControllerTests::currentCarriesAnimeDetailsForTheDetailsPanel() {
     registry.start(session(QStringLiteral("a"), Start), candidate(21));
     NowWatchingController controller(registry, library);
-    controller.setCoverSource([](const int) { return QStringLiteral("file:///covers/21.jpg"); });
+    controller.SetCoverSource([](const int) { return QStringLiteral("file:///covers/21.jpg"); });
     controller.Refresh();
 
     const auto details = controller.current().value(QStringLiteral("details")).toMap();

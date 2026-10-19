@@ -141,8 +141,7 @@ private slots:
     void uncertainDecisionIsRecordedWithDiagnostic();
     void ignoredDecisionStaysCorrectableAsUncertain();
     void duplicateSessionEpisodeNeverAppliesProgressTwice();
-    void incompleteObservationIsRecordedWithoutProgress();
-    void completionAfterIncompleteReusesTheRecord();
+    void completionReusesAnIncompleteRecordFromAnOlderVersion();
     void progressWriteFailureKeepsRecordCorrectableWithoutSync();
     void syncFailureIsDurableAndKeepsLocalProgress();
     void correctionAppliesCorrectedProgress();
@@ -161,6 +160,10 @@ private slots:
     void recoveryTurnsInterruptedPendingRecordsUncertain();
     void recoveryTurnsUnqueuedSyncPendingRecordsUncertain();
     void recoveryKeepsQueuedSyncPendingRecords();
+    void manualProgressIncreaseIsRecordedAsMarkedWatchedByManual();
+    void manualEditWithTheSameProgressRecordsNothing();
+    void manualProgressDecreaseIsRecordedAsReduced();
+    void manualRemovalIsRecordedAndAwaitsItsSync();
 
 private:
     FakeHistoryRepository repository;
@@ -237,20 +240,13 @@ void RecognitionHistoryServiceTests::duplicateSessionEpisodeNeverAppliesProgress
     QCOMPARE(repository.records.size(), 1);
 }
 
-void RecognitionHistoryServiceTests::incompleteObservationIsRecordedWithoutProgress() {
+void RecognitionHistoryServiceTests::completionReusesAnIncompleteRecordFromAnOlderVersion() {
     QString error;
-
-    const auto record = service->recordIncomplete(session(), candidate(6), error);
-
-    QVERIFY(record.has_value());
-    QCOMPARE(record->status(), RecognitionStatus::Incomplete);
-    QVERIFY(progress.applied.isEmpty());
-}
-
-void RecognitionHistoryServiceTests::completionAfterIncompleteReusesTheRecord() {
-    QString error;
-    const auto incomplete = service->recordIncomplete(session(), candidate(6), error);
-    QVERIFY2(incomplete.has_value(), qPrintable(error));
+    // Older versions stored sessions closed before the threshold; those records stay and are reused.
+    auto incomplete = std::optional<RecognitionRecord>(
+        RecognitionRecord::create(session(), candidate(6), QDateTime::currentDateTimeUtc()));
+    QVERIFY(incomplete->transitionTo(RecognitionStatus::Incomplete, QDateTime::currentDateTimeUtc()));
+    QVERIFY2(repository.insert(*incomplete, error), qPrintable(error));
 
     const auto completed = service->record(session(), candidate(6), markWatched(5, 6), error);
 
@@ -488,6 +484,65 @@ void RecognitionHistoryServiceTests::recoveryKeepsQueuedSyncPendingRecords() {
 
     QCOMPARE(repository.records.first().status(), RecognitionStatus::MarkedWatched);
     QCOMPARE(repository.records.first().syncState(), RecognitionSyncState::Pending);
+}
+
+void RecognitionHistoryServiceTests::manualProgressIncreaseIsRecordedAsMarkedWatchedByManual() {
+    QString error;
+    auto updated = media(5);
+    updated.Name = QStringLiteral("One Piece");
+
+    const auto record = service->recordManualProgress(media(3), updated, error);
+
+    QVERIFY2(record.has_value(), qPrintable(error));
+    QCOMPARE(record->sessionId().pluginId(), ManualPluginId);
+    QCOMPARE(record->status(), RecognitionStatus::MarkedWatched);
+    QCOMPARE(record->candidate().episode(), 5);
+    QCOMPARE(record->candidate().mediaId(), std::optional<int>(21));
+    QCOMPARE(record->syncState(), RecognitionSyncState::Pending);
+    QCOMPARE(repository.records.size(), 1);
+    // The edit already saved the progress: the history never applies it again.
+    QVERIFY(progress.applied.isEmpty());
+}
+
+void RecognitionHistoryServiceTests::manualEditWithTheSameProgressRecordsNothing() {
+    QString error;
+
+    QVERIFY(!service->recordManualProgress(media(5), media(5), error).has_value());
+
+    QVERIFY(error.isEmpty());
+    QVERIFY(repository.records.isEmpty());
+}
+
+void RecognitionHistoryServiceTests::manualProgressDecreaseIsRecordedAsReduced() {
+    QString error;
+
+    const auto reduced = service->recordManualProgress(media(5), media(2), error);
+    const auto reset = service->recordManualProgress(media(3), media(0), error);
+
+    QVERIFY2(reduced.has_value(), qPrintable(error));
+    QCOMPARE(reduced->sessionId().pluginId(), ManualPluginId);
+    QCOMPARE(reduced->status(), RecognitionStatus::ProgressReduced);
+    QCOMPARE(reduced->candidate().episode(), 2);
+    QCOMPARE(reduced->syncState(), RecognitionSyncState::Pending);
+    // The episode column requires >= 1, so a reset to 0 stores 1.
+    QVERIFY2(reset.has_value(), qPrintable(error));
+    QCOMPARE(reset->candidate().episode(), 1);
+    QVERIFY(progress.applied.isEmpty());
+}
+
+void RecognitionHistoryServiceTests::manualRemovalIsRecordedAndAwaitsItsSync() {
+    QString error;
+
+    const auto record = service->recordManualRemoval(media(0), error);
+
+    QVERIFY2(record.has_value(), qPrintable(error));
+    QCOMPARE(record->sessionId().pluginId(), ManualPluginId);
+    QCOMPARE(record->status(), RecognitionStatus::Removed);
+    QCOMPARE(record->candidate().episode(), 1);
+    QList<RecognitionRecord> awaiting;
+    QVERIFY2(service->findAwaitingRemovalSync(21, awaiting, error), qPrintable(error));
+    QCOMPARE(awaiting.size(), 1);
+    QCOMPARE(awaiting.first().id(), record->id());
 }
 
 QTEST_MAIN(RecognitionHistoryServiceTests)

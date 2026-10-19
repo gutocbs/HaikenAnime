@@ -4,7 +4,6 @@
 #include "CoverQuality.h"
 
 struct CoverSettings {
-    CoverQuality quality = CoverQuality::Medium;
     int maxConcurrentDownloads = 3;
     int timeoutMs = 30000;
     int maxRetries = 2;

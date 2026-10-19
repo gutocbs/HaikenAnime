@@ -1,8 +1,12 @@
+#include <QDate>
+#include <QDir>
 #include <QFile>
+#include <QStandardPaths>
 #include <QTemporaryDir>
 #include <QtTest>
 
 #include "../../src/infrastructure/database/SqlQueryStore.h"
+#include "../../src/infrastructure/logging/AsyncLogger.h"
 
 class SqlQueryStoreTests : public QObject {
     Q_OBJECT
@@ -12,6 +16,7 @@ private slots:
     void failedLoadClearsPreviousQuery();
     void loadSourceReadsFileOnlyWhenRequested();
     void loadSourceRejectsInlineSql();
+    void resourceQueryIsReadAndLoggedOncePerProcess();
 };
 
 void SqlQueryStoreTests::successfulLoadReplacesOutputsAndClearsError() {
@@ -62,6 +67,28 @@ void SqlQueryStoreTests::loadSourceRejectsInlineSql() {
     QVERIFY(!SqlQueryStore::loadSource(QStringLiteral("SELECT 1"), query, error));
     QVERIFY(query.isEmpty());
     QVERIFY(error.contains(QStringLiteral("file"), Qt::CaseInsensitive));
+}
+
+void SqlQueryStoreTests::resourceQueryIsReadAndLoggedOncePerProcess() {
+    QStandardPaths::setTestModeEnabled(true);
+    const auto logPath = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath(
+        QStringLiteral("logs/haikenanime-%1.log").arg(QDate::currentDate().toString(Qt::ISODate)));
+    QFile::remove(logPath);
+    const auto source = QStringLiteral(":/sqlite/queries/read-media.sql");
+    AsyncLogger logger(1);
+    logger.start();
+    QString first;
+    QString second;
+    QString error;
+
+    QVERIFY2(SqlQueryStore::loadSource(source, first, error, &logger), qPrintable(error));
+    QVERIFY2(SqlQueryStore::loadSource(source, second, error, &logger), qPrintable(error));
+    logger.stop();
+
+    QCOMPARE(second, first);
+    QFile log(logPath);
+    QVERIFY(log.open(QIODevice::ReadOnly | QIODevice::Text));
+    QCOMPARE(QString::fromUtf8(log.readAll()).count(QStringLiteral("Loaded SQL query file: ") + source), 1);
 }
 
 QTEST_MAIN(SqlQueryStoreTests)

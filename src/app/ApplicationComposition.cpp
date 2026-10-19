@@ -1,14 +1,11 @@
 #include "ApplicationComposition.h"
 
-#include "InitialSyncCoordinator.h"
 #include "ApplicationSyncTaskExecutor.h"
 
-#include "../infrastructure/database/SqlQueryStore.h"
-#include "../infrastructure/database/SqliteDatabase.h"
+#include "../infrastructure/database/SqliteLocalEpisodeReader.h"
 #include "../infrastructure/database/SqliteMediaRepository.h"
 #include "../infrastructure/database/SqlitePendingChangeRepository.h"
 #include "../infrastructure/database/SqlitePersonalListChangeWriter.h"
-#include "../infrastructure/database/SqliteQueryConfiguration.h"
 #include "../infrastructure/configuration/JsonSettingsReader.h"
 #include "../infrastructure/database/SqliteCoverCacheRepository.h"
 #include "../infrastructure/database/SqliteUserPreferencesRepository.h"
@@ -21,9 +18,6 @@
 #include "../infrastructure/library/QtDirectoryEnumerator.h"
 #include "../infrastructure/database/SqliteLocalFileRepository.h"
 #include "../infrastructure/database/SqliteSyncTaskStateRepository.h"
-#include "../infrastructure/anilist/HttpFactory.h"
-#include "../infrastructure/anilist/AniListViewerClient.h"
-#include "../infrastructure/anilist/WindowsAniListOAuthLauncher.h"
 #include "../infrastructure/secrets/WindowsCredentialStore.h"
 #include <QStandardPaths>
 #include <QDir>
@@ -38,184 +32,65 @@ QString initializationFailure(const QString &stage, const QString &detail) {
     return QStringLiteral("Application initialization failed while %1: %2").arg(stage, detail);
 }
 
-std::map<SyncTaskKind, SyncSchedulePolicy> backgroundSynchronizationPolicies(
-    const std::map<SyncTaskKind, SyncSchedulePolicy> &configuredPolicies) {
-    std::map<SyncTaskKind, SyncSchedulePolicy> policies;
-    for (const auto kind : {SyncTaskKind::UserList, SyncTaskKind::PendingChange}) {
-        const auto configured = configuredPolicies.find(kind);
-        policies.emplace(kind, configured == configuredPolicies.end()
-                                   ? DefaultSyncSchedulePolicy(kind) : configured->second);
-    }
-    return policies;
-}
-
-// Keep borrowed dependencies inside the worker-owned factory products. Member
-// order destroys the scanner/repository before its enumerator/connection owner.
-class OwnedLibraryScanner final : public ILocalLibraryScanner {
-public:
-    OwnedLibraryScanner() : scanner_(enumerator_) {}
-    LocalLibraryScanResult scan(const LocalLibraryScanRequest &request,
-        const std::function<bool(const QList<LocalFileObservation> &, QString &)> &consumer,
-        const std::function<void(const LocalLibraryScanProgress &)> &progress,
-        const std::function<bool()> &stop) override {
-        return scanner_.scan(request, consumer, progress, stop);
-    }
-private:
-    QtDirectoryEnumerator enumerator_;
-    LocalLibraryScanner scanner_;
+// Worker-owned factory products keep their borrowed dependency alive by inheriting it first: a base is
+// built before and destroyed after the class that borrows it, so the scanner/repository always goes
+// before its enumerator/connection.
+struct OwnedEnumerator {
+    QtDirectoryEnumerator enumerator;
 };
 
-class OwnedLocalFileRepository final : public ILocalFileRepository {
+class OwnedLibraryScanner final : private OwnedEnumerator, public LocalLibraryScanner {
 public:
-    OwnedLocalFileRepository(std::unique_ptr<SqliteDatabase> database, const QStringList &queries)
-        : database_(std::move(database)), repository_(database_->connection(),
-          queries[0], queries[1], queries[2], queries[3], queries[4],
-          queries.size() > 5 ? queries[5] : QString{},
-          queries.size() > 6 ? queries[6] : QString{},
-          queries.size() > 7 ? queries[7] : QString{},
-          queries.size() > 8 ? queries[8] : QString{},
-          queries.size() > 9 ? queries[9] : QString{}) {}
-    bool beginScan(const QString &root, qint64 &id, QString &error) override {
-        return repository_.beginScan(root, id, error);
-    }
-    bool upsertBatch(qint64 id, const QList<LocalFileObservation> &files, QString &error) override {
-        return repository_.upsertBatch(id, files, error);
-    }
-    bool completeScan(qint64 id, qsizetype count, QString &error) override {
-        return repository_.completeScan(id, count, error);
-    }
-    bool failScan(qint64 id, LibraryScanStatus status, qsizetype count,
-                  const QString &diagnostic, QString &error) override {
-        return repository_.failScan(id, status, count, diagnostic, error);
-    }
-    bool readPendingRecognition(const QString &root, QList<LocalFileRecognitionRecord> &records,
-                               QString &error) override {
-        return repository_.readPendingRecognition(root, records, error);
-    }
-    bool readFilesUnderFolder(const QString &folder, QList<LocalFileRecognitionRecord> &records,
-                              QString &error) override {
-        return repository_.readFilesUnderFolder(folder, records, error);
-    }
-    bool readRecognitionCatalog(QList<Media> &media, QString &error) override {
-        return repository_.readRecognitionCatalog(media, error);
-    }
-    bool saveRecognitionBatch(const QList<LocalFileRecognitionRecord> &records, QString &error) override {
-        return repository_.saveRecognitionBatch(records, error);
-    }
-private:
-    std::unique_ptr<SqliteDatabase> database_;
-    SqliteLocalFileRepository repository_;
+    OwnedLibraryScanner() : LocalLibraryScanner(enumerator) {}
 };
 
-class OwnedSyncTaskStateRepository final : public ISyncTaskStateRepository {
-public:
-    OwnedSyncTaskStateRepository(std::unique_ptr<SqliteDatabase> database, QString readQuery,
-                                 QString upsertQuery, QString deleteQuery)
-        : database_(std::move(database)), repository_(database_->connection(), std::move(readQuery),
-          std::move(upsertQuery), std::move(deleteQuery)) {}
-    bool ReadAll(QList<SyncTaskState> &states, QString &error) override { return repository_.ReadAll(states, error); }
-    bool Upsert(const SyncTaskState &state, QString &error) override { return repository_.Upsert(state, error); }
-    bool Remove(const SyncPartition &partition, QString &error) override { return repository_.Remove(partition, error); }
-private:
-    std::unique_ptr<SqliteDatabase> database_;
-    SqliteSyncTaskStateRepository repository_;
+struct OwnedConnection {
+    explicit OwnedConnection(std::unique_ptr<SqliteDatabase> database) : database(std::move(database)) {}
+    std::unique_ptr<SqliteDatabase> database;
 };
 
-bool hasExistingQueries(const SqliteQueryConfiguration &queries) {
-    return !queries.upsertMediaPath.isEmpty() && !queries.updatePersonalListMediaPath.isEmpty()
-        && !queries.readMediaPath.isEmpty()
-        && !queries.readActiveMediaIdsPath.isEmpty() && !queries.markMediaSourceRemovedPath.isEmpty()
-        && !queries.markMediaPersonalListRemovedPath.isEmpty() && !queries.supersedePendingDeletionPath.isEmpty()
-        && !queries.enqueuePendingChangePath.isEmpty() && !queries.readPendingChangesPath.isEmpty()
-        && !queries.updatePendingChangePath.isEmpty() && !queries.readCoverCachePath.isEmpty()
-        && !queries.upsertCoverCachePath.isEmpty() && !queries.deleteCoverCachePath.isEmpty()
-        && !queries.clearCoverCachePath.isEmpty() && !queries.readUserPreferencesPath.isEmpty()
-        && !queries.upsertUserPreferencesPath.isEmpty();
-}
+template <typename Repository>
+class ConnectionOwningRepository final : private OwnedConnection, public Repository {
+public:
+    explicit ConnectionOwningRepository(std::unique_ptr<SqliteDatabase> database)
+        : OwnedConnection(std::move(database)), Repository(OwnedConnection::database->connection()) {}
+};
 
-void composeLibraryScanner(ApplicationContext &context, const SqliteQueryConfiguration &configuration) {
-    QStringList queries;
-    QString scannerError;
-    for (const auto &path : {configuration.beginLibraryScanPath, configuration.upsertLocalFilePath,
-         configuration.completeLibraryScanPath, configuration.failLibraryScanPath,
-         configuration.markLocalFilesUnavailablePath, configuration.readPendingLocalFilesPath,
-         configuration.readCatalogMediaForRecognitionPath, configuration.saveLocalFileRecognitionPath,
-         configuration.readLocalFilesUnderFolderPath, configuration.readLocalFileRootsPath}) {
-        if (path.isEmpty()) {
-            scannerError = QStringLiteral("Local library scan query configuration is incomplete.");
-            break;
+// Each scan and recognition worker opens its own SQLite connection on its thread.
+template <typename Repository>
+std::function<std::unique_ptr<Repository>(QString &)> localFileRepositoryFactory(const QString &databasePath) {
+    return [databasePath](QString &error) -> std::unique_ptr<Repository> {
+        auto database = std::make_unique<SqliteDatabase>(databasePath);
+        if (!database->open()) {
+            error = database->lastError();
+            return {};
         }
-        queries.append(path);
-    }
-    if (!scannerError.isEmpty()) context.logger->warning(LogCategory::QueryConfiguration, scannerError);
-    const auto databasePath = context.database->databasePath();
+        return std::make_unique<ConnectionOwningRepository<SqliteLocalFileRepository>>(std::move(database));
+    };
+}
+
+void composeLibraryScanner(ApplicationContext &context) {
     context.localLibraryScan = std::make_unique<LocalLibraryScanCoordinator>(
         [](QString &) -> std::unique_ptr<ILocalLibraryScanner> {
             return std::make_unique<OwnedLibraryScanner>();
         },
-        [databasePath, queries, scannerError](QString &error) -> std::unique_ptr<ILocalFileRepository> {
-            if (!scannerError.isEmpty()) { error = scannerError; return {}; }
-            auto database = std::make_unique<SqliteDatabase>(databasePath);
-            if (!database->open()) { error = database->lastError(); return {}; }
-            return std::make_unique<OwnedLocalFileRepository>(std::move(database), queries);
-        });
+        localFileRepositoryFactory<ILocalFileScanRepository>(context.database->databasePath()));
     context.localLibraryScan->setLogger(context.logger.get());
 }
 
-void composeLibraryRecognition(ApplicationContext &context,
-                               const SqliteQueryConfiguration &configuration) {
-    QStringList queries;
-    QString recognitionError;
-    for (const auto &path : {configuration.beginLibraryScanPath, configuration.upsertLocalFilePath,
-         configuration.completeLibraryScanPath, configuration.failLibraryScanPath,
-         configuration.markLocalFilesUnavailablePath, configuration.readPendingLocalFilesPath,
-         configuration.readCatalogMediaForRecognitionPath, configuration.saveLocalFileRecognitionPath,
-         configuration.readLocalFilesUnderFolderPath, configuration.readLocalFileRootsPath}) {
-        if (path.isEmpty()) {
-            recognitionError = QStringLiteral("Local library recognition query configuration is incomplete.");
-            break;
-        }
-        queries.append(path);
-    }
-    if (!recognitionError.isEmpty()) {
-        context.logger->warning(LogCategory::QueryConfiguration, recognitionError);
-    }
-    const auto databasePath = context.database->databasePath();
+void composeLibraryRecognition(ApplicationContext &context) {
     context.localLibraryRecognition = std::make_unique<LocalLibraryRecognitionCoordinator>(
-        [databasePath, queries, recognitionError](QString &error) -> std::unique_ptr<ILocalFileRepository> {
-            if (!recognitionError.isEmpty()) {
-                error = recognitionError;
-                return {};
-            }
-            auto database = std::make_unique<SqliteDatabase>(databasePath);
-            if (!database->open()) {
-                error = database->lastError();
-                return {};
-            }
-            return std::make_unique<OwnedLocalFileRepository>(std::move(database), queries);
-        });
+        localFileRepositoryFactory<ILocalFileRecognitionRepository>(context.database->databasePath()));
     context.localLibraryRecognition->setLogger(context.logger.get());
     QObject::connect(context.localLibraryScan.get(), &LocalLibraryScanCoordinator::succeeded,
                      context.localLibraryRecognition.get(),
                      [recognition = context.localLibraryRecognition.get()](const QString &rootPath, qsizetype) {
-                         recognition->start(rootPath);
+                         recognition->startForPending(rootPath);
                      });
 }
 
-void composeLocalEpisodeServices(ApplicationContext &context,
-                                 const SqliteQueryConfiguration &configuration) {
-    QString error;
-    if (configuration.readNextLocalEpisodePath.isEmpty()
-        || configuration.readAvailableEpisodeCountPath.isEmpty()) {
-        error = QStringLiteral("Local episode query configuration is incomplete.");
-    }
-    if (!error.isEmpty()) {
-        context.logger->warning(LogCategory::QueryConfiguration, error);
-        return;
-    }
-    context.localEpisodeReader = std::make_unique<LocalEpisodeReader>(
-        context.database->connection(), configuration.readNextLocalEpisodePath,
-        configuration.readAvailableEpisodeCountPath);
+void composeLocalEpisodeServices(ApplicationContext &context) {
+    context.localEpisodeReader = std::make_unique<SqliteLocalEpisodeReader>(context.database->connection());
     context.defaultLocalFileOpener = std::make_unique<QtLocalFileOpener>();
 }
 
@@ -224,18 +99,11 @@ void composeEpisodeRecognition(ApplicationContext &context) {
         {.connection = context.database->connection(),
          .mediaReader = context.mediaRepository.get(),
          .changes = context.personalListChangeService.get(),
-         .diagnostics = [logger = context.logger.get()](const QString &message) {
-             if (logger) logger->warning(LogCategory::Application, message);
-         },
-         .info = [logger = context.logger.get()](const QString &message) {
-             if (logger) logger->info(LogCategory::Application, message);
-         },
+         .diagnostics = LogSink(context.logger.get(), LogCategory::Application, LogLevel::Warning),
+         .info = LogSink(context.logger.get(), LogCategory::Application),
          .progressApplied = [listener = context.recognitionProgressListener](const Media &media) {
              if (*listener) (*listener)(media);
          }});
-    for (const auto &warning : context.recognition->warnings) {
-        context.logger->warning(LogCategory::Application, warning);
-    }
     if (context.defaultLocalFileOpener) {
         context.localFileOpener = std::make_unique<MpvAwareLocalFileOpener>(*context.defaultLocalFileOpener,
                                                                             *context.recognition);
@@ -282,45 +150,23 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         return context;
     }
 
-    QString queryError;
-    SqliteQueryConfiguration queryConfiguration;
-    queryConfiguration.setLogger(context.logger.get());
-    if (!queryConfiguration.load(queryError, options.queryConfigurationPath)
-        && !hasExistingQueries(queryConfiguration)) {
-        context.logger->error(LogCategory::QueryConfiguration, queryError);
-        context.initializationError = initializationFailure(
-            QStringLiteral("loading the SQLite query configuration"), queryError);
-        context.database.reset();
-        return context;
-    }
-    auto mediaRepository = std::make_unique<SqliteMediaRepository>(
-        context.database->connection(), queryConfiguration.upsertMediaPath,
-        queryConfiguration.readMediaPath, queryConfiguration.readActiveMediaIdsPath,
-        queryConfiguration.markMediaSourceRemovedPath,
-        queryConfiguration.updatePersonalListMediaPath);
+    auto mediaRepository = std::make_unique<SqliteMediaRepository>(context.database->connection());
     mediaRepository->setLogger(context.logger.get());
     context.mediaRepository = std::move(mediaRepository);
-    context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(
-        context.database->connection(), queryConfiguration.enqueuePendingChangePath,
-        queryConfiguration.readPendingChangesPath, queryConfiguration.updatePendingChangePath);
-    auto personalListChangeWriter = std::make_unique<SqlitePersonalListChangeWriter>(
-        context.database->connection(), queryConfiguration.upsertMediaPath,
-        queryConfiguration.updatePersonalListMediaPath, queryConfiguration.enqueuePendingChangePath,
-        queryConfiguration.markMediaPersonalListRemovedPath, queryConfiguration.supersedePendingDeletionPath);
+    context.pendingChangeRepository = std::make_unique<SqlitePendingChangeRepository>(context.database->connection());
+    auto personalListChangeWriter = std::make_unique<SqlitePersonalListChangeWriter>(context.database->connection());
     personalListChangeWriter->setLogger(context.logger.get());
     context.personalListChangeWriter = std::move(personalListChangeWriter);
     context.personalListChangeService = std::make_unique<PersonalListChangeService>(
         *context.personalListChangeWriter);
 
-    composeLibraryScanner(context, queryConfiguration);
-    composeLibraryRecognition(context, queryConfiguration);
-    composeLocalEpisodeServices(context, queryConfiguration);
+    composeLibraryScanner(context);
+    composeLibraryRecognition(context);
+    composeLocalEpisodeServices(context);
     composeEpisodeRecognition(context);
 
     {
-        auto preferencesRepository = std::make_unique<SqliteUserPreferencesRepository>(
-            context.database->connection(), queryConfiguration.readUserPreferencesPath,
-            queryConfiguration.upsertUserPreferencesPath);
+        auto preferencesRepository = std::make_unique<SqliteUserPreferencesRepository>(context.database->connection());
         bool found = false;
         QString preferencesError;
         QString preferencesWarning;
@@ -340,10 +186,7 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         context.userPreferencesRepository = std::move(preferencesRepository);
     }
 
-    context.coverCacheRepository = std::make_unique<SqliteCoverCacheRepository>(
-        context.database->connection(), queryConfiguration.readCoverCachePath,
-        queryConfiguration.upsertCoverCachePath, queryConfiguration.deleteCoverCachePath,
-        queryConfiguration.clearCoverCachePath);
+    context.coverCacheRepository = std::make_unique<SqliteCoverCacheRepository>(context.database->connection());
     const QString cacheRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)).filePath("covers");
     const QString temporaryRoot = QDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation)).filePath("HaikenAnime/covers");
     context.coverTemporaryStore = std::make_unique<CoverTemporaryStore>(temporaryRoot);
@@ -361,14 +204,10 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         *context.coverDownloader, *context.coverCacheRepository, *context.coverFileStore, settings.covers);
     context.coverCoordinator->setLogger(context.logger.get());
     context.clearLocalCache = std::make_unique<ClearLocalCacheUseCase>(
-        *context.coverCoordinator, *context.coverTemporaryStore,
-        QList<ICacheCleanupParticipant *>{});
-    context.coverQuality = settings.covers.quality;
+        *context.coverCoordinator, *context.coverTemporaryStore);
     context.aniListSecretStore = std::make_unique<WindowsCredentialStore>();
     context.aniListAuthManager = std::make_unique<AniListAuthManager>(*context.aniListSecretStore);
-    context.aniListAuthManager->setAuditLogger([logger = context.logger.get()](const QString &event) {
-        if (logger) logger->info(LogCategory::Application, event);
-    });
+    context.aniListAuthManager->setAuditLogger(LogSink(context.logger.get(), LogCategory::Application));
     QString credentialsError;
     static_cast<void>(context.aniListAuthManager->load(credentialsError));
     if (!settings.aniList.oauthClientId.trimmed().isEmpty()
@@ -376,11 +215,9 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         && !settings.aniList.oauthRedirectUri.scheme().isEmpty()) {
         context.aniListOAuthConfiguration.emplace(settings.aniList.oauthClientId,
                                                   settings.aniList.oauthRedirectUri);
-        context.aniListNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
+        context.aniListNetworkManager = std::make_unique<QNetworkAccessManager>();
         const AniListGraphQlClient::Diagnostics oauthDiagnostics{
-            .log = [logger = context.logger.get()](const QString &event) {
-                if (logger) logger->info(LogCategory::Sync, event);
-            }};
+            .log = LogSink(context.logger.get(), LogCategory::Sync)};
         context.aniListGraphQlClient = std::make_unique<AniListGraphQlClient>(
             *context.aniListNetworkManager, context.aniListAuthManager.get(),
             QUrl(settings.aniList.endpoint), settings.http.timeoutMs,
@@ -392,47 +229,34 @@ ApplicationContext createApplicationContext(const ApplicationCompositionOptions 
         context.aniListOAuthLauncher = std::make_unique<WindowsAniListOAuthLauncher>();
     }
     const auto synchronizationDatabasePath = context.database->databasePath();
-    const auto readTaskStatesQueryPath = queryConfiguration.readSyncTaskStatesPath;
-    const auto upsertTaskStateQueryPath = queryConfiguration.upsertSyncTaskStatePath;
-    const auto deleteTaskStateQueryPath = queryConfiguration.deleteSyncTaskStatePath;
+    // The user list follows the interval chosen in Settings; Settings.json only gives the other limits.
+    auto synchronizationPolicies = settings.syncTaskPolicies;
+    synchronizationPolicies[SyncTaskKind::UserList] = WithNormalInterval(
+        synchronizationPolicies[SyncTaskKind::UserList],
+        std::chrono::milliseconds(context.userPreferences.synchronizationIntervalMs));
     auto *authProvider = context.aniListAuthManager.get();
     const auto userListConfiguration = ApplicationSyncTaskExecutor::AuthenticatedUserListConfiguration{
-        QUrl(settings.aniList.endpoint), context.aniListAuthManager->credentials(),
+        QUrl(settings.aniList.endpoint),
         [authProvider] { return authProvider ? authProvider->credentials() : AniListCredentials{}; },
         settings.aniList.userListPerChunk, settings.http.timeoutMs, settings.http.maxRetries,
         settings.http.retryDelayMs,
-        [logger = context.logger.get()](const QString &event) {
-            if (logger) logger->info(LogCategory::Sync, event);
-        }};
+        LogSink(context.logger.get(), LogCategory::Sync)};
     context.adaptiveSync = std::make_unique<AdaptiveSyncRuntime>(
-        [synchronizationDatabasePath, readTaskStatesQueryPath, upsertTaskStateQueryPath,
-         deleteTaskStateQueryPath](QString &error) -> std::unique_ptr<ISyncTaskStateRepository> {
+        [synchronizationDatabasePath](QString &error) -> std::unique_ptr<ISyncTaskStateRepository> {
             auto database = std::make_unique<SqliteDatabase>(synchronizationDatabasePath);
             if (!database->open()) {
                 error = database->lastError();
                 return {};
             }
-            return std::make_unique<OwnedSyncTaskStateRepository>(std::move(database), readTaskStatesQueryPath,
-                                                                   upsertTaskStateQueryPath, deleteTaskStateQueryPath);
+            return std::make_unique<ConnectionOwningRepository<SqliteSyncTaskStateRepository>>(std::move(database));
         },
-        [synchronizationDatabasePath, upsertMediaPath = queryConfiguration.upsertMediaPath,
-         readMediaPath = queryConfiguration.readMediaPath,
-         readActiveMediaIdsPath = queryConfiguration.readActiveMediaIdsPath,
-         markSourceRemovedPath = queryConfiguration.markMediaSourceRemovedPath, readTaskStatesQueryPath,
-         upsertTaskStateQueryPath, deleteTaskStateQueryPath,
-         readUserPreferencesPath = queryConfiguration.readUserPreferencesPath,
-         upsertUserPreferencesPath = queryConfiguration.upsertUserPreferencesPath,
-         timeoutMs = settings.syncTimeoutMs, userListConfiguration] {
+        [synchronizationDatabasePath, timeoutMs = settings.syncTimeoutMs, userListConfiguration] {
             return std::make_unique<ApplicationSyncTaskExecutor>(
-                synchronizationDatabasePath, upsertMediaPath, readMediaPath, readActiveMediaIdsPath,
-                markSourceRemovedPath, readTaskStatesQueryPath, upsertTaskStateQueryPath, deleteTaskStateQueryPath,
-                readUserPreferencesPath, upsertUserPreferencesPath, timeoutMs, userListConfiguration);
-        }, backgroundSynchronizationPolicies(settings.syncTaskPolicies));
-    context.seasonalNetworkManager.reset(HttpFactory::createNetworkAccessManager(nullptr));
+                synchronizationDatabasePath, timeoutMs, userListConfiguration);
+        }, synchronizationPolicies);
+    context.seasonalNetworkManager = std::make_unique<QNetworkAccessManager>();
     const AniListGraphQlClient::Diagnostics seasonalDiagnostics{
-        .log = [logger = context.logger.get()](const QString &event) {
-            if (logger) logger->info(LogCategory::Sync, event);
-        }};
+        .log = LogSink(context.logger.get(), LogCategory::Sync)};
     context.seasonalGraphQlClient = std::make_unique<AniListGraphQlClient>(
         *context.seasonalNetworkManager, nullptr, QUrl(settings.aniList.endpoint), settings.http.timeoutMs,
         settings.http.maxRetries, settings.http.retryDelayMs, seasonalDiagnostics);
@@ -458,5 +282,19 @@ bool scheduleStartupLibraryScan(ApplicationContext &context, QObject *lifetime) 
     QTimer::singleShot(0, lifetime, [coordinator, requests] {
         if (coordinator) coordinator->startAll(requests);
     });
+    return true;
+}
+
+bool UpdateUserPreferences(ApplicationContext &context, const std::function<void(UserPreferences &)> &change,
+                           QString &error) {
+    error.clear();
+    if (!context.userPreferencesRepository) {
+        error = QStringLiteral("User preferences are unavailable.");
+        return false;
+    }
+    UserPreferences updated = context.userPreferences;
+    change(updated);
+    if (!context.userPreferencesRepository->replace(updated, error)) return false;
+    context.userPreferences = std::move(updated);
     return true;
 }

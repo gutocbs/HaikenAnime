@@ -7,7 +7,7 @@
 
 struct LocalLibraryScanRequest final {
     QString rootPath;
-    // Validated, lowercase extensions with a leading period (Task 1 policy).
+    // Validated, lowercase extensions with a leading period.
     QStringList allowedExtensions;
     // Bounds visited directory entries, including filtered entries, from 1 through 200.
     qsizetype batchSize = 200;

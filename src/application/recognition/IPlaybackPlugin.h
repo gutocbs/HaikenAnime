@@ -10,13 +10,11 @@
 #include "../../domain/recognition/PlaybackSession.h"
 #include "PluginSettingsSchema.h"
 
+/// Optional actions the plugin settings screen offers (login in the browser, connection test, user list).
 enum class PluginCapability {
-    DynamicSettings = 0x01,
-    BrowserAuthentication = 0x02,
-    ConnectionTest = 0x04,
-    UserSelection = 0x08,
-    MultipleSessions = 0x10,
-    ExplicitSessionEnd = 0x20,
+    BrowserAuthentication = 0x01,
+    ConnectionTest = 0x02,
+    UserSelection = 0x04,
 };
 Q_DECLARE_FLAGS(PluginCapabilities, PluginCapability)
 Q_DECLARE_OPERATORS_FOR_FLAGS(PluginCapabilities)

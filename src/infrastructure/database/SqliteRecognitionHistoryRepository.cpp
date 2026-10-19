@@ -3,6 +3,7 @@
 #include <QSqlError>
 #include <QSqlQuery>
 
+#include "SqliteQueries.h"
 #include "SqlQueryStore.h"
 #include "../../application/anilist/AniListPendingChangeStatus.h"
 #include "../../domain/anilist/AniListField.h"
@@ -95,19 +96,13 @@ std::optional<RecognitionRecord> ReadRecord(const QSqlQuery &query) {
 }
 }
 
-SqliteRecognitionHistoryRepository::SqliteRecognitionHistoryRepository(QSqlDatabase database, QString readQuery,
-                                                                       QString insertQuery, QString updateQuery,
-                                                                       QString deleteQuery, QString discardProgressQuery,
-                                                                       QString queuedProgressQuery)
-    : database_(std::move(database)), readQuery_(std::move(readQuery)), insertQuery_(std::move(insertQuery)),
-      updateQuery_(std::move(updateQuery)), deleteQuery_(std::move(deleteQuery)),
-      discardProgressQuery_(std::move(discardProgressQuery)),
-      queuedProgressQuery_(std::move(queuedProgressQuery)) {}
+SqliteRecognitionHistoryRepository::SqliteRecognitionHistoryRepository(QSqlDatabase database)
+    : database_(std::move(database)) {}
 
 bool SqliteRecognitionHistoryRepository::insert(RecognitionRecord &record, QString &error) {
     error.clear();
     QString sql;
-    if (!SqlQueryStore::loadSource(insertQuery_, sql, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::InsertRecognitionRecord, sql, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(sql)) {
         error = query.lastError().text();
@@ -132,7 +127,7 @@ bool SqliteRecognitionHistoryRepository::insert(RecognitionRecord &record, QStri
 bool SqliteRecognitionHistoryRepository::update(const RecognitionRecord &record, QString &error) {
     error.clear();
     QString sql;
-    if (!SqlQueryStore::loadSource(updateQuery_, sql, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpdateRecognitionRecord, sql, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(sql)) {
         error = query.lastError().text();
@@ -157,7 +152,7 @@ bool SqliteRecognitionHistoryRepository::find(const RecognitionHistoryQuery &cri
     records.clear();
     error.clear();
     QString sql;
-    if (!SqlQueryStore::loadSource(readQuery_, sql, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadRecognitionHistory, sql, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(sql)) {
         error = query.lastError().text();
@@ -209,8 +204,8 @@ bool SqliteRecognitionHistoryRepository::remove(const qint64 recordId, const std
     error.clear();
     QString deleteSql;
     QString discardSql;
-    if (!SqlQueryStore::loadSource(deleteQuery_, deleteSql, error)
-        || (queuedProgress && !SqlQueryStore::loadSource(discardProgressQuery_, discardSql, error))) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::DeleteRecognitionRecord, deleteSql, error)
+        || (queuedProgress && !SqlQueryStore::loadSource(SqliteQueries::DiscardRecognitionProgress, discardSql, error))) {
         return false;
     }
     if (!database_.transaction()) {
@@ -254,7 +249,7 @@ bool SqliteRecognitionHistoryRepository::hasQueuedProgress(const QueuedProgress 
     error.clear();
     found = false;
     QString sql;
-    if (!SqlQueryStore::loadSource(queuedProgressQuery_, sql, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::FindQueuedRecognitionProgress, sql, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(sql)) {
         error = query.lastError().text();

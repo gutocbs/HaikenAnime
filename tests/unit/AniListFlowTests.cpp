@@ -1,4 +1,3 @@
-#include <QDir>
 #include <QtTest>
 
 #include <QMap>
@@ -10,7 +9,6 @@
 #include "../../src/application/media/MediaSyncFilter.h"
 #include "../../src/application/media/MediaPage.h"
 #include "../../src/application/media/IMediaSnapshotReconciler.h"
-#include "../../src/infrastructure/anilist/FileAniListDataSource.h"
 #include "../../src/infrastructure/anilist/AniListMediaMapper.h"
 
 class CollectingWriter final : public IMediaWriter {
@@ -24,29 +22,29 @@ public:
     QList<QList<Media>> batches;
 };
 
-class WrongPageDataSource final : public IMediaDataSource {
+class WrongPageDataSource final : public IAniListDataSource {
 public:
-    bool fetchPage(const MediaSyncFilter &, MediaPage &page, QString &error) override {
+    bool fetchPage(const AniListDataSourceRequest &, AniListDataSourceResult &result, QString &error) override {
         error.clear();
-        page = {};
-        page.currentPage = 1;
-        page.hasNextPage = true;
+        result = {};
+        result.page.currentPage = 1;
+        result.page.hasNextPage = true;
         return true;
     }
 };
 
-class CancellationAfterFetchDataSource final : public IMediaDataSource {
+class CancellationAfterFetchDataSource final : public IAniListDataSource {
 public:
     explicit CancellationAfterFetchDataSource(bool &cancelled) : cancelled_(cancelled) {}
 
-    bool fetchPage(const MediaSyncFilter &, MediaPage &page, QString &error) override {
+    bool fetchPage(const AniListDataSourceRequest &, AniListDataSourceResult &result, QString &error) override {
         error.clear();
-        page = {};
-        page.currentPage = 1;
-        page.hasNextPage = false;
+        result = {};
+        result.page.currentPage = 1;
+        result.page.hasNextPage = false;
         Media media;
         media.Id = 7;
-        page.media.append(media);
+        result.page.media.append(media);
         cancelled_ = true;
         return true;
     }
@@ -186,28 +184,29 @@ AniListSyncOutcome CompleteOutcome(const QSet<int> &ids) {
     return {.observedMediaIds = ids, .completeSnapshot = true};
 }
 
+/** Two user-list pages with media 1 and 2, the shape the sync service sees from AniList. */
+void ConfigureTwoPages(PagedPartitionResultDataSource &source) {
+    source.resultsByPage[1].page.currentPage = 1;
+    source.resultsByPage[1].page.hasNextPage = true;
+    source.resultsByPage[1].page.media.append(Media {.Id = 1});
+    source.resultsByPage[2].page.currentPage = 2;
+    source.resultsByPage[2].page.media.append(Media {.Id = 2});
+}
+
 class AniListFlowTests : public QObject {
     Q_OBJECT
 
 private slots:
-    void fixtureAppliesFilterAndPagination();
-    void embeddedProductionFixtureCanBeRead();
     void synchronizationPersistsEveryPage();
-    void invalidFixtureReturnsError();
     void mapperUsesNeutralValuesForUnknownExternalEnums();
     void successfulSynchronizationClearsPreviousError();
     void rejectsInvalidPaginationBeforeReading();
     void rejectsDataSourceThatDoesNotReturnRequestedPage();
-    void legacyDataSourceDoesNotReconcileUnseenMedia();
-    void filteredSynchronizationDoesNotReconcile();
-    void synchronizationStartingAfterPageOneDoesNotReconcile();
-    void replayAfterCheckpointFailureIsIdempotentForLegacySource();
+    void replayAfterCheckpointFailureIsIdempotent();
     void doesNotAdvanceCheckpointWhenPagePersistenceFails();
     void cancellationAfterFetchPreventsPagePersistence();
-    void partitionRequestsUseExplicitCatalogVariables();
-    void partialPartitionDoesNotReconcileUnseenMedia();
-    void reconcilesFullMultiPageUserListAtTerminalPage();
-    void partialUserListRunDoesNotReconcileAtTerminalPage();
+    void fullMultiPageUserListReportsCompleteSnapshot();
+    void userListRunStartingAfterPageOneIsNotComplete();
     void typedAndStatusFilteredFullCollectionReportsCompleteSnapshot();
     void failureOnSecondChunkLeavesSnapshotIncomplete();
     void nonAuthoritativeFirstChunkLeavesSnapshotIncomplete();
@@ -221,58 +220,18 @@ private slots:
     void reportsCumulativeMediaCountAfterEachPersistedPage();
 };
 
-static QString fixturePath() {
-    return QDir(QStringLiteral(HAIKENANIME_TEST_FIXTURE_DIR))
-        .filePath(QStringLiteral("media-library.json"));
-}
-
-void AniListFlowTests::fixtureAppliesFilterAndPagination() {
-    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
-    MediaSyncFilter filter;
-    filter.type = QStringLiteral("TV");
-    filter.perPage = 1;
-
-    MediaPage page;
-    QString error;
-    QVERIFY(source.fetchPage(filter, page, error));
-    QCOMPARE(page.media.size(), 1);
-    QCOMPARE(page.currentPage, 1);
-    QVERIFY(page.hasNextPage);
-    QCOMPARE(page.media.first().Id, 154587);
-    QCOMPARE(page.media.first().ListStatus, UserListStatus::Current);
-}
-
-void AniListFlowTests::embeddedProductionFixtureCanBeRead() {
-    FileAniListDataSource source(QStringLiteral(":/fixtures/media-library.json"));
-    MediaPage page;
-    QString error;
-
-    QVERIFY2(source.fetchPage({}, page, error), qPrintable(error));
-    QVERIFY(!page.media.isEmpty());
-}
-
 void AniListFlowTests::synchronizationPersistsEveryPage() {
-    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
+    PagedPartitionResultDataSource source;
+    ConfigureTwoPages(source);
     CollectingWriter writer;
     AniListSyncService service(source, writer);
-    MediaSyncFilter filter;
-    filter.type = QStringLiteral("TV");
-    filter.perPage = 1;
     QString error;
 
-    QVERIFY(service.synchronize(filter, error));
+    QVERIFY2(service.synchronize(AniListDataSourceRequest::ForPartition(SyncPartition::UserList), error),
+             qPrintable(error));
     QCOMPARE(writer.batches.size(), 2);
-    QCOMPARE(writer.batches.at(0).first().Id, 154587);
-    QCOMPARE(writer.batches.at(1).first().Id, 116807);
-}
-
-void AniListFlowTests::invalidFixtureReturnsError() {
-    FileAniListDataSource source(QDir(QStringLiteral(HAIKENANIME_TEST_FIXTURE_DIR))
-                                     .filePath(QStringLiteral("invalid-media-library.json")));
-    MediaPage page;
-    QString error;
-    QVERIFY(!source.fetchPage({}, page, error));
-    QVERIFY(error.contains(QStringLiteral("Invalid AniList fixture")));
+    QCOMPARE(writer.batches.at(0).first().Id, 1);
+    QCOMPARE(writer.batches.at(1).first().Id, 2);
 }
 
 void AniListFlowTests::mapperUsesNeutralValuesForUnknownExternalEnums() {
@@ -291,12 +250,13 @@ void AniListFlowTests::mapperUsesNeutralValuesForUnknownExternalEnums() {
 }
 
 void AniListFlowTests::successfulSynchronizationClearsPreviousError() {
-    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
+    PagedPartitionResultDataSource source;
+    ConfigureTwoPages(source);
     CollectingWriter writer;
     AniListSyncService service(source, writer);
     QString error = QStringLiteral("stale error");
 
-    QVERIFY(service.synchronize(MediaSyncFilter {}, error));
+    QVERIFY(service.synchronize(AniListDataSourceRequest::ForPartition(SyncPartition::UserList), error));
     QVERIFY(error.isEmpty());
 }
 
@@ -304,11 +264,11 @@ void AniListFlowTests::rejectsInvalidPaginationBeforeReading() {
     WrongPageDataSource source;
     CollectingWriter writer;
     AniListSyncService service(source, writer);
-    MediaSyncFilter filter;
-    filter.perPage = 0;
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.filter.perPage = 0;
     QString error;
 
-    QVERIFY(!service.synchronize(filter, error));
+    QVERIFY(!service.synchronize(request, error));
     QCOMPARE(service.lastErrorCategory(), AniListSyncErrorCategory::InvalidData);
     QVERIFY(error.contains(QStringLiteral("positive")));
 }
@@ -317,69 +277,25 @@ void AniListFlowTests::rejectsDataSourceThatDoesNotReturnRequestedPage() {
     WrongPageDataSource source;
     CollectingWriter writer;
     AniListSyncService service(source, writer);
-    MediaSyncFilter filter;
-    filter.startingPage = 2;
+    auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
+    request.setPage(2);
     QString error;
 
-    QVERIFY(!service.synchronize(filter, error));
+    QVERIFY(!service.synchronize(request, error));
     QCOMPARE(service.lastErrorCategory(), AniListSyncErrorCategory::InvalidData);
     QVERIFY(error.contains(QStringLiteral("page 1")));
 }
 
-void AniListFlowTests::legacyDataSourceDoesNotReconcileUnseenMedia() {
-    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
-    CollectingWriter writer;
-    RecordingSnapshotReconciler reconciler;
-    AniListSyncService service(source, writer, &reconciler);
-    MediaSyncFilter filter;
-    filter.perPage = 2;
-    QString error;
-
-    QVERIFY2(service.synchronize(filter, error), qPrintable(error));
-    QCOMPARE(reconciler.calls, 0);
-}
-
-void AniListFlowTests::filteredSynchronizationDoesNotReconcile() {
-    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
-    CollectingWriter writer;
-    RecordingSnapshotReconciler reconciler;
-    AniListSyncService service(source, writer, &reconciler);
-    MediaSyncFilter filter;
-    filter.type = QStringLiteral("TV");
-    filter.perPage = 1;
-    QString error;
-
-    QVERIFY2(service.synchronize(filter, error), qPrintable(error));
-    QCOMPARE(reconciler.calls, 0);
-}
-
-void AniListFlowTests::synchronizationStartingAfterPageOneDoesNotReconcile() {
-    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
-    CollectingWriter writer;
-    RecordingSnapshotReconciler reconciler;
-    AniListSyncService service(source, writer, &reconciler);
-    MediaSyncFilter filter;
-    filter.type = QStringLiteral("TV");
-    filter.perPage = 1;
-    filter.startingPage = 2;
-    QString error;
-
-    QVERIFY2(service.synchronize(filter, error), qPrintable(error));
-    QCOMPARE(reconciler.calls, 0);
-}
-
-void AniListFlowTests::replayAfterCheckpointFailureIsIdempotentForLegacySource() {
-    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
+void AniListFlowTests::replayAfterCheckpointFailureIsIdempotent() {
+    PagedPartitionResultDataSource source;
+    ConfigureTwoPages(source);
     IdempotentWriter writer;
-    RecordingSnapshotReconciler reconciler;
-    AniListSyncService service(source, writer, &reconciler);
-    MediaSyncFilter filter;
-    filter.type = QStringLiteral("TV");
-    filter.perPage = 1;
+    AniListSyncService service(source, writer);
+    const auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
     QString error;
     int failedCheckpointCalls = 0;
 
-    QVERIFY(!service.synchronize(filter, error, [&](const int page, QString &checkpointError) {
+    QVERIFY(!service.synchronize(request, error, [&](const int page, QString &checkpointError) {
         ++failedCheckpointCalls;
         if (page == 1) {
             checkpointError = QStringLiteral("checkpoint persistence interrupted");
@@ -389,28 +305,28 @@ void AniListFlowTests::replayAfterCheckpointFailureIsIdempotentForLegacySource()
     }));
     QCOMPARE(failedCheckpointCalls, 1);
     QCOMPARE(writer.persistedById.size(), 1);
-    QCOMPARE(reconciler.calls, 0);
 
     QList<int> confirmedPages;
-    QVERIFY2(service.synchronize(filter, error, [&](const int page, QString &checkpointError) {
+    QVERIFY2(service.synchronize(request, error, [&](const int page, QString &checkpointError) {
         confirmedPages.append(page);
         checkpointError.clear();
         return true;
     }), qPrintable(error));
     QCOMPARE(confirmedPages, QList<int>({1, 2}));
     QCOMPARE(writer.persistedById.size(), 2);
-    QCOMPARE(reconciler.calls, 0);
 }
 
 void AniListFlowTests::doesNotAdvanceCheckpointWhenPagePersistenceFails() {
-    FileAniListDataSource source(QDir::cleanPath(fixturePath()));
+    PagedPartitionResultDataSource source;
+    ConfigureTwoPages(source);
     IdempotentWriter writer;
     writer.succeeds = false;
     AniListSyncService service(source, writer);
     QString error;
     int checkpointCalls = 0;
 
-    QVERIFY(!service.synchronize(MediaSyncFilter {}, error, [&](const int, QString &) {
+    QVERIFY(!service.synchronize(AniListDataSourceRequest::ForPartition(SyncPartition::UserList), error,
+                                 [&](const int, QString &) {
         ++checkpointCalls;
         return true;
     }));
@@ -424,54 +340,13 @@ void AniListFlowTests::cancellationAfterFetchPreventsPagePersistence() {
     AniListSyncService service(source, writer);
     QString error;
 
-    QVERIFY(!service.synchronize(MediaSyncFilter {}, error, {}, [&cancelled] { return cancelled; }));
+    QVERIFY(!service.synchronize(AniListDataSourceRequest::ForPartition(SyncPartition::UserList), error, {},
+                                 [&cancelled] { return cancelled; }));
     QCOMPARE(service.lastErrorCategory(), AniListSyncErrorCategory::Cancelled);
     QCOMPARE(writer.batches.size(), 0);
 }
 
-void AniListFlowTests::partitionRequestsUseExplicitCatalogVariables() {
-    const auto userList = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
-    const auto active = AniListDataSourceRequest::ForPartition(SyncPartition::ActiveCatalog);
-    const auto inactive = AniListDataSourceRequest::ForPartition(SyncPartition::InactiveCatalog);
-    const auto completed = AniListDataSourceRequest::ForPartition(SyncPartition::CompletedCatalog);
-
-    QCOMPARE(userList.queryIdentity, QStringLiteral("user-list:v1"));
-    QVERIFY(userList.queryIdentity != active.queryIdentity);
-    QVERIFY(userList.variables.value(QStringLiteral("type")).isNull());
-    QVERIFY(userList.variables.value(QStringLiteral("status")).isNull());
-    QVERIFY(userList.variables.value(QStringLiteral("list")).isNull());
-
-    QCOMPARE(active.queryIdentity, QStringLiteral("catalog:v1"));
-    QCOMPARE(active.variables.value(QStringLiteral("type")).toString(), QStringLiteral("ANIME"));
-    QCOMPARE(active.variables.value(QStringLiteral("status")).toString(), QStringLiteral("RELEASING"));
-    QCOMPARE(inactive.variables.value(QStringLiteral("status")).toString(), QStringLiteral("NOT_YET_RELEASED"));
-    QCOMPARE(completed.variables.value(QStringLiteral("status")).toString(), QStringLiteral("FINISHED"));
-    QVERIFY(active.variables.value(QStringLiteral("list")).isNull());
-    QVERIFY(inactive.variables.value(QStringLiteral("list")).isNull());
-    QVERIFY(completed.variables.value(QStringLiteral("list")).isNull());
-}
-
-void AniListFlowTests::partialPartitionDoesNotReconcileUnseenMedia() {
-    PartitionResultDataSource source;
-    source.nextResult.completedPartition = SyncPartition::ActiveCatalog;
-    source.nextResult.isCompleteAuthoritativeSnapshot = false;
-    source.nextResult.page.currentPage = 1;
-    Media media;
-    media.Id = 154587;
-    source.nextResult.page.media.append(media);
-    CollectingWriter writer;
-    RecordingSnapshotReconciler reconciler;
-    AniListSyncService service(source, writer, &reconciler);
-    const auto request = AniListDataSourceRequest::ForPartition(SyncPartition::ActiveCatalog);
-    QString error;
-
-    QVERIFY2(service.synchronize(request, error), qPrintable(error));
-    QCOMPARE(source.requests.size(), 1);
-    QCOMPARE(source.requests.first().filter.partition, SyncPartition::ActiveCatalog);
-    QCOMPARE(reconciler.calls, 0);
-}
-
-void AniListFlowTests::reconcilesFullMultiPageUserListAtTerminalPage() {
+void AniListFlowTests::fullMultiPageUserListReportsCompleteSnapshot() {
     PagedPartitionResultDataSource source;
     source.resultsByPage[1].completedPartition = SyncPartition::UserList;
     source.resultsByPage[1].isCompleteAuthoritativeSnapshot = true;
@@ -482,8 +357,7 @@ void AniListFlowTests::reconcilesFullMultiPageUserListAtTerminalPage() {
     source.resultsByPage[2].page.currentPage = 2;
     source.resultsByPage[2].page.media.append(Media { .Id = 202 });
     CollectingWriter writer;
-    RecordingSnapshotReconciler reconciler;
-    AniListSyncService service(source, writer, &reconciler);
+    AniListSyncService service(source, writer);
     auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
     request.filter.username = QStringLiteral("fixture-user");
     QString error;
@@ -492,26 +366,25 @@ void AniListFlowTests::reconcilesFullMultiPageUserListAtTerminalPage() {
     QCOMPARE(source.requests.size(), 2);
     QCOMPARE(source.requests.at(0).filter.startingPage, 1);
     QCOMPARE(source.requests.at(1).filter.startingPage, 2);
-    QCOMPARE(reconciler.calls, 1);
-    QCOMPARE(reconciler.observedIds, QSet<int>({101, 202}));
+    QVERIFY(service.lastOutcome().completeSnapshot);
+    QCOMPARE(service.lastOutcome().observedMediaIds, QSet<int>({101, 202}));
 }
 
-void AniListFlowTests::partialUserListRunDoesNotReconcileAtTerminalPage() {
+void AniListFlowTests::userListRunStartingAfterPageOneIsNotComplete() {
     PagedPartitionResultDataSource source;
     source.resultsByPage[2].completedPartition = SyncPartition::UserList;
     source.resultsByPage[2].isCompleteAuthoritativeSnapshot = true;
     source.resultsByPage[2].page.currentPage = 2;
     source.resultsByPage[2].page.media.append(Media { .Id = 202 });
     CollectingWriter writer;
-    RecordingSnapshotReconciler reconciler;
-    AniListSyncService service(source, writer, &reconciler);
+    AniListSyncService service(source, writer);
     auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
     request.filter.username = QStringLiteral("fixture-user");
     request.setPage(2);
     QString error;
 
     QVERIFY2(service.synchronize(request, error), qPrintable(error));
-    QCOMPARE(reconciler.calls, 0);
+    QVERIFY(!service.lastOutcome().completeSnapshot);
 }
 
 void AniListFlowTests::typedAndStatusFilteredFullCollectionReportsCompleteSnapshot() {
@@ -527,8 +400,7 @@ void AniListFlowTests::typedAndStatusFilteredFullCollectionReportsCompleteSnapsh
     source.resultsByPage[2].page.media.append(Media { .Id = 202 });
     source.resultsByPage[2].observedMediaIds = QSet<int>({202, 203});
     CollectingWriter writer;
-    RecordingSnapshotReconciler reconciler;
-    AniListSyncService service(source, writer, &reconciler);
+    AniListSyncService service(source, writer);
     auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
     request.filter.type = QStringLiteral("ANIME");
     request.filter.acceptedListStatuses = {QStringLiteral("CURRENT")};
@@ -538,8 +410,6 @@ void AniListFlowTests::typedAndStatusFilteredFullCollectionReportsCompleteSnapsh
 
     QVERIFY(service.lastOutcome().completeSnapshot);
     QCOMPARE(service.lastOutcome().observedMediaIds, QSet<int>({101, 102, 202, 203}));
-    QCOMPARE(reconciler.calls, 1);
-    QCOMPARE(reconciler.observedIds, QSet<int>({101, 102, 202, 203}));
 }
 
 void AniListFlowTests::failureOnSecondChunkLeavesSnapshotIncomplete() {
@@ -550,8 +420,7 @@ void AniListFlowTests::failureOnSecondChunkLeavesSnapshotIncomplete() {
     source.resultsByPage[1].page.hasNextPage = true;
     source.resultsByPage[1].observedMediaIds = QSet<int>({101});
     CollectingWriter writer;
-    RecordingSnapshotReconciler reconciler;
-    AniListSyncService service(source, writer, &reconciler);
+    AniListSyncService service(source, writer);
     auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
     request.filter.type = QStringLiteral("ANIME");
     QString error;
@@ -559,7 +428,6 @@ void AniListFlowTests::failureOnSecondChunkLeavesSnapshotIncomplete() {
     QVERIFY(!service.synchronize(request, error));
 
     QVERIFY(!service.lastOutcome().completeSnapshot);
-    QCOMPARE(reconciler.calls, 0);
 }
 
 void AniListFlowTests::nonAuthoritativeFirstChunkLeavesSnapshotIncomplete() {
@@ -593,7 +461,7 @@ void AniListFlowTests::reconcilesPendingProgressBeforePersistingTheRemotePage() 
     pendingRepository.pending.newValue = 10;
     AniListPendingChangeReconciler pendingReconciler(pendingRepository);
     CollectingWriter writer;
-    AniListSyncService service(source, writer, nullptr, nullptr, 0, &pendingReconciler);
+    AniListSyncService service(source, writer, 0, &pendingReconciler);
     QString error;
 
     QVERIFY2(service.synchronize(AniListDataSourceRequest::ForPartition(SyncPartition::UserList),
@@ -695,8 +563,7 @@ void AniListFlowTests::cancellationBetweenChunksLeavesSnapshotIncomplete() {
     bool cancelled = false;
     CancelAfterFirstChunkDataSource source(cancelled);
     CollectingWriter writer;
-    RecordingSnapshotReconciler reconciler;
-    AniListSyncService service(source, writer, &reconciler);
+    AniListSyncService service(source, writer);
     auto request = AniListDataSourceRequest::ForPartition(SyncPartition::UserList);
     request.filter.type = QStringLiteral("ANIME");
     QString error;
@@ -705,7 +572,6 @@ void AniListFlowTests::cancellationBetweenChunksLeavesSnapshotIncomplete() {
 
     QCOMPARE(service.lastErrorCategory(), AniListSyncErrorCategory::Cancelled);
     QVERIFY(!service.lastOutcome().completeSnapshot);
-    QCOMPARE(reconciler.calls, 0);
 }
 
 QTEST_MAIN(AniListFlowTests)

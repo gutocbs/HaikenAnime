@@ -41,14 +41,14 @@ QHash<int, QByteArray> RecognitionListModel::roleNames() const {
             {UpdatedAtRole, "updatedAt"},   {CorrectableRole, "correctable"}, {CorrectedRole, "corrected"}};
 }
 
-void RecognitionListModel::setRecords(const QList<RecognitionRecord> &records, const QHash<int, QString> &mediaTitles) {
+void RecognitionListModel::SetRecords(const QList<RecognitionRecord> &records, const QHash<int, QString> &mediaTitles) {
     beginResetModel();
     records_ = records;
     mediaTitles_ = mediaTitles;
     endResetModel();
 }
 
-void RecognitionListModel::appendRecords(const QList<RecognitionRecord> &records,
+void RecognitionListModel::AppendRecords(const QList<RecognitionRecord> &records,
                                          const QHash<int, QString> &mediaTitles) {
     mediaTitles_ = mediaTitles;
     if (records.isEmpty()) return;

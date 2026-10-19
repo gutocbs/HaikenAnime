@@ -1,9 +1,21 @@
 #include "SqlQueryStore.h"
 
 #include <QFile>
+#include <QHash>
+#include <QMutex>
 #include "../logging/AsyncLogger.h"
 
 #include <utility>
+
+namespace {
+// Qt resources never change while the app runs: each one is read once and shared by every thread.
+QMutex cacheMutex;
+QHash<QString, QString> resourceCache;
+
+bool IsResource(const QString &source) {
+    return source.startsWith(QStringLiteral(":/")) || source.startsWith(QStringLiteral("qrc:"));
+}
+}
 
 SqlQueryStore::SqlQueryStore(QString filePath)
     : filePath_(std::move(filePath)) {
@@ -34,7 +46,21 @@ bool SqlQueryStore::load(QString &query, QString &error) const {
 
 bool SqlQueryStore::loadSource(const QString &source, QString &query, QString &error,
                                AsyncLogger *logger) {
+    if (IsResource(source)) {
+        QMutexLocker locker(&cacheMutex);
+        const auto cached = resourceCache.constFind(source);
+        if (cached != resourceCache.cend()) {
+            query = cached.value();
+            error.clear();
+            return true;
+        }
+    }
     SqlQueryStore store(source);
     store.setLogger(logger);
-    return store.load(query, error);
+    if (!store.load(query, error)) return false;
+    if (IsResource(source)) {
+        QMutexLocker locker(&cacheMutex);
+        resourceCache.insert(source, query);
+    }
+    return true;
 }

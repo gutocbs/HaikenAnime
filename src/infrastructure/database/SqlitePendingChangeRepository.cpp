@@ -1,76 +1,22 @@
 #include "SqlitePendingChangeRepository.h"
 
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QSqlError>
 #include <QSqlQuery>
 
-#include <cmath>
-#include <limits>
 #include <utility>
 #include "SqlQueryStore.h"
+#include "SqlitePendingChangeCodec.h"
+#include "SqliteQueries.h"
 
-namespace {
-QString EncodeValue(const AniListFieldValue &value) {
-    QJsonObject object;
-    if (std::holds_alternative<int>(value)) {
-        object.insert(QStringLiteral("type"), QStringLiteral("int"));
-        object.insert(QStringLiteral("value"), std::get<int>(value));
-    } else {
-        object.insert(QStringLiteral("type"), QStringLiteral("string"));
-        object.insert(QStringLiteral("value"), std::get<QString>(value));
-    }
-    return QString::fromUtf8(QJsonDocument(object).toJson(QJsonDocument::Compact));
-}
-
-bool DecodeValue(const QString &encoded, AniListFieldValue &value) {
-    QJsonParseError parseError;
-    const auto document = QJsonDocument::fromJson(encoded.toUtf8(), &parseError);
-    if (parseError.error != QJsonParseError::NoError || !document.isObject()) {
-        return false;
-    }
-    const auto object = document.object();
-    const auto type = object.value(QStringLiteral("type")).toString();
-    const auto encodedValue = object.value(QStringLiteral("value"));
-    if (type == QStringLiteral("int") && encodedValue.isDouble()) {
-        const double number = encodedValue.toDouble();
-        if (!std::isfinite(number) || std::trunc(number) != number
-            || number < std::numeric_limits<int>::min()
-            || number > std::numeric_limits<int>::max()) {
-            return false;
-        }
-        value = static_cast<int>(number);
-        return true;
-    }
-    if (type == QStringLiteral("string") && encodedValue.isString()) {
-        value = encodedValue.toString();
-        return true;
-    }
-    return false;
-}
-}
-
-SqlitePendingChangeRepository::SqlitePendingChangeRepository(
-    QSqlDatabase database, QString enqueueQuery, QString pendingQuery, QString updateStatusQuery)
-    : SqlitePendingChangeRepository(std::move(database), std::move(enqueueQuery),
-                                    std::move(pendingQuery),
-                                    QStringLiteral(":/sqlite/queries/read-pending-media-ids.sql"),
-                                    std::move(updateStatusQuery)) {
-}
-
-SqlitePendingChangeRepository::SqlitePendingChangeRepository(
-    QSqlDatabase database, QString enqueueQuery, QString pendingQuery,
-    QString pendingMediaIdsQuery, QString updateStatusQuery)
-    : database_(std::move(database)), enqueueQuery_(std::move(enqueueQuery)),
-      pendingQuery_(std::move(pendingQuery)), pendingMediaIdsQuery_(std::move(pendingMediaIdsQuery)),
-      updateStatusQuery_(std::move(updateStatusQuery)) {
+SqlitePendingChangeRepository::SqlitePendingChangeRepository(QSqlDatabase database)
+    : database_(std::move(database)) {
 }
 
 bool SqlitePendingChangeRepository::getPendingMediaIds(QList<int> &mediaIds, QString &error) {
     mediaIds.clear();
     error.clear();
     QString source;
-    if (!SqlQueryStore::loadSource(pendingMediaIdsQuery_, source, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadPendingMediaIds, source, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(source)) {
         error = query.lastError().text();
@@ -89,7 +35,7 @@ bool SqlitePendingChangeRepository::getMediaIdsWithUnsentChanges(QSet<int> &medi
     mediaIds.clear();
     error.clear();
     QString source;
-    if (!SqlQueryStore::loadSource(unsentMediaIdsQuery_, source, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadUnsentMediaIds, source, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(source)) {
         error = query.lastError().text();
@@ -106,25 +52,10 @@ bool SqlitePendingChangeRepository::getMediaIdsWithUnsentChanges(QSet<int> &medi
 bool SqlitePendingChangeRepository::enqueue(const AniListPendingChange &change, QString &error) {
     error.clear();
     QString enqueueQuery;
-    if (!SqlQueryStore::loadSource(enqueueQuery_, enqueueQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::EnqueuePendingChange, enqueueQuery, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(enqueueQuery)) { error = query.lastError().text(); return false; }
-    query.bindValue(QStringLiteral(":media_id"), change.mediaId);
-    query.bindValue(QStringLiteral(":field"), static_cast<int>(change.field));
-    query.bindValue(QStringLiteral(":previous_value"), EncodeValue(change.previousValue));
-    query.bindValue(QStringLiteral(":new_value"), EncodeValue(change.newValue));
-    query.bindValue(QStringLiteral(":created_at"), change.createdAt.toString(Qt::ISODate));
-    query.bindValue(QStringLiteral(":local_updated_at"), change.localUpdatedAt.toString(Qt::ISODate));
-    query.bindValue(QStringLiteral(":remote_observed_at"), change.remoteObservedAt.isValid()
-                                                             ? change.remoteObservedAt.toString(Qt::ISODate)
-                                                             : QVariant());
-    query.bindValue(QStringLiteral(":remote_version"),
-                    change.remoteVersion.isNull() ? QStringLiteral("") : change.remoteVersion);
-    query.bindValue(QStringLiteral(":attempts"), change.attempts);
-    query.bindValue(QStringLiteral(":status"), static_cast<int>(change.status));
-    query.bindValue(QStringLiteral(":last_error"),
-                    change.lastError.isNull() ? QStringLiteral("") : change.lastError);
-    query.bindValue(QStringLiteral(":owner_user_id"), change.ownerUserId);
+    SqlitePendingChangeCodec::BindEnqueue(query, change);
     if (!query.exec()) {
         error = query.lastError().text();
         return false;
@@ -145,7 +76,7 @@ bool SqlitePendingChangeRepository::adoptOrphanChanges(const qint64 ownerUserId,
         return false;
     }
     QString source;
-    if (!SqlQueryStore::loadSource(adoptOrphanChangesQuery_, source, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::AdoptOrphanPendingChanges, source, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(source)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":owner"), ownerUserId);
@@ -162,7 +93,7 @@ bool SqlitePendingChangeRepository::getPending(int mediaId, QList<AniListPending
     changes.clear();
     error.clear();
     QString pendingQuery;
-    if (!SqlQueryStore::loadSource(pendingQuery_, pendingQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadPendingChanges, pendingQuery, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(pendingQuery)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":media_id"), mediaId);
@@ -177,9 +108,9 @@ bool SqlitePendingChangeRepository::getPending(int mediaId, QList<AniListPending
         change.ownerUserId = query.value(QStringLiteral("owner_user_id")).toLongLong();
         change.mediaId = query.value(QStringLiteral("media_id")).toInt();
         change.field = static_cast<AniListField>(query.value(QStringLiteral("field")).toInt());
-        if (!DecodeValue(query.value(QStringLiteral("previous_value")).toString(),
+        if (!SqlitePendingChangeCodec::DecodeValue(query.value(QStringLiteral("previous_value")).toString(),
                          change.previousValue)
-            || !DecodeValue(query.value(QStringLiteral("new_value")).toString(),
+            || !SqlitePendingChangeCodec::DecodeValue(query.value(QStringLiteral("new_value")).toString(),
                             change.newValue)) {
             changes.clear();
             error = QStringLiteral("Pending AniList change %1 contains an invalid encoded value.")
@@ -202,7 +133,7 @@ bool SqlitePendingChangeRepository::getPending(int mediaId, QList<AniListPending
 bool SqlitePendingChangeRepository::updateStatus(const AniListPendingChange &change, QString &error) {
     error.clear();
     QString updateStatusQuery;
-    if (!SqlQueryStore::loadSource(updateStatusQuery_, updateStatusQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpdatePendingChange, updateStatusQuery, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(updateStatusQuery)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":id"), change.id);

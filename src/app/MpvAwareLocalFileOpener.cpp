@@ -16,7 +16,7 @@ bool MpvAwareLocalFileOpener::openEpisode(const LocalEpisode &episode, QString &
             error.clear();
             return true;
         }
-        recognition_.warnings.append(QStringLiteral("mpv could not be started; the default player was used."));
+        recognition_.Warn(QStringLiteral("mpv could not be started; the default player was used."));
     }
     return fallback_.open(episode.path, error);
 }

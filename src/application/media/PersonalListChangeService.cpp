@@ -1,20 +1,9 @@
 #include "PersonalListChangeService.h"
 
+#include "../anilist/AniListListStatus.h"
 #include "../anilist/AniListPendingChangeFactory.h"
 
 namespace {
-QString aniListStatus(const UserListStatus status) {
-    switch (status) {
-    case UserListStatus::Current: return QStringLiteral("CURRENT");
-    case UserListStatus::Planning: return QStringLiteral("PLANNING");
-    case UserListStatus::OnHold: return QStringLiteral("PAUSED");
-    case UserListStatus::Dropped: return QStringLiteral("DROPPED");
-    case UserListStatus::Completed: return QStringLiteral("COMPLETED");
-    case UserListStatus::Unknown: break;
-    }
-    return {};
-}
-
 bool appendChange(const int mediaId, const AniListField field, const AniListFieldValue &previous,
                   const AniListFieldValue &updated, QList<AniListPendingChange> &changes,
                   QString &error) {
@@ -50,8 +39,8 @@ bool PersonalListChangeService::save(const Media &previous, const Media &updated
                       updated.ConsumedChapters, changes, error)
         || !appendChange(updated.Id, AniListField::PersonalScore, previous.PersonalScore,
                          updated.PersonalScore, changes, error)
-        || !appendChange(updated.Id, AniListField::ListStatus, aniListStatus(previous.ListStatus),
-                         aniListStatus(updated.ListStatus), changes, error)) {
+        || !appendChange(updated.Id, AniListField::ListStatus, AniListListStatusName(previous.ListStatus),
+                         AniListListStatusName(updated.ListStatus), changes, error)) {
         return false;
     }
     const qint64 ownerUserId = ownerProvider_ ? ownerProvider_() : 0;
@@ -70,7 +59,7 @@ bool PersonalListChangeService::remove(const Media &media, QString &error) const
 
     AniListPendingChange deletion;
     if (!AniListPendingChangeFactory::Create(media.Id, AniListField::Deletion,
-                                             aniListStatus(media.ListStatus), QString(), deletion, error)) {
+                                             AniListListStatusName(media.ListStatus), QString(), deletion, error)) {
         return false;
     }
     // The user confirmed the removal in the UI, so it is sent without a further confirmation step.

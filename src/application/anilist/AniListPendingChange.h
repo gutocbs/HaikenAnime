@@ -14,7 +14,7 @@ struct AniListPendingChange {
     /** AniList account that owns the edit; 0 means created before accounts were tracked. */
     qint64 ownerUserId = 0;
     int mediaId = 0;
-    AniListField field = AniListField::ExternalId;
+    AniListField field = AniListField::Progress;
     AniListFieldValue previousValue = QString();
     AniListFieldValue newValue = QString();
     QDateTime createdAt;

@@ -27,6 +27,8 @@ public:
 
     void start();
     void requestNow(SyncPartition partition);
+    /// Changes how often the kind synchronizes (the Settings interval); applied on the worker thread.
+    void setNormalInterval(SyncTaskKind kind, std::chrono::milliseconds interval);
     /**
      * Cancels the partition's active task on the worker thread. `acknowledged` is delivered through a
      * queued call on this runtime object, which lives on the thread that created it (the GUI thread), so
@@ -54,6 +56,9 @@ private:
 
     void Initialize(RepositoryFactory repositoryFactory, ExecutorFactory executorFactory,
                     std::map<SyncTaskKind, SyncSchedulePolicy> policies);
+    /** Forwards one coordinator signal to the GUI-facing signal with the same arguments. */
+    template <typename... Args>
+    void Relay(void (AdaptiveSyncCoordinator::*signal)(Args...), void (AdaptiveSyncRuntime::*relayed)(Args...));
     void StartOnWorker();
     void RequestNowOnWorker(SyncPartition partition);
     void CancelOnWorker(SyncPartition partition, std::function<void()> acknowledged);

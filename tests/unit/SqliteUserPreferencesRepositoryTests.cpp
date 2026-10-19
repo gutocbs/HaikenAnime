@@ -10,6 +10,7 @@ class SqliteUserPreferencesRepositoryTests final : public QObject {
     Q_OBJECT
 private slots:
     void readsMissingAndRoundTripsReplacement();
+    void storesAnEmptyLibraryFolderList();
     void rejectsInvalidPreferencesWithoutChangingStoredRow();
     void scannerPreferencesSurviveReopen();
     void multipleLibraryRootsSurviveReopenAndLegacyRootIsKept();
@@ -26,8 +27,7 @@ private slots:
 };
 
 static SqliteUserPreferencesRepository Repository(SqliteDatabase &database) {
-    return {database.connection(), QStringLiteral(":/sqlite/queries/read-user-preferences.sql"),
-            QStringLiteral(":/sqlite/queries/upsert-user-preferences.sql")};
+    return SqliteUserPreferencesRepository(database.connection());
 }
 
 void SqliteUserPreferencesRepositoryTests::scannerPreferencesSurviveReopen() {
@@ -385,6 +385,25 @@ void SqliteUserPreferencesRepositoryTests::rejectsInvalidPreferencesWithoutChang
     QVERIFY(repository.read(loaded, found, error));
     QVERIFY(found);
     QVERIFY(loaded == expected);
+}
+
+void SqliteUserPreferencesRepositoryTests::storesAnEmptyLibraryFolderList() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY2(database.migrate(), qPrintable(database.lastError()));
+    SqliteUserPreferencesRepository repository(database.connection());
+    UserPreferences preferences;
+    preferences.libraryRoots = {};
+    QString error;
+    QVERIFY2(repository.replace(preferences, error), qPrintable(error));
+
+    UserPreferences loaded;
+    bool found = false;
+    QVERIFY2(repository.read(loaded, found, error), qPrintable(error));
+
+    QVERIFY(found);
+    QVERIFY(loaded.libraryRoots.isEmpty());
 }
 
 QTEST_MAIN(SqliteUserPreferencesRepositoryTests)

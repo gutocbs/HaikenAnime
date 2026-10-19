@@ -3,8 +3,7 @@
 #include "../../app/SeasonalCatalogCoordinator.h"
 #include "../../application/covers/CoverSourceResolver.h"
 #include "../../application/library/LocalRecognitionRequest.h"
-#include "../../application/media/ProgressFormatter.h"
-#include "../../application/media/MediaDetailsPresentation.h"
+#include "../media/MediaPresentation.h"
 #include "../../application/media/SeasonalPersonalListService.h"
 
 #include <QCoreApplication>
@@ -22,50 +21,6 @@ QString stateName(const SeasonalCatalogState state) {
     case SeasonalCatalogState::Idle:
     default: return QStringLiteral("idle");
     }
-}
-
-QString mediaTypeLabel(const MediaType type) {
-    switch (type) {
-    case MediaType::Anime: return QStringLiteral("Anime");
-    case MediaType::Manga: return QStringLiteral("Manga");
-    case MediaType::Novel: return QStringLiteral("Novel");
-    case MediaType::Unknown:
-    default: return QCoreApplication::translate("SeasonalCatalogController", "Desconhecido");
-    }
-}
-
-QString mediaStatusLabel(const MediaStatus status) {
-    switch (status) {
-    case MediaStatus::NotReleased:
-        return QCoreApplication::translate("SeasonalCatalogController", "Ainda não lançado");
-    case MediaStatus::Releasing:
-        return QCoreApplication::translate("SeasonalCatalogController", "Em lançamento");
-    case MediaStatus::Released:
-        return QCoreApplication::translate("SeasonalCatalogController", "Concluído");
-    case MediaStatus::Unknown:
-    default: return QCoreApplication::translate("SeasonalCatalogController", "Desconhecido");
-    }
-}
-
-QString personalListStatusKey(const UserListStatus status) {
-    switch (status) {
-    case UserListStatus::Current: return QStringLiteral("current");
-    case UserListStatus::Planning: return QStringLiteral("planning");
-    case UserListStatus::OnHold: return QStringLiteral("on_hold");
-    case UserListStatus::Dropped: return QStringLiteral("dropped");
-    case UserListStatus::Completed: return QStringLiteral("completed");
-    case UserListStatus::Unknown:
-    default: return QStringLiteral("unknown");
-    }
-}
-
-UserListStatus personalListStatusFromKey(const QString &key) {
-    if (key == QStringLiteral("current")) return UserListStatus::Current;
-    if (key == QStringLiteral("planning")) return UserListStatus::Planning;
-    if (key == QStringLiteral("on_hold")) return UserListStatus::OnHold;
-    if (key == QStringLiteral("dropped")) return UserListStatus::Dropped;
-    if (key == QStringLiteral("completed")) return UserListStatus::Completed;
-    return UserListStatus::Unknown;
 }
 
 QVariantMap personalListOption(const QString &key, const QString &label) {
@@ -101,7 +56,7 @@ QVariant SeasonalCatalogMediaModel::data(const QModelIndex &index, const int rol
     switch (role) {
     case MediaIdRole: return media.Id;
     case TitleRole: return ResolveMediaTitle(media, preferredTitleKey_);
-    case StatusLabelRole: return mediaStatusLabel(media.Status);
+    case StatusLabelRole: return MediaStatusLabel(media.Status);
     case ProgressRole: return PresentMediaSeason(media);
     case ScoreRole:
         return QCoreApplication::translate("SeasonalCatalogController", "Nota AniList: %1")
@@ -116,13 +71,13 @@ QHash<int, QByteArray> SeasonalCatalogMediaModel::roleNames() const {
             {ProgressRole, "progress"}, {ScoreRole, "score"}, {CoverSourceRole, "coverSource"}};
 }
 
-void SeasonalCatalogMediaModel::setMedia(QList<Media> media) {
+void SeasonalCatalogMediaModel::SetMedia(QList<Media> media) {
     beginResetModel();
     media_ = std::move(media);
     endResetModel();
 }
 
-void SeasonalCatalogMediaModel::configurePresentation(const CoverQuality quality, QString preferredTitleKey) {
+void SeasonalCatalogMediaModel::ConfigurePresentation(const CoverQuality quality, QString preferredTitleKey) {
     preferredTitleKey = NormalizePreferredTitleKey(std::move(preferredTitleKey));
     if (coverQuality_ == quality && preferredTitleKey_ == preferredTitleKey) return;
     coverQuality_ = quality;
@@ -137,7 +92,7 @@ SeasonalCatalogController::SeasonalCatalogController(SeasonalCatalogCoordinator 
     : QObject(parent), coordinator_(coordinator), mediaModel_(this), coverQuality_(quality),
       preferredTitleKey_(NormalizePreferredTitleKey(std::move(preferredTitleKey))),
       personalLists_(personalLists) {
-    mediaModel_.configurePresentation(coverQuality_, preferredTitleKey_);
+    mediaModel_.ConfigurePresentation(coverQuality_, preferredTitleKey_);
     if (coordinator_) {
         connect(coordinator_, &SeasonalCatalogCoordinator::changed, this,
                 &SeasonalCatalogController::synchronizeFromCoordinator);
@@ -166,8 +121,8 @@ bool SeasonalCatalogController::hasSelection() const { return selectedMedia() !=
 int SeasonalCatalogController::selectedMediaId() const { return hasSelection() ? selectedMediaId_ : 0; }
 QString SeasonalCatalogController::selectedTitle() const { const auto *media = selectedMedia(); return media ? ResolveMediaTitle(*media, preferredTitleKey_) : QString(); }
 QString SeasonalCatalogController::selectedSynopsis() const { const auto *media = selectedMedia(); return media ? media->Synopsis : QString(); }
-QString SeasonalCatalogController::selectedTypeLabel() const { const auto *media = selectedMedia(); return media ? mediaTypeLabel(media->Type) : QString(); }
-QString SeasonalCatalogController::selectedStatusLabel() const { const auto *media = selectedMedia(); return media ? mediaStatusLabel(media->Status) : QString(); }
+QString SeasonalCatalogController::selectedTypeLabel() const { const auto *media = selectedMedia(); return media ? MediaTypeLabel(media->Type) : QString(); }
+QString SeasonalCatalogController::selectedStatusLabel() const { const auto *media = selectedMedia(); return media ? MediaStatusLabel(media->Status) : QString(); }
 QString SeasonalCatalogController::selectedProgress() const {
     if (!hasSelection()) return {};
     if (!selectedLocalMedia_) return QStringLiteral("—");
@@ -193,7 +148,7 @@ QStringList SeasonalCatalogController::selectedAlternativeNames() const {
 QVariantList SeasonalCatalogController::availablePersonalListOptions() const { return personalListOptions(); }
 bool SeasonalCatalogController::selectedMediaInPersonalList() const { return selectedLocalMedia_.has_value(); }
 QString SeasonalCatalogController::selectedListStatusKey() const {
-    return selectedLocalMedia_ ? personalListStatusKey(selectedLocalMedia_->ListStatus) : QString();
+    return selectedLocalMedia_ ? UserListStatusKey(selectedLocalMedia_->ListStatus) : QString();
 }
 int SeasonalCatalogController::selectedProgressValue() const {
     return selectedLocalMedia_ ? selectedLocalMedia_->ConsumedChapters : 0;
@@ -208,6 +163,9 @@ double SeasonalCatalogController::selectedScoreValue() const {
 QString SeasonalCatalogController::selectedLocalPath() const {
     return selectedLocalMedia_ ? selectedLocalMedia_->LocalPath : QString();
 }
+QString SeasonalCatalogController::selectedLocalFolderUrl() const {
+    return PresentLocalFolderUrl(selectedLocalPath());
+}
 QString SeasonalCatalogController::personalListErrorMessage() const { return personalListErrorMessage_; }
 double SeasonalCatalogController::scoreMinimum() const { return scoreMinimum_; }
 double SeasonalCatalogController::scoreMaximum() const { return scoreMaximum_; }
@@ -216,7 +174,7 @@ double SeasonalCatalogController::scoreStep() const { return scoreStep_; }
 void SeasonalCatalogController::ConfigureCoverQuality(const CoverQuality quality) {
     if (coverQuality_ == quality) return;
     coverQuality_ = quality;
-    mediaModel_.configurePresentation(coverQuality_, preferredTitleKey_);
+    mediaModel_.ConfigurePresentation(coverQuality_, preferredTitleKey_);
     emit selectionChanged();
 }
 
@@ -224,7 +182,7 @@ void SeasonalCatalogController::ConfigurePreferredTitle(QString key) {
     key = NormalizePreferredTitleKey(std::move(key));
     if (preferredTitleKey_ == key) return;
     preferredTitleKey_ = std::move(key);
-    mediaModel_.configurePresentation(coverQuality_, preferredTitleKey_);
+    mediaModel_.ConfigurePresentation(coverQuality_, preferredTitleKey_);
     emit selectionChanged();
 }
 
@@ -276,7 +234,7 @@ bool SeasonalCatalogController::SaveSelectedToPersonalList(const int progress, c
         emit personalListChanged();
         return false;
     }
-    const UserListStatus status = personalListStatusFromKey(statusKey);
+    const UserListStatus status = UserListStatusFromKey(statusKey);
     if (!selectedLocalMedia_ && status == UserListStatus::Unknown) {
         personalListErrorMessage_ = tr("Selecione uma lista antes de salvar.");
         emit personalListChanged();
@@ -303,7 +261,7 @@ bool SeasonalCatalogController::SaveSelectedToPersonalList(const int progress, c
     }
 
     const auto recognitionRequest = LocalRecognitionRequest::Between(previous, saved);
-    selectedLocalMedia_ = std::move(saved);
+    selectedLocalMedia_ = saved;
     personalListErrorMessage_.clear();
     emit personalListChanged();
     emit selectionChanged();
@@ -311,13 +269,14 @@ bool SeasonalCatalogController::SaveSelectedToPersonalList(const int progress, c
     if (recognitionRequest.isRequired()) {
         emit localRecognitionRequested(recognitionRequest.folderPaths, recognitionRequest.alternativeNamesChanged);
     }
+    emit personalListEdited(previous, saved);
     return true;
 }
 
 void SeasonalCatalogController::synchronizeFromCoordinator() {
     if (!coordinator_) return;
     media_ = coordinator_->media();
-    mediaModel_.setMedia(media_);
+    mediaModel_.SetMedia(media_);
     if (!selectedMedia()) clearSelection();
     emit filtersChanged();
     emit stateChanged();

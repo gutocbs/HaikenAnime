@@ -13,10 +13,6 @@ SynchronizationStatusController::SynchronizationStatusController(const int hideD
     connect(&settleTimer_, &QTimer::timeout, this, &SynchronizationStatusController::publishOutcome);
 }
 
-bool SynchronizationStatusController::isTracked(const SyncPartition partition) {
-    return partition == SyncPartition::UserList || partition == SyncPartition::PendingChanges;
-}
-
 bool SynchronizationStatusController::running() const { return roundActive_; }
 QString SynchronizationStatusController::outcome() const { return outcome_; }
 QString SynchronizationStatusController::stageKey() const { return stageKey_; }
@@ -61,7 +57,6 @@ void SynchronizationStatusController::beginRoundIfSettled() {
 }
 
 void SynchronizationStatusController::HandleStarted(const SyncPartition partition) {
-    if (!isTracked(partition)) return;
     settleTimer_.stop();
     beginRoundIfSettled();
     roundActive_ = true;
@@ -116,7 +111,6 @@ void SynchronizationStatusController::HandleCancelled(const SyncPartition partit
 }
 
 void SynchronizationStatusController::HandleFailed(const SyncPartition partition, const QString &safeError) {
-    if (!isTracked(partition)) return;
     hideTimer_.stop();
     beginRoundIfSettled();
     activePartitions_.remove(static_cast<int>(partition));

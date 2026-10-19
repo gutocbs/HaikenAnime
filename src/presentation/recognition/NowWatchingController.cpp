@@ -2,9 +2,8 @@
 
 #include <QTimer>
 
-#include "../../application/media/MediaDetailsPresentation.h"
+#include "../media/MediaPresentation.h"
 #include "../../application/media/MediaTitleResolver.h"
-#include "../../application/media/ProgressFormatter.h"
 
 #include <algorithm>
 #include <utility>
@@ -43,12 +42,12 @@ NowWatchingController::~NowWatchingController() {
     registry_.setChangedCallback({});
 }
 
-void NowWatchingController::setPreferredTitleKey(const QString &key) {
+void NowWatchingController::ConfigurePreferredTitle(const QString &key) {
     preferredTitleKey_ = key;
     Refresh();
 }
 
-void NowWatchingController::setCoverSource(std::function<QString(int)> coverSource) {
+void NowWatchingController::SetCoverSource(std::function<QString(int)> coverSource) {
     coverSource_ = std::move(coverSource);
     Refresh();
 }

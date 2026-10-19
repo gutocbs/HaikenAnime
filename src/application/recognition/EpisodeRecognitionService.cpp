@@ -14,17 +14,14 @@ EpisodeCandidate CatalogEpisodeCandidateResolver::resolve(const EpisodeCandidate
         if (!reader_.readAll(catalog_, error)) return candidate;
         catalogLoaded_ = true;
     }
-    const auto &catalog = catalog_;
     // Same title matcher the local library uses, so Plex titles and file names agree.
     const LocalFileRecognition recognition{.state = LocalRecognitionState::Recognized,
-                                           .mediaKind = LocalMediaKind::Anime,
                                            .extractedTitle = candidate.title(),
                                            .season = candidate.season(),
                                            .episode = candidate.episode()};
-    const auto match = LocalMediaResolver().resolve(recognition, catalog);
-    const bool matched = match.mediaId > 0
-        && (match.state == LocalRecognitionState::Recognized || match.state == LocalRecognitionState::Associated);
-    if (!matched) return candidate;
+    // Only an association carries a media id.
+    const auto match = LocalMediaResolver().resolve(recognition, catalog_);
+    if (match.mediaId <= 0) return candidate;
     return EpisodeCandidate::create(candidate.title(), match.mediaId, candidate.season(), candidate.episode(),
                                     candidate.confidence())
         .value_or(candidate);
@@ -35,21 +32,6 @@ void CatalogEpisodeCandidateResolver::invalidate() {
     catalogLoaded_ = false;
 }
 
-MediaReaderProgressReader::MediaReaderProgressReader(IMediaReader &reader) : reader_(reader) {}
-
-bool MediaReaderProgressReader::find(const int mediaId, std::optional<Media> &media, QString &error) {
-    media.reset();
-    QList<Media> catalog;
-    if (!reader_.readAll(catalog, error)) return false;
-    for (const auto &item : catalog) {
-        if (item.Id == mediaId) {
-            media = item;
-            break;
-        }
-    }
-    return true;
-}
-
 EpisodeRecognitionService::EpisodeRecognitionService(PluginRegistry &registry, IEpisodeCandidateResolver &resolver,
                                                      ProgressDecisionService &decisions,
                                                      RecognitionHistoryService &history, const RecognitionPolicy policy,
@@ -58,11 +40,10 @@ EpisodeRecognitionService::EpisodeRecognitionService(PluginRegistry &registry, I
       diagnostics_(std::move(diagnostics)) {
     observation_ = std::make_unique<PlaybackObservationService>(
         policy, ObservationCallbacks{
+                    // A session closed before the threshold is not recorded: nothing was watched.
                     .completed = [this](const PlaybackSession &session, const EpisodeCandidate &candidate) {
                         complete(session, candidate);
-                    },
-                    .incomplete = [this](const PlaybackSession &session, const EpisodeCandidate &candidate,
-                                         StopReason) { incomplete(session, candidate); }});
+                    }});
     decisions_.setPolicy(policy);
 }
 
@@ -113,13 +94,6 @@ void EpisodeRecognitionService::complete(const PlaybackSession &session, const E
     QString error;
     if (!history_.record(session, candidate, decision, error)) {
         report(QStringLiteral("Recognition history could not be saved for %1: %2").arg(session.id.key(), error));
-    }
-}
-
-void EpisodeRecognitionService::incomplete(const PlaybackSession &session, const EpisodeCandidate &candidate) {
-    QString error;
-    if (!history_.recordIncomplete(session, candidate, error)) {
-        report(QStringLiteral("Incomplete recognition could not be saved for %1: %2").arg(session.id.key(), error));
     }
 }
 

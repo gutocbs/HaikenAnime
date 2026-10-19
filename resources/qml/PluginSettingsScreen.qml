@@ -9,11 +9,7 @@ ColumnLayout {
 
     property var controller: pluginSettingsController
 
-    readonly property color ink: "#172033"
-    readonly property color muted: "#68758a"
-    readonly property color line: "#d7dee8"
-    readonly property color surfaceSoft: "#f6f8fb"
-    readonly property color danger: "#b42318"
+    readonly property Theme theme: Theme {}
     readonly property var selectedPlugin: {
         const plugins = controller ? controller.plugins : []
         for (let plugin of plugins) {
@@ -40,9 +36,9 @@ ColumnLayout {
     Rectangle {
         Layout.fillWidth: true
         implicitHeight: fieldsColumn.implicitHeight + 34
-        color: pluginScreen.surfaceSoft
+        color: theme.surfaceSoft
         radius: 7
-        border.color: pluginScreen.line
+        border.color: theme.line
 
         ColumnLayout {
             id: fieldsColumn
@@ -65,9 +61,9 @@ ColumnLayout {
         visible: pluginScreen.selectedPlugin.browserAuthentication === true
         Layout.fillWidth: true
         implicitHeight: accountColumn.implicitHeight + 34
-        color: pluginScreen.surfaceSoft
+        color: theme.surfaceSoft
         radius: 7
-        border.color: pluginScreen.line
+        border.color: theme.line
 
         ColumnLayout {
             id: accountColumn
@@ -79,7 +75,7 @@ ColumnLayout {
                 text: pluginScreen.controller.connectionState === "connected" ? qsTr("Conta conectada")
                     : pluginScreen.controller.connectionState === "connecting" ? qsTr("Aguardando login no navegador…")
                     : qsTr("Conta não conectada")
-                color: pluginScreen.ink
+                color: theme.ink
                 font.pixelSize: 13
                 font.weight: Font.DemiBold
             }
@@ -136,7 +132,7 @@ ColumnLayout {
     Label {
         visible: pluginScreen.controller.errorMessage.length > 0
         text: pluginScreen.controller.errorMessage
-        color: pluginScreen.danger
+        color: theme.danger
         font.pixelSize: 11
         wrapMode: Text.Wrap
         Layout.fillWidth: true
@@ -144,7 +140,7 @@ ColumnLayout {
     Label {
         visible: pluginScreen.controller.statusMessage.length > 0
         text: pluginScreen.controller.statusMessage
-        color: pluginScreen.muted
+        color: theme.muted
         font.pixelSize: 11
         wrapMode: Text.Wrap
         Layout.fillWidth: true

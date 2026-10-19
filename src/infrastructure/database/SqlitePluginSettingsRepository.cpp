@@ -5,6 +5,7 @@
 #include <QSqlError>
 #include <QSqlQuery>
 
+#include "SqliteQueries.h"
 #include "SqlQueryStore.h"
 
 #include <utility>
@@ -23,16 +24,14 @@ bool DecodeValue(const QString &text, QVariant &value) {
 }
 }
 
-SqlitePluginSettingsRepository::SqlitePluginSettingsRepository(QSqlDatabase database, QString readQuery,
-                                                               QString upsertQuery, QString deleteQuery)
-    : database_(std::move(database)), readQuery_(std::move(readQuery)), upsertQuery_(std::move(upsertQuery)),
-      deleteQuery_(std::move(deleteQuery)) {}
+SqlitePluginSettingsRepository::SqlitePluginSettingsRepository(QSqlDatabase database)
+    : database_(std::move(database)) {}
 
 bool SqlitePluginSettingsRepository::read(const QString &pluginId, QVariantMap &values, QString &error) {
     values.clear();
     error.clear();
     QString sql;
-    if (!SqlQueryStore::loadSource(readQuery_, sql, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadPluginSettings, sql, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(sql)) {
         error = query.lastError().text();
@@ -61,8 +60,8 @@ bool SqlitePluginSettingsRepository::replace(const QString &pluginId, const QVar
     error.clear();
     QString deleteSql;
     QString upsertSql;
-    if (!SqlQueryStore::loadSource(deleteQuery_, deleteSql, error)
-        || !SqlQueryStore::loadSource(upsertQuery_, upsertSql, error)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::DeletePluginSettings, deleteSql, error)
+        || !SqlQueryStore::loadSource(SqliteQueries::UpsertPluginSettings, upsertSql, error)) {
         return false;
     }
     if (!database_.transaction()) {

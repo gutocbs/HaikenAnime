@@ -7,6 +7,7 @@
 #include "CardStatusPresentation.h"
 #include "LanguagePreference.h"
 #include "../media/MediaTitleResolver.h"
+#include "../../domain/media/UserListStatus.h"
 
 struct UserPreferences final {
     double scoreMinimum = 0.0;
@@ -21,37 +22,18 @@ struct UserPreferences final {
     QString preferredTitleKey = DefaultPreferredTitleKey();
     bool includeAdultContent = false;
     /** Folders scanned for local files; each one is scanned and recognized independently. */
-    QStringList libraryRoots = {QStringLiteral("Q:\\")};
+    QStringList libraryRoots;
     QStringList scanExtensions = {QStringLiteral(".mkv"), QStringLiteral(".mp4"),
                                   QStringLiteral(".avi"), QStringLiteral(".webm"),
                                   QStringLiteral(".m4v"), QStringLiteral(".mov"),
                                   QStringLiteral(".wmv"), QStringLiteral(".ts")};
     bool automaticLocalFileRecognition = true;
-    QStringList enabledUserLists = {QStringLiteral("current"), QStringLiteral("planning"),
-                                    QStringLiteral("on_hold"), QStringLiteral("dropped"),
-                                    QStringLiteral("completed")};
+    QStringList enabledUserLists = UserListKeys();
     /** Last AniList account that was connected; owns edits made while disconnected. */
     qint64 lastAniListUserId = 0;
-};
 
-inline bool operator==(const UserPreferences &left, const UserPreferences &right) {
-    return left.scoreMinimum == right.scoreMinimum
-        && left.scoreMaximum == right.scoreMaximum
-        && left.scoreStep == right.scoreStep
-        && left.coverQuality == right.coverQuality
-        && left.synchronizationEnabled == right.synchronizationEnabled
-        && left.synchronizationIntervalMs == right.synchronizationIntervalMs
-        && left.homeSortKey == right.homeSortKey
-        && left.cardStatusPresentation == right.cardStatusPresentation
-        && left.languageKey == right.languageKey
-        && left.preferredTitleKey == right.preferredTitleKey
-        && left.includeAdultContent == right.includeAdultContent
-        && left.libraryRoots == right.libraryRoots
-        && left.scanExtensions == right.scanExtensions
-        && left.automaticLocalFileRecognition == right.automaticLocalFileRecognition
-        && left.enabledUserLists == right.enabledUserLists
-        && left.lastAniListUserId == right.lastAniListUserId;
-}
+    bool operator==(const UserPreferences &) const = default;
+};
 
 Q_DECLARE_METATYPE(UserPreferences)
 

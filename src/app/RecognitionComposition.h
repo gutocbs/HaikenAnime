@@ -66,9 +66,16 @@ struct RecognitionContext final {
     bool mpvEnabled = false;
     /// Non-fatal problems (unreadable settings, unavailable secret store); never contain secrets.
     QStringList warnings;
+    /// Receives each warning when it happens, including the ones raised after startup.
+    std::function<void(const QString &)> warningSink;
     std::unique_ptr<EpisodeRecognitionService> recognition;
 
     [[nodiscard]] bool isMpvEnabled() const { return mpvEnabled && mpv != nullptr; }
+    /// Records the warning and reports it right away.
+    void Warn(const QString &message) {
+        warnings.append(message);
+        if (warningSink) warningSink(message);
+    }
 };
 
 /// Builds and starts recognition. Never fails: problems become warnings so the app still opens.

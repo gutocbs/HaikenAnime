@@ -24,7 +24,6 @@ QString toLogString(LogCategory category) {
     case LogCategory::Configuration: return QStringLiteral("Configuration");
     case LogCategory::Database: return QStringLiteral("Database");
     case LogCategory::Migration: return QStringLiteral("Migration");
-    case LogCategory::QueryConfiguration: return QStringLiteral("QueryConfiguration");
     case LogCategory::QueryStore: return QStringLiteral("QueryStore");
     case LogCategory::Sync: return QStringLiteral("Sync");
     case LogCategory::Covers: return QStringLiteral("Covers");
@@ -145,4 +144,15 @@ void AsyncLogger::pruneOldFiles() const {
             QFile::remove(file.absoluteFilePath());
         }
     }
+}
+
+std::function<void(const QString &)> LogSink(AsyncLogger *logger, const LogCategory category, const LogLevel level) {
+    return [logger, category, level](const QString &message) {
+        if (!logger) return;
+        switch (level) {
+        case LogLevel::Info: logger->info(category, message); break;
+        case LogLevel::Warning: logger->warning(category, message); break;
+        case LogLevel::Error: logger->error(category, message); break;
+        }
+    };
 }

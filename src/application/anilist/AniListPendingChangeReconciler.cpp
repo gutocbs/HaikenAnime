@@ -1,34 +1,13 @@
 #include "AniListPendingChangeReconciler.h"
 
-#include "AniListMergeService.h"
+#include "AniListListStatus.h"
 #include "AniListPendingChangeCompactor.h"
 
+#include <algorithm>
 #include <optional>
 #include <utility>
 
 namespace {
-QString AniListStatus(const UserListStatus status) {
-    switch (status) {
-    case UserListStatus::Current: return QStringLiteral("CURRENT");
-    case UserListStatus::Planning: return QStringLiteral("PLANNING");
-    case UserListStatus::OnHold: return QStringLiteral("PAUSED");
-    case UserListStatus::Dropped: return QStringLiteral("DROPPED");
-    case UserListStatus::Completed: return QStringLiteral("COMPLETED");
-    case UserListStatus::Unknown: return {};
-    }
-    return {};
-}
-
-std::optional<UserListStatus> UserStatus(const QString &value) {
-    const auto normalized = value.trimmed().toUpper();
-    if (normalized == QStringLiteral("CURRENT")) return UserListStatus::Current;
-    if (normalized == QStringLiteral("PLANNING")) return UserListStatus::Planning;
-    if (normalized == QStringLiteral("PAUSED")) return UserListStatus::OnHold;
-    if (normalized == QStringLiteral("DROPPED")) return UserListStatus::Dropped;
-    if (normalized == QStringLiteral("COMPLETED")) return UserListStatus::Completed;
-    return std::nullopt;
-}
-
 bool CurrentValue(const Media &media, const AniListField field,
                   AniListFieldValue &value, QString &error) {
     switch (field) {
@@ -39,7 +18,7 @@ bool CurrentValue(const Media &media, const AniListField field,
         value = media.PersonalScore;
         return true;
     case AniListField::ListStatus:
-        value = AniListStatus(media.ListStatus);
+        value = AniListListStatusName(media.ListStatus);
         return true;
     case AniListField::Deletion:
         return false;
@@ -47,6 +26,21 @@ bool CurrentValue(const Media &media, const AniListField field,
         error = QStringLiteral("Pending AniList field cannot be reconciled with user-list media.");
         return false;
     }
+}
+
+/**
+ * Value that survives a sync for a pending local edit: the highest progress (a non-numeric progress is a
+ * conflict), and the local value for score and status, which are still waiting to be sent.
+ */
+bool ReconciledValue(const AniListField field, const AniListFieldValue &localValue,
+                     const AniListFieldValue &remoteValue, AniListFieldValue &value) {
+    if (field != AniListField::Progress) {
+        value = localValue;
+        return true;
+    }
+    if (!std::holds_alternative<int>(localValue) || !std::holds_alternative<int>(remoteValue)) return false;
+    value = std::max(std::get<int>(localValue), std::get<int>(remoteValue));
+    return true;
 }
 
 bool ApplyValue(Media &media, const AniListField field,
@@ -66,7 +60,7 @@ bool ApplyValue(Media &media, const AniListField field,
         break;
     case AniListField::ListStatus:
         if (const auto *status = std::get_if<QString>(&value)) {
-            const auto parsed = UserStatus(*status);
+            const auto parsed = ParseAniListListStatus(*status);
             if (parsed.has_value()) {
                 media.ListStatus = *parsed;
                 return true;
@@ -115,14 +109,13 @@ bool AniListPendingChangeReconciler::reconcile(QList<Media> &media, QString &err
 
             AniListFieldValue remoteValue;
             if (!CurrentValue(item, change.field, remoteValue, error)) return false;
-            const auto decision = AniListMergeService::Merge(
-                change.field, change.newValue, remoteValue);
-            if (decision.result == AniListMergeResult::Conflict) {
+            AniListFieldValue reconciled;
+            if (!ReconciledValue(change.field, change.newValue, remoteValue, reconciled)) {
                 error = QStringLiteral("Pending AniList change conflicts with the synchronized value.");
                 return false;
             }
 
-            if (decision.value == remoteValue) {
+            if (reconciled == remoteValue) {
                 change.status = change.newValue == remoteValue
                     ? AniListPendingChangeStatus::Succeeded
                     : AniListPendingChangeStatus::Superseded;
@@ -131,7 +124,7 @@ bool AniListPendingChangeReconciler::reconcile(QList<Media> &media, QString &err
                 ++retired;
                 continue;
             }
-            if (!ApplyValue(item, change.field, decision.value, error)) return false;
+            if (!ApplyValue(item, change.field, reconciled, error)) return false;
             ++preserved;
         }
     }

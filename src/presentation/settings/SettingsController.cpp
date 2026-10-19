@@ -1,6 +1,10 @@
 #include "SettingsController.h"
 
-#include "../../application/cache/ClearLocalCacheUseCase.h"
+#include <QDesktopServices>
+#include <QDir>
+#include <QUrl>
+
+#include "../../app/ClearLocalCacheUseCase.h"
 #include "../../application/anilist/AniListAuthManager.h"
 #include "../../application/anilist/RemoveAniListAccountUseCase.h"
 #include "../../application/configuration/UserPreferencesValidator.h"
@@ -62,6 +66,21 @@ void SettingsController::SetAniListAuthenticationServices(
     aniListOAuthReceiverStopper_ = std::move(receiverStopper);
     refreshAniListPresentation();
     emit changed();
+}
+
+void SettingsController::SetLogsFolder(QString path, FolderOpener opener) {
+    logsFolder_ = std::move(path);
+    logsFolderOpener_ = std::move(opener);
+}
+
+bool SettingsController::OpenLogsFolder() {
+    const auto opener = logsFolderOpener_ ? logsFolderOpener_
+                                          : FolderOpener([](const QUrl &url) { return QDesktopServices::openUrl(url); });
+    const bool opened = !logsFolder_.isEmpty() && QDir().mkpath(logsFolder_)
+        && opener(QUrl::fromLocalFile(logsFolder_));
+    errorMessage_ = opened ? QString() : tr("Não foi possível abrir a pasta de logs.");
+    emit changed();
+    return opened;
 }
 
 void SettingsController::SetScanCoordinator(LocalLibraryScanCoordinator *coordinator) {
@@ -131,8 +150,7 @@ void SettingsController::SetLibraryRoot(const int index, const QString &root) {
 }
 
 void SettingsController::RemoveLibraryRoot(const int index) {
-    // The last folder can be edited but never removed: scanning needs at least one.
-    if (index < 0 || index >= draft_.libraryRoots.size() || draft_.libraryRoots.size() == 1) return;
+    if (index < 0 || index >= draft_.libraryRoots.size()) return;
     draft_.libraryRoots.removeAt(index);
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }
@@ -287,7 +305,7 @@ void SettingsController::ClearLocalCache() {
         cacheCleanupRunning_ = false;
         QStringList details;
         for (const auto &failure : result.failures)
-            details.append(QStringLiteral("%1: %2").arg(failure.participant, failure.error));
+            details.append(QStringLiteral("%1: %2").arg(failure.component, failure.error));
         const QString failureDetails = details.join(QStringLiteral("; "));
         if (result.Succeeded()) {
             cacheCleanupStatusMessage_ = tr("Cache local limpo. %1 item(ns) removido(s).")
@@ -301,9 +319,7 @@ void SettingsController::ClearLocalCache() {
             emit cacheCleanupPartialFailure(cacheCleanupErrorMessage_);
         } else {
             cacheCleanupStatusMessage_.clear();
-            cacheCleanupErrorMessage_ = result.cancelled
-                ? tr("A limpeza do cache local foi cancelada.")
-                : tr("Não foi possível limpar o cache local: %1").arg(failureDetails);
+            cacheCleanupErrorMessage_ = tr("Não foi possível limpar o cache local: %1").arg(failureDetails);
             emit cacheCleanupFailed(cacheCleanupErrorMessage_);
         }
         emit cacheCleanupChanged();
@@ -466,10 +482,7 @@ void SettingsController::SetAutomaticLocalFileRecognition(const bool enabled) {
 }
 
 void SettingsController::SetUserListEnabled(const QString &key, const bool enabled) {
-    static const QStringList supported = {QStringLiteral("current"), QStringLiteral("planning"),
-                                          QStringLiteral("on_hold"), QStringLiteral("dropped"),
-                                          QStringLiteral("completed")};
-    if (!supported.contains(key)) return;
+    if (!UserListKeys().contains(key)) return;
     if (enabled && !draft_.enabledUserLists.contains(key)) draft_.enabledUserLists.append(key);
     if (!enabled) draft_.enabledUserLists.removeAll(key);
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();

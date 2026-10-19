@@ -6,8 +6,8 @@
 class ILocalFileRecognizer {
 public:
     virtual ~ILocalFileRecognizer() = default;
-    virtual LocalFileRecognition recognize(const QString &fileName,
-                                           LocalMediaKind requestedKind = LocalMediaKind::Anime) const = 0;
+    // Local files are always read as anime; manga and novels are never recognized from a filename.
+    virtual LocalFileRecognition recognize(const QString &fileName) const = 0;
 };
 
 #endif

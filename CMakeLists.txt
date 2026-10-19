@@ -2,11 +2,6 @@ cmake_minimum_required(VERSION 3.21)
 
 project(HaikenAnime LANGUAGES CXX)
 
-if (MINGW AND (NOT CMAKE_PREFIX_PATH OR CMAKE_PREFIX_PATH MATCHES "/msvc"))
-    set(CMAKE_PREFIX_PATH "C:/Qt/6.8.3/mingw_64" CACHE PATH
-            "Qt installation compatible with the MinGW compiler" FORCE)
-endif ()
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
@@ -41,329 +36,38 @@ if (COMMAND qt_policy)
     qt_policy(SET QTP0004 NEW)
 endif ()
 
-qt_add_executable(HaikenAnime WIN32 main.cpp
-        src/app/ApplicationComposition.h
-        src/app/ApplicationComposition.cpp
-        src/app/AniListOAuthCallbackReceiver.h
-        src/app/AniListOAuthCallbackReceiver.cpp
-        src/infrastructure/anilist/WindowsUrlProtocolRegistrar.h
-        src/infrastructure/anilist/WindowsUrlProtocolRegistrar.cpp
-        src/app/InitialSyncCoordinator.h
-        src/app/InitialSyncCoordinator.cpp
-        src/app/AdaptiveSyncCoordinator.h
-        src/app/AdaptiveSyncCoordinator.cpp
-        src/app/AdaptiveSyncRuntime.h
-        src/app/AdaptiveSyncRuntime.cpp
-        src/app/ApplicationSyncTaskExecutor.h
-        src/app/ApplicationSyncTaskExecutor.cpp
-        src/app/SyncTaskRequest.h
-        src/app/LocalLibraryScanCoordinator.h
-        src/app/LocalLibraryScanCoordinator.cpp
-        src/app/LocalLibraryRecognitionCoordinator.h
-        src/app/LocalLibraryRecognitionCoordinator.cpp
-        src/app/SeasonalCatalogCoordinator.h
-        src/app/SeasonalCatalogCoordinator.cpp
-        src/app/TranslationLoader.h
-        src/app/TranslationLoader.cpp
-        src/domain/media/MediaLink.h
-        src/domain/media/Media.h
-        src/application/media/MediaPage.h
-        src/application/media/MediaSyncFilter.h
-        src/application/media/MediaTitleResolver.h
-        src/application/media/MediaTitleResolver.cpp
-        src/application/media/ProgressFormatter.h
-        src/application/media/ProgressFormatter.cpp
-        src/application/media/MediaDetailsPresentation.h
-        src/application/media/MediaDetailsPresentation.cpp
-        src/application/library/LocalFileRecognitionTypes.h
-        src/application/library/ILocalFileRecognizer.h
-        src/application/library/LocalMediaCatalogIndex.h
-        src/application/library/LocalMediaCatalogIndex.cpp
-        src/application/library/LocalMediaResolver.h
-        src/application/library/LocalMediaResolver.cpp
-        src/application/library/ILocalFileOpener.h
-        src/application/library/LocalEpisodeReader.h
-        src/application/library/LocalEpisodeReader.cpp
-        src/infrastructure/library/AnitomyLocalFileRecognizer.h
-        src/infrastructure/library/AnitomyLocalFileRecognizer.cpp
-        src/infrastructure/library/QtLocalFileOpener.h
-        src/infrastructure/library/QtLocalFileOpener.cpp
-        lib/anitomy/anitomy.cpp
-        lib/anitomy/element.cpp
-        lib/anitomy/keyword.cpp
-        lib/anitomy/parser.cpp
-        lib/anitomy/parser_helper.cpp
-        lib/anitomy/parser_number.cpp
-        lib/anitomy/string.cpp
-        lib/anitomy/token.cpp
-        lib/anitomy/tokenizer.cpp
-        src/application/media/SeasonalPersonalListService.h
-        src/application/media/SeasonalPersonalListService.cpp
-        src/application/media/IPersonalListChangeWriter.h
-        src/application/media/PersonalListChangeService.h
-        src/application/media/PersonalListChangeService.cpp
-        src/application/catalog/SeasonalCatalogTypes.h
-        src/application/catalog/ISeasonalCatalogDataSource.h
-        src/domain/media/MediaType.h
-        src/domain/media/MediaStatus.h
-        src/domain/media/UserListStatus.h
-        src/application/anilist/AniListCredentials.h
-        src/infrastructure/anilist/AniListGraphQlError.h
-        src/infrastructure/anilist/AniListGraphQlResponse.h
-        src/infrastructure/anilist/AniListGraphQlResponseParser.h
-        src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
-        src/infrastructure/anilist/AniListGraphQlPageParser.h
-        src/infrastructure/anilist/AniListGraphQlPageParser.cpp
-        src/infrastructure/anilist/AniListGraphQlUserListParser.h
-        src/infrastructure/anilist/AniListGraphQlUserListParser.cpp
-        src/infrastructure/anilist/AniListMediaDto.h
-        src/domain/anilist/AniListField.h
-        src/domain/anilist/AniListFieldValue.h
-        src/domain/anilist/AniListMergePolicy.h
-        src/domain/anilist/AniListMergeResult.h
-        src/application/anilist/AniListPendingChangeStatus.h
-        src/application/anilist/AniListPendingChange.h
-        src/domain/anilist/AniListMergeDecision.h
-        src/application/configuration/AniListSettings.h
-        src/application/configuration/HttpSettings.h
-        src/application/configuration/Settings.h
-        src/application/configuration/UserPreferences.h
-        src/application/configuration/CardStatusPresentation.h
-        src/application/configuration/LanguagePreference.h
-        src/application/configuration/UserPreferencesValidator.h
-        src/application/configuration/UserPreferencesValidator.cpp
-        src/application/covers/CoverQuality.h
-        src/application/covers/CoverSettings.h
-        src/application/covers/CoverSourceResolver.h
-        src/application/covers/CoverSourceResolver.cpp
-        src/application/covers/CoverCacheEntry.h
-        src/application/covers/ICoverCacheRepository.h
-        src/application/covers/ICoverFileStore.h
-        src/application/covers/CoverDownloadTypes.h
-        src/application/covers/ICoverDownloader.h
-        src/application/covers/ICoverTemporaryStore.h
-        src/application/covers/CoverDownloadCoordinator.h
-        src/application/covers/CoverDownloadCoordinator.cpp
-        src/application/cache/ICacheCleanupParticipant.h
-        src/application/cache/ClearLocalCacheUseCase.h
-        src/application/cache/ClearLocalCacheUseCase.cpp
-        src/application/configuration/ISettingsReader.h
-        src/application/anilist/ISecretStore.h
-        src/application/anilist/IAniListAuthProvider.h
-        src/application/anilist/RemoveAniListAccountUseCase.h
-        src/application/anilist/RemoveAniListAccountUseCase.cpp
-        src/application/media/IMediaRepository.h
-        src/application/media/IMediaReader.h
-        src/application/media/IMediaWriter.h
-        src/application/media/IPersonalListMediaWriter.h
-        src/application/media/IMediaSnapshotReconciler.h
-        src/application/anilist/AniListSyncService.h
-        src/application/anilist/AniListSyncService.cpp
-        src/application/anilist/AniListSyncErrorClassifier.h
-        src/application/anilist/AniListSyncErrorClassifier.cpp
-        src/application/anilist/AniListSyncErrorCategory.h
-        src/application/anilist/AniListPendingChangeProcessor.h
-        src/application/anilist/AniListPendingChangeProcessor.cpp
-        src/application/anilist/AniListPendingChangeDrain.h
-        src/application/anilist/AniListPendingChangeDrain.cpp
-        src/application/anilist/AniListPendingChangeReconciler.h
-        src/application/anilist/AniListPendingChangeReconciler.cpp
-        src/application/anilist/AniListPendingChangeCompactor.h
-        src/application/anilist/AniListPendingChangeCompactor.cpp
-        src/application/anilist/AniListPendingChangeGrouper.h
-        src/application/anilist/AniListPendingChangeGrouper.cpp
-        src/application/anilist/AniListMergePolicyResolver.h
-        src/application/anilist/AniListMergePolicyResolver.cpp
-        src/application/anilist/AniListSyncWorker.h
-        src/application/anilist/AniListSyncWorker.cpp
-        src/application/anilist/AniListPendingChangeFactory.h
-        src/application/anilist/AniListPendingChangeFactory.cpp
-        src/application/anilist/AniListMergeService.h
-        src/application/anilist/AniListMergeService.cpp
-        src/application/anilist/IPendingChangeRepository.h
-        src/application/scheduling/ISyncTaskStateRepository.h
-        src/application/scheduling/ISyncTaskExecutor.h
-        src/application/scheduling/SyncProgress.h
-        src/application/scheduling/SyncTaskPolicy.cpp
-        src/application/anilist/IAniListUpdateClient.h
-        src/infrastructure/anilist/AniListUpdateClient.h
-        src/infrastructure/anilist/AniListUpdateClient.cpp
-        src/application/anilist/AniListMediaPendingChanges.h
-        src/application/anilist/AniListUpdateWorker.h
-        src/application/anilist/AniListUpdateWorker.cpp
-        src/application/anilist/AniListAuthManager.h
-        src/application/anilist/AniListAuthManager.cpp
-        src/application/anilist/AniListOAuthConfig.h
-        src/application/anilist/AniListOAuthCallbackParser.h
-        src/application/anilist/AniListOAuthCallbackParser.cpp
-        src/application/anilist/IAniListViewerClient.h
-        src/infrastructure/database/SqliteDatabase.h
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/database/SqliteMediaRepository.h
-        src/application/media/AlternativeNames.h
-        src/application/media/AlternativeNames.cpp
-        src/infrastructure/database/SqliteMediaRepository.cpp
-        src/infrastructure/database/SqlitePendingChangeRepository.h
-        src/infrastructure/database/SqlitePendingChangeRepository.cpp
-        src/infrastructure/database/SqlitePersonalListChangeWriter.h
-        src/infrastructure/database/SqlitePersonalListChangeWriter.cpp
-        src/infrastructure/database/SqliteMediaMapper.h
-        src/infrastructure/database/SqliteMediaMapper.cpp
-        src/infrastructure/database/SqliteCoverCacheRepository.h
-        src/infrastructure/database/SqliteCoverCacheRepository.cpp
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/domain/library/LocalFileRecord.h
-        src/application/library/ILocalFileRepository.h
-        src/application/library/LocalLibraryScanTypes.h
-        src/application/library/ILocalLibraryScanner.h
-        src/infrastructure/library/IDirectoryEnumerator.h
-        src/infrastructure/library/QtDirectoryEnumerator.h
-        src/infrastructure/library/QtDirectoryEnumerator.cpp
-        src/infrastructure/library/LocalLibraryScanner.h
-        src/infrastructure/library/LocalLibraryScanner.cpp
-        src/infrastructure/database/SqliteLocalFileRepository.h
-        src/infrastructure/database/SqliteLocalFileRepository.cpp
-        src/infrastructure/database/SqliteUserPreferencesRepository.h
-        src/infrastructure/database/SqliteUserPreferencesRepository.cpp
-        src/infrastructure/database/SqliteSyncTaskStateRepository.h
-        src/infrastructure/database/SqliteSyncTaskStateRepository.cpp
-        src/infrastructure/database/SqlQueryStore.h
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/infrastructure/database/SqliteQueryConfiguration.h
-        src/infrastructure/database/SqliteQueryConfiguration.cpp
-        src/infrastructure/covers/CoverFileStore.h
-        src/infrastructure/covers/CoverFileStore.cpp
-        src/infrastructure/covers/CoverTemporaryStore.h
-        src/infrastructure/covers/CoverTemporaryStore.cpp
-        src/infrastructure/covers/QtCoverDownloader.h
-        src/infrastructure/covers/QtCoverDownloader.cpp
-        src/infrastructure/secrets/FileSecretStore.h
-        src/infrastructure/secrets/FileSecretStore.cpp
-        src/infrastructure/secrets/WindowsCredentialStore.h
-        src/infrastructure/secrets/WindowsCredentialStore.cpp
-        src/infrastructure/anilist/HttpFactory.h
-        src/infrastructure/anilist/HttpFactory.cpp
-        src/infrastructure/anilist/AniListGraphQlClient.h
-        src/infrastructure/anilist/AniListGraphQlClient.cpp
-        src/infrastructure/anilist/AniListViewerClient.h
-        src/infrastructure/anilist/AniListViewerClient.cpp
-        src/infrastructure/anilist/WindowsAniListOAuthLauncher.h
-        src/infrastructure/anilist/WindowsAniListOAuthLauncher.cpp
-        src/infrastructure/anilist/GraphQlQueryStore.h
-        src/infrastructure/anilist/GraphQlQueryStore.cpp
-        src/infrastructure/anilist/FileAniListDataSource.h
-        src/infrastructure/anilist/FileAniListDataSource.cpp
-        src/infrastructure/anilist/RecordedGraphQlAniListDataSource.h
-        src/infrastructure/anilist/RecordedGraphQlAniListDataSource.cpp
-        src/infrastructure/anilist/GraphQlAniListDataSource.h
-        src/infrastructure/anilist/GraphQlAniListDataSource.cpp
-        src/infrastructure/anilist/GraphQlSeasonalCatalogDataSource.h
-        src/infrastructure/anilist/GraphQlSeasonalCatalogDataSource.cpp
-        src/infrastructure/anilist/AniListMediaMapper.h
-        src/infrastructure/anilist/AniListMediaMapper.cpp
-        src/infrastructure/configuration/JsonSettingsReader.h
-        src/infrastructure/configuration/JsonSettingsReader.cpp
-        src/infrastructure/logging/AsyncLogger.h
-        src/infrastructure/logging/AsyncLogger.cpp
-        src/presentation/home/HomeScreenController.h
-        src/presentation/home/HomeScreenController.cpp
-        src/presentation/seasonal/SeasonalCatalogController.h
-        src/presentation/seasonal/SeasonalCatalogController.cpp
-        src/presentation/settings/SettingsController.h
-        src/presentation/settings/SettingsController.cpp
-        src/presentation/sync/SynchronizationStatusController.h
-        src/presentation/sync/SynchronizationStatusController.cpp
-)
+# Third-party file-name parser used by local library recognition.
+file(GLOB ANITOMY_SOURCES CONFIGURE_DEPENDS lib/anitomy/*.cpp lib/anitomy/*.h)
+add_library(anitomy STATIC ${ANITOMY_SOURCES})
 
-set_source_files_properties(
-        resources/sqlite/sqlite-queries.json
-        PROPERTIES QT_RESOURCE_ALIAS "sqlite-queries.json")
-set_source_files_properties(
-        resources/sqlite/queries/upsert-media.sql
-        PROPERTIES QT_RESOURCE_ALIAS "upsert-media.sql")
-set_source_files_properties(
-        resources/sqlite/queries/update-personal-list-media.sql
-        PROPERTIES QT_RESOURCE_ALIAS "update-personal-list-media.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-media.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-media.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-active-media-ids.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-active-media-ids.sql")
-set_source_files_properties(
-        resources/sqlite/queries/mark-media-source-removed.sql
-        PROPERTIES QT_RESOURCE_ALIAS "mark-media-source-removed.sql")
-set_source_files_properties(
-        resources/sqlite/queries/mark-media-personal-list-removed.sql
-        PROPERTIES QT_RESOURCE_ALIAS "mark-media-personal-list-removed.sql")
-set_source_files_properties(
-        resources/sqlite/queries/supersede-pending-deletion.sql
-        PROPERTIES QT_RESOURCE_ALIAS "supersede-pending-deletion.sql")
-set_source_files_properties(
-        resources/sqlite/queries/enqueue-pending-change.sql
-        PROPERTIES QT_RESOURCE_ALIAS "enqueue-pending-change.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-pending-changes.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-pending-changes.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-pending-media-ids.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-pending-media-ids.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-unsent-media-ids.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-unsent-media-ids.sql")
-set_source_files_properties(
-        resources/sqlite/queries/update-pending-change.sql
-        PROPERTIES QT_RESOURCE_ALIAS "update-pending-change.sql")
-set_source_files_properties(
-        resources/sqlite/queries/adopt-orphan-pending-changes.sql
-        PROPERTIES QT_RESOURCE_ALIAS "adopt-orphan-pending-changes.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-cover-cache.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-cover-cache.sql")
-set_source_files_properties(
-        resources/sqlite/queries/upsert-cover-cache.sql
-        PROPERTIES QT_RESOURCE_ALIAS "upsert-cover-cache.sql")
-set_source_files_properties(
-        resources/sqlite/queries/delete-cover-cache.sql
-        PROPERTIES QT_RESOURCE_ALIAS "delete-cover-cache.sql")
-set_source_files_properties(
-        resources/sqlite/queries/clear-cover-cache.sql
-        PROPERTIES QT_RESOURCE_ALIAS "clear-cover-cache.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-user-preferences.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-user-preferences.sql")
-set_source_files_properties(
-        resources/sqlite/queries/upsert-user-preferences.sql
-        PROPERTIES QT_RESOURCE_ALIAS "upsert-user-preferences.sql")
-set_source_files_properties(
-        resources/sqlite/queries/read-sync-task-states.sql
-        PROPERTIES QT_RESOURCE_ALIAS "read-sync-task-states.sql")
-set_source_files_properties(
-        resources/sqlite/queries/upsert-sync-task-state.sql
-        PROPERTIES QT_RESOURCE_ALIAS "upsert-sync-task-state.sql")
-set_source_files_properties(
-        resources/sqlite/queries/delete-sync-task-state.sql
-        PROPERTIES QT_RESOURCE_ALIAS "delete-sync-task-state.sql")
-set_source_files_properties(
-        resources/anilist/mutations/update-progress.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "update-progress.graphql")
-set_source_files_properties(
-        resources/anilist/mutations/update-media-list-entry.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "update-media-list-entry.graphql")
-set_source_files_properties(
-        resources/anilist/mutations/update-score.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "update-score.graphql")
-set_source_files_properties(
-        resources/anilist/mutations/update-list-status.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "update-list-status.graphql")
-set_source_files_properties(
-        resources/anilist/mutations/delete-list-entry.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "delete-list-entry.graphql")
+# Every application source except main.cpp. The application and the tests link this library, so each
+# source is compiled once. Qt modules stay PRIVATE: each test declares the modules it needs, which also
+# decides whether QTEST_MAIN creates a QCoreApplication or a QGuiApplication.
+file(GLOB_RECURSE HAIKEN_CORE_SOURCES CONFIGURE_DEPENDS src/*.cpp src/*.h)
+add_library(haiken_core STATIC ${HAIKEN_CORE_SOURCES})
+target_link_libraries(haiken_core
+        PRIVATE
+        anitomy
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Network
+        Qt6::Qml
+        Qt6::Quick
+        Qt6::QuickControls2
+        Qt6::Sql
+)
+if (WIN32)
+    target_link_libraries(haiken_core PRIVATE Advapi32)
+endif ()
+
+qt_add_executable(HaikenAnime WIN32 main.cpp)
+
 file(GLOB SQLITE_MIGRATION_RESOURCES CONFIGURE_DEPENDS resources/sqlite/migrations/*.sql)
 foreach (MIGRATION_FILE IN LISTS SQLITE_MIGRATION_RESOURCES)
     get_filename_component(MIGRATION_ALIAS "${MIGRATION_FILE}" NAME)
     set_source_files_properties("${MIGRATION_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${MIGRATION_ALIAS}")
 endforeach ()
+
 set(LIBRARY_SCAN_SQL_RESOURCES
         resources/sqlite/queries/begin-library-scan.sql
         resources/sqlite/queries/upsert-local-file.sql
@@ -392,53 +96,22 @@ set(RECOGNITION_HISTORY_SQL_RESOURCES
         resources/sqlite/queries/find-queued-recognition-progress.sql
         resources/sqlite/queries/read-media-for-recognition-progress.sql
 )
-foreach (QUERY_FILE IN LISTS LIBRARY_SCAN_SQL_RESOURCES PLUGIN_SETTINGS_SQL_RESOURCES RECOGNITION_HISTORY_SQL_RESOURCES)
-    get_filename_component(QUERY_ALIAS "${QUERY_FILE}" NAME)
-    set_source_files_properties("${QUERY_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${QUERY_ALIAS}")
+# Every SQL query and GraphQL document is exposed by its file name, e.g. :/sqlite/queries/read-media.sql.
+file(GLOB SQLITE_QUERY_RESOURCES CONFIGURE_DEPENDS resources/sqlite/queries/*.sql)
+file(GLOB ANILIST_QUERY_RESOURCES CONFIGURE_DEPENDS resources/anilist/queries/*.graphql)
+file(GLOB ANILIST_MUTATION_RESOURCES CONFIGURE_DEPENDS resources/anilist/mutations/*.graphql)
+foreach (RESOURCE_FILE IN LISTS SQLITE_QUERY_RESOURCES ANILIST_QUERY_RESOURCES ANILIST_MUTATION_RESOURCES)
+    get_filename_component(RESOURCE_ALIAS "${RESOURCE_FILE}" NAME)
+    set_source_files_properties("${RESOURCE_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${RESOURCE_ALIAS}")
 endforeach ()
 
 set_source_files_properties(
         Settings.json
         PROPERTIES QT_RESOURCE_ALIAS "Settings.json")
-set_source_files_properties(
-        tests/fixtures/media-library.json
-        PROPERTIES QT_RESOURCE_ALIAS "media-library.json")
-set_source_files_properties(
-        tests/fixtures/graphql/page-response.json
-        PROPERTIES QT_RESOURCE_ALIAS "graphql/page-response.json")
-set_source_files_properties(
-        tests/fixtures/graphql/userlist-response.json
-        PROPERTIES QT_RESOURCE_ALIAS "graphql/userlist-response.json")
 
 qt_add_resources(HaikenAnime sqlite_resource_bundle
         PREFIX "/sqlite/queries"
-        FILES
-        ${LIBRARY_SCAN_SQL_RESOURCES}
-        ${PLUGIN_SETTINGS_SQL_RESOURCES}
-        ${RECOGNITION_HISTORY_SQL_RESOURCES}
-        resources/sqlite/sqlite-queries.json
-        resources/sqlite/queries/upsert-media.sql
-        resources/sqlite/queries/update-personal-list-media.sql
-        resources/sqlite/queries/read-media.sql
-        resources/sqlite/queries/read-active-media-ids.sql
-        resources/sqlite/queries/mark-media-source-removed.sql
-        resources/sqlite/queries/mark-media-personal-list-removed.sql
-        resources/sqlite/queries/supersede-pending-deletion.sql
-        resources/sqlite/queries/enqueue-pending-change.sql
-        resources/sqlite/queries/read-pending-changes.sql
-        resources/sqlite/queries/read-pending-media-ids.sql
-        resources/sqlite/queries/read-unsent-media-ids.sql
-        resources/sqlite/queries/update-pending-change.sql
-        resources/sqlite/queries/adopt-orphan-pending-changes.sql
-        resources/sqlite/queries/read-cover-cache.sql
-        resources/sqlite/queries/upsert-cover-cache.sql
-        resources/sqlite/queries/delete-cover-cache.sql
-        resources/sqlite/queries/clear-cover-cache.sql
-        resources/sqlite/queries/read-user-preferences.sql
-        resources/sqlite/queries/upsert-user-preferences.sql
-        resources/sqlite/queries/read-sync-task-states.sql
-        resources/sqlite/queries/upsert-sync-task-state.sql
-        resources/sqlite/queries/delete-sync-task-state.sql
+        FILES ${SQLITE_QUERY_RESOURCES}
 )
 
 qt_add_resources(HaikenAnime sqlite_migration_resource_bundle
@@ -454,39 +127,13 @@ qt_add_resources(HaikenAnime application_config_resource
 
 qt_add_resources(HaikenAnime anilist_mutation_resource_bundle
         PREFIX "/anilist/mutations"
-        FILES
-        resources/anilist/mutations/update-progress.graphql
-        resources/anilist/mutations/update-media-list-entry.graphql
-        resources/anilist/mutations/update-score.graphql
-        resources/anilist/mutations/update-list-status.graphql
-        resources/anilist/mutations/delete-list-entry.graphql
+        FILES ${ANILIST_MUTATION_RESOURCES}
 )
 
-qt_add_resources(HaikenAnime fixture_resource_bundle
-        PREFIX "/fixtures"
-        FILES
-        tests/fixtures/media-library.json
-        tests/fixtures/graphql/page-response.json
-        tests/fixtures/graphql/userlist-response.json
-)
-
-set_source_files_properties(
-        resources/anilist/queries/seasonal-catalog.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "seasonal-catalog.graphql")
-set_source_files_properties(
-        resources/anilist/queries/viewer.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "viewer.graphql")
-set_source_files_properties(
-        resources/anilist/queries/user-media-list.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "user-media-list.graphql")
-set_source_files_properties(
-        resources/anilist/queries/media-list-entry-id.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "media-list-entry-id.graphql")
 qt_add_resources(HaikenAnime anilist_query_resource_bundle
         PREFIX "/anilist/queries"
-        FILES resources/anilist/queries/seasonal-catalog.graphql resources/anilist/queries/viewer.graphql
-              resources/anilist/queries/user-media-list.graphql
-              resources/anilist/queries/media-list-entry-id.graphql)
+        FILES ${ANILIST_QUERY_RESOURCES}
+)
 
 qt_add_qml_module(HaikenAnime
         URI HaikenAnime
@@ -511,52 +158,13 @@ qt_add_qml_module(HaikenAnime
         resources/qml/PluginSettingField.qml
         resources/qml/EpisodeRecognitionScreen.qml
         resources/qml/NowWatchingScreen.qml
+        resources/qml/Theme.qml
         RESOURCES resources/images/cover-placeholder.svg
-)
-
-# Automatic episode recognition (docs/superpowers/plans/2026-10-17-reconhecimento-episodios.md).
-target_sources(HaikenAnime PRIVATE
-        src/domain/recognition/PlaybackSession.cpp
-        src/domain/recognition/EpisodeCandidate.cpp
-        src/domain/recognition/RecognitionPolicy.cpp
-        src/domain/recognition/RecognitionRecord.cpp
-        src/application/recognition/EpisodeRecognitionService.cpp
-        src/application/recognition/ActiveSessionRegistry.cpp
-        src/application/recognition/PersonalListProgressWriter.cpp
-        src/application/recognition/PlaybackObservationService.cpp
-        src/application/recognition/PluginRegistry.cpp
-        src/application/recognition/PluginSettingsSchema.cpp
-        src/application/recognition/PluginSettingsService.cpp
-        src/application/recognition/ProgressDecisionService.cpp
-        src/application/recognition/RecognitionHistoryService.cpp
-        src/application/recognition/RecognitionSyncFeedback.cpp
-        src/infrastructure/database/SqlitePluginSettingsRepository.cpp
-        src/infrastructure/database/SqliteRecognitionHistoryRepository.cpp
-        src/infrastructure/database/SqliteMediaProgressReader.cpp
-        src/infrastructure/recognition/QtProcessLauncher.cpp
-        src/infrastructure/recognition/mpv/MpvIpcClient.cpp
-        src/infrastructure/recognition/mpv/MpvPlugin.cpp
-        src/infrastructure/recognition/mpv/QtLocalSocketMpvTransport.h
-        src/infrastructure/recognition/mpv/QtLocalSocketMpvTransport.cpp
-        src/infrastructure/recognition/plex/PlexHttp.cpp
-        src/infrastructure/recognition/plex/PlexApiClient.cpp
-        src/infrastructure/recognition/plex/PlexAuthentication.cpp
-        src/infrastructure/recognition/plex/PlexPlugin.cpp
-        src/infrastructure/secrets/WindowsPluginSecretStore.cpp
-        src/app/RecognitionComposition.cpp
-        src/app/MpvAwareLocalFileOpener.cpp
-        src/presentation/settings/PluginSettingsController.h
-        src/presentation/settings/PluginSettingsController.cpp
-        src/presentation/recognition/EpisodeRecognitionController.h
-        src/presentation/recognition/EpisodeRecognitionController.cpp
-        src/presentation/recognition/RecognitionListModel.h
-        src/presentation/recognition/RecognitionListModel.cpp
-        src/presentation/recognition/NowWatchingController.h
-        src/presentation/recognition/NowWatchingController.cpp
 )
 
 target_link_libraries(HaikenAnime
         PRIVATE
+        haiken_core
         Qt6::Core
         Qt6::Gui
         Qt6::Network
@@ -566,7 +174,6 @@ target_link_libraries(HaikenAnime
         Qt6::Sql
 )
 if (WIN32)
-    target_link_libraries(HaikenAnime PRIVATE Advapi32)
     target_sources(HaikenAnime PRIVATE resources/icons/HaikenAnime.rc)
 endif()
 
@@ -588,1434 +195,164 @@ qt_add_translations(HaikenAnime
 )
 
 if (BUILD_TESTING)
-add_executable(MediaDomainTests
-        tests/unit/MediaDomainTests.cpp
-        src/application/media/ProgressFormatter.h
-        src/application/media/ProgressFormatter.cpp
-        src/domain/media/MediaLink.h
-        src/domain/media/Media.h
-        src/domain/media/MediaStatus.h
-        src/domain/media/UserListStatus.h
-        src/domain/media/MediaType.h
-)
+# Unit tests are separate executables and do not receive the deployment step used by the application
+# target, so every test gets the Qt runtime directory on PATH.
+get_filename_component(MINGW_RUNTIME_DIRECTORY "${CMAKE_CXX_COMPILER}" DIRECTORY)
 
-target_link_libraries(MediaDomainTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
+# haiken_add_test(<Name> [QT <module>...] [MIGRATIONS] [SOURCE_DIR] [NO_CORE]
+#                 [SOURCES <file>...] [DEFINITIONS <definition>...] [INCLUDES <directory>...])
+# Builds tests/unit/<Name>.cpp into its own executable and registers it with CTest.
+#   QT           Qt modules besides Core and Test.
+#   MIGRATIONS   embeds resources/sqlite/migrations under :/sqlite/migrations.
+#   SOURCE_DIR   defines HAIKENANIME_TEST_SOURCE_DIR as the repository root.
+#   NO_CORE      does not link haiken_core (the test compiles its own SOURCES).
+function(haiken_add_test name)
+    cmake_parse_arguments(TEST "MIGRATIONS;SOURCE_DIR;NO_CORE" "" "QT;SOURCES;DEFINITIONS;INCLUDES" ${ARGN})
+    add_executable(${name} tests/unit/${name}.cpp ${TEST_SOURCES})
+    target_link_libraries(${name} PRIVATE Qt6::Core Qt6::Test)
+    if (NOT TEST_NO_CORE)
+        target_link_libraries(${name} PRIVATE haiken_core)
+    endif ()
+    foreach (MODULE IN LISTS TEST_QT)
+        target_link_libraries(${name} PRIVATE Qt6::${MODULE})
+    endforeach ()
+    if (TEST_SOURCE_DIR)
+        target_compile_definitions(${name} PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+    endif ()
+    if (TEST_DEFINITIONS)
+        target_compile_definitions(${name} PRIVATE ${TEST_DEFINITIONS})
+    endif ()
+    if (TEST_INCLUDES)
+        target_include_directories(${name} PRIVATE ${TEST_INCLUDES})
+    endif ()
+    if (TEST_MIGRATIONS)
+        qt_add_resources(${name} sqlite_migration_test_resources
+                PREFIX "/sqlite/migrations"
+                FILES ${SQLITE_MIGRATION_RESOURCES})
+    endif ()
+    add_test(NAME ${name} COMMAND ${name})
+    set_tests_properties(${name} PROPERTIES
+            ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}"
+            TIMEOUT 30)
+endfunction()
 
-add_test(NAME MediaDomainTests COMMAND MediaDomainTests)
-
-add_executable(RecognitionDomainTests
-        tests/unit/RecognitionDomainTests.cpp
-        src/domain/recognition/PlaybackSession.h
-        src/domain/recognition/PlaybackSession.cpp
-        src/domain/recognition/EpisodeCandidate.h
-        src/domain/recognition/EpisodeCandidate.cpp
-        src/domain/recognition/RecognitionRecord.h
-        src/domain/recognition/RecognitionRecord.cpp
-        src/domain/recognition/RecognitionPolicy.h
-        src/domain/recognition/RecognitionPolicy.cpp
-)
-target_link_libraries(RecognitionDomainTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME RecognitionDomainTests COMMAND RecognitionDomainTests)
-
-add_executable(AlternativeNamesTests
-        tests/unit/AlternativeNamesTests.cpp
-        src/application/media/AlternativeNames.h
-        src/application/media/AlternativeNames.cpp
-)
-target_link_libraries(AlternativeNamesTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME AlternativeNamesTests COMMAND AlternativeNamesTests)
-
-add_executable(MediaTitleResolverTests
-        tests/unit/MediaTitleResolverTests.cpp
-        src/application/media/MediaTitleResolver.cpp
-)
-target_link_libraries(MediaTitleResolverTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME MediaTitleResolverTests COMMAND MediaTitleResolverTests)
-
-add_executable(SqliteDatabaseTests
-        tests/unit/SqliteDatabaseTests.cpp
-        src/infrastructure/database/SqliteDatabase.h
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/logging/AsyncLogger.h
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-
-target_link_libraries(SqliteDatabaseTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Sql
-        Qt6::Test
-)
-
-add_test(NAME SqliteDatabaseTests COMMAND SqliteDatabaseTests)
-
-add_executable(SqliteUserPreferencesRepositoryTests
-        tests/unit/SqliteUserPreferencesRepositoryTests.cpp
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/database/SqliteUserPreferencesRepository.cpp
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/application/configuration/UserPreferencesValidator.cpp
-        src/application/media/MediaTitleResolver.cpp
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-qt_add_resources(SqliteUserPreferencesRepositoryTests user_preferences_query_resources
-        PREFIX "/sqlite/queries"
-        FILES resources/sqlite/queries/read-user-preferences.sql
-              resources/sqlite/queries/upsert-user-preferences.sql)
-target_link_libraries(SqliteUserPreferencesRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
-target_compile_definitions(SqliteUserPreferencesRepositoryTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-add_test(NAME SqliteUserPreferencesRepositoryTests COMMAND SqliteUserPreferencesRepositoryTests)
-
-add_executable(SqliteRepositoryTests
-        tests/unit/SqliteRepositoryTests.cpp
-        src/infrastructure/database/SqliteDatabase.h
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/database/SqliteMediaMapper.h
-        src/infrastructure/database/SqliteMediaMapper.cpp
-        src/infrastructure/database/SqliteMediaRepository.h
-        src/application/media/AlternativeNames.h
-        src/application/media/AlternativeNames.cpp
-        src/infrastructure/database/SqliteMediaRepository.cpp
-        src/infrastructure/database/SqlitePendingChangeRepository.h
-        src/infrastructure/database/SqlitePendingChangeRepository.cpp
-        src/infrastructure/database/SqlitePersonalListChangeWriter.h
-        src/infrastructure/database/SqlitePersonalListChangeWriter.cpp
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/infrastructure/logging/AsyncLogger.h
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-
-qt_add_resources(SqliteRepositoryTests repository_query_resources
-        PREFIX "/sqlite/queries"
-        FILES resources/sqlite/queries/upsert-media.sql
-              resources/sqlite/queries/read-media.sql
-              resources/sqlite/queries/read-active-media-ids.sql
-              resources/sqlite/queries/mark-media-source-removed.sql
-              resources/sqlite/queries/mark-media-personal-list-removed.sql
-              resources/sqlite/queries/supersede-pending-deletion.sql
-              resources/sqlite/queries/update-personal-list-media.sql
-              resources/sqlite/queries/enqueue-pending-change.sql
-              resources/sqlite/queries/read-pending-changes.sql
-              resources/sqlite/queries/read-pending-media-ids.sql
-              resources/sqlite/queries/read-unsent-media-ids.sql
-              resources/sqlite/queries/update-pending-change.sql
-              resources/sqlite/queries/adopt-orphan-pending-changes.sql)
-
-target_link_libraries(SqliteRepositoryTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Sql
-        Qt6::Test
-)
-
-add_test(NAME SqliteRepositoryTests COMMAND SqliteRepositoryTests)
-
-add_executable(SqliteCoverCacheRepositoryTests
-        tests/unit/SqliteCoverCacheRepositoryTests.cpp
-        src/infrastructure/database/SqliteDatabase.h
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/database/SqliteCoverCacheRepository.h
-        src/infrastructure/database/SqliteCoverCacheRepository.cpp
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/infrastructure/logging/AsyncLogger.h
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-
-qt_add_resources(SqliteCoverCacheRepositoryTests cover_cache_query_resources
-        PREFIX "/sqlite/queries"
-        FILES resources/sqlite/queries/read-cover-cache.sql
-              resources/sqlite/queries/upsert-cover-cache.sql
-              resources/sqlite/queries/delete-cover-cache.sql
-              resources/sqlite/queries/clear-cover-cache.sql)
-
-target_link_libraries(SqliteCoverCacheRepositoryTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Sql
-        Qt6::Test
-)
-
-add_test(NAME SqliteCoverCacheRepositoryTests COMMAND SqliteCoverCacheRepositoryTests)
-
-add_executable(SqliteSyncTaskStateRepositoryTests
-        tests/unit/SqliteSyncTaskStateRepositoryTests.cpp
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/database/SqliteSyncTaskStateRepository.cpp
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-qt_add_resources(SqliteSyncTaskStateRepositoryTests sync_task_state_resources
-        PREFIX "/sqlite/queries"
-        FILES resources/sqlite/queries/read-sync-task-states.sql
-              resources/sqlite/queries/upsert-sync-task-state.sql
-              resources/sqlite/queries/delete-sync-task-state.sql)
-qt_add_resources(SqliteSyncTaskStateRepositoryTests sync_task_state_migration_resources
-        PREFIX "/sqlite/migrations"
-        FILES ${SQLITE_MIGRATION_RESOURCES})
-target_link_libraries(SqliteSyncTaskStateRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
-add_test(NAME SqliteSyncTaskStateRepositoryTests COMMAND SqliteSyncTaskStateRepositoryTests)
-
-add_executable(SqlitePluginSettingsRepositoryTests
-        tests/unit/SqlitePluginSettingsRepositoryTests.cpp
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/database/SqlitePluginSettingsRepository.cpp
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-qt_add_resources(SqlitePluginSettingsRepositoryTests plugin_settings_query_resources
-        PREFIX "/sqlite/queries"
-        FILES ${PLUGIN_SETTINGS_SQL_RESOURCES})
-target_link_libraries(SqlitePluginSettingsRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
-add_test(NAME SqlitePluginSettingsRepositoryTests COMMAND SqlitePluginSettingsRepositoryTests)
-
-add_executable(SqliteRecognitionHistoryRepositoryTests
-        tests/unit/SqliteRecognitionHistoryRepositoryTests.cpp
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/database/SqliteRecognitionHistoryRepository.cpp
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/infrastructure/logging/AsyncLogger.cpp
-        src/domain/recognition/PlaybackSession.cpp
-        src/domain/recognition/EpisodeCandidate.cpp
-        src/domain/recognition/RecognitionRecord.cpp
-)
-qt_add_resources(SqliteRecognitionHistoryRepositoryTests recognition_history_query_resources
-        PREFIX "/sqlite/queries"
-        FILES ${RECOGNITION_HISTORY_SQL_RESOURCES})
-target_link_libraries(SqliteRecognitionHistoryRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
-add_test(NAME SqliteRecognitionHistoryRepositoryTests COMMAND SqliteRecognitionHistoryRepositoryTests)
-
-add_executable(SqliteMediaProgressReaderTests
-        tests/unit/SqliteMediaProgressReaderTests.cpp
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/database/SqliteMediaProgressReader.cpp
-        src/infrastructure/database/SqliteMediaMapper.cpp
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-qt_add_resources(SqliteMediaProgressReaderTests media_progress_reader_query_resources
-        PREFIX "/sqlite/queries"
-        FILES ${RECOGNITION_HISTORY_SQL_RESOURCES})
-target_link_libraries(SqliteMediaProgressReaderTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
-add_test(NAME SqliteMediaProgressReaderTests COMMAND SqliteMediaProgressReaderTests)
-
-add_executable(PluginSettingsServiceTests
-        tests/unit/PluginSettingsServiceTests.cpp
-        src/application/recognition/PluginSettingsSchema.cpp
-        src/application/recognition/PluginSettingsService.cpp
-)
-target_link_libraries(PluginSettingsServiceTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME PluginSettingsServiceTests COMMAND PluginSettingsServiceTests)
-
-add_executable(PlaybackObservationServiceTests
-        tests/unit/PlaybackObservationServiceTests.cpp
-        src/application/recognition/PlaybackObservationService.cpp
-        src/domain/recognition/PlaybackSession.cpp
-        src/domain/recognition/EpisodeCandidate.cpp
-        src/domain/recognition/RecognitionPolicy.cpp
-)
-target_link_libraries(PlaybackObservationServiceTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME PlaybackObservationServiceTests COMMAND PlaybackObservationServiceTests)
-
-add_executable(ProgressDecisionServiceTests
-        tests/unit/ProgressDecisionServiceTests.cpp
-        src/application/recognition/ProgressDecisionService.cpp
-        src/domain/recognition/EpisodeCandidate.cpp
-        src/domain/recognition/RecognitionPolicy.cpp
-)
-target_link_libraries(ProgressDecisionServiceTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME ProgressDecisionServiceTests COMMAND ProgressDecisionServiceTests)
-
-add_executable(RecognitionHistoryServiceTests
-        tests/unit/RecognitionHistoryServiceTests.cpp
-        src/application/recognition/RecognitionHistoryService.cpp
-        src/application/recognition/PersonalListProgressWriter.cpp
-        src/application/media/PersonalListChangeService.cpp
-        src/application/anilist/AniListPendingChangeFactory.cpp
-        src/domain/recognition/PlaybackSession.cpp
-        src/domain/recognition/EpisodeCandidate.cpp
-        src/domain/recognition/RecognitionRecord.cpp
-)
-target_link_libraries(RecognitionHistoryServiceTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME RecognitionHistoryServiceTests COMMAND RecognitionHistoryServiceTests)
-
-add_executable(RecognitionSyncFeedbackTests
-        tests/unit/RecognitionSyncFeedbackTests.cpp
-        src/application/recognition/RecognitionSyncFeedback.cpp
-        src/application/recognition/RecognitionHistoryService.cpp
-        src/domain/recognition/PlaybackSession.cpp
-        src/domain/recognition/EpisodeCandidate.cpp
-        src/domain/recognition/RecognitionRecord.cpp
-)
-target_link_libraries(RecognitionSyncFeedbackTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME RecognitionSyncFeedbackTests COMMAND RecognitionSyncFeedbackTests)
-
-add_executable(MpvIpcClientTests
-        tests/unit/MpvIpcClientTests.cpp
-        src/infrastructure/recognition/mpv/IMpvTransport.h
-        src/infrastructure/recognition/mpv/MpvIpcClient.cpp
-        src/infrastructure/recognition/mpv/QtLocalSocketMpvTransport.h
-        src/infrastructure/recognition/mpv/QtLocalSocketMpvTransport.cpp
-)
-target_link_libraries(MpvIpcClientTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
-target_compile_definitions(MpvIpcClientTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-add_test(NAME MpvIpcClientTests COMMAND MpvIpcClientTests)
-
-add_executable(MpvPluginTests
-        tests/unit/MpvPluginTests.cpp
-        src/infrastructure/recognition/mpv/MpvIpcClient.cpp
-        src/infrastructure/recognition/mpv/MpvPlugin.cpp
-        src/infrastructure/recognition/QtProcessLauncher.cpp
-        src/application/recognition/PluginSettingsSchema.cpp
-        src/application/recognition/PlaybackObservationService.cpp
-        src/domain/recognition/PlaybackSession.cpp
-        src/domain/recognition/EpisodeCandidate.cpp
-        src/domain/recognition/RecognitionPolicy.cpp
-)
-target_link_libraries(MpvPluginTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME MpvPluginTests COMMAND MpvPluginTests)
-
-set(PLEX_RECOGNITION_SOURCES
-        src/infrastructure/recognition/plex/PlexHttp.cpp
-        src/infrastructure/recognition/plex/PlexApiClient.cpp
-        src/infrastructure/recognition/plex/PlexAuthentication.cpp
-)
-add_executable(PlexAuthenticationTests
-        tests/unit/PlexAuthenticationTests.cpp
-        tests/unit/PlexTestSupport.h
-        ${PLEX_RECOGNITION_SOURCES}
-)
-target_link_libraries(PlexAuthenticationTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
-target_compile_definitions(PlexAuthenticationTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-add_test(NAME PlexAuthenticationTests COMMAND PlexAuthenticationTests)
-
-add_executable(PlexApiClientTests
-        tests/unit/PlexApiClientTests.cpp
-        tests/unit/PlexTestSupport.h
-        ${PLEX_RECOGNITION_SOURCES}
-)
-target_link_libraries(PlexApiClientTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
-target_compile_definitions(PlexApiClientTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-add_test(NAME PlexApiClientTests COMMAND PlexApiClientTests)
-
-add_executable(PlexPluginTests
-        tests/unit/PlexPluginTests.cpp
-        tests/unit/PlexTestSupport.h
-        ${PLEX_RECOGNITION_SOURCES}
-        src/infrastructure/recognition/plex/PlexPlugin.cpp
-        src/application/recognition/PluginSettingsSchema.cpp
-        src/domain/recognition/PlaybackSession.cpp
-        src/domain/recognition/EpisodeCandidate.cpp
-)
-target_link_libraries(PlexPluginTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
-target_compile_definitions(PlexPluginTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-add_test(NAME PlexPluginTests COMMAND PlexPluginTests)
-
-add_executable(PluginRegistryTests
-        tests/unit/PluginRegistryTests.cpp
-        src/application/recognition/PluginRegistry.cpp
-)
-target_link_libraries(PluginRegistryTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME PluginRegistryTests COMMAND PluginRegistryTests)
-
-add_executable(ActiveSessionRegistryTests
-        tests/unit/ActiveSessionRegistryTests.cpp
-        src/application/recognition/ActiveSessionRegistry.cpp
-        src/domain/recognition/PlaybackSession.cpp
-        src/domain/recognition/EpisodeCandidate.cpp
-)
-target_link_libraries(ActiveSessionRegistryTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME ActiveSessionRegistryTests COMMAND ActiveSessionRegistryTests)
-
-set(RECOGNITION_PIPELINE_SOURCES
-        src/application/recognition/EpisodeRecognitionService.cpp
-        src/application/recognition/ActiveSessionRegistry.cpp
-        src/application/recognition/PluginRegistry.cpp
-        src/application/recognition/PlaybackObservationService.cpp
-        src/application/recognition/ProgressDecisionService.cpp
-        src/application/recognition/RecognitionHistoryService.cpp
-        src/application/library/LocalMediaResolver.cpp
-        src/application/library/LocalMediaCatalogIndex.cpp
-        src/domain/recognition/PlaybackSession.cpp
-        src/domain/recognition/EpisodeCandidate.cpp
-        src/domain/recognition/RecognitionPolicy.cpp
-        src/domain/recognition/RecognitionRecord.cpp
-)
-add_executable(EpisodeRecognitionServiceTests
-        tests/unit/EpisodeRecognitionServiceTests.cpp
-        ${RECOGNITION_PIPELINE_SOURCES}
-)
-target_include_directories(EpisodeRecognitionServiceTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(EpisodeRecognitionServiceTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME EpisodeRecognitionServiceTests COMMAND EpisodeRecognitionServiceTests)
-
-set(RECOGNITION_COMPOSITION_SOURCES
-        src/app/RecognitionComposition.cpp
-        src/app/MpvAwareLocalFileOpener.cpp
-        ${RECOGNITION_PIPELINE_SOURCES}
-        ${PLEX_RECOGNITION_SOURCES}
-        src/application/recognition/PluginSettingsSchema.cpp
-        src/application/recognition/PluginSettingsService.cpp
-        src/application/recognition/PersonalListProgressWriter.cpp
-        src/application/media/PersonalListChangeService.cpp
-        src/application/anilist/AniListPendingChangeFactory.cpp
-        src/infrastructure/database/SqlitePluginSettingsRepository.cpp
-        src/infrastructure/database/SqliteRecognitionHistoryRepository.cpp
-        src/infrastructure/database/SqliteMediaProgressReader.cpp
-        src/infrastructure/database/SqliteMediaMapper.cpp
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/infrastructure/recognition/QtProcessLauncher.cpp
-        src/infrastructure/recognition/mpv/MpvIpcClient.cpp
-        src/infrastructure/recognition/mpv/MpvPlugin.cpp
-        src/infrastructure/recognition/mpv/QtLocalSocketMpvTransport.cpp
-        src/infrastructure/recognition/plex/PlexPlugin.cpp
-        src/infrastructure/secrets/WindowsPluginSecretStore.cpp
-)
-add_executable(RecognitionCompositionTests
-        tests/unit/RecognitionCompositionTests.cpp
-        tests/unit/PlexTestSupport.h
-        ${RECOGNITION_COMPOSITION_SOURCES}
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-qt_add_resources(RecognitionCompositionTests recognition_composition_query_resources
-        PREFIX "/sqlite/queries"
-        FILES ${PLUGIN_SETTINGS_SQL_RESOURCES} ${RECOGNITION_HISTORY_SQL_RESOURCES})
-target_include_directories(RecognitionCompositionTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(RecognitionCompositionTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Sql Qt6::Test Advapi32)
-target_compile_definitions(RecognitionCompositionTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-add_test(NAME RecognitionCompositionTests COMMAND RecognitionCompositionTests)
-
-add_executable(PluginSettingsControllerTests
-        tests/unit/PluginSettingsControllerTests.cpp
-        tests/unit/PlexTestSupport.h
-        src/presentation/settings/PluginSettingsController.h
-        src/presentation/settings/PluginSettingsController.cpp
-        src/application/recognition/PluginRegistry.cpp
-        src/application/recognition/PluginSettingsSchema.cpp
-        src/application/recognition/PluginSettingsService.cpp
-        ${PLEX_RECOGNITION_SOURCES}
-        src/infrastructure/recognition/plex/PlexPlugin.cpp
-        src/domain/recognition/PlaybackSession.cpp
-        src/domain/recognition/EpisodeCandidate.cpp
-)
-target_link_libraries(PluginSettingsControllerTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
-target_compile_definitions(PluginSettingsControllerTests PRIVATE HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-add_test(NAME PluginSettingsControllerTests COMMAND PluginSettingsControllerTests)
-
-add_executable(EpisodeRecognitionControllerTests
-        tests/unit/EpisodeRecognitionControllerTests.cpp
-        src/presentation/recognition/EpisodeRecognitionController.h
-        src/presentation/recognition/EpisodeRecognitionController.cpp
-        src/presentation/recognition/RecognitionListModel.h
-        src/presentation/recognition/RecognitionListModel.cpp
-        ${RECOGNITION_PIPELINE_SOURCES}
-)
-target_include_directories(EpisodeRecognitionControllerTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(EpisodeRecognitionControllerTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME EpisodeRecognitionControllerTests COMMAND EpisodeRecognitionControllerTests)
-
-add_executable(NowWatchingControllerTests
-        tests/unit/NowWatchingControllerTests.cpp
-        src/presentation/recognition/NowWatchingController.h
-        src/presentation/recognition/NowWatchingController.cpp
-        src/application/recognition/ActiveSessionRegistry.cpp
-        src/application/media/ProgressFormatter.cpp
-        src/application/media/MediaTitleResolver.cpp
-        src/application/media/MediaDetailsPresentation.cpp
-        src/domain/recognition/PlaybackSession.cpp
-        src/domain/recognition/EpisodeCandidate.cpp
-)
-target_link_libraries(NowWatchingControllerTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME NowWatchingControllerTests COMMAND NowWatchingControllerTests)
-
-add_executable(SqliteLocalFileRepositoryTests
-        tests/unit/SqliteLocalFileRepositoryTests.cpp
-        src/infrastructure/database/SqliteLocalFileRepository.cpp
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/infrastructure/database/SqliteMediaMapper.cpp
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-qt_add_resources(SqliteLocalFileRepositoryTests library_scan_test_resources
-        PREFIX "/sqlite/queries"
-        FILES ${LIBRARY_SCAN_SQL_RESOURCES}
-)
-target_link_libraries(SqliteLocalFileRepositoryTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
-add_test(NAME SqliteLocalFileRepositoryTests COMMAND SqliteLocalFileRepositoryTests)
-
-add_executable(LocalLibraryScannerTests tests/unit/LocalLibraryScannerTests.cpp
-        src/infrastructure/library/LocalLibraryScanner.cpp
-        src/infrastructure/library/QtDirectoryEnumerator.cpp)
-target_link_libraries(LocalLibraryScannerTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME LocalLibraryScannerTests COMMAND LocalLibraryScannerTests)
-
-add_executable(AnitomyLocalFileRecognizerTests
-        tests/unit/AnitomyLocalFileRecognizerTests.cpp
-        src/application/library/LocalFileRecognitionTypes.h
-        src/application/library/ILocalFileRecognizer.h
-        src/infrastructure/library/AnitomyLocalFileRecognizer.h
-        src/infrastructure/library/AnitomyLocalFileRecognizer.cpp
-        lib/anitomy/anitomy.cpp
-        lib/anitomy/element.cpp
-        lib/anitomy/keyword.cpp
-        lib/anitomy/parser.cpp
-        lib/anitomy/parser_helper.cpp
-        lib/anitomy/parser_number.cpp
-        lib/anitomy/string.cpp
-        lib/anitomy/token.cpp
-        lib/anitomy/tokenizer.cpp)
-target_include_directories(AnitomyLocalFileRecognizerTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(AnitomyLocalFileRecognizerTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME AnitomyLocalFileRecognizerTests COMMAND AnitomyLocalFileRecognizerTests)
-
-add_executable(LocalMediaResolverTests
-        tests/unit/LocalMediaResolverTests.cpp
-        src/application/library/LocalFileRecognitionTypes.h
-        src/application/library/LocalMediaCatalogIndex.h
-        src/application/library/LocalMediaCatalogIndex.cpp
-        src/application/library/LocalMediaResolver.h
-        src/application/library/LocalMediaResolver.cpp)
-target_include_directories(LocalMediaResolverTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(LocalMediaResolverTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME LocalMediaResolverTests COMMAND LocalMediaResolverTests)
-
-add_executable(SqlQueryStoreTests
-        tests/unit/SqlQueryStoreTests.cpp
-        src/infrastructure/database/SqlQueryStore.h
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/infrastructure/logging/AsyncLogger.h
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-
-target_link_libraries(SqlQueryStoreTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME SqlQueryStoreTests COMMAND SqlQueryStoreTests)
-
-add_executable(SqliteQueryConfigurationTests
-        tests/unit/SqliteQueryConfigurationTests.cpp
-        src/infrastructure/database/SqliteQueryConfiguration.h
-        src/infrastructure/database/SqliteQueryConfiguration.cpp
-        src/infrastructure/logging/AsyncLogger.h
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-
-qt_add_resources(SqliteQueryConfigurationTests sqlite_query_configuration_test_resources
-        PREFIX "/sqlite/queries"
-        FILES resources/sqlite/sqlite-queries.json resources/sqlite/queries/update-personal-list-media.sql
-        ${LIBRARY_SCAN_SQL_RESOURCES}
-)
-
-target_link_libraries(SqliteQueryConfigurationTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME SqliteQueryConfigurationTests COMMAND SqliteQueryConfigurationTests)
-
-add_executable(FileSecretStoreTests
-        tests/unit/FileSecretStoreTests.cpp
-        src/infrastructure/secrets/FileSecretStore.h
-        src/infrastructure/secrets/FileSecretStore.cpp
-)
-
-target_link_libraries(FileSecretStoreTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME FileSecretStoreTests COMMAND FileSecretStoreTests)
-
-if (WIN32)
-    add_executable(WindowsCredentialStoreTests
-            tests/unit/WindowsCredentialStoreTests.cpp
-            src/infrastructure/secrets/WindowsCredentialStore.h
-            src/infrastructure/secrets/WindowsCredentialStore.cpp
-    )
-    target_link_libraries(WindowsCredentialStoreTests PRIVATE Qt6::Core Qt6::Test Advapi32)
-    add_test(NAME WindowsCredentialStoreTests COMMAND WindowsCredentialStoreTests)
-
-    add_executable(WindowsPluginSecretStoreTests
-            tests/unit/WindowsPluginSecretStoreTests.cpp
-            src/infrastructure/secrets/WindowsPluginSecretStore.h
-            src/infrastructure/secrets/WindowsPluginSecretStore.cpp
-    )
-    target_link_libraries(WindowsPluginSecretStoreTests PRIVATE Qt6::Core Qt6::Test Advapi32)
-    add_test(NAME WindowsPluginSecretStoreTests COMMAND WindowsPluginSecretStoreTests)
-endif()
-
-add_executable(JsonSettingsReaderTests
-        tests/unit/JsonSettingsReaderTests.cpp
-        src/infrastructure/configuration/JsonSettingsReader.h
-        src/infrastructure/configuration/JsonSettingsReader.cpp
-        src/application/configuration/UserPreferencesValidator.cpp
-        src/application/media/MediaTitleResolver.cpp
-)
-
-target_link_libraries(JsonSettingsReaderTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME JsonSettingsReaderTests COMMAND JsonSettingsReaderTests)
-target_compile_definitions(JsonSettingsReaderTests PRIVATE
-        HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_executable(SyncTaskPolicyTests
-        tests/unit/SyncTaskPolicyTests.cpp
-        src/application/scheduling/SyncTaskPolicy.h
-        src/application/scheduling/SyncTaskPolicy.cpp
-        src/application/scheduling/SyncTaskTypes.h
-        src/application/scheduling/SyncProgress.h
-)
-target_link_libraries(SyncTaskPolicyTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME SyncTaskPolicyTests COMMAND SyncTaskPolicyTests)
-
-add_executable(UserPreferencesValidatorTests
-        tests/unit/UserPreferencesValidatorTests.cpp
-        src/application/configuration/UserPreferencesValidator.cpp
-        src/application/media/MediaTitleResolver.cpp
-)
-target_link_libraries(UserPreferencesValidatorTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME UserPreferencesValidatorTests COMMAND UserPreferencesValidatorTests)
-
-add_executable(TranslationLoaderTests
-        tests/unit/TranslationLoaderTests.cpp
-        src/app/TranslationLoader.cpp
-)
-target_link_libraries(TranslationLoaderTests PRIVATE Qt6::Core Qt6::Qml Qt6::Test)
+haiken_add_test(MediaPresentationTests)
+haiken_add_test(RecognitionDomainTests)
+haiken_add_test(AlternativeNamesTests)
+haiken_add_test(MediaTitleResolverTests)
+haiken_add_test(SqliteDatabaseTests QT Sql MIGRATIONS SOURCE_DIR)
+haiken_add_test(SqliteUserPreferencesRepositoryTests QT Sql MIGRATIONS SOURCE_DIR)
+qt_add_resources(SqliteUserPreferencesRepositoryTests user_preferences_query_resources PREFIX "/sqlite/queries" FILES resources/sqlite/queries/read-user-preferences.sql resources/sqlite/queries/upsert-user-preferences.sql)
+haiken_add_test(SqliteRepositoryTests QT Sql MIGRATIONS)
+qt_add_resources(SqliteRepositoryTests repository_query_resources PREFIX "/sqlite/queries" FILES resources/sqlite/queries/upsert-media.sql resources/sqlite/queries/read-media-alternative-names.sql resources/sqlite/queries/read-media.sql resources/sqlite/queries/read-active-media-ids.sql resources/sqlite/queries/mark-media-source-removed.sql resources/sqlite/queries/mark-media-personal-list-removed.sql resources/sqlite/queries/supersede-pending-deletion.sql resources/sqlite/queries/update-personal-list-media.sql resources/sqlite/queries/enqueue-pending-change.sql resources/sqlite/queries/read-pending-changes.sql resources/sqlite/queries/read-pending-media-ids.sql resources/sqlite/queries/read-unsent-media-ids.sql resources/sqlite/queries/update-pending-change.sql resources/sqlite/queries/adopt-orphan-pending-changes.sql)
+haiken_add_test(SqliteCoverCacheRepositoryTests QT Sql MIGRATIONS)
+qt_add_resources(SqliteCoverCacheRepositoryTests cover_cache_query_resources PREFIX "/sqlite/queries" FILES resources/sqlite/queries/read-cover-cache.sql resources/sqlite/queries/upsert-cover-cache.sql resources/sqlite/queries/delete-cover-cache.sql resources/sqlite/queries/clear-cover-cache.sql)
+haiken_add_test(SqliteSyncTaskStateRepositoryTests QT Sql MIGRATIONS)
+qt_add_resources(SqliteSyncTaskStateRepositoryTests sync_task_state_resources PREFIX "/sqlite/queries" FILES resources/sqlite/queries/read-sync-task-states.sql resources/sqlite/queries/upsert-sync-task-state.sql)
+haiken_add_test(SqlitePluginSettingsRepositoryTests QT Sql MIGRATIONS)
+qt_add_resources(SqlitePluginSettingsRepositoryTests plugin_settings_query_resources PREFIX "/sqlite/queries" FILES ${PLUGIN_SETTINGS_SQL_RESOURCES})
+haiken_add_test(SqliteRecognitionHistoryRepositoryTests QT Sql MIGRATIONS)
+qt_add_resources(SqliteRecognitionHistoryRepositoryTests recognition_history_query_resources PREFIX "/sqlite/queries" FILES ${RECOGNITION_HISTORY_SQL_RESOURCES})
+haiken_add_test(SqliteMediaProgressReaderTests QT Sql MIGRATIONS)
+qt_add_resources(SqliteMediaProgressReaderTests media_progress_reader_query_resources PREFIX "/sqlite/queries" FILES ${RECOGNITION_HISTORY_SQL_RESOURCES})
+haiken_add_test(PluginSettingsServiceTests)
+haiken_add_test(PlaybackObservationServiceTests)
+haiken_add_test(ProgressDecisionServiceTests)
+haiken_add_test(RecognitionHistoryServiceTests)
+haiken_add_test(RecognitionSyncFeedbackTests)
+haiken_add_test(MpvIpcClientTests QT Network SOURCE_DIR)
+haiken_add_test(MpvPluginTests)
+haiken_add_test(PlexAuthenticationTests QT Network SOURCE_DIR)
+haiken_add_test(PlexApiClientTests QT Network SOURCE_DIR)
+haiken_add_test(PlexPluginTests QT Network SOURCE_DIR)
+haiken_add_test(PluginRegistryTests)
+haiken_add_test(ActiveSessionRegistryTests)
+haiken_add_test(EpisodeRecognitionServiceTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+haiken_add_test(RecognitionCompositionTests QT Gui Network Sql MIGRATIONS SOURCE_DIR INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+qt_add_resources(RecognitionCompositionTests recognition_composition_query_resources PREFIX "/sqlite/queries" FILES ${PLUGIN_SETTINGS_SQL_RESOURCES} ${RECOGNITION_HISTORY_SQL_RESOURCES})
+haiken_add_test(PluginSettingsControllerTests QT Network SOURCE_DIR)
+haiken_add_test(EpisodeRecognitionControllerTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+haiken_add_test(NowWatchingControllerTests)
+haiken_add_test(SqliteLocalFileRepositoryTests QT Sql MIGRATIONS)
+qt_add_resources(SqliteLocalFileRepositoryTests library_scan_test_resources PREFIX "/sqlite/queries" FILES ${LIBRARY_SCAN_SQL_RESOURCES})
+haiken_add_test(LocalLibraryScannerTests)
+haiken_add_test(AnitomyLocalFileRecognizerTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+haiken_add_test(LocalMediaResolverTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+haiken_add_test(SqlQueryStoreTests)
+# Embeds migrations but no queries: covers the repositories' "query file missing" errors.
+haiken_add_test(RepositoryQueryErrorTests QT Sql MIGRATIONS)
+qt_add_resources(SqlQueryStoreTests query_store_resources PREFIX "/sqlite/queries" FILES resources/sqlite/queries/read-media.sql)
+haiken_add_test(JsonSettingsReaderTests SOURCE_DIR)
+haiken_add_test(SyncTaskPolicyTests)
+haiken_add_test(UserPreferencesValidatorTests)
+haiken_add_test(TranslationLoaderTests QT Qml)
 qt_add_translations(TranslationLoaderTests
         TS_FILES ${HAIKENANIME_TS_FILES}
         RESOURCE_PREFIX "/i18n"
         LUPDATE_OPTIONS -no-obsolete
 )
-add_test(NAME TranslationLoaderTests COMMAND TranslationLoaderTests)
-
-add_executable(CoverSettingsTests
-        tests/unit/CoverSettingsTests.cpp
-)
-
-target_link_libraries(CoverSettingsTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME CoverSettingsTests COMMAND CoverSettingsTests)
-
-add_executable(CoverSourceResolverTests
-        tests/unit/CoverSourceResolverTests.cpp
-        src/application/covers/CoverSourceResolver.cpp
-)
-target_link_libraries(CoverSourceResolverTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME CoverSourceResolverTests COMMAND CoverSourceResolverTests)
-
-add_executable(CoverFileStoreTests
-        tests/unit/CoverFileStoreTests.cpp
-        src/infrastructure/covers/CoverFileStore.h
-        src/infrastructure/covers/CoverFileStore.cpp
-)
-
-target_include_directories(CoverFileStoreTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(CoverFileStoreTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
-add_test(NAME CoverFileStoreTests COMMAND CoverFileStoreTests)
-
-add_executable(CoverTemporaryStoreTests
-        tests/unit/CoverTemporaryStoreTests.cpp
-        src/infrastructure/covers/CoverTemporaryStore.h
-        src/infrastructure/covers/CoverTemporaryStore.cpp
-)
-target_include_directories(CoverTemporaryStoreTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_compile_definitions(CoverTemporaryStoreTests PRIVATE HAIKENANIME_COVER_TEMPORARY_STORE_TESTING)
-target_link_libraries(CoverTemporaryStoreTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME CoverTemporaryStoreTests COMMAND CoverTemporaryStoreTests)
-
-add_executable(CoverDownloadCoordinatorTests tests/unit/CoverDownloadCoordinatorTests.cpp
-        src/application/covers/CoverDownloadCoordinator.cpp
-        src/infrastructure/logging/AsyncLogger.cpp)
-target_include_directories(CoverDownloadCoordinatorTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(CoverDownloadCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME CoverDownloadCoordinatorTests COMMAND CoverDownloadCoordinatorTests)
-
-add_executable(ClearLocalCacheUseCaseTests
-        tests/unit/ClearLocalCacheUseCaseTests.cpp
-        src/application/cache/ClearLocalCacheUseCase.cpp
-        src/application/covers/CoverDownloadCoordinator.cpp
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-target_include_directories(ClearLocalCacheUseCaseTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(ClearLocalCacheUseCaseTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME ClearLocalCacheUseCaseTests COMMAND ClearLocalCacheUseCaseTests)
-
-add_executable(QtCoverDownloaderTests tests/unit/QtCoverDownloaderTests.cpp
-        src/infrastructure/covers/QtCoverDownloader.cpp)
-target_include_directories(QtCoverDownloaderTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(QtCoverDownloaderTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
-add_test(NAME QtCoverDownloaderTests COMMAND QtCoverDownloaderTests)
-
-add_executable(AniListAuthManagerTests
-        tests/unit/AniListAuthManagerTests.cpp
-        src/application/anilist/AniListAuthManager.h
-        src/application/anilist/AniListAuthManager.cpp
-        src/application/anilist/AniListOAuthConfig.h
-        src/application/anilist/AniListOAuthCallbackParser.h
-        src/application/anilist/AniListOAuthCallbackParser.cpp
-)
-
-target_link_libraries(AniListAuthManagerTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME AniListAuthManagerTests COMMAND AniListAuthManagerTests)
-
-add_executable(AniListOAuthCallbackParserTests
-        tests/unit/AniListOAuthCallbackParserTests.cpp
-        src/application/anilist/AniListOAuthConfig.h
-        src/application/anilist/AniListOAuthCallbackParser.h
-        src/application/anilist/AniListOAuthCallbackParser.cpp
-)
-target_link_libraries(AniListOAuthCallbackParserTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME AniListOAuthCallbackParserTests COMMAND AniListOAuthCallbackParserTests)
-
-add_executable(WindowsAniListOAuthLauncherTests
-        tests/unit/WindowsAniListOAuthLauncherTests.cpp
-        src/infrastructure/anilist/WindowsAniListOAuthLauncher.h
-        src/infrastructure/anilist/WindowsAniListOAuthLauncher.cpp
-)
-target_link_libraries(WindowsAniListOAuthLauncherTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
-add_test(NAME WindowsAniListOAuthLauncherTests COMMAND WindowsAniListOAuthLauncherTests)
-
-add_executable(AniListOAuthCallbackReceiverTests
-        tests/unit/AniListOAuthCallbackReceiverTests.cpp
-        src/app/AniListOAuthCallbackReceiver.h
-        src/app/AniListOAuthCallbackReceiver.cpp
-)
-target_link_libraries(AniListOAuthCallbackReceiverTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
-add_test(NAME AniListOAuthCallbackReceiverTests COMMAND AniListOAuthCallbackReceiverTests)
-
-add_executable(WindowsUrlProtocolRegistrarTests
-        tests/unit/WindowsUrlProtocolRegistrarTests.cpp
-        src/infrastructure/anilist/WindowsUrlProtocolRegistrar.h
-        src/infrastructure/anilist/WindowsUrlProtocolRegistrar.cpp
-)
-target_link_libraries(WindowsUrlProtocolRegistrarTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME WindowsUrlProtocolRegistrarTests COMMAND WindowsUrlProtocolRegistrarTests)
-
-add_executable(AniListFlowTests
-        tests/unit/AniListFlowTests.cpp
-        src/application/anilist/AniListSyncService.h
-        src/application/anilist/AniListSyncService.cpp
-        src/application/anilist/AniListPendingChangeReconciler.h
-        src/application/anilist/AniListPendingChangeReconciler.cpp
-        src/application/anilist/AniListMergeService.h
-        src/application/anilist/AniListMergeService.cpp
-        src/application/anilist/AniListSyncErrorClassifier.h
-        src/application/anilist/AniListSyncErrorClassifier.cpp
-        src/application/anilist/AniListPendingChangeProcessor.h
-        src/application/anilist/AniListPendingChangeProcessor.cpp
-        src/application/anilist/AniListPendingChangeCompactor.h
-        src/application/anilist/AniListPendingChangeCompactor.cpp
-        src/application/anilist/AniListPendingChangeGrouper.h
-        src/application/anilist/AniListPendingChangeGrouper.cpp
-        src/application/anilist/AniListMergePolicyResolver.h
-        src/application/anilist/AniListMergePolicyResolver.cpp
-        src/application/media/IMediaRepository.h
-        src/application/media/IMediaReader.h
-        src/application/media/IMediaWriter.h
-        src/application/media/IMediaDataSource.h
-        src/infrastructure/anilist/FileAniListDataSource.h
-        src/infrastructure/anilist/FileAniListDataSource.cpp
-        src/infrastructure/anilist/AniListMediaMapper.h
-        src/infrastructure/anilist/AniListMediaMapper.cpp
-)
-
-target_link_libraries(AniListFlowTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Test
-)
-
-target_compile_definitions(AniListFlowTests
-        PRIVATE
-        HAIKENANIME_TEST_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures"
-)
-
-qt_add_resources(AniListFlowTests fixture_test_resource_bundle
-        PREFIX "/fixtures"
-        FILES
-        tests/fixtures/media-library.json
-)
-
-add_test(NAME AniListFlowTests COMMAND AniListFlowTests)
-
-add_executable(AniListGraphQlParsingTests
-        tests/unit/AniListGraphQlParsingTests.cpp
-        src/infrastructure/anilist/AniListGraphQlClient.h
-        src/infrastructure/anilist/AniListGraphQlClient.cpp
-        src/infrastructure/anilist/AniListGraphQlResponseParser.h
-        src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
-        src/infrastructure/anilist/AniListGraphQlPageParser.h
-        src/infrastructure/anilist/AniListGraphQlPageParser.cpp
-        src/infrastructure/anilist/AniListGraphQlUserListParser.h
-        src/infrastructure/anilist/AniListGraphQlUserListParser.cpp
-        src/infrastructure/anilist/AniListMediaMapper.h
-        src/infrastructure/anilist/AniListMediaMapper.cpp
-        src/infrastructure/anilist/GraphQlAniListDataSource.h
-        src/infrastructure/anilist/GraphQlAniListDataSource.cpp
-        src/infrastructure/anilist/GraphQlQueryStore.h
-        src/infrastructure/anilist/GraphQlQueryStore.cpp
-)
-
-target_link_libraries(AniListGraphQlParsingTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Network
-        Qt6::Test
-)
-
-target_compile_definitions(AniListGraphQlParsingTests
-        PRIVATE
-        HAIKENANIME_GRAPHQL_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/page-response.json"
-        HAIKENANIME_GRAPHQL_USERLIST_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/userlist-response.json"
-)
-
-set_source_files_properties(
-        resources/anilist/queries/media-page.graphql
-        PROPERTIES QT_RESOURCE_ALIAS "media-page.graphql")
-qt_add_resources(AniListGraphQlParsingTests anilist_partition_query_resource_bundle
-        PREFIX "/anilist/queries"
-        FILES resources/anilist/queries/media-page.graphql resources/anilist/queries/user-media-list.graphql
-)
-
-add_test(NAME AniListGraphQlParsingTests COMMAND AniListGraphQlParsingTests)
-
-add_executable(AniListGraphQlUserListParserTests
-        tests/unit/AniListGraphQlUserListParserTests.cpp
-        src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
-        src/infrastructure/anilist/AniListGraphQlUserListParser.cpp
-        src/infrastructure/anilist/AniListMediaMapper.cpp
-)
-target_link_libraries(AniListGraphQlUserListParserTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
-target_compile_definitions(AniListGraphQlUserListParserTests PRIVATE
-        HAIKENANIME_USERLIST_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/userlist-response.json")
-add_test(NAME AniListGraphQlUserListParserTests COMMAND AniListGraphQlUserListParserTests)
-
-add_executable(LocalEpisodeReaderTests
-        tests/unit/LocalEpisodeReaderTests.cpp
-        src/application/library/LocalEpisodeReader.cpp
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-target_link_libraries(LocalEpisodeReaderTests PRIVATE Qt6::Core Qt6::Sql Qt6::Test)
-qt_add_resources(LocalEpisodeReaderTests local_episode_reader_query_resources
-        PREFIX "/sqlite/queries"
-        FILES
-        resources/sqlite/queries/read-next-local-episode.sql
-        resources/sqlite/queries/read-available-episode-count.sql
-)
-add_test(NAME LocalEpisodeReaderTests COMMAND LocalEpisodeReaderTests)
-
-add_executable(QtLocalFileOpenerTests
-        tests/unit/QtLocalFileOpenerTests.cpp
-        src/infrastructure/library/QtLocalFileOpener.cpp
-)
-target_link_libraries(QtLocalFileOpenerTests PRIVATE Qt6::Core Qt6::Gui Qt6::Test)
-add_test(NAME QtLocalFileOpenerTests COMMAND QtLocalFileOpenerTests)
-
-add_executable(GraphQlQueryStoreTests
-        tests/unit/GraphQlQueryStoreTests.cpp
-        src/infrastructure/anilist/GraphQlQueryStore.h
-        src/infrastructure/anilist/GraphQlQueryStore.cpp
-)
-
-target_link_libraries(GraphQlQueryStoreTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME GraphQlQueryStoreTests COMMAND GraphQlQueryStoreTests)
-
-add_executable(SeasonalCatalogTests
-        tests/unit/SeasonalCatalogTests.cpp
-        src/app/SeasonalCatalogCoordinator.h
-        src/app/SeasonalCatalogCoordinator.cpp
-        src/application/catalog/SeasonalCatalogTypes.h
-        src/application/catalog/ISeasonalCatalogDataSource.h
-        src/infrastructure/anilist/GraphQlSeasonalCatalogDataSource.h
-        src/infrastructure/anilist/GraphQlSeasonalCatalogDataSource.cpp
-        src/infrastructure/anilist/AniListGraphQlClient.h
-        src/infrastructure/anilist/AniListGraphQlClient.cpp
-        src/infrastructure/anilist/AniListGraphQlResponseParser.h
-        src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
-        src/infrastructure/anilist/AniListGraphQlPageParser.h
-        src/infrastructure/anilist/AniListGraphQlPageParser.cpp
-        src/infrastructure/anilist/AniListMediaMapper.h
-        src/infrastructure/anilist/AniListMediaMapper.cpp
-        src/infrastructure/anilist/GraphQlQueryStore.h
-        src/infrastructure/anilist/GraphQlQueryStore.cpp
-        src/infrastructure/logging/AsyncLogger.h
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-target_include_directories(SeasonalCatalogTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(SeasonalCatalogTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Test)
-target_compile_definitions(SeasonalCatalogTests PRIVATE
-        HAIKENANIME_SEASONAL_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql")
-qt_add_resources(SeasonalCatalogTests seasonal_catalog_query_resource_bundle
-        PREFIX "/anilist/queries"
-        FILES resources/anilist/queries/seasonal-catalog.graphql)
-add_test(NAME SeasonalCatalogTests COMMAND SeasonalCatalogTests)
-
-add_executable(SeasonalCatalogControllerTests
-        tests/unit/SeasonalCatalogControllerTests.cpp
-        src/presentation/seasonal/SeasonalCatalogController.h
-        src/presentation/seasonal/SeasonalCatalogController.cpp
-        src/app/SeasonalCatalogCoordinator.h
-        src/app/SeasonalCatalogCoordinator.cpp
-        src/application/covers/CoverSourceResolver.cpp
-        src/application/media/MediaTitleResolver.cpp
-        src/application/media/ProgressFormatter.cpp
-        src/application/media/MediaDetailsPresentation.cpp
-        src/application/media/SeasonalPersonalListService.h
-        src/application/media/SeasonalPersonalListService.cpp
-        src/application/media/IPersonalListChangeWriter.h
-        src/application/media/PersonalListChangeService.h
-        src/application/media/PersonalListChangeService.cpp
-        src/application/anilist/AniListPendingChangeFactory.h
-        src/application/anilist/AniListPendingChangeFactory.cpp
-        src/infrastructure/logging/AsyncLogger.h
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-target_include_directories(SeasonalCatalogControllerTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_link_libraries(SeasonalCatalogControllerTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME SeasonalCatalogControllerTests COMMAND SeasonalCatalogControllerTests)
-
-add_executable(AniListSyncErrorClassifierTests
-        tests/unit/AniListSyncErrorClassifierTests.cpp
-        src/application/anilist/AniListSyncErrorClassifier.h
-        src/application/anilist/AniListSyncErrorClassifier.cpp
-)
-
-target_link_libraries(AniListSyncErrorClassifierTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME AniListSyncErrorClassifierTests COMMAND AniListSyncErrorClassifierTests)
-
-add_executable(AniListMergePolicyResolverTests
-        tests/unit/AniListMergePolicyResolverTests.cpp
-        src/application/anilist/AniListMergePolicyResolver.h
-        src/application/anilist/AniListMergePolicyResolver.cpp
-)
-
-target_link_libraries(AniListMergePolicyResolverTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME AniListMergePolicyResolverTests COMMAND AniListMergePolicyResolverTests)
-
-add_executable(AniListPendingChangeFactoryTests
-        tests/unit/AniListPendingChangeFactoryTests.cpp
-        src/application/anilist/AniListPendingChangeFactory.h
-        src/application/anilist/AniListPendingChangeFactory.cpp
-)
-
-target_link_libraries(AniListPendingChangeFactoryTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME AniListPendingChangeFactoryTests COMMAND AniListPendingChangeFactoryTests)
-
-add_executable(AniListMergeServiceTests
-        tests/unit/AniListMergeServiceTests.cpp
-        src/application/anilist/AniListMergePolicyResolver.h
-        src/application/anilist/AniListMergePolicyResolver.cpp
-        src/application/anilist/AniListMergeService.h
-        src/application/anilist/AniListMergeService.cpp
-)
-
-target_link_libraries(AniListMergeServiceTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME AniListMergeServiceTests COMMAND AniListMergeServiceTests)
-
-add_executable(AniListPendingChangeReconcilerTests
-        tests/unit/AniListPendingChangeReconcilerTests.cpp
-        src/application/anilist/AniListPendingChangeReconciler.h
-        src/application/anilist/AniListPendingChangeReconciler.cpp
-        src/application/anilist/AniListPendingChangeCompactor.h
-        src/application/anilist/AniListPendingChangeCompactor.cpp
-        src/application/anilist/AniListMergePolicyResolver.h
-        src/application/anilist/AniListMergePolicyResolver.cpp
-        src/application/anilist/AniListMergeService.h
-        src/application/anilist/AniListMergeService.cpp
-)
-
-target_link_libraries(AniListPendingChangeReconcilerTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME AniListPendingChangeReconcilerTests COMMAND AniListPendingChangeReconcilerTests)
-
-add_executable(AniListPendingChangeProcessorTests
-        tests/unit/AniListPendingChangeProcessorTests.cpp
-        src/application/anilist/AniListPendingChangeProcessor.h
-        src/application/anilist/AniListPendingChangeProcessor.cpp
-        src/application/anilist/IAniListPendingChangeObserver.h
-        src/application/anilist/AniListSyncErrorClassifier.cpp
-        src/application/anilist/AniListPendingChangeCompactor.h
-        src/application/anilist/AniListPendingChangeCompactor.cpp
-        src/application/anilist/AniListMergePolicyResolver.h
-        src/application/anilist/AniListMergePolicyResolver.cpp
-        src/application/anilist/AniListMediaPendingChanges.h
-        src/application/anilist/AniListPendingChangeGrouper.h
-        src/application/anilist/AniListPendingChangeGrouper.cpp
-)
-
-target_link_libraries(AniListPendingChangeProcessorTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Test
-)
-
-add_test(NAME AniListPendingChangeProcessorTests COMMAND AniListPendingChangeProcessorTests)
-
-add_executable(AniListPendingChangeDrainTests
-        tests/unit/AniListPendingChangeDrainTests.cpp
-        src/application/anilist/AniListPendingChangeDrain.h
-        src/application/anilist/AniListPendingChangeDrain.cpp
-        src/application/anilist/AniListPendingChangeProcessor.h
-        src/application/anilist/AniListPendingChangeProcessor.cpp
-        src/application/anilist/AniListSyncErrorClassifier.cpp
-        src/application/anilist/AniListPendingChangeCompactor.h
-        src/application/anilist/AniListPendingChangeCompactor.cpp
-        src/application/anilist/AniListPendingChangeGrouper.h
-        src/application/anilist/AniListPendingChangeGrouper.cpp
-        src/application/anilist/AniListMergePolicyResolver.h
-        src/application/anilist/AniListMergePolicyResolver.cpp
-)
-target_link_libraries(AniListPendingChangeDrainTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME AniListPendingChangeDrainTests COMMAND AniListPendingChangeDrainTests)
-
-add_executable(AniListUpdateClientTests
-        tests/unit/AniListUpdateClientTests.cpp
-        src/infrastructure/anilist/AniListUpdateClient.h
-        src/infrastructure/anilist/AniListUpdateClient.cpp
-        src/infrastructure/anilist/AniListGraphQlClient.h
-        src/infrastructure/anilist/AniListGraphQlClient.cpp
-        src/infrastructure/anilist/AniListGraphQlResponseParser.h
-        src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
-        src/infrastructure/anilist/GraphQlQueryStore.h
-        src/infrastructure/anilist/GraphQlQueryStore.cpp
-)
-target_link_libraries(AniListUpdateClientTests PRIVATE Qt6::Core Qt6::Network Qt6::Test)
-add_test(NAME AniListUpdateClientTests COMMAND AniListUpdateClientTests)
-
-add_executable(HomeScreenControllerTests
-        tests/unit/HomeScreenControllerTests.cpp
-        src/application/media/IPersonalListChangeWriter.h
-        src/application/media/PersonalListChangeService.h
-        src/application/media/PersonalListChangeService.cpp
-        src/application/anilist/AniListPendingChangeFactory.h
-        src/application/anilist/AniListPendingChangeFactory.cpp
-        src/presentation/home/HomeScreenController.h
-        src/presentation/home/HomeScreenController.cpp
-        src/application/covers/CoverDownloadCoordinator.h
-        src/application/covers/CoverDownloadCoordinator.cpp
-        src/application/covers/CoverSourceResolver.cpp
-        src/application/media/MediaTitleResolver.cpp
-        src/application/media/ProgressFormatter.cpp
-        src/application/media/MediaDetailsPresentation.cpp
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-
-target_link_libraries(HomeScreenControllerTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Sql
-        Qt6::Test
-)
-target_compile_definitions(HomeScreenControllerTests PRIVATE
-        HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_test(NAME HomeScreenControllerTests COMMAND HomeScreenControllerTests)
-
-add_executable(PersonalListChangeServiceTests
-        tests/unit/PersonalListChangeServiceTests.cpp
-        src/application/media/IPersonalListChangeWriter.h
-        src/application/media/PersonalListChangeService.h
-        src/application/media/PersonalListChangeService.cpp
-        src/application/anilist/AniListPendingChange.h
-        src/application/anilist/AniListPendingChangeFactory.h
-        src/application/anilist/AniListPendingChangeFactory.cpp
-)
-target_link_libraries(PersonalListChangeServiceTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME PersonalListChangeServiceTests COMMAND PersonalListChangeServiceTests)
-
-add_executable(AniListAccountOwnershipTests
-        tests/unit/AniListAccountOwnershipTests.cpp
-        src/application/anilist/AniListAccountOwnership.h
-)
-target_link_libraries(AniListAccountOwnershipTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME AniListAccountOwnershipTests COMMAND AniListAccountOwnershipTests)
-
-add_executable(RemoveAniListAccountUseCaseTests
-        tests/unit/RemoveAniListAccountUseCaseTests.cpp
-        src/application/anilist/RemoveAniListAccountUseCase.h
-        src/application/anilist/RemoveAniListAccountUseCase.cpp
-        src/application/anilist/AniListAuthManager.cpp
-        src/application/anilist/AniListOAuthCallbackParser.cpp
-)
-target_link_libraries(RemoveAniListAccountUseCaseTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME RemoveAniListAccountUseCaseTests COMMAND RemoveAniListAccountUseCaseTests)
-
-add_executable(SettingsControllerTests
-        tests/unit/SettingsControllerTests.cpp
-        src/presentation/settings/SettingsController.cpp
-        src/application/anilist/AniListAuthManager.cpp
-        src/application/anilist/AniListOAuthCallbackParser.cpp
-        src/application/anilist/RemoveAniListAccountUseCase.cpp
-        src/application/cache/ClearLocalCacheUseCase.cpp
-        src/application/covers/CoverDownloadCoordinator.cpp
-        src/application/configuration/UserPreferencesValidator.cpp
-        src/application/media/MediaTitleResolver.cpp
-        src/app/LocalLibraryScanCoordinator.h
-        src/app/LocalLibraryScanCoordinator.cpp
-        src/infrastructure/logging/AsyncLogger.h
-        src/infrastructure/logging/AsyncLogger.cpp
-)
-target_link_libraries(SettingsControllerTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME SettingsControllerTests COMMAND SettingsControllerTests)
-
-add_executable(SynchronizationStatusControllerTests
-        tests/unit/SynchronizationStatusControllerTests.cpp
-        src/presentation/sync/SynchronizationStatusController.h
-        src/presentation/sync/SynchronizationStatusController.cpp
-)
-target_link_libraries(SynchronizationStatusControllerTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME SynchronizationStatusControllerTests COMMAND SynchronizationStatusControllerTests)
-
-add_executable(QmlStructureTests tests/unit/QmlStructureTests.cpp)
-target_link_libraries(QmlStructureTests PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Test)
-target_compile_definitions(QmlStructureTests PRIVATE
-        HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-add_test(NAME QmlStructureTests COMMAND QmlStructureTests)
-
-add_executable(QmlRecognitionStructureTests tests/unit/QmlRecognitionStructureTests.cpp)
-target_link_libraries(QmlRecognitionStructureTests PRIVATE Qt6::Core Qt6::Gui Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Test)
-target_compile_definitions(QmlRecognitionStructureTests PRIVATE
-        HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-add_test(NAME QmlRecognitionStructureTests COMMAND QmlRecognitionStructureTests)
-
-add_executable(InitialSyncCoordinatorTests
-        tests/unit/InitialSyncCoordinatorTests.cpp
-        src/app/InitialSyncCoordinator.h
-        src/app/InitialSyncCoordinator.cpp
-        src/infrastructure/logging/AsyncLogger.h
-        src/infrastructure/logging/AsyncLogger.cpp
-        src/infrastructure/database/SqliteDatabase.h
-        src/infrastructure/database/SqliteDatabase.cpp
-        src/infrastructure/database/SqliteMediaMapper.h
-        src/infrastructure/database/SqliteMediaMapper.cpp
-        src/infrastructure/database/SqliteMediaRepository.h
-        src/application/media/AlternativeNames.h
-        src/application/media/AlternativeNames.cpp
-        src/infrastructure/database/SqliteMediaRepository.cpp
-        src/infrastructure/database/SqlQueryStore.h
-        src/infrastructure/database/SqlQueryStore.cpp
-        src/infrastructure/anilist/FileAniListDataSource.h
-        src/infrastructure/anilist/FileAniListDataSource.cpp
-        src/infrastructure/anilist/RecordedGraphQlAniListDataSource.h
-        src/infrastructure/anilist/RecordedGraphQlAniListDataSource.cpp
-        src/infrastructure/anilist/AniListGraphQlResponseParser.h
-        src/infrastructure/anilist/AniListGraphQlResponseParser.cpp
-        src/infrastructure/anilist/AniListGraphQlPageParser.h
-        src/infrastructure/anilist/AniListGraphQlPageParser.cpp
-        src/infrastructure/anilist/AniListGraphQlUserListParser.h
-        src/infrastructure/anilist/AniListGraphQlUserListParser.cpp
-        src/infrastructure/anilist/AniListMediaMapper.h
-        src/infrastructure/anilist/AniListMediaMapper.cpp
-        src/application/anilist/AniListSyncService.h
-        src/application/anilist/AniListSyncService.cpp
-        src/application/anilist/AniListPendingChangeReconciler.h
-        src/application/anilist/AniListPendingChangeReconciler.cpp
-        src/application/anilist/AniListMergeService.h
-        src/application/anilist/AniListMergeService.cpp
-        src/application/anilist/AniListSyncErrorClassifier.h
-        src/application/anilist/AniListSyncErrorClassifier.cpp
-        src/application/anilist/AniListPendingChangeProcessor.h
-        src/application/anilist/AniListPendingChangeProcessor.cpp
-        src/application/anilist/AniListPendingChangeCompactor.h
-        src/application/anilist/AniListPendingChangeCompactor.cpp
-        src/application/anilist/AniListPendingChangeGrouper.h
-        src/application/anilist/AniListPendingChangeGrouper.cpp
-        src/application/anilist/AniListMergePolicyResolver.h
-        src/application/anilist/AniListMergePolicyResolver.cpp
-)
-
-target_link_libraries(InitialSyncCoordinatorTests
-        PRIVATE
-        Qt6::Core
-        Qt6::Gui
-        Qt6::Sql
-        Qt6::Test
-)
-
-target_compile_definitions(InitialSyncCoordinatorTests PRIVATE
-        HAIKENANIME_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
-)
-
-add_test(NAME InitialSyncCoordinatorTests COMMAND InitialSyncCoordinatorTests)
-
-add_executable(AdaptiveSyncCoordinatorTests
-        tests/unit/AdaptiveSyncCoordinatorTests.cpp
-        src/app/AdaptiveSyncCoordinator.h
-        src/app/AdaptiveSyncCoordinator.cpp
-        src/application/scheduling/ISyncTaskExecutor.h
-        src/application/scheduling/SyncProgress.h
-        src/application/scheduling/SyncTaskPolicy.h
-        src/application/scheduling/SyncTaskPolicy.cpp
-)
-target_link_libraries(AdaptiveSyncCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME AdaptiveSyncCoordinatorTests COMMAND AdaptiveSyncCoordinatorTests)
-
-add_executable(AdaptiveSyncRuntimeTests
-        tests/unit/AdaptiveSyncRuntimeTests.cpp
-        src/app/AdaptiveSyncRuntime.h
-        src/app/AdaptiveSyncRuntime.cpp
-        src/app/AdaptiveSyncCoordinator.h
-        src/app/AdaptiveSyncCoordinator.cpp
-        src/application/scheduling/ISyncTaskExecutor.h
-        src/application/scheduling/SyncProgress.h
-        src/application/scheduling/SyncTaskPolicy.h
-        src/application/scheduling/SyncTaskPolicy.cpp
-)
-target_link_libraries(AdaptiveSyncRuntimeTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME AdaptiveSyncRuntimeTests COMMAND AdaptiveSyncRuntimeTests)
-
-add_executable(LocalLibraryScanCoordinatorTests
-        tests/unit/LocalLibraryScanCoordinatorTests.cpp
-        src/app/LocalLibraryScanCoordinator.h
-        src/app/LocalLibraryScanCoordinator.cpp
-        src/infrastructure/logging/AsyncLogger.h
-        src/infrastructure/logging/AsyncLogger.cpp
-        src/infrastructure/library/LocalLibraryScanner.cpp
-        src/infrastructure/library/QtDirectoryEnumerator.cpp)
-target_link_libraries(LocalLibraryScanCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME LocalLibraryScanCoordinatorTests COMMAND LocalLibraryScanCoordinatorTests)
-
-add_executable(LocalLibraryRecognitionCoordinatorTests
-        tests/unit/LocalLibraryRecognitionCoordinatorTests.cpp
-        src/app/LocalLibraryRecognitionCoordinator.h
-        src/app/LocalLibraryRecognitionCoordinator.cpp
-        src/application/library/LocalMediaCatalogIndex.cpp
-        src/application/library/LocalMediaResolver.cpp
-        src/infrastructure/library/AnitomyLocalFileRecognizer.cpp
-        src/infrastructure/logging/AsyncLogger.cpp
-        lib/anitomy/anitomy.cpp
-        lib/anitomy/element.cpp
-        lib/anitomy/keyword.cpp
-        lib/anitomy/parser.cpp
-        lib/anitomy/parser_helper.cpp
-        lib/anitomy/parser_number.cpp
-        lib/anitomy/string.cpp
-        lib/anitomy/token.cpp
-        lib/anitomy/tokenizer.cpp)
-target_include_directories(LocalLibraryRecognitionCoordinatorTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(LocalLibraryRecognitionCoordinatorTests PRIVATE Qt6::Core Qt6::Test)
-add_test(NAME LocalLibraryRecognitionCoordinatorTests COMMAND LocalLibraryRecognitionCoordinatorTests)
-
-get_target_property(COMPOSITION_SOURCES HaikenAnime SOURCES)
-list(FILTER COMPOSITION_SOURCES INCLUDE REGEX "^src/")
-add_executable(LocalLibraryScanCompositionTests
-        tests/unit/LocalLibraryScanCompositionTests.cpp
-        ${COMPOSITION_SOURCES}
-        lib/anitomy/anitomy.cpp
-        lib/anitomy/element.cpp
-        lib/anitomy/keyword.cpp
-        lib/anitomy/parser.cpp
-        lib/anitomy/parser_helper.cpp
-        lib/anitomy/parser_number.cpp
-        lib/anitomy/string.cpp
-        lib/anitomy/token.cpp
-        lib/anitomy/tokenizer.cpp
-)
-file(GLOB COMPOSITION_SQL_RESOURCES CONFIGURE_DEPENDS resources/sqlite/queries/*.sql)
-foreach (QUERY_FILE IN LISTS COMPOSITION_SQL_RESOURCES)
-    get_filename_component(QUERY_ALIAS "${QUERY_FILE}" NAME)
-    set_source_files_properties("${QUERY_FILE}" PROPERTIES QT_RESOURCE_ALIAS "${QUERY_ALIAS}")
-endforeach ()
-qt_add_resources(LocalLibraryScanCompositionTests composition_sql_resources PREFIX "/sqlite/queries"
-        FILES resources/sqlite/sqlite-queries.json ${COMPOSITION_SQL_RESOURCES})
-qt_add_resources(LocalLibraryScanCompositionTests composition_config_resources PREFIX "/config" FILES Settings.json)
-target_link_libraries(LocalLibraryScanCompositionTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Sql Qt6::Test)
-add_test(NAME LocalLibraryScanCompositionTests COMMAND LocalLibraryScanCompositionTests)
-
-add_executable(LocalLibraryRecognitionCompositionTests
-        tests/unit/LocalLibraryRecognitionCompositionTests.cpp
-        ${COMPOSITION_SOURCES}
-        lib/anitomy/anitomy.cpp
-        lib/anitomy/element.cpp
-        lib/anitomy/keyword.cpp
-        lib/anitomy/parser.cpp
-        lib/anitomy/parser_helper.cpp
-        lib/anitomy/parser_number.cpp
-        lib/anitomy/string.cpp
-        lib/anitomy/token.cpp
-        lib/anitomy/tokenizer.cpp
-)
-qt_add_resources(LocalLibraryRecognitionCompositionTests recognition_composition_sql_resources PREFIX "/sqlite/queries"
-        FILES resources/sqlite/sqlite-queries.json ${COMPOSITION_SQL_RESOURCES})
+haiken_add_test(CoverSettingsTests)
+haiken_add_test(CoverSourceResolverTests)
+haiken_add_test(CoverFileStoreTests QT Gui INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/src)
+haiken_add_test(CoverTemporaryStoreTests DEFINITIONS HAIKENANIME_COVER_TEMPORARY_STORE_TESTING INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/src NO_CORE SOURCES src/infrastructure/covers/CoverTemporaryStore.cpp)
+haiken_add_test(CoverDownloadCoordinatorTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/src)
+haiken_add_test(ClearLocalCacheUseCaseTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/src)
+haiken_add_test(QtCoverDownloaderTests QT Network INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/src)
+haiken_add_test(AniListAuthManagerTests)
+haiken_add_test(AniListOAuthCallbackParserTests)
+haiken_add_test(WindowsAniListOAuthLauncherTests QT Gui)
+haiken_add_test(AniListOAuthCallbackReceiverTests QT Network)
+haiken_add_test(WindowsUrlProtocolRegistrarTests)
+haiken_add_test(AniListFlowTests QT Gui)
+haiken_add_test(AniListGraphQlParsingTests QT Gui Network DEFINITIONS HAIKENANIME_GRAPHQL_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/page-response.json" HAIKENANIME_GRAPHQL_USERLIST_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/userlist-response.json")
+qt_add_resources(AniListGraphQlParsingTests anilist_partition_query_resource_bundle PREFIX "/anilist/queries" FILES resources/anilist/queries/user-media-list.graphql)
+haiken_add_test(AniListGraphQlUserListParserTests QT Gui DEFINITIONS HAIKENANIME_USERLIST_FIXTURE="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql/userlist-response.json")
+haiken_add_test(SqliteLocalEpisodeReaderTests QT Sql MIGRATIONS)
+qt_add_resources(SqliteLocalEpisodeReaderTests local_episode_reader_query_resources PREFIX "/sqlite/queries" FILES resources/sqlite/queries/read-next-local-episode.sql resources/sqlite/queries/read-available-episode-count.sql)
+haiken_add_test(QtLocalFileOpenerTests QT Gui)
+haiken_add_test(GraphQlQueryStoreTests)
+haiken_add_test(SeasonalCatalogTests QT Gui Network DEFINITIONS HAIKENANIME_SEASONAL_FIXTURE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures/graphql" INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/src)
+qt_add_resources(SeasonalCatalogTests seasonal_catalog_query_resource_bundle PREFIX "/anilist/queries" FILES resources/anilist/queries/seasonal-catalog.graphql)
+haiken_add_test(SeasonalCatalogControllerTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/src)
+haiken_add_test(AniListSyncErrorClassifierTests)
+haiken_add_test(AniListPendingChangeFactoryTests)
+haiken_add_test(AniListPendingChangeReconcilerTests)
+haiken_add_test(AniListPendingChangeProcessorTests)
+haiken_add_test(AniListPendingChangeDrainTests)
+haiken_add_test(AniListUpdateClientTests QT Network)
+haiken_add_test(HomeScreenControllerTests QT Sql SOURCE_DIR)
+haiken_add_test(PersonalListChangeServiceTests)
+haiken_add_test(AniListAccountOwnershipTests)
+haiken_add_test(RemoveAniListAccountUseCaseTests)
+haiken_add_test(SettingsControllerTests)
+haiken_add_test(SynchronizationStatusControllerTests)
+haiken_add_test(QmlStructureTests SOURCE_DIR)
+haiken_add_test(QmlRecognitionStructureTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
+haiken_add_test(QmlScreensLoadTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
+# The screens point at the placeholder cover inside the app's QML module; give the test the same path.
+qt_add_resources(QmlScreensLoadTests qml_screens_placeholder PREFIX "/qt/qml/HaikenAnime" FILES resources/images/cover-placeholder.svg)
+haiken_add_test(AdaptiveSyncCoordinatorTests MIGRATIONS)
+haiken_add_test(AdaptiveSyncRuntimeTests)
+haiken_add_test(LocalLibraryScanCoordinatorTests)
+haiken_add_test(LocalLibraryRecognitionCoordinatorTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
+haiken_add_test(ApplicationCompositionTests QT Gui Network Qml Quick QuickControls2 Sql MIGRATIONS)
+qt_add_resources(ApplicationCompositionTests composition_sql_resources PREFIX "/sqlite/queries" FILES ${SQLITE_QUERY_RESOURCES})
+qt_add_resources(ApplicationCompositionTests composition_config_resources PREFIX "/config" FILES Settings.json)
+haiken_add_test(PresentationCompositionTests QT Gui Network Qml Quick QuickControls2 Sql MIGRATIONS)
+qt_add_resources(PresentationCompositionTests presentation_sql_resources PREFIX "/sqlite/queries" FILES ${SQLITE_QUERY_RESOURCES})
+qt_add_resources(PresentationCompositionTests presentation_config_resources PREFIX "/config" FILES Settings.json)
+haiken_add_test(LocalLibraryRecognitionCompositionTests QT Gui Network Qml Quick QuickControls2 Sql MIGRATIONS)
+qt_add_resources(LocalLibraryRecognitionCompositionTests recognition_composition_sql_resources PREFIX "/sqlite/queries" FILES ${SQLITE_QUERY_RESOURCES})
 qt_add_resources(LocalLibraryRecognitionCompositionTests recognition_composition_config_resources PREFIX "/config" FILES Settings.json)
-target_link_libraries(LocalLibraryRecognitionCompositionTests PRIVATE Qt6::Core Qt6::Gui Qt6::Network Qt6::Qml Qt6::Quick Qt6::QuickControls2 Qt6::Sql Qt6::Test)
-add_test(NAME LocalLibraryRecognitionCompositionTests COMMAND LocalLibraryRecognitionCompositionTests)
-
-# Unit tests are separate executables and do not receive the deployment step
-# used by the application target. Make Qt runtime DLLs available to CTest.
-function(add_sqlite_migration_test_resources target)
-    qt_add_resources(${target} sqlite_migration_test_resources
-            PREFIX "/sqlite/migrations"
-            FILES ${SQLITE_MIGRATION_RESOURCES})
-endfunction()
-
-foreach (SQLITE_MIGRATION_TEST_TARGET IN ITEMS
-        SqliteDatabaseTests
-        SqliteUserPreferencesRepositoryTests
-        SqliteRepositoryTests
-        SqliteCoverCacheRepositoryTests
-        SqliteSyncTaskStateRepositoryTests
-        SqlitePluginSettingsRepositoryTests
-        SqliteRecognitionHistoryRepositoryTests
-        SqliteMediaProgressReaderTests
-        SqliteLocalFileRepositoryTests
-        LocalEpisodeReaderTests
-        InitialSyncCoordinatorTests
-        AdaptiveSyncCoordinatorTests
-        LocalLibraryScanCompositionTests
-        LocalLibraryRecognitionCompositionTests
-        RecognitionCompositionTests)
-    add_sqlite_migration_test_resources(${SQLITE_MIGRATION_TEST_TARGET})
-endforeach ()
-
-set(HAIKENANIME_TESTS
-        MediaDomainTests
-        RecognitionDomainTests
-        PluginSettingsServiceTests
-        SqlitePluginSettingsRepositoryTests
-        PlaybackObservationServiceTests
-        ProgressDecisionServiceTests
-        RecognitionHistoryServiceTests
-        RecognitionSyncFeedbackTests
-        SqliteRecognitionHistoryRepositoryTests
-        SqliteMediaProgressReaderTests
-        MpvIpcClientTests
-        MpvPluginTests
-        PlexAuthenticationTests
-        PlexApiClientTests
-        PlexPluginTests
-        PluginRegistryTests
-        ActiveSessionRegistryTests
-        EpisodeRecognitionServiceTests
-        RecognitionCompositionTests
-        PluginSettingsControllerTests
-        EpisodeRecognitionControllerTests
-        NowWatchingControllerTests
-        MediaTitleResolverTests
-        SqliteDatabaseTests
-        SqliteUserPreferencesRepositoryTests
-        SqliteRepositoryTests
-        SqliteCoverCacheRepositoryTests
-        SqliteSyncTaskStateRepositoryTests
-        SqliteLocalFileRepositoryTests
-        LocalLibraryScannerTests
-        AnitomyLocalFileRecognizerTests
-        LocalMediaResolverTests
-        SqlQueryStoreTests
-        SqliteQueryConfigurationTests
-        FileSecretStoreTests
-        JsonSettingsReaderTests
-        SyncTaskPolicyTests
-        UserPreferencesValidatorTests
-        TranslationLoaderTests
-        CoverSettingsTests
-        CoverSourceResolverTests
-        CoverFileStoreTests
-        CoverTemporaryStoreTests
-        CoverDownloadCoordinatorTests
-        ClearLocalCacheUseCaseTests
-        QtCoverDownloaderTests
-        AniListAuthManagerTests
-        RemoveAniListAccountUseCaseTests
-        AniListOAuthCallbackParserTests
-        WindowsAniListOAuthLauncherTests
-        AniListFlowTests
-        AniListGraphQlParsingTests
-        AniListGraphQlUserListParserTests
-        LocalEpisodeReaderTests
-        QtLocalFileOpenerTests
-        GraphQlQueryStoreTests
-        SeasonalCatalogTests
-        SeasonalCatalogControllerTests
-        AniListSyncErrorClassifierTests
-        AniListMergePolicyResolverTests
-        AniListPendingChangeFactoryTests
-        AniListMergeServiceTests
-        AniListPendingChangeReconcilerTests
-        AniListPendingChangeProcessorTests
-        AniListPendingChangeDrainTests
-        AniListUpdateClientTests
-        HomeScreenControllerTests
-        SettingsControllerTests
-        SynchronizationStatusControllerTests
-        QmlStructureTests
-        InitialSyncCoordinatorTests
-        AdaptiveSyncCoordinatorTests
-        AdaptiveSyncRuntimeTests
-        LocalLibraryScanCoordinatorTests
-        LocalLibraryScanCompositionTests
-        LocalLibraryRecognitionCompositionTests
-        LocalLibraryRecognitionCoordinatorTests
-)
 if (WIN32)
-    list(APPEND HAIKENANIME_TESTS WindowsCredentialStoreTests WindowsPluginSecretStoreTests)
-endif()
-get_filename_component(MINGW_RUNTIME_DIRECTORY "${CMAKE_CXX_COMPILER}" DIRECTORY)
-set_tests_properties(${HAIKENANIME_TESTS} PROPERTIES
-        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}"
-        TIMEOUT 30
-)
-set_tests_properties(QmlStructureTests QmlRecognitionStructureTests PROPERTIES
-        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH}\\;QT_QUICK_BACKEND=software"
+    haiken_add_test(WindowsCredentialStoreTests)
+    haiken_add_test(WindowsPluginSecretStoreTests)
+endif ()
+
+# QML suites render with the software backend. The unescaped ";" makes QT_QUICK_BACKEND its own
+# environment entry; escaped, it was only text at the end of PATH and was never set.
+set_tests_properties(QmlStructureTests QmlRecognitionStructureTests QmlScreensLoadTests PROPERTIES
+        ENVIRONMENT "PATH=$<TARGET_FILE_DIR:Qt6::Core>\\;${MINGW_RUNTIME_DIRECTORY}\\;$ENV{PATH};QT_QUICK_BACKEND=software"
 )
 endif ()
 
@@ -2077,14 +414,6 @@ if (WIN32 AND NOT DEFINED CMAKE_TOOLCHAIN_FILE)
                     "${DXC_RUNTIME} was not found in ${DXC_REDIST_DIR}")
         endif ()
     endforeach ()
-
-    if (EXISTS "${QT_INSTALL_PATH}/bin/windeployqt.exe")
-        add_custom_command(TARGET HaikenAnime POST_BUILD
-                COMMAND "${QT_INSTALL_PATH}/bin/windeployqt.exe"
-                --no-translations
-                --compiler-runtime
-                --qmldir "${CMAKE_CURRENT_SOURCE_DIR}/resources/qml"
-                "$<TARGET_FILE:HaikenAnime>"
-                COMMENT "Deploying Qt and QML runtime dependencies")
-    endif ()
+    # windeployqt is not run here: scripts/build-release.ps1 deploys the release package, and
+    # development builds load Qt from the kit on PATH.
 endif ()

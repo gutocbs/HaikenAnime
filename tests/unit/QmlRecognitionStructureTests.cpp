@@ -127,13 +127,7 @@ private slots:
     void qmlHasNoTimersNetworkOrPlayerParsing();
     void qmlNeverDisplaysSecretsOrUsesNativeButtons();
     void secretInputIsPasswordAndStartsEmpty();
-    void recognitionScreenIsNotAConfirmationQueue();
-    void settingsScreenHostsPluginsAndHistory();
     void nowWatchingScreenLoadsWithController();
-    void nowWatchingScreenShowsEmptyMessageAndUnassociatedLabel();
-    void homeButtonIsRightOfSettingsAndGuarded();
-    void mainHasNowWatchingPage();
-    void nowWatchingUsesHomeLayoutAndAnimeDetailsButton();
     void recognitionTextsDoNotNamePlugins();
 };
 
@@ -194,26 +188,6 @@ void QmlRecognitionStructureTests::secretInputIsPasswordAndStartsEmpty() {
     QVERIFY(!block.contains(QStringLiteral("text: field.value")));
 }
 
-void QmlRecognitionStructureTests::recognitionScreenIsNotAConfirmationQueue() {
-    const auto text = source(QStringLiteral("EpisodeRecognitionScreen.qml"));
-
-    QVERIFY(!text.contains(QStringLiteral("Confirmar"), Qt::CaseInsensitive));
-    QVERIFY(text.contains(QStringLiteral("controller.Remove(")));
-    QVERIFY(text.contains(QStringLiteral("qsTr(\"Excluir\")")));
-    QVERIFY(!text.contains(QStringLiteral("Corrigir")));
-    QVERIFY(!text.contains(QStringLiteral("Ignorar")));
-    QVERIFY(!text.contains(QStringLiteral("controller.Correct(")));
-}
-
-void QmlRecognitionStructureTests::settingsScreenHostsPluginsAndHistory() {
-    const auto text = source(QStringLiteral("SettingsScreen.qml"));
-
-    QVERIFY(text.contains(QStringLiteral("key: \"plugins\"")));
-    QVERIFY(text.contains(QStringLiteral("PluginSettingsScreen {")));
-    QVERIFY(text.contains(QStringLiteral("EpisodeRecognitionScreen {")));
-    QVERIFY(!text.contains(QStringLiteral("O histórico será preenchido em uma etapa posterior.")));
-}
-
 void QmlRecognitionStructureTests::nowWatchingScreenLoadsWithController() {
     QQmlEngine engine;
     FakeNowWatchingController controller;
@@ -223,53 +197,6 @@ void QmlRecognitionStructureTests::nowWatchingScreenLoadsWithController() {
     std::unique_ptr<QObject> object(component.create());
 
     QVERIFY2(object, qPrintable(component.errorString()));
-}
-
-void QmlRecognitionStructureTests::nowWatchingScreenShowsEmptyMessageAndUnassociatedLabel() {
-    const auto text = source(QStringLiteral("NowWatchingScreen.qml"));
-
-    QVERIFY(text.contains(QStringLiteral("Nada sendo reproduzido no momento")));
-    QVERIFY(text.contains(QStringLiteral("não associado à biblioteca")));
-    QVERIFY(text.contains(QStringLiteral("signal backRequested()")));
-}
-
-void QmlRecognitionStructureTests::homeButtonIsRightOfSettingsAndGuarded() {
-    const auto text = source(QStringLiteral("Home.qml"));
-    const auto settings = text.indexOf(QStringLiteral("qsTr(\"Configurações\")"));
-    const auto watching = text.indexOf(QStringLiteral("qsTr(\"Assistindo agora\")"));
-
-    QVERIFY(settings >= 0);
-    QVERIFY(watching > settings);
-    const auto block = text.mid(watching, text.indexOf(QLatin1Char('}'), watching) - watching);
-    QVERIFY(block.contains(QStringLiteral("nowWatchingController !== null")));
-    QVERIFY(block.contains(QStringLiteral("openNowWatchingRequested()")));
-    QVERIFY(text.contains(QStringLiteral("signal openNowWatchingRequested()")));
-}
-
-void QmlRecognitionStructureTests::mainHasNowWatchingPage() {
-    const auto text = source(QStringLiteral("Main.qml"));
-
-    QVERIFY(text.contains(QStringLiteral("NowWatchingScreen {")));
-    QVERIFY(text.contains(QStringLiteral("root.page === \"nowWatching\"")));
-    QVERIFY(text.contains(QStringLiteral("onOpenNowWatchingRequested: root.page = \"nowWatching\"")));
-}
-
-void QmlRecognitionStructureTests::nowWatchingUsesHomeLayoutAndAnimeDetailsButton() {
-    const auto text = source(QStringLiteral("NowWatchingScreen.qml"));
-
-    QVERIFY(text.contains(QStringLiteral("qsTr(\"Sessões abertas\")")));
-    QVERIFY(text.contains(QStringLiteral("qsTr(\"DETALHES\")")));
-    QVERIFY(text.contains(QStringLiteral("qsTr(\"Ver detalhes do anime\")")));
-    // Opening the details must not change what the Home has selected.
-    QVERIFY(!text.contains(QStringLiteral("homeController")));
-    QVERIFY(text.contains(QStringLiteral("controller: nowWatching.current.details")));
-    QVERIFY(text.contains(QStringLiteral("MediaDetailsPanel {")));
-    QVERIFY(text.contains(QStringLiteral("controller.SelectSession(")));
-    QVERIFY(!text.contains(QStringLiteral("ComboBox")));
-    QVERIFY(!text.contains(QStringLiteral("Sua nota")));
-    QVERIFY(!text.contains(QStringLiteral("disponíveis localmente")));
-    QVERIFY(text.contains(QStringLiteral("qsTr(\"Pausado\")")));
-    QVERIFY(text.contains(QStringLiteral(".paused")));
 }
 
 void QmlRecognitionStructureTests::recognitionTextsDoNotNamePlugins() {

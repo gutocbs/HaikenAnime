@@ -23,7 +23,7 @@ enum class LocalRecognitionState {
 
 struct LocalFileRecognition final {
     LocalRecognitionState state = LocalRecognitionState::Unrecognized;
-    LocalMediaKind mediaKind = LocalMediaKind::Unsupported;
+    LocalMediaKind mediaKind = LocalMediaKind::Anime;
     QString extractedTitle;
     std::optional<int> season;
     std::optional<int> episode;

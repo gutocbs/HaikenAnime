@@ -1,11 +1,9 @@
 #include "HomeScreenController.h"
 #include "../../application/covers/CoverSourceResolver.h"
 #include "../../application/library/ILocalFileOpener.h"
-#include "../../application/library/LocalEpisodeReader.h"
+#include "../../application/library/ILocalEpisodeReader.h"
 #include "../../application/library/LocalRecognitionRequest.h"
-#include "../../application/media/ProgressFormatter.h"
-#include "../../application/media/MediaDetailsPresentation.h"
-#include "../../application/media/IPersonalListMediaWriter.h"
+#include "../media/MediaPresentation.h"
 #include "../../application/media/PersonalListChangeService.h"
 
 #include <QCoreApplication>
@@ -21,20 +19,6 @@ namespace {
 constexpr int MaximumHomeLibraryItems = 9;
 const QString CoverPlaceholder = QStringLiteral("qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg");
 
-QString mediaStatusLabel(const MediaStatus status) {
-    switch (status) {
-    case MediaStatus::NotReleased:
-        return QCoreApplication::translate("HomeMediaModel", "Ainda não lançado");
-    case MediaStatus::Releasing:
-        return QCoreApplication::translate("HomeMediaModel", "Em lançamento");
-    case MediaStatus::Released:
-        return QCoreApplication::translate("HomeMediaModel", "Concluído");
-    case MediaStatus::Unknown:
-    default:
-        return QCoreApplication::translate("HomeMediaModel", "Desconhecido");
-    }
-}
-
 QString mediaTypeKey(const MediaType type) {
     switch (type) {
     case MediaType::Anime: return QStringLiteral("anime");
@@ -42,16 +26,6 @@ QString mediaTypeKey(const MediaType type) {
     case MediaType::Novel: return QStringLiteral("novel");
     case MediaType::Unknown:
     default: return QStringLiteral("unknown");
-    }
-}
-
-QString mediaTypeLabel(const MediaType type) {
-    switch (type) {
-    case MediaType::Anime: return QStringLiteral("Anime");
-    case MediaType::Manga: return QStringLiteral("Manga");
-    case MediaType::Novel: return QStringLiteral("Novel");
-    case MediaType::Unknown:
-    default: return QCoreApplication::translate("HomeMediaModel", "Desconhecido");
     }
 }
 
@@ -76,10 +50,12 @@ QString cardScore(const Media &media, const double scoreMaximum) {
         .arg(QString::number(scoreMaximum, 'g', 15));
 }
 
-QString userListStatusLabel(const UserListStatus status) {
-    switch (status) {
+QString userListStatusLabel(const Media &media) {
+    switch (media.ListStatus) {
     case UserListStatus::Current:
-        return QCoreApplication::translate("HomeMediaModel", "Em andamento");
+        // Same words as the "current" list filter: anime is watched, manga and novels are read.
+        return media.Type == MediaType::Anime ? QCoreApplication::translate("HomeMediaModel", "Assistindo")
+                                              : QCoreApplication::translate("HomeMediaModel", "Lendo");
     case UserListStatus::Planning:
         return QCoreApplication::translate("HomeMediaModel", "Planejando");
     case UserListStatus::OnHold:
@@ -94,30 +70,13 @@ QString userListStatusLabel(const UserListStatus status) {
     }
 }
 
-QString cardStatusLabel(const Media &media, const CardStatusPresentation presentation,
-                        const UserListStatus listStatus) {
+QString cardStatusLabel(const Media &media, const CardStatusPresentation presentation) {
     if (presentation == CardStatusPresentation::MediaReleaseStatus) {
         return QCoreApplication::translate("HomeMediaModel", "Exibição: %1")
-            .arg(mediaStatusLabel(media.Status));
+            .arg(MediaStatusLabel(media.Status));
     }
     return QCoreApplication::translate("HomeMediaModel", "Minha lista: %1")
-        .arg(userListStatusLabel(listStatus));
-}
-
-QString cardStatusLabel(const Media &media, const CardStatusPresentation presentation) {
-    return cardStatusLabel(media, presentation, media.ListStatus);
-}
-
-QString userListStatusKey(const UserListStatus status) {
-    switch (status) {
-    case UserListStatus::Current: return QStringLiteral("current");
-    case UserListStatus::Planning: return QStringLiteral("planning");
-    case UserListStatus::OnHold: return QStringLiteral("on_hold");
-    case UserListStatus::Dropped: return QStringLiteral("dropped");
-    case UserListStatus::Completed: return QStringLiteral("completed");
-    case UserListStatus::Unknown:
-    default: return QStringLiteral("unknown");
-    }
+        .arg(userListStatusLabel(media));
 }
 
 QVariantMap option(const QString &key, const QString &label) {
@@ -255,7 +214,7 @@ void HomeMediaModel::ClearCovers() {
     if (!media_.isEmpty()) emit dataChanged(index(0), index(media_.size()-1), {CoverSourceRole, CoverStateRole});
 }
 
-void HomeMediaModel::setMedia(QList<Media> media) {
+void HomeMediaModel::SetMedia(QList<Media> media) {
     beginResetModel();
     media_ = std::move(media);
     endResetModel();
@@ -371,8 +330,8 @@ QString HomeScreenController::selectedTitle() const {
     return hasSelection_ ? ResolveMediaTitle(selectedMedia_, preferredTitleKey_) : QString();
 }
 QString HomeScreenController::selectedSynopsis() const { return hasSelection_ ? selectedMedia_.Synopsis : QString(); }
-QString HomeScreenController::selectedTypeLabel() const { return hasSelection_ ? mediaTypeLabel(selectedMedia_.Type) : QString(); }
-QString HomeScreenController::selectedStatusLabel() const { return hasSelection_ ? mediaStatusLabel(selectedMedia_.Status) : QString(); }
+QString HomeScreenController::selectedTypeLabel() const { return hasSelection_ ? MediaTypeLabel(selectedMedia_.Type) : QString(); }
+QString HomeScreenController::selectedStatusLabel() const { return hasSelection_ ? MediaStatusLabel(selectedMedia_.Status) : QString(); }
 QString HomeScreenController::selectedProgress() const { return hasSelection_ ? mediaProgress(selectedMedia_) : QString(); }
 QString HomeScreenController::selectedScore() const {
     return hasSelection_ ? personalScore(selectedMedia_) : QString();
@@ -388,14 +347,6 @@ QString optionLabel(const QVariantList &options, const QString &key, const QStri
     return fallback;
 }
 
-UserListStatus userListStatusFromKey(const QString &key) {
-    if (key == QStringLiteral("current")) return UserListStatus::Current;
-    if (key == QStringLiteral("planning")) return UserListStatus::Planning;
-    if (key == QStringLiteral("on_hold")) return UserListStatus::OnHold;
-    if (key == QStringLiteral("dropped")) return UserListStatus::Dropped;
-    if (key == QStringLiteral("completed")) return UserListStatus::Completed;
-    return UserListStatus::Unknown;
-}
 QString HomeScreenController::selectedAverageScore() const {
     return hasSelection_ && selectedMedia_.AverageScore > 0 ? QString::number(selectedMedia_.AverageScore) : QStringLiteral("—");
 }
@@ -413,7 +364,7 @@ int HomeScreenController::selectedProgressValue() const { return hasSelection_ ?
 int HomeScreenController::selectedProgressMaximum() const { return hasSelection_ ? selectedMedia_.TotalChapters : 0; }
 double HomeScreenController::selectedScoreValue() const { return hasSelection_ ? selectedMedia_.PersonalScore : 0.0; }
 QString HomeScreenController::selectedListStatusKey() const {
-    return hasSelection_ ? userListStatusKey(selectedMedia_.ListStatus) : QString();
+    return hasSelection_ ? UserListStatusKey(selectedMedia_.ListStatus) : QString();
 }
 QString HomeScreenController::selectedListStatusLabel() const {
     return hasSelection_ ? optionLabel(listOptions_, selectedListStatusKey(), selectedStatusLabel()) : QString();
@@ -423,6 +374,9 @@ QStringList HomeScreenController::selectedAlternativeNames() const {
 }
 QString HomeScreenController::selectedLocalPath() const {
     return hasSelection_ ? selectedMedia_.LocalPath : QString();
+}
+QString HomeScreenController::selectedLocalFolderUrl() const {
+    return hasSelection_ ? PresentLocalFolderUrl(selectedMedia_.LocalPath) : QString();
 }
 bool HomeScreenController::canWatch() const {
     return nextLocalEpisode_ > 0 && !nextLocalEpisodePath_.isEmpty() && fileOpener_ != nullptr;
@@ -476,10 +430,6 @@ void HomeScreenController::SetLocalEpisodeServices(ILocalEpisodeReader *episodeR
     fileOpener_ = fileOpener;
     refreshNextLocalEpisode();
     emit selectionChanged();
-}
-
-void HomeScreenController::SetPersonalListMediaWriter(IPersonalListMediaWriter *personalListWriter) {
-    personalListWriter_ = personalListWriter;
 }
 
 void HomeScreenController::SetPersonalListChangeService(PersonalListChangeService *personalListChangeService) {
@@ -640,10 +590,10 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
         setMediaOperationError(std::move(error));
         return false;
     };
-    if (!hasSelection_ || (personalListWriter_ == nullptr && personalListChangeService_ == nullptr)) {
+    if (!hasSelection_ || personalListChangeService_ == nullptr) {
         return setSaveError(QStringLiteral("A lista local não está disponível."));
     }
-    const auto status = userListStatusFromKey(statusKey);
+    const auto status = UserListStatusFromKey(statusKey);
     if (status == UserListStatus::Unknown) {
         return setSaveError(QStringLiteral("Selecione uma lista antes de salvar."));
     }
@@ -661,11 +611,9 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
     updated.LocalPath = path.trimmed();
     updated.AlternativeNames = alternativeNames;
     QString error;
-    const bool saved = personalListChangeService_
-        ? personalListChangeService_->save(*current, updated, error)
-        : personalListWriter_->updatePersonalListMedia(updated, error);
-    if (!saved) return setSaveError(std::move(error));
+    if (!personalListChangeService_->save(*current, updated, error)) return setSaveError(std::move(error));
     const auto recognitionRequest = LocalRecognitionRequest::Between(*current, updated);
+    const Media previous = *current;
 
     const auto destination = std::find_if(allMedia_.begin(), allMedia_.end(), [id = updated.Id](const Media &media) {
         return media.Id == id;
@@ -681,6 +629,7 @@ bool HomeScreenController::SaveSelectedMediaFromEditor(const int progress, const
     if (recognitionRequest.isRequired()) {
         emit localRecognitionRequested(recognitionRequest.folderPaths, recognitionRequest.alternativeNamesChanged);
     }
+    emit personalListEdited(previous, updated);
     return true;
 }
 
@@ -709,6 +658,7 @@ bool HomeScreenController::RemoveSelectedMedia() {
     QString error;
     if (!personalListChangeService_->remove(*current, error)) return fail(std::move(error));
 
+    const Media removed = *current;
     allMedia_.erase(current);
     mediaOperationErrorMessage_.clear();
     rebuildMediaModels();
@@ -719,40 +669,11 @@ bool HomeScreenController::RemoveSelectedMedia() {
         setState(QStringLiteral("empty"));
         setStatusMessage(QStringLiteral("Nenhum dado disponível."));
     }
+    emit personalListRemoved(removed);
     return true;
 }
 
-QVariantMap HomeScreenController::PreviewCardMetadata(const int progress,
-                                                       const QString &listStatusKey,
-                                                       const double score) const {
-    if (!hasSelection_) return {};
-    const auto progressLabel = QCoreApplication::translate("HomeMediaModel", "Progresso %1")
-        .arg(FormatProgress(progress, selectedMedia_.TotalChapters));
-    const auto scoreLabel = score <= 0.0
-        ? QCoreApplication::translate("HomeMediaModel", "Nota —")
-        : QCoreApplication::translate("HomeMediaModel", "Nota %1/%2")
-              .arg(QString::number(score, 'g', 15))
-              .arg(QString::number(scoreMaximum_, 'g', 15));
-    return {{QStringLiteral("status"), cardStatusLabel(selectedMedia_, cardStatusPresentation_,
-                                                         userListStatusFromKey(listStatusKey))},
-            {QStringLiteral("progress"), progressLabel},
-            {QStringLiteral("score"), scoreLabel}};
-}
-
-QVariantMap HomeScreenController::PreviewCompactDetailMetadata(const int progress,
-                                                                const QString &listStatusKey,
-                                                                const double score) const {
-    if (!hasSelection_) return {};
-    const auto progressLabel = FormatProgress(progress, selectedMedia_.TotalChapters);
-    const auto scoreLabel = score <= 0.0 ? QStringLiteral("—")
-                                          : QString::number(score, 'g', 15);
-    return {{QStringLiteral("status"), optionLabel(listOptions_, listStatusKey,
-                                                     selectedStatusLabel())},
-            {QStringLiteral("progress"), progressLabel},
-            {QStringLiteral("score"), scoreLabel}};
-}
-
-void HomeScreenController::reload() {
+void HomeScreenController::Reload() {
     if (reader_ == nullptr) {
         if (errorMessage_.isEmpty()) {
             errorMessage_ = QStringLiteral("Media repository is unavailable.");
@@ -790,9 +711,17 @@ void HomeScreenController::reload() {
         errorMessage_.clear();
         emit errorMessageChanged();
     }
+    const int selectedId = hasSelection_ ? selectedMedia_.Id : 0;
     allMedia_ = std::move(media);
     rebuildMediaModels();
-    clearSelection();
+    // A reload (sync finished, edit saved) keeps the open details on the same media with its new data;
+    // only a media that left the library or the active type closes them.
+    const bool stillListed = selectedId > 0 && std::any_of(allMedia_.cbegin(), allMedia_.cend(),
+        [this, selectedId](const Media &item) {
+            return item.Id == selectedId && mediaTypeKey(item.Type) == activeMediaType_;
+        });
+    if (stillListed) SelectMedia(selectedId);
+    else clearSelection();
     emit mediaCountChanged();
     setState(allMedia_.isEmpty() ? QStringLiteral("empty") : QStringLiteral("ready"));
     setStatusMessage(allMedia_.isEmpty()
@@ -820,14 +749,12 @@ void HomeScreenController::RequestCoverWindow(const QString &scope, int firstVis
 }
 
 void HomeScreenController::ReportCoverLoadFailure(int mediaId) { if (covers_) covers_->ReportMissingFile(mediaId); }
-void HomeScreenController::ClearCoverCache() { if (covers_) covers_->Clear(); }
-
 void HomeScreenController::rebuildMediaModels() {
     QList<Media> filtered;
     for (const auto &media : std::as_const(allMedia_)) {
         if (mediaTypeKey(media.Type) != activeMediaType_) continue;
         if (activeListFilter_ != QStringLiteral("all")
-            && userListStatusKey(media.ListStatus) != activeListFilter_) continue;
+            && UserListStatusKey(media.ListStatus) != activeListFilter_) continue;
         if (!matchesSearch(media, searchQuery_, preferredTitleKey_)) continue;
         filtered.append(media);
     }
@@ -855,8 +782,8 @@ void HomeScreenController::rebuildMediaModels() {
         if (activeSort_ == QStringLiteral("season_asc")) return seasonLess(left, right);
         return titleLess(left, right);
     });
-    fullModel_.setMedia(filtered);
-    model_.setMedia(filtered.mid(0, MaximumHomeLibraryItems));
+    fullModel_.SetMedia(filtered);
+    model_.SetMedia(filtered.mid(0, MaximumHomeLibraryItems));
     if (hasSelection_) {
         const bool selectionVisible = std::any_of(filtered.cbegin(), filtered.cend(), [this](const Media &media) {
             return media.Id == selectedMedia_.Id;

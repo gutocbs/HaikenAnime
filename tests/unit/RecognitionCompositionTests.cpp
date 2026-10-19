@@ -225,7 +225,10 @@ void RecognitionCompositionTests::openerLaunchesConfiguredMpvWithIpcWhenEnabled(
 
 void RecognitionCompositionTests::openerFallsBackWhenMpvCannotStart() {
     launcherFails = true;
-    const auto context = createRecognitionContext(dependencies(database->connection()));
+    QStringList reported;
+    auto withDiagnostics = dependencies(database->connection());
+    withDiagnostics.diagnostics = [&reported](const QString &message) { reported.append(message); };
+    const auto context = createRecognitionContext(std::move(withDiagnostics));
     QString error;
     QVERIFY(context->settings->setValue(QStringLiteral("mpv"), QStringLiteral("enabled"), true, error));
     QVERIFY(context->settings->save(QStringLiteral("mpv"), error));
@@ -236,6 +239,9 @@ void RecognitionCompositionTests::openerFallsBackWhenMpvCannotStart() {
     QVERIFY(opener.openEpisode({.mediaId = 21, .episode = 3, .path = QStringLiteral("D:/Anime/03.mkv")}, error));
 
     QCOMPARE(fallback.opened, QStringList({QStringLiteral("D:/Anime/03.mkv")}));
+    // Raised long after startup: it must reach the log, not just a list nobody reads anymore.
+    QVERIFY2(reported.join(QLatin1Char(';')).contains(QStringLiteral("mpv could not be started")),
+             qPrintable(reported.join(QLatin1Char(';'))));
 }
 
 void RecognitionCompositionTests::stopAndDestructionShutDownCleanly() {

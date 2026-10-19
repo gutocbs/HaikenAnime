@@ -25,8 +25,8 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    void setMedia(QList<Media> media);
-    void configurePresentation(CoverQuality quality, QString preferredTitleKey);
+    void SetMedia(QList<Media> media);
+    void ConfigurePresentation(CoverQuality quality, QString preferredTitleKey);
 
 private:
     QList<Media> media_;
@@ -70,6 +70,7 @@ class SeasonalCatalogController final : public QObject {
     Q_PROPERTY(int selectedProgressMaximum READ selectedProgressMaximum NOTIFY selectionChanged)
     Q_PROPERTY(double selectedScoreValue READ selectedScoreValue NOTIFY personalListChanged)
     Q_PROPERTY(QString selectedLocalPath READ selectedLocalPath NOTIFY personalListChanged)
+    Q_PROPERTY(QString selectedLocalFolderUrl READ selectedLocalFolderUrl NOTIFY personalListChanged)
     Q_PROPERTY(QString personalListErrorMessage READ personalListErrorMessage NOTIFY personalListChanged)
     Q_PROPERTY(double scoreMinimum READ scoreMinimum NOTIFY editingOptionsChanged)
     Q_PROPERTY(double scoreMaximum READ scoreMaximum NOTIFY editingOptionsChanged)
@@ -113,6 +114,7 @@ public:
     int selectedProgressMaximum() const;
     double selectedScoreValue() const;
     QString selectedLocalPath() const;
+    QString selectedLocalFolderUrl() const;
     QString personalListErrorMessage() const;
     double scoreMinimum() const;
     double scoreMaximum() const;
@@ -131,8 +133,8 @@ public:
     Q_INVOKABLE bool SaveSelectedToPersonalListFromEditor(int progress, const QString &statusKey,
                                                           double score, const QString &path,
                                                           const QString &alternativeNames);
-    Q_INVOKABLE bool SaveSelectedToPersonalList(int progress, const QString &statusKey, double score,
-                                                const QString &path, const QStringList &alternativeNames);
+    bool SaveSelectedToPersonalList(int progress, const QString &statusKey, double score,
+                                    const QString &path, const QStringList &alternativeNames);
 
 signals:
     void filtersChanged();
@@ -142,6 +144,8 @@ signals:
     void personalListSaved();
     // A saved edit asks to re-evaluate media folders (folderPaths) and/or its alternative names.
     void localRecognitionRequested(QStringList folderPaths, bool alternativeNamesChanged);
+    // A manual edit was saved; the history records it.
+    void personalListEdited(Media previous, Media updated);
     void editingOptionsChanged();
 
 private:

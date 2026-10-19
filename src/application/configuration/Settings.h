@@ -16,7 +16,6 @@ struct Settings {
     UserPreferences userPreferences;
     SeasonalCatalogCachePolicy seasonalCatalogCachePolicy;
     int syncTimeoutMs = 60000;
-    int syncIntervalMs = 3600000;
     std::map<SyncTaskKind, SyncSchedulePolicy> syncTaskPolicies = DefaultSyncTaskPolicies();
     int logRetentionDays = 7;
 };

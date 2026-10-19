@@ -18,13 +18,7 @@ Item {
 
     property var controller: homeController
 
-    readonly property color ink: "#172033"
-    readonly property color muted: "#68758a"
-    readonly property color line: "#d7dee8"
-    readonly property color surface: "#ffffff"
-    readonly property color surfaceSoft: "#f6f8fb"
-    readonly property color accent: "#315d91"
-    readonly property color accentSoft: "#e2ebf6"
+    readonly property Theme theme: Theme {}
     readonly property bool hasLocalLibraryMessage: controller.hasSelection
                                                   && (controller.localLibraryStatusMessage.length > 0
                                                       || controller.localLibraryErrorMessage.length > 0)
@@ -72,7 +66,7 @@ Item {
 
                 Label {
                     text: qsTr("HAIKEN ANIME")
-                    color: accent
+                    color: theme.accent
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                     font.letterSpacing: 2.2
@@ -80,7 +74,7 @@ Item {
 
                 Label {
                     text: qsTr("Sua biblioteca")
-                    color: ink
+                    color: theme.ink
                     font.pixelSize: 25
                     font.weight: Font.Bold
                 }
@@ -108,7 +102,7 @@ Item {
             Rectangle {
                 Layout.preferredWidth: 1
                 Layout.preferredHeight: 28
-                color: line
+                color: theme.line
             }
 
             AppButton {
@@ -123,7 +117,7 @@ Item {
                 visible: nowWatchingButton.visible
                 Layout.preferredWidth: 1
                 Layout.preferredHeight: 28
-                color: line
+                color: theme.line
             }
 
             AppButton {
@@ -141,7 +135,7 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: line
+            color: theme.line
         }
 
         RowLayout {
@@ -155,9 +149,9 @@ Item {
                 Layout.minimumWidth: 680
                 Layout.horizontalStretchFactor: 3
                 Layout.fillHeight: true
-                color: surface
+                color: theme.surface
                 radius: 8
-                border.color: line
+                border.color: theme.line
                 border.width: 1
 
                 ColumnLayout {
@@ -175,14 +169,14 @@ Item {
 
                             Label {
                                 text: qsTr("Minha lista")
-                                color: ink
+                                color: theme.ink
                                 font.pixelSize: 18
                                 font.weight: Font.DemiBold
                             }
 
                             Label {
                                 text: qsTr("%1 títulos nesta categoria").arg(controller.filteredMediaCount)
-                                color: muted
+                                color: theme.muted
                                 font.pixelSize: 12
                             }
                         }
@@ -199,8 +193,8 @@ Item {
                                     width: typeLabel.implicitWidth + 24
                                     height: 32
                                     radius: 5
-                                    color: selectedType ? accentSoft : "transparent"
-                                    border.color: selectedType || activeFocus ? accent : line
+                                    color: selectedType ? theme.accentSoft : "transparent"
+                                    border.color: selectedType || activeFocus ? theme.accent : theme.line
                                     border.width: activeFocus ? 2 : 1
                                     activeFocusOnTab: true
                                     Accessible.role: Accessible.Button
@@ -211,7 +205,7 @@ Item {
                                         id: typeLabel
                                         anchors.centerIn: parent
                                         text: modelData.label
-                                        color: parent.selectedType ? accent : muted
+                                        color: parent.selectedType ? theme.accent : theme.muted
                                         font.pixelSize: 11
                                         font.weight: parent.selectedType ? Font.DemiBold : Font.Normal
                                     }
@@ -238,7 +232,7 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 1
-                        color: line
+                        color: theme.line
                     }
 
                     GridView {
@@ -295,7 +289,7 @@ Item {
                                      : qsTr("Escolha outro tipo de mídia para continuar navegando pela sua biblioteca.")
                         stateLabel: controller.activeMediaType === "anime" ? qsTr("ANIME")
                                     : controller.activeMediaType === "manga" ? qsTr("MANGA") : qsTr("NOVEL")
-                        accentColor: accent
+                        accentColor: theme.accent
                     }
 
                     AppButton {
@@ -313,9 +307,9 @@ Item {
                 Layout.minimumWidth: 400
                 Layout.horizontalStretchFactor: 2
                 Layout.fillHeight: true
-                color: surface
+                color: theme.surface
                 radius: 8
-                border.color: line
+                border.color: theme.line
                 border.width: 1
 
                 ColumnLayout {
@@ -328,7 +322,7 @@ Item {
                         Label {
                             Layout.fillWidth: true
                             text: qsTr("DETALHES")
-                            color: accent
+                            color: theme.accent
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
                             font.letterSpacing: 1.5
@@ -365,7 +359,7 @@ Item {
                                       : controller.state === "ready"
                                         ? qsTr("DADOS DISPONÍVEIS")
                                         : qsTr("ESTADO VAZIO")
-                        accentColor: accent
+                        accentColor: theme.accent
                     }
 
                     ColumnLayout {
@@ -380,7 +374,7 @@ Item {
                             Layout.preferredWidth: 150
                             Layout.preferredHeight: 214
                             radius: 6
-                            color: accentSoft
+                            color: theme.accentSoft
                             clip: true
                             activeFocusOnTab: true
                             Accessible.role: Accessible.Button
@@ -408,7 +402,7 @@ Item {
                             Layout.fillWidth: true
                             Layout.preferredHeight: contentHeight
                             text: controller.selectedTitle
-                            color: ink
+                            color: theme.ink
                             font.pixelSize: 20
                             font.weight: Font.Bold
                             readOnly: true
@@ -426,26 +420,26 @@ Item {
                                 Layout.preferredWidth: contentWidth
                                 Layout.preferredHeight: contentHeight
                                 text: controller.selectedTypeLabel
-                                color: accent
+                                color: theme.accent
                                 font.weight: Font.DemiBold
                                 readOnly: true
                                 selectByMouse: true
                                 wrapMode: TextEdit.NoWrap
                                 Accessible.name: qsTr("Tipo da mídia selecionada")
                             }
-                            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: line }
+                            Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: theme.line }
                             TextEdit {
                                 id: selectedStatusText
                                 Layout.preferredHeight: contentHeight
                                 text: controller.selectedListStatusLabel
-                                color: muted
+                                color: theme.muted
                                 readOnly: true
                                 selectByMouse: true
                                 wrapMode: TextEdit.NoWrap
                                 Accessible.name: qsTr("Status da mídia selecionada")
                             }
-                            Rectangle { visible: controller.availableLocalEpisodeCount > 0; Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: line }
-                            TextEdit { visible: controller.availableLocalEpisodeCount > 0; Layout.preferredHeight: contentHeight; text: qsTr("%1 episódios disponíveis localmente").arg(controller.availableLocalEpisodeCount); color: muted; readOnly: true; selectByMouse: true; wrapMode: TextEdit.NoWrap }
+                            Rectangle { visible: controller.availableLocalEpisodeCount > 0; Layout.preferredWidth: 1; Layout.preferredHeight: 16; color: theme.line }
+                            TextEdit { visible: controller.availableLocalEpisodeCount > 0; Layout.preferredHeight: contentHeight; text: qsTr("%1 episódios disponíveis localmente").arg(controller.availableLocalEpisodeCount); color: theme.muted; readOnly: true; selectByMouse: true; wrapMode: TextEdit.NoWrap }
                         }
 
                         GridLayout {
@@ -454,14 +448,14 @@ Item {
                             columnSpacing: 18
                             rowSpacing: 4
 
-                            Label { text: qsTr("Progresso"); color: muted; font.pixelSize: 11 }
-                            Label { text: qsTr("Sua nota"); color: muted; font.pixelSize: 11 }
+                            Label { text: qsTr("Progresso"); color: theme.muted; font.pixelSize: 11 }
+                            Label { text: qsTr("Sua nota"); color: theme.muted; font.pixelSize: 11 }
                             TextEdit {
                                 id: selectedProgressText
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: contentHeight
                                 text: controller.selectedProgress
-                                color: ink
+                                color: theme.ink
                                 font.weight: Font.DemiBold
                                 readOnly: true
                                 selectByMouse: true
@@ -473,7 +467,7 @@ Item {
                                 Layout.fillWidth: true
                                 Layout.preferredHeight: contentHeight
                                 text: controller.selectedScore
-                                color: ink
+                                color: theme.ink
                                 font.weight: Font.DemiBold
                                 readOnly: true
                                 selectByMouse: true
@@ -492,7 +486,7 @@ Item {
                                 text: controller.selectedSynopsis.length > 0
                                       ? controller.selectedSynopsis
                                       : qsTr("Sinopse não disponível.")
-                                color: muted
+                                color: theme.muted
                                 font.pixelSize: 12
                                 readOnly: true
                                 selectByMouse: true
@@ -506,7 +500,7 @@ Item {
                                 id: selectedSynopsisOverflowIndicator
                                 anchors.right: parent.right
                                 anchors.bottom: parent.bottom
-                                color: muted
+                                color: theme.muted
                                 enabled: false
                                 text: "…"
                                 visible: selectedSynopsisText.contentHeight > selectedSynopsisText.height
@@ -517,7 +511,7 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 1
-                        color: line
+                        color: theme.line
                     }
 
                 }
@@ -529,9 +523,9 @@ Item {
             readonly property bool synchronizationFailed: synchronizationStatus.outcome === "failed"
             Layout.preferredHeight: controller.state === "error" || synchronizationFailed ? 112
                                   : synchronizationStatus.visible ? 102 : 72
-            color: controller.state === "error" || synchronizationFailed ? "#fff0f0" : surfaceSoft
+            color: controller.state === "error" || synchronizationFailed ? "#fff0f0" : theme.surfaceSoft
             radius: 8
-            border.color: controller.state === "error" || synchronizationFailed ? "#e6a6aa" : line
+            border.color: controller.state === "error" || synchronizationFailed ? "#e6a6aa" : theme.line
             border.width: 1
 
             ColumnLayout {
@@ -548,11 +542,6 @@ Item {
                         Layout.preferredWidth: libraryPreviewPanel.width - 16
                         Layout.maximumWidth: libraryPreviewPanel.width - 16
                         controller: home.controller
-                        ink: home.ink
-                        muted: home.muted
-                        line: home.line
-                        surface: home.surface
-                        accent: home.accent
                     }
 
                     AppButton {
@@ -570,7 +559,7 @@ Item {
                     Rectangle {
                         Layout.preferredWidth: 1
                         Layout.preferredHeight: 28
-                        color: line
+                        color: theme.line
                     }
 
                     ColumnLayout {
@@ -585,7 +574,7 @@ Item {
                                   : qsTr("SINCRONIZAÇÃO")
                             color: controller.state === "error" || controller.localLibraryErrorMessage.length > 0
                                    || synchronizationStatus.outcome === "failed"
-                                   ? "#b13b43" : accent
+                                   ? "#b13b43" : theme.accent
                             font.pixelSize: 10
                             font.weight: Font.DemiBold
                             font.letterSpacing: 1.0
@@ -610,7 +599,7 @@ Item {
                                       : qsTr("Sincronização automática")
                             color: controller.state === "error" || controller.localLibraryErrorMessage.length > 0
                                    || synchronizationStatus.outcome === "failed"
-                                   ? "#b13b43" : ink
+                                   ? "#b13b43" : theme.ink
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
                             wrapMode: Text.Wrap
@@ -636,12 +625,6 @@ Item {
         closeOnApply: false
         allowsRemoval: true
         operationErrorMessage: home.controller.mediaOperationErrorMessage
-        ink: home.ink
-        muted: home.muted
-        line: home.line
-        surface: home.surface
-        surfaceSoft: home.surfaceSoft
-        accent: home.accent
         onRemoveRequested: function(mediaId) {
             if (home.controller.RemoveSelectedMedia()) {
                 editMediaPanel.close()
@@ -660,22 +643,12 @@ Item {
     CoverPreview {
         id: coverPreview
         source: controller.selectedCoverSource
-        ink: home.ink
-        muted: home.muted
-        line: home.line
-        surface: home.surface
     }
 
     MediaDetailsPanel {
         id: mediaDetailsPanel
         z: completeLibrary.z + 1
         controller: home.controller
-        ink: home.ink
-        muted: home.muted
-        line: home.line
-        surface: home.surface
-        surfaceSoft: home.surfaceSoft
-        accent: home.accent
     }
 
     Popup {
@@ -695,8 +668,8 @@ Item {
         onClosed: mediaGrid.reportWindow()
 
         background: Rectangle {
-            color: surface
-            border.color: line
+            color: theme.surface
+            border.color: theme.line
             border.width: 1
         }
 
@@ -715,7 +688,7 @@ Item {
                     Label {
                         Layout.fillWidth: true
                         text: qsTr("Lista completa")
-                        color: ink
+                        color: theme.ink
                         font.pixelSize: 20
                         font.weight: Font.Bold
                     }
@@ -732,7 +705,7 @@ Item {
                     text: qsTr("%1 títulos · %2").arg(controller.filteredMediaCount)
                           .arg(controller.activeMediaType === "anime" ? qsTr("Anime")
                                : controller.activeMediaType === "manga" ? qsTr("Manga") : qsTr("Novel"))
-                    color: muted
+                    color: theme.muted
                     font.pixelSize: 12
                 }
 
@@ -740,15 +713,10 @@ Item {
                     id: completeBrowseControls
                     Layout.fillWidth: true
                     controller: home.controller
-                    ink: home.ink
-                    muted: home.muted
-                    line: home.line
-                    surface: home.surface
-                    accent: home.accent
                 }
             }
 
-            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
+            Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.line }
 
             GridView {
                 id: completeGrid

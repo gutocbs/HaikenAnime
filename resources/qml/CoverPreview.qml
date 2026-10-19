@@ -7,10 +7,7 @@ Popup {
 
     property url source: ""
     property Item returnFocusItem: null
-    property color ink: "#172033"
-    property color muted: "#68758a"
-    property color line: "#d7dee8"
-    property color surface: "#ffffff"
+    readonly property Theme theme: Theme {}
 
     function openForSource(focusItem) {
         returnFocusItem = focusItem
@@ -33,8 +30,8 @@ Popup {
     }
     Overlay.modal: Rectangle { color: "#730f1d2e" }
     background: Rectangle {
-        color: preview.surface
-        border.color: preview.line
+        color: theme.surface
+        border.color: theme.line
         border.width: 1
         radius: 8
     }
@@ -59,7 +56,7 @@ Popup {
             Label {
                 Layout.fillWidth: true
                 text: qsTr("Capa ampliada")
-                color: preview.ink
+                color: theme.ink
                 font.pixelSize: 16
                 font.weight: Font.DemiBold
             }
@@ -75,7 +72,7 @@ Popup {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: preview.line
+            color: theme.line
         }
 
         Item {
@@ -97,7 +94,7 @@ Popup {
                 anchors.centerIn: parent
                 visible: image.status === Image.Error || preview.source.toString().length === 0
                 text: qsTr("Capa indisponível")
-                color: preview.muted
+                color: theme.muted
                 font.pixelSize: 13
             }
         }

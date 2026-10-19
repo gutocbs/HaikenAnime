@@ -1,18 +1,15 @@
 #ifndef HAIKENANIME_ANILISTFIELD_H
 #define HAIKENANIME_ANILISTFIELD_H
 
-/** Identifies a field that can participate in AniList synchronization. */
+/**
+ * Field targeted by a pending AniList change. The numeric values are stored in anilist_pending_changes
+ * and must never change.
+ */
 enum class AniListField {
-    ExternalId,
-    Title,
-    AlternativeTitles,
-    CoverUrl,
-    Synopsis,
-    Progress,
-    PersonalScore,
-    ListStatus,
-    LocalFiles,
-    Deletion
+    Progress = 5,
+    PersonalScore = 6,
+    ListStatus = 7,
+    Deletion = 9
 };
 
 #endif // HAIKENANIME_ANILISTFIELD_H

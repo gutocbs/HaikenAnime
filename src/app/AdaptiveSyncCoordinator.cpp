@@ -14,16 +14,7 @@ QString SafeError(const QString &error, const QString &fallback) {
 }
 
 SyncPartition PartitionFor(const SyncTaskKind kind) {
-    switch (kind) {
-    case SyncTaskKind::UserList: return SyncPartition::UserList;
-    case SyncTaskKind::PendingChange: return SyncPartition::PendingChanges;
-    case SyncTaskKind::ActiveCatalog: return SyncPartition::ActiveCatalog;
-    case SyncTaskKind::InactiveCatalog: return SyncPartition::InactiveCatalog;
-    case SyncTaskKind::CompletedCatalog: return SyncPartition::CompletedCatalog;
-    case SyncTaskKind::Cover: return SyncPartition::Covers;
-    case SyncTaskKind::DerivedMetadata: return SyncPartition::DerivedMetadata;
-    }
-    return SyncPartition::UserList;
+    return kind == SyncTaskKind::PendingChange ? SyncPartition::PendingChanges : SyncPartition::UserList;
 }
 }
 
@@ -128,9 +119,19 @@ void AdaptiveSyncCoordinator::RequestNow(const SyncPartition partition) {
     Request(partition, SyncTaskTrigger::ManualRun);
 }
 
-void AdaptiveSyncCoordinator::NotifyLocalChange(const SyncPartition partition) {
-    Request(partition, partition == SyncPartition::CompletedCatalog
-                           ? SyncTaskTrigger::CompletedToActive : SyncTaskTrigger::LocalChange);
+void AdaptiveSyncCoordinator::SetNormalInterval(const SyncTaskKind kind, const std::chrono::milliseconds interval) {
+    policies_[kind] = WithNormalInterval(PolicyFor(kind), interval);
+    if (!started_ || stopped_) return;
+    const auto partition = PartitionFor(kind);
+    const auto iterator = states_.find(partition);
+    // A running task picks the new interval up when it completes.
+    if (iterator == states_.end() || activeGenerations_.contains(partition)) return;
+    const auto decision = SyncTaskPolicy::Decide(iterator->second, policies_.at(kind), Now(), {});
+    auto state = decision.proposedState;
+    state.nextRunAt = decision.schedule.nextRunAt;
+    if (!Persist(state)) return;
+    iterator->second = state;
+    ProcessDueTasks();
 }
 
 void AdaptiveSyncCoordinator::Cancel(const SyncPartition partition, std::function<void()> acknowledged) {
@@ -213,30 +214,8 @@ void AdaptiveSyncCoordinator::Request(const SyncPartition partition, const SyncT
                                                   {.trigger = trigger});
     auto state = decision.proposedState;
     state.nextRunAt = decision.schedule.nextRunAt;
-    if (state.partition != partition) {
-        const auto existing = states_.find(state.partition);
-        if (existing != states_.end()) {
-            QString error;
-            if (!stateRepository_.Remove(partition, error)) {
-                emit SchedulingFailed(SafeError(error, QStringLiteral("Unable to retire promoted synchronization task state.")));
-                return;
-            }
-            states_.erase(iterator);
-            ScheduleWakeUp();
-            return;
-        }
-        QString error;
-        if (!stateRepository_.Remove(partition, error)) {
-            emit SchedulingFailed(SafeError(error, QStringLiteral("Unable to promote synchronization task state.")));
-            return;
-        }
-        if (!Persist(state)) return;
-        states_.erase(iterator);
-        states_[state.partition] = state;
-    } else {
-        if (!Persist(state)) return;
-        iterator->second = state;
-    }
+    if (!Persist(state)) return;
+    iterator->second = state;
     if (decision.schedule.shouldRunNow && activeGenerations_.empty() && CanStart(state.partition)) {
         StartTask(state);
     }
@@ -246,10 +225,7 @@ void AdaptiveSyncCoordinator::Request(const SyncPartition partition, const SyncT
 void AdaptiveSyncCoordinator::StartTask(SyncTaskState state) {
     if (stopped_ || activeGenerations_.contains(state.partition) || !CanStart(state.partition)) return;
 
-    if (state.status == SyncTaskStatus::Succeeded) {
-        state.confirmedPage.reset();
-        state.confirmedCursor.reset();
-    }
+    if (state.status == SyncTaskStatus::Succeeded) state.confirmedPage.reset();
     state.status = SyncTaskStatus::Running;
     state.lastAttemptedAt = Now();
     ++state.generation;
@@ -288,7 +264,6 @@ void AdaptiveSyncCoordinator::CompleteTask(const SyncPartition partition, const 
         completed.consecutiveImmediateRetries = 0;
         if (partition == SyncPartition::UserList) userListReady_ = true;
         if (result.confirmedPage.has_value()) completed.confirmedPage = result.confirmedPage;
-        if (result.confirmedCursor.has_value()) completed.confirmedCursor = result.confirmedCursor;
     } else {
         completed.lastErrorCategory = result.errorCategory == AniListSyncErrorCategory::None
             ? AniListSyncErrorCategory::Unknown : result.errorCategory;
@@ -298,8 +273,7 @@ void AdaptiveSyncCoordinator::CompleteTask(const SyncPartition partition, const 
         completed.status = SyncTaskStatus::RetryScheduled;
     }
 
-    const auto decision = SyncTaskPolicy::Decide(completed, PolicyFor(completed.kind), Now(),
-                                                  {.retryAfter = result.retryAfter});
+    const auto decision = SyncTaskPolicy::Decide(completed, PolicyFor(completed.kind), Now(), {});
     completed = decision.proposedState;
     completed.nextRunAt = decision.schedule.nextRunAt;
     if (!result.succeeded && decision.schedule.shouldRunNow) ++completed.consecutiveImmediateRetries;

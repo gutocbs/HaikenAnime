@@ -9,15 +9,12 @@
 /// current progress, never a cached library.
 class SqliteMediaProgressReader final : public IMediaProgressReader {
 public:
-    explicit SqliteMediaProgressReader(
-        QSqlDatabase database,
-        QString readQuery = QStringLiteral(":/sqlite/queries/read-media-for-recognition-progress.sql"));
+    explicit SqliteMediaProgressReader(QSqlDatabase database);
 
     bool find(int mediaId, std::optional<Media> &media, QString &error) override;
 
 private:
     QSqlDatabase database_;
-    QString readQuery_;
 };
 
 #endif // HAIKENANIME_SQLITEMEDIAPROGRESSREADER_H

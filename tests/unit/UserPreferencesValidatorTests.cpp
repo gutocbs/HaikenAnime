@@ -10,7 +10,6 @@ private slots:
     void acceptsSupportedPreferences();
     void rejectsInvalidPreferences_data();
     void rejectsInvalidPreferences();
-    void usesExactScannerDefaults();
     void normalizesScanExtensions();
     void rejectsInvalidScanExtensions_data();
     void rejectsInvalidScanExtensions();
@@ -19,10 +18,10 @@ private slots:
     void rejectsUnsupportedLanguage();
     void rejectsUnsupportedPreferredTitle();
     void rejectsEmptyLibraryRoot();
+    void acceptsNoLibraryFolderYet();
     void acceptsMultipleIndependentLibraryRoots();
-    void rejectsDuplicateNestedOrMissingLibraryRoots_data();
-    void rejectsDuplicateNestedOrMissingLibraryRoots();
-    void comparesScannerPreferences();
+    void rejectsDuplicateNestedOrBlankLibraryRoots_data();
+    void rejectsDuplicateNestedOrBlankLibraryRoots();
     void validatesEnabledUserLists();
 };
 
@@ -74,14 +73,6 @@ void UserPreferencesValidatorTests::rejectsInvalidPreferences() {
     const auto result = ValidateUserPreferences(preferences);
     QVERIFY(!result.valid);
     QVERIFY(!result.error.isEmpty());
-}
-
-void UserPreferencesValidatorTests::usesExactScannerDefaults() {
-    const UserPreferences preferences;
-    QCOMPARE(preferences.libraryRoots, QStringList{QStringLiteral("Q:\\")});
-    QCOMPARE(preferences.scanExtensions, QStringList({".mkv", ".mp4", ".avi", ".webm",
-                                                    ".m4v", ".mov", ".wmv", ".ts"}));
-    QVERIFY(ValidateUserPreferences(preferences).valid);
 }
 
 void UserPreferencesValidatorTests::normalizesScanExtensions() {
@@ -158,6 +149,14 @@ void UserPreferencesValidatorTests::rejectsUnsupportedPreferredTitle() {
     QVERIFY(!result.error.isEmpty());
 }
 
+void UserPreferencesValidatorTests::acceptsNoLibraryFolderYet() {
+    // A new installation starts without folders; the user adds them in Settings.
+    const UserPreferences preferences;
+
+    QVERIFY(preferences.libraryRoots.isEmpty());
+    QVERIFY2(ValidateUserPreferences(preferences).valid, qPrintable(ValidateUserPreferences(preferences).error));
+}
+
 void UserPreferencesValidatorTests::rejectsEmptyLibraryRoot() {
     for (const auto &root : {QString{}, QStringLiteral("   ")}) {
         UserPreferences preferences;
@@ -175,9 +174,8 @@ void UserPreferencesValidatorTests::acceptsMultipleIndependentLibraryRoots() {
     QVERIFY(ValidateUserPreferences(preferences).valid);
 }
 
-void UserPreferencesValidatorTests::rejectsDuplicateNestedOrMissingLibraryRoots_data() {
+void UserPreferencesValidatorTests::rejectsDuplicateNestedOrBlankLibraryRoots_data() {
     QTest::addColumn<QStringList>("roots");
-    QTest::newRow("none") << QStringList{};
     QTest::newRow("blank second") << QStringList{QStringLiteral("Q:\\"), QStringLiteral("  ")};
     QTest::newRow("duplicate ignoring case and slash")
         << QStringList{QStringLiteral("R:\\Anime"), QStringLiteral("r:/anime/")};
@@ -186,24 +184,13 @@ void UserPreferencesValidatorTests::rejectsDuplicateNestedOrMissingLibraryRoots_
         << QStringList{QStringLiteral("R:\\Anime\\Movies"), QStringLiteral("R:\\Anime")};
 }
 
-void UserPreferencesValidatorTests::rejectsDuplicateNestedOrMissingLibraryRoots() {
+void UserPreferencesValidatorTests::rejectsDuplicateNestedOrBlankLibraryRoots() {
     QFETCH(QStringList, roots);
     UserPreferences preferences;
     preferences.libraryRoots = roots;
     const auto result = ValidateUserPreferences(preferences);
     QVERIFY(!result.valid);
     QVERIFY(!result.error.isEmpty());
-}
-
-void UserPreferencesValidatorTests::comparesScannerPreferences() {
-    const UserPreferences defaults;
-    UserPreferences changedRoot;
-    changedRoot.libraryRoots = {QStringLiteral("R:\\Anime")};
-    QVERIFY(!(defaults == changedRoot));
-    UserPreferences changedExtensions;
-    changedExtensions.scanExtensions = {".mp4"};
-    QVERIFY(!(defaults == changedExtensions));
-    QVERIFY(defaults == UserPreferences{});
 }
 
 void UserPreferencesValidatorTests::validatesEnabledUserLists() {

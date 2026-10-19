@@ -3,6 +3,7 @@
 #include <QSqlError>
 #include <QSqlQuery>
 
+#include "SqliteQueries.h"
 #include "SqlQueryStore.h"
 
 #include <limits>
@@ -10,9 +11,7 @@
 
 namespace {
 std::optional<SyncPartition> PartitionFromString(const QString &value) {
-    for (const auto partition : {SyncPartition::UserList, SyncPartition::PendingChanges, SyncPartition::ActiveCatalog,
-                                 SyncPartition::InactiveCatalog, SyncPartition::CompletedCatalog, SyncPartition::Covers,
-                                 SyncPartition::DerivedMetadata}) {
+    for (const auto partition : {SyncPartition::UserList, SyncPartition::PendingChanges}) {
         if (ToString(partition) == value) return partition;
     }
     return std::nullopt;
@@ -76,17 +75,15 @@ std::optional<int> ReadOptionalInt(const QVariant &value, bool &valid) {
 }
 }
 
-SqliteSyncTaskStateRepository::SqliteSyncTaskStateRepository(QSqlDatabase database, QString readQuery,
-                                                             QString upsertQuery, QString deleteQuery)
-    : database_(std::move(database)), readQuery_(std::move(readQuery)), upsertQuery_(std::move(upsertQuery)),
-      deleteQuery_(std::move(deleteQuery)) {
+SqliteSyncTaskStateRepository::SqliteSyncTaskStateRepository(QSqlDatabase database)
+    : database_(std::move(database)) {
 }
 
 bool SqliteSyncTaskStateRepository::ReadAll(QList<SyncTaskState> &states, QString &error) {
     states.clear();
     error.clear();
     QString sql;
-    if (!SqlQueryStore::loadSource(readQuery_, sql, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadSyncTaskStates, sql, error)) return false;
     QSqlQuery query(database_);
     if (!query.exec(sql)) {
         error = query.lastError().text();
@@ -104,9 +101,9 @@ bool SqliteSyncTaskStateRepository::ReadAll(QList<SyncTaskState> &states, QStrin
         const auto nextRunAt = ReadTimestamp(query.value(6), timestampsValid);
         const auto confirmedPage = ReadOptionalInt(query.value(9), timestampsValid);
         bool generationValid = false;
-        const auto generation = query.value(12).toLongLong(&generationValid);
-        const auto consecutiveFailures = query.value(13).toInt();
-        const auto consecutiveImmediateRetries = query.value(14).toInt();
+        const auto generation = query.value(11).toLongLong(&generationValid);
+        const auto consecutiveFailures = query.value(12).toInt();
+        const auto consecutiveImmediateRetries = query.value(13).toInt();
         if (!kind.has_value() || !partition.has_value() || !status.has_value() || !cacheValidity.has_value()
             || !errorCategory.has_value() || !timestampsValid || query.value(8).isNull() || !generationValid
             || generation < 0 || consecutiveFailures < 0 || consecutiveImmediateRetries < 0) {
@@ -123,9 +120,7 @@ bool SqliteSyncTaskStateRepository::ReadAll(QList<SyncTaskState> &states, QStrin
         state.lastErrorCategory = *errorCategory;
         state.safeErrorDetail = query.value(8).toString();
         state.confirmedPage = confirmedPage;
-        state.confirmedCursor = query.value(10).isNull() ? std::nullopt
-                                                          : std::optional<QString>(query.value(10).toString());
-        state.priority = query.value(11).toInt();
+        state.priority = query.value(10).toInt();
         state.generation = generation;
         state.consecutiveFailures = consecutiveFailures;
         state.consecutiveImmediateRetries = consecutiveImmediateRetries;
@@ -152,7 +147,7 @@ bool SqliteSyncTaskStateRepository::Upsert(const SyncTaskState &state, QString &
     }
     QString sql;
     QSqlQuery query(database_);
-    if (!SqlQueryStore::loadSource(upsertQuery_, sql, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpsertSyncTaskState, sql, error)) return false;
     if (!query.prepare(sql)) {
         error = query.lastError().text();
         return false;
@@ -171,33 +166,10 @@ bool SqliteSyncTaskStateRepository::Upsert(const SyncTaskState &state, QString &
     query.bindValue(QStringLiteral(":safe_error_detail"), state.safeErrorDetail.isNull()
         ? QStringLiteral("") : state.safeErrorDetail);
     query.bindValue(QStringLiteral(":confirmed_page"), state.confirmedPage.has_value() ? *state.confirmedPage : QVariant{});
-    query.bindValue(QStringLiteral(":confirmed_cursor"), state.confirmedCursor.has_value() ? *state.confirmedCursor : QVariant{});
     query.bindValue(QStringLiteral(":priority"), state.priority);
     query.bindValue(QStringLiteral(":generation"), state.generation);
     query.bindValue(QStringLiteral(":consecutive_failures"), state.consecutiveFailures);
     query.bindValue(QStringLiteral(":consecutive_immediate_retries"), state.consecutiveImmediateRetries);
-    if (!query.exec()) {
-        error = query.lastError().text();
-        return false;
-    }
-    return true;
-}
-
-bool SqliteSyncTaskStateRepository::Remove(const SyncPartition &partition, QString &error) {
-    error.clear();
-    const auto partitionKey = ToString(partition);
-    if (partitionKey.isEmpty()) {
-        error = QStringLiteral("Sync task partition is invalid.");
-        return false;
-    }
-    QString sql;
-    QSqlQuery query(database_);
-    if (!SqlQueryStore::loadSource(deleteQuery_, sql, error)) return false;
-    if (!query.prepare(sql)) {
-        error = query.lastError().text();
-        return false;
-    }
-    query.bindValue(QStringLiteral(":partition"), partitionKey);
     if (!query.exec()) {
         error = query.lastError().text();
         return false;

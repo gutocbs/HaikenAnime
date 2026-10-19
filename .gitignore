@@ -32,9 +32,9 @@
 # ==========================================
 # Build Directories (CMake & Project Specific)
 # ==========================================
-# This blocks any folder starting with "cmake" or containing "superpowers"
+# Build folders start with "cmake". Superpowers working state (plans, specs, reviews) stays local;
+# only docs/plugins and the root documents are versioned.
 cmake*/
-*superpowers*/
-/docs
 /.superpowers
+/docs/superpowers
 /dist

@@ -5,19 +5,16 @@
 
 #include "../../application/scheduling/ISyncTaskStateRepository.h"
 
-class SqliteSyncTaskStateRepository final : public ISyncTaskStateRepository {
+// Not final: the composition derives from it to own the worker connection.
+class SqliteSyncTaskStateRepository : public ISyncTaskStateRepository {
 public:
-    SqliteSyncTaskStateRepository(QSqlDatabase database, QString readQuery, QString upsertQuery, QString deleteQuery);
+    explicit SqliteSyncTaskStateRepository(QSqlDatabase database);
 
     bool ReadAll(QList<SyncTaskState> &states, QString &error) override;
     bool Upsert(const SyncTaskState &state, QString &error) override;
-    bool Remove(const SyncPartition &partition, QString &error) override;
 
 private:
     QSqlDatabase database_;
-    QString readQuery_;
-    QString upsertQuery_;
-    QString deleteQuery_;
 };
 
 #endif // HAIKENANIME_SQLITESYNCTASKSTATEREPOSITORY_H

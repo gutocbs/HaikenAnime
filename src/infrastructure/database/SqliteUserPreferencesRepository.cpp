@@ -6,11 +6,32 @@
 #include <QJsonDocument>
 #include "../../application/configuration/UserPreferencesValidator.h"
 #include "SqlQueryStore.h"
+#include "SqliteQueries.h"
 
-SqliteUserPreferencesRepository::SqliteUserPreferencesRepository(
-    QSqlDatabase database, QString readQuery, QString upsertQuery)
-    : database_(std::move(database)), readQuery_(std::move(readQuery)),
-      upsertQuery_(std::move(upsertQuery)) {}
+namespace {
+/** Parses a stored JSON array of strings; each message names the malformed value. */
+bool ParseStringArray(const QString &json, QStringList &values, const QString &notArrayError,
+                      const QString &notStringError, QString &error) {
+    QJsonParseError parseError;
+    const auto document = QJsonDocument::fromJson(json.toUtf8(), &parseError);
+    if (parseError.error != QJsonParseError::NoError || !document.isArray()) {
+        error = notArrayError;
+        return false;
+    }
+    values.clear();
+    for (const auto &value : document.array()) {
+        if (!value.isString()) {
+            error = notStringError;
+            return false;
+        }
+        values.append(value.toString());
+    }
+    return true;
+}
+}
+
+SqliteUserPreferencesRepository::SqliteUserPreferencesRepository(QSqlDatabase database)
+    : database_(std::move(database)) {}
 
 bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &found,
                                            QString &error) {
@@ -24,7 +45,7 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
     warning.clear();
     found = false;
     QString readQuery;
-    if (!SqlQueryStore::loadSource(readQuery_, readQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadUserPreferences, readQuery, error)) return false;
     QSqlQuery query(database_);
     if (!query.exec(readQuery)) {
         error = query.lastError().text();
@@ -43,38 +64,24 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
     loaded.coverQuality = quality.value();
     loaded.synchronizationEnabled = query.value(4).toBool();
     loaded.synchronizationIntervalMs = query.value(5).toInt();
-    QJsonParseError parseError;
-    // library_roots (JSON array) replaced library_root; an empty array means the row predates it.
+    // library_roots (JSON array) replaced library_root. An empty array with a library_root means the row
+    // predates library_roots; with an empty library_root it means no folder was configured.
     const auto storedRoots = query.value(16).toString();
-    loaded.libraryRoots = {query.value(6).toString()};
+    const auto legacyRoot = query.value(6).toString();
+    loaded.libraryRoots = legacyRoot.isEmpty() ? QStringList{} : QStringList{legacyRoot};
     if (!storedRoots.isEmpty()) {
-        const auto roots = QJsonDocument::fromJson(storedRoots.toUtf8(), &parseError);
-        if (parseError.error != QJsonParseError::NoError || !roots.isArray()) {
-            error = QStringLiteral("Stored library roots must be a JSON array of strings.");
+        QStringList roots;
+        if (!ParseStringArray(storedRoots, roots,
+                              QStringLiteral("Stored library roots must be a JSON array of strings."),
+                              QStringLiteral("Stored library roots must be strings."), error)) {
             return false;
         }
-        QStringList values;
-        for (const auto &root : roots.array()) {
-            if (!root.isString()) {
-                error = QStringLiteral("Stored library roots must be strings.");
-                return false;
-            }
-            values.append(root.toString());
-        }
-        if (!values.isEmpty()) loaded.libraryRoots = values;
+        if (!roots.isEmpty()) loaded.libraryRoots = roots;
     }
-    const auto extensions = QJsonDocument::fromJson(query.value(7).toString().toUtf8(), &parseError);
-    if (parseError.error != QJsonParseError::NoError || !extensions.isArray()) {
-        error = QStringLiteral("Stored scan extensions must be a JSON array of strings.");
+    if (!ParseStringArray(query.value(7).toString(), loaded.scanExtensions,
+                          QStringLiteral("Stored scan extensions must be a JSON array of strings."),
+                          QStringLiteral("Stored scan extensions must be strings."), error)) {
         return false;
-    }
-    loaded.scanExtensions.clear();
-    for (const auto &extension : extensions.array()) {
-        if (!extension.isString()) {
-            error = QStringLiteral("Stored scan extensions must be strings.");
-            return false;
-        }
-        loaded.scanExtensions.append(extension.toString());
     }
     loaded.homeSortKey = query.value(8).toString();
     loaded.cardStatusPresentation = ParseCardStatusPresentation(query.value(9).toString())
@@ -84,20 +91,11 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
     loaded.preferredTitleKey = NormalizePreferredTitleKey(storedPreferredTitleKey);
     loaded.includeAdultContent = query.value(12).toBool();
     loaded.automaticLocalFileRecognition = query.value(13).toBool();
-    if (!query.value(14).toString().isEmpty()) {
-        const auto lists = QJsonDocument::fromJson(query.value(14).toString().toUtf8(), &parseError);
-        if (parseError.error != QJsonParseError::NoError || !lists.isArray()) {
-            error = QStringLiteral("Stored enabled user lists must be a JSON array.");
-            return false;
-        }
-        loaded.enabledUserLists.clear();
-        for (const auto &list : lists.array()) {
-            if (!list.isString()) {
-                error = QStringLiteral("Stored enabled user lists must be strings.");
-                return false;
-            }
-            loaded.enabledUserLists.append(list.toString());
-        }
+    if (!query.value(14).toString().isEmpty()
+        && !ParseStringArray(query.value(14).toString(), loaded.enabledUserLists,
+                             QStringLiteral("Stored enabled user lists must be a JSON array."),
+                             QStringLiteral("Stored enabled user lists must be strings."), error)) {
+        return false;
     }
     loaded.lastAniListUserId = query.value(15).toLongLong();
     if (!IsSupportedPreferredTitleKey(storedPreferredTitleKey)) {
@@ -129,8 +127,11 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
     }
     QSqlQuery query(database_);
     QString upsertQuery;
-    if (!SqlQueryStore::loadSource(upsertQuery_, upsertQuery, error)
-        || !query.prepare(upsertQuery)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpsertUserPreferences, upsertQuery, error)) {
+        database_.rollback();
+        return false;
+    }
+    if (!query.prepare(upsertQuery)) {
         error = query.lastError().text();
         database_.rollback();
         return false;
@@ -152,7 +153,9 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
         QJsonDocument(QJsonArray::fromStringList(preferences.enabledUserLists)).toJson(QJsonDocument::Compact)));
     query.bindValue(QStringLiteral(":last_anilist_user_id"), preferences.lastAniListUserId);
     // library_root keeps the first folder so older builds still read a usable value.
-    query.bindValue(QStringLiteral(":library_root"), preferences.libraryRoots.first());
+    // Non-null even without folders: library_root is NOT NULL (a null QString would bind as SQL NULL).
+    query.bindValue(QStringLiteral(":library_root"),
+                    preferences.libraryRoots.isEmpty() ? QStringLiteral("") : preferences.libraryRoots.first());
     query.bindValue(QStringLiteral(":library_roots"), QString::fromUtf8(
         QJsonDocument(QJsonArray::fromStringList(preferences.libraryRoots)).toJson(QJsonDocument::Compact)));
     query.bindValue(QStringLiteral(":scan_extensions"), QString::fromUtf8(

@@ -3,23 +3,19 @@
 #include <QDir>
 #include <QSqlError>
 #include <QSqlQuery>
+#include "SqliteQueries.h"
 #include "SqlQueryStore.h"
 
 #include <utility>
 
-SqliteCoverCacheRepository::SqliteCoverCacheRepository(QSqlDatabase database, QString readQuery,
-                                                       QString upsertQuery, QString deleteQuery,
-                                                       QString clearQuery)
-    : database_(std::move(database)), readQuery_(std::move(readQuery)),
-      upsertQuery_(std::move(upsertQuery)), deleteQuery_(std::move(deleteQuery)),
-      clearQuery_(std::move(clearQuery)) {
+SqliteCoverCacheRepository::SqliteCoverCacheRepository(QSqlDatabase database) : database_(std::move(database)) {
 }
 
 bool SqliteCoverCacheRepository::ReadAll(QHash<int, CoverCacheEntry> &entries, QString &error) {
     entries.clear();
     error.clear();
     QString readQuery;
-    if (!SqlQueryStore::loadSource(readQuery_, readQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadCoverCache, readQuery, error)) return false;
     QSqlQuery query(database_);
     if (!query.exec(readQuery)) {
         error = query.lastError().text();
@@ -58,7 +54,7 @@ bool SqliteCoverCacheRepository::Upsert(const CoverCacheEntry &entry, QString &e
     }
     QSqlQuery query(database_);
     QString upsertQuery;
-    if (!SqlQueryStore::loadSource(upsertQuery_, upsertQuery, error)
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpsertCoverCache, upsertQuery, error)
         || !query.prepare(upsertQuery)) {
         error = query.lastError().text();
         return false;
@@ -84,7 +80,7 @@ bool SqliteCoverCacheRepository::Remove(const int mediaId, QString &error) {
     error.clear();
     QSqlQuery query(database_);
     QString deleteQuery;
-    if (!SqlQueryStore::loadSource(deleteQuery_, deleteQuery, error)
+    if (!SqlQueryStore::loadSource(SqliteQueries::DeleteCoverCache, deleteQuery, error)
         || !query.prepare(deleteQuery)) {
         error = query.lastError().text();
         return false;
@@ -101,7 +97,7 @@ bool SqliteCoverCacheRepository::Clear(int &removedEntries, QString &error) {
     removedEntries = 0;
     error.clear();
     QString clearQuery;
-    if (!SqlQueryStore::loadSource(clearQuery_, clearQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ClearCoverCache, clearQuery, error)) return false;
     QSqlQuery query(database_);
     if (!query.exec(clearQuery)) {
         error = query.lastError().text();

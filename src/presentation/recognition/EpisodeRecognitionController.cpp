@@ -11,7 +11,7 @@ void EpisodeRecognitionController::Reload() {
     QList<RecognitionRecord> records;
     if (readPage(std::nullopt, records)) {
         errorMessage_.clear();
-        model_.setRecords(records, mediaTitles_);
+        model_.SetRecords(records, mediaTitles_);
     }
     emit changed();
 }
@@ -19,7 +19,7 @@ void EpisodeRecognitionController::Reload() {
 void EpisodeRecognitionController::LoadMore() {
     if (!hasMore_ || model_.records().isEmpty()) return;
     QList<RecognitionRecord> records;
-    if (readPage(model_.records().last().id(), records)) model_.appendRecords(records, mediaTitles_);
+    if (readPage(model_.records().last().id(), records)) model_.AppendRecords(records, mediaTitles_);
     emit changed();
 }
 

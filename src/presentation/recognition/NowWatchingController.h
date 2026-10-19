@@ -18,7 +18,6 @@ class NowWatchingController final : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool active READ active NOTIFY changed)
     Q_PROPERTY(QVariantList sessions READ sessions NOTIFY changed)
-    Q_PROPERTY(QString selectedSessionKey READ selectedSessionKey NOTIFY changed)
     Q_PROPERTY(QVariantMap current READ current NOTIFY changed)
 
 public:
@@ -33,9 +32,9 @@ public:
     /// The selected session; optional values are absent keys, never empty strings.
     [[nodiscard]] QVariantMap current() const { return current_; }
 
-    void setPreferredTitleKey(const QString &key);
+    void ConfigurePreferredTitle(const QString &key);
     /// Cached local cover per media id; remote cover URLs are never handed to QML.
-    void setCoverSource(std::function<QString(int mediaId)> coverSource);
+    void SetCoverSource(std::function<QString(int mediaId)> coverSource);
     Q_INVOKABLE void SelectSession(const QString &key);
     /// Rebuilds sessions and the selected card from the registry and the library.
     void Refresh();

@@ -70,7 +70,6 @@ void AniListAccountOwnershipTests::partitionsAreSkippedWithoutTokenOrAccount() {
         credentials.userId = 7;
         QVERIFY(!ShouldSkipAniListPartition(partition, credentials));
     }
-    QVERIFY(!ShouldSkipAniListPartition(SyncPartition::Covers, {}));
 }
 
 QTEST_MAIN(AniListAccountOwnershipTests)

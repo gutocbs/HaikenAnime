@@ -8,18 +8,6 @@
 #include "../../src/infrastructure/database/SqlitePersonalListChangeWriter.h"
 
 namespace {
-const auto UpsertMedia = QStringLiteral(":/sqlite/queries/upsert-media.sql");
-const auto ReadMedia = QStringLiteral(":/sqlite/queries/read-media.sql");
-const auto ReadActiveMediaIds = QStringLiteral(":/sqlite/queries/read-active-media-ids.sql");
-const auto MarkSourceRemoved = QStringLiteral(":/sqlite/queries/mark-media-source-removed.sql");
-const auto UpdatePersonalListMedia = QStringLiteral(":/sqlite/queries/update-personal-list-media.sql");
-const auto MarkPersonalListRemoved = QStringLiteral(":/sqlite/queries/mark-media-personal-list-removed.sql");
-const auto SupersedePendingDeletion = QStringLiteral(":/sqlite/queries/supersede-pending-deletion.sql");
-const auto EnqueueChange = QStringLiteral(":/sqlite/queries/enqueue-pending-change.sql");
-const auto ReadChanges = QStringLiteral(":/sqlite/queries/read-pending-changes.sql");
-const auto ReadPendingMediaIds = QStringLiteral(":/sqlite/queries/read-pending-media-ids.sql");
-const auto UpdateChange = QStringLiteral(":/sqlite/queries/update-pending-change.sql");
-
 bool insertMedia(QSqlDatabase database, int mediaId) {
     QSqlQuery query(database);
     query.prepare(QStringLiteral(
@@ -35,6 +23,7 @@ class SqliteRepositoryTests : public QObject {
 
 private slots:
     void mediaRoundTripPreservesAlternativeNames();
+    void failedUpsertPreparationLeavesNoOpenTransaction();
     void mediaRoundTripPreservesExtendedMetadata();
     void extendedMetadataUpsertPreservesUserEditedFields();
     void personalListUpdatePersistsEditorFieldsWithoutOverwritingCatalogMetadata();
@@ -68,8 +57,7 @@ void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
     SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY(database.migrate());
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved);
+    SqliteMediaRepository repository(database.connection());
 
     Media expected;
     expected.Id = 7;
@@ -92,13 +80,33 @@ void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
     QCOMPARE(actual.first().CoverExtraLargeUrl, expected.CoverExtraLargeUrl);
 }
 
+void SqliteRepositoryTests::failedUpsertPreparationLeavesNoOpenTransaction() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    QSqlQuery query(database.connection());
+    // Without the media table the upsert statement cannot be prepared.
+    QVERIFY(query.exec(QStringLiteral("ALTER TABLE media RENAME TO media_moved")));
+    SqliteMediaRepository repository(database.connection());
+    Media media;
+    media.Id = 1;
+    media.Name = QStringLiteral("Frieren");
+    QString error;
+
+    QVERIFY(!repository.upsert({media}, error));
+
+    QVERIFY(!error.isEmpty());
+    QVERIFY2(database.connection().transaction(), "the failed upsert left its transaction open");
+    QVERIFY(database.connection().rollback());
+}
+
 void SqliteRepositoryTests::mediaRoundTripPreservesExtendedMetadata() {
     QTemporaryDir temporaryDirectory;
     SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY(database.migrate());
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved);
+    SqliteMediaRepository repository(database.connection());
 
     Media expected;
     expected.Id = 77;
@@ -144,8 +152,7 @@ void SqliteRepositoryTests::extendedMetadataUpsertPreservesUserEditedFields() {
     SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY(database.migrate());
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved);
+    SqliteMediaRepository repository(database.connection());
 
     Media initial;
     initial.Id = 79;
@@ -197,8 +204,8 @@ void SqliteRepositoryTests::personalListUpdatePersistsEditorFieldsWithoutOverwri
     SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY(database.migrate());
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved, UpdatePersonalListMedia);
+    SqliteMediaRepository repository(database.connection());
+    SqlitePersonalListChangeWriter editor(database.connection());
 
     Media existing;
     existing.Id = 80;
@@ -219,7 +226,7 @@ void SqliteRepositoryTests::personalListUpdatePersistsEditorFieldsWithoutOverwri
     edited.ListStatus = UserListStatus::Completed;
     edited.LocalPath = QStringLiteral("D:\\Anime\\edited.mkv");
     edited.AlternativeNames = {QStringLiteral("Edited title"), QStringLiteral("Localized title")};
-    QVERIFY2(repository.updatePersonalListMedia(edited, error), qPrintable(error));
+    QVERIFY2(editor.save(edited, {}, error), qPrintable(error));
 
     QList<Media> actual;
     QVERIFY2(repository.readAll(actual, error), qPrintable(error));
@@ -246,8 +253,7 @@ void SqliteRepositoryTests::authoritativeSnapshotMarksOnlyUnseenActiveMedia() {
     QSqlQuery alreadyRemoved(database.connection());
     QVERIFY(alreadyRemoved.exec(QStringLiteral(
         "UPDATE media SET source_removed_at = '2026-09-24T00:00:00Z' WHERE id = 9")));
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved);
+    SqliteMediaRepository repository(database.connection());
 
     int removedCount = -1;
     QString error;
@@ -278,8 +284,7 @@ void SqliteRepositoryTests::removedMediaIsHiddenAndUpsertReactivatesItPreserving
     QVERIFY(local.exec(QStringLiteral(
         "UPDATE media SET consumed_chapters = 12, personal_score = 90, "
         "source_removed_at = '2026-09-24T00:00:00Z' WHERE id = 7")));
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved);
+    SqliteMediaRepository repository(database.connection());
     QString error;
     QList<Media> active;
     QVERIFY(repository.readAll(active, error));
@@ -305,8 +310,7 @@ void SqliteRepositoryTests::personalListChangePersistsMediaAndPendingChangesToge
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     QVERIFY(insertMedia(database.connection(), 154587));
-    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia,
-                                          EnqueueChange, MarkPersonalListRemoved, SupersedePendingDeletion);
+    SqlitePersonalListChangeWriter writer(database.connection());
     Media media;
     media.Id = 154587;
     media.ConsumedChapters = 12;
@@ -341,8 +345,7 @@ void SqliteRepositoryTests::pendingChangeRoundTripPreservesRemoteObservedAt() {
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     QVERIFY(insertMedia(database.connection(), 7));
-    SqlitePendingChangeRepository repository(
-        database.connection(), EnqueueChange, ReadChanges, UpdateChange);
+    SqlitePendingChangeRepository repository(database.connection());
 
     AniListPendingChange expected;
     expected.mediaId = 7;
@@ -380,8 +383,7 @@ void SqliteRepositoryTests::readsDistinctMediaIdsWithAutomaticallySendableChange
         "'2026-10-10T10:02:00Z', '2026-10-10T10:02:00Z', 4), "
         "(9, 5, '{\"type\":\"int\",\"value\":1}', '{\"type\":\"int\",\"value\":2}', "
         "'2026-10-10T10:03:00Z', '2026-10-10T10:03:00Z', 2)")));
-    SqlitePendingChangeRepository repository(database.connection(), EnqueueChange, ReadChanges,
-                                              ReadPendingMediaIds, UpdateChange);
+    SqlitePendingChangeRepository repository(database.connection());
     QList<int> mediaIds;
     QString error;
 
@@ -395,8 +397,7 @@ void SqliteRepositoryTests::updatingStatusWithNullLastErrorStoresEmptyText() {
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     QVERIFY(insertMedia(database.connection(), 7));
-    SqlitePendingChangeRepository repository(
-        database.connection(), EnqueueChange, ReadChanges, UpdateChange);
+    SqlitePendingChangeRepository repository(database.connection());
 
     AniListPendingChange change;
     change.mediaId = 7;
@@ -437,8 +438,7 @@ void SqliteRepositoryTests::malformedPendingValueFailsInsteadOfBecomingEmptyText
         "(media_id, field, previous_value, new_value, created_at, local_updated_at, status) "
         "VALUES (7, 5, 'not-json', '{\"type\":\"int\",\"value\":2}', "
         "'2026-09-24T10:00:00Z', '2026-09-24T10:00:00Z', 0)")));
-    SqlitePendingChangeRepository repository(
-        database.connection(), EnqueueChange, ReadChanges, UpdateChange);
+    SqlitePendingChangeRepository repository(database.connection());
 
     QList<AniListPendingChange> changes;
     QString error;
@@ -460,8 +460,7 @@ void SqliteRepositoryTests::fractionalPendingIntegerIsRejected() {
         "VALUES (7, 5, '{\"type\":\"int\",\"value\":1.5}', "
         "'{\"type\":\"int\",\"value\":2}', '2026-09-24T10:00:00Z', "
         "'2026-09-24T10:00:00Z', 0)")));
-    SqlitePendingChangeRepository repository(
-        database.connection(), EnqueueChange, ReadChanges, UpdateChange);
+    SqlitePendingChangeRepository repository(database.connection());
 
     QList<AniListPendingChange> changes;
     QString error;
@@ -474,8 +473,7 @@ void SqliteRepositoryTests::updatingMissingPendingChangeFails() {
     SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY(database.migrate());
-    SqlitePendingChangeRepository repository(
-        database.connection(), EnqueueChange, ReadChanges, UpdateChange);
+    SqlitePendingChangeRepository repository(database.connection());
 
     AniListPendingChange missing;
     missing.id = 999;
@@ -490,8 +488,7 @@ void SqliteRepositoryTests::authoritativeSnapshotSkipsExcludedMediaAndHidesOnlyM
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     for (const int mediaId : {7, 8, 9}) QVERIFY(insertMedia(database.connection(), mediaId));
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved);
+    SqliteMediaRepository repository(database.connection());
     int removedCount = -1;
     QString error;
 
@@ -528,8 +525,7 @@ void SqliteRepositoryTests::readsMediaIdsWithUnsentChangesRegardlessOfOwner() {
         "(8, 9, '{}', '{}', '2026-10-10T10:02:00Z', '2026-10-10T10:02:00Z', 4), "
         "(9, 5, '{}', '{}', '2026-10-10T10:03:00Z', '2026-10-10T10:03:00Z', 2), "
         "(10, 5, '{}', '{}', '2026-10-10T10:04:00Z', '2026-10-10T10:04:00Z', 1)")));
-    SqlitePendingChangeRepository repository(database.connection(), EnqueueChange, ReadChanges,
-                                              ReadPendingMediaIds, UpdateChange);
+    SqlitePendingChangeRepository repository(database.connection());
     QSet<int> mediaIds;
     QString error;
 
@@ -549,10 +545,8 @@ void SqliteRepositoryTests::failedPendingChangeExcludesAbsentMediaFromRemoval() 
         "INSERT INTO anilist_pending_changes "
         "(media_id, field, previous_value, new_value, created_at, local_updated_at, status) VALUES "
         "(8, 5, '{}', '{}', '2026-10-10T10:00:00Z', '2026-10-10T10:00:00Z', 3)")));
-    SqlitePendingChangeRepository pendingChanges(database.connection(), EnqueueChange, ReadChanges,
-                                                 ReadPendingMediaIds, UpdateChange);
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved);
+    SqlitePendingChangeRepository pendingChanges(database.connection());
+    SqliteMediaRepository repository(database.connection());
     QSet<int> excluded;
     int removedCount = -1;
     QString error;
@@ -588,8 +582,7 @@ void SqliteRepositoryTests::pendingReadsAreScopedToCurrentOwnerAndKeepOtherOwner
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     for (const int mediaId : {7, 8, 9}) QVERIFY(insertMedia(database.connection(), mediaId));
-    SqlitePendingChangeRepository repository(database.connection(), EnqueueChange, ReadChanges,
-                                              ReadPendingMediaIds, UpdateChange);
+    SqlitePendingChangeRepository repository(database.connection());
     QString error;
     QVERIFY2(repository.enqueue(ownedChange(7, 1), error), qPrintable(error));
     QVERIFY2(repository.enqueue(ownedChange(8, 2), error), qPrintable(error));
@@ -624,8 +617,7 @@ void SqliteRepositoryTests::adoptingOrphanChangesAssignsOwnerAndReportsCount() {
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     for (const int mediaId : {7, 8, 9}) QVERIFY(insertMedia(database.connection(), mediaId));
-    SqlitePendingChangeRepository repository(database.connection(), EnqueueChange, ReadChanges,
-                                              ReadPendingMediaIds, UpdateChange);
+    SqlitePendingChangeRepository repository(database.connection());
     QString error;
     QVERIFY2(repository.enqueue(ownedChange(7, 0), error), qPrintable(error));
     QVERIFY2(repository.enqueue(ownedChange(8, 0), error), qPrintable(error));
@@ -652,8 +644,7 @@ void SqliteRepositoryTests::personalListWriterStoresOwnerOfPendingChanges() {
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     QVERIFY(insertMedia(database.connection(), 7));
-    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia, EnqueueChange,
-                                          MarkPersonalListRemoved, SupersedePendingDeletion);
+    SqlitePersonalListChangeWriter writer(database.connection());
     Media media;
     media.Id = 7;
     media.Name = QStringLiteral("Media");
@@ -682,7 +673,7 @@ AniListPendingChange deletionOf(int mediaId) {
 }
 
 int visibleMediaCount(QSqlDatabase database) {
-    SqliteMediaRepository repository(database, UpsertMedia, ReadMedia, ReadActiveMediaIds, MarkSourceRemoved);
+    SqliteMediaRepository repository(database);
     QList<Media> media;
     QString error;
     return repository.readAll(media, error) ? media.size() : -1;
@@ -695,8 +686,7 @@ void SqliteRepositoryTests::removalHidesMediaAndQueuesDeletionInOneTransaction()
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     QVERIFY(insertMedia(database.connection(), 7));
-    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia,
-                                          EnqueueChange, MarkPersonalListRemoved, SupersedePendingDeletion);
+    SqlitePersonalListChangeWriter writer(database.connection());
     Media media;
     media.Id = 7;
     QString error;
@@ -723,8 +713,7 @@ void SqliteRepositoryTests::removalRollsBackMarkWhenDeletionCannotBeQueued() {
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     QVERIFY(insertMedia(database.connection(), 7));
-    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia,
-                                          EnqueueChange, MarkPersonalListRemoved, SupersedePendingDeletion);
+    SqlitePersonalListChangeWriter writer(database.connection());
     Media media;
     media.Id = 7;
     QString error;
@@ -745,14 +734,12 @@ void SqliteRepositoryTests::synchronizationUpsertDoesNotRestoreRemovedMedia() {
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     QVERIFY(insertMedia(database.connection(), 7));
-    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia,
-                                          EnqueueChange, MarkPersonalListRemoved, SupersedePendingDeletion);
+    SqlitePersonalListChangeWriter writer(database.connection());
     Media media;
     media.Id = 7;
     QString error;
     QVERIFY2(writer.remove(media, deletionOf(7), error), qPrintable(error));
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved);
+    SqliteMediaRepository repository(database.connection());
     media.Name = QStringLiteral("Synchronized again");
 
     QVERIFY2(repository.upsert({media}, error), qPrintable(error));
@@ -766,8 +753,7 @@ void SqliteRepositoryTests::personalListUpdateRestoresRemovedMediaAndSupersedesP
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     QVERIFY(insertMedia(database.connection(), 7));
-    SqlitePersonalListChangeWriter writer(database.connection(), UpsertMedia, UpdatePersonalListMedia,
-                                          EnqueueChange, MarkPersonalListRemoved, SupersedePendingDeletion);
+    SqlitePersonalListChangeWriter writer(database.connection());
     Media media;
     media.Id = 7;
     QString error;
@@ -798,8 +784,7 @@ void SqliteRepositoryTests::synchronizationUpsertKeepsUserAlternativeNamesAndApp
     SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY(database.migrate());
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved);
+    SqliteMediaRepository repository(database.connection());
 
     Media stored;
     stored.Id = 191656;
@@ -826,8 +811,7 @@ void SqliteRepositoryTests::synchronizationUpsertWithSameNamesLeavesAlternativeN
     SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY(database.migrate());
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved);
+    SqliteMediaRepository repository(database.connection());
 
     Media media;
     media.Id = 5;
@@ -848,8 +832,8 @@ void SqliteRepositoryTests::editorUpdateStillReplacesAndRemovesAlternativeNames(
     SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY(database.migrate());
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved, UpdatePersonalListMedia);
+    SqliteMediaRepository repository(database.connection());
+    SqlitePersonalListChangeWriter editor(database.connection());
 
     Media media;
     media.Id = 6;
@@ -859,7 +843,7 @@ void SqliteRepositoryTests::editorUpdateStillReplacesAndRemovesAlternativeNames(
     QVERIFY2(repository.upsert({media}, error), qPrintable(error));
 
     media.AlternativeNames = {QStringLiteral("Keep")};
-    QVERIFY2(repository.updatePersonalListMedia(media, error), qPrintable(error));
+    QVERIFY2(editor.save(media, {}, error), qPrintable(error));
 
     QList<Media> actual;
     QVERIFY2(repository.readAll(actual, error), qPrintable(error));
@@ -871,15 +855,15 @@ void SqliteRepositoryTests::editedLocalPathSurvivesSynchronizationUpsertWithEmpt
     SqliteDatabase database(temporaryDirectory.filePath(QStringLiteral("library.sqlite")));
     QVERIFY(database.open());
     QVERIFY(database.migrate());
-    SqliteMediaRepository repository(database.connection(), UpsertMedia, ReadMedia,
-                                     ReadActiveMediaIds, MarkSourceRemoved, UpdatePersonalListMedia);
+    SqliteMediaRepository repository(database.connection());
+    SqlitePersonalListChangeWriter editor(database.connection());
     Media media;
     media.Id = 81;
     media.Name = QStringLiteral("Folder media");
     QString error;
     QVERIFY2(repository.upsert({media}, error), qPrintable(error));
     media.LocalPath = QStringLiteral("D:/Anime/Folder media");
-    QVERIFY2(repository.updatePersonalListMedia(media, error), qPrintable(error));
+    QVERIFY2(editor.save(media, {}, error), qPrintable(error));
 
     QList<Media> afterEdit;
     QVERIFY2(repository.readAll(afterEdit, error), qPrintable(error));

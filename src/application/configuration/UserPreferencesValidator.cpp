@@ -15,10 +15,7 @@ QString ComparableLibraryRoot(const QString &root) {
 
 bool ValidateLibraryRoots(const QStringList &roots, QString &error) {
     error.clear();
-    if (roots.isEmpty()) {
-        error = QStringLiteral("At least one library folder must be configured.");
-        return false;
-    }
+    // No folder is valid (a new installation); folders that are given must be distinct and non-blank.
     QStringList comparable;
     for (const auto &root : roots) {
         if (root.trimmed().isEmpty()) {
@@ -79,9 +76,7 @@ QStringList NormalizeScanExtensions(const QStringList &extensions, QString &erro
 }
 
 UserPreferencesValidationResult ValidateUserPreferences(const UserPreferences &preferences) {
-    const QStringList supportedLists = {QStringLiteral("current"), QStringLiteral("planning"),
-                                        QStringLiteral("on_hold"), QStringLiteral("dropped"),
-                                        QStringLiteral("completed")};
+    const QStringList supportedLists = UserListKeys();
     for (const auto &list : preferences.enabledUserLists) {
         if (!supportedLists.contains(list)) {
             return {false, QStringLiteral("Enabled user list is unsupported: %1").arg(list)};

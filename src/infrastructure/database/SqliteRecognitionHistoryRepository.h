@@ -7,11 +7,7 @@
 
 class SqliteRecognitionHistoryRepository final : public IRecognitionHistoryRepository {
 public:
-    SqliteRecognitionHistoryRepository(
-        QSqlDatabase database, QString readQuery, QString insertQuery, QString updateQuery,
-        QString deleteQuery = QStringLiteral(":/sqlite/queries/delete-recognition-record.sql"),
-        QString discardProgressQuery = QStringLiteral(":/sqlite/queries/discard-recognition-progress.sql"),
-        QString queuedProgressQuery = QStringLiteral(":/sqlite/queries/find-queued-recognition-progress.sql"));
+    explicit SqliteRecognitionHistoryRepository(QSqlDatabase database);
 
     bool insert(RecognitionRecord &record, QString &error) override;
     bool update(const RecognitionRecord &record, QString &error) override;
@@ -21,12 +17,6 @@ public:
 
 private:
     QSqlDatabase database_;
-    QString readQuery_;
-    QString insertQuery_;
-    QString updateQuery_;
-    QString deleteQuery_;
-    QString discardProgressQuery_;
-    QString queuedProgressQuery_;
 };
 
 #endif // HAIKENANIME_SQLITERECOGNITIONHISTORYREPOSITORY_H

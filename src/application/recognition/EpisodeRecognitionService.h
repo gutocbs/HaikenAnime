@@ -38,17 +38,6 @@ private:
     bool catalogLoaded_ = false;
 };
 
-/// IMediaProgressReader over the existing media reader.
-class MediaReaderProgressReader final : public IMediaProgressReader {
-public:
-    explicit MediaReaderProgressReader(IMediaReader &reader);
-
-    bool find(int mediaId, std::optional<Media> &media, QString &error) override;
-
-private:
-    IMediaReader &reader_;
-};
-
 /// Pipeline: plugin events → library association → continuous-playback policy → progress decision
 /// → history (+ AniList outbox through the progress writer). Owns no plugin.
 class EpisodeRecognitionService final : public IPlaybackObserver {
@@ -73,7 +62,6 @@ public:
 
 private:
     void complete(const PlaybackSession &session, const EpisodeCandidate &candidate);
-    void incomplete(const PlaybackSession &session, const EpisodeCandidate &candidate);
     void report(const QString &message) const;
 
     PluginRegistry &registry_;

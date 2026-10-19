@@ -2,12 +2,12 @@
 
 #include <QCryptographicHash>
 #include <QDir>
-#include <QDirIterator>
 #include <QFile>
 #include <QFileInfo>
 #include <QImageReader>
 #include <QMimeDatabase>
 #include <QSaveFile>
+#include <QSet>
 
 namespace {
 const QSet<QString> AllowedMimeTypes{"image/png", "image/jpeg", "image/webp", "image/gif"};
@@ -117,26 +117,4 @@ bool CoverFileStore::Clear(int &removedFiles, QString &error)
         }
     }
     return complete;
-}
-
-bool CoverFileStore::RemoveOrphans(const QSet<QString> &referencedPaths, int maxFiles,
-                                   int &removedFiles, QString &error)
-{
-    removedFiles = 0;
-    error.clear();
-    if (maxFiles <= 0) return true;
-    QDirIterator iterator(rootPath_, QDir::Files | QDir::NoDotAndDotDot);
-    const int inspectionLimit = maxFiles + referencedPaths.size();
-    int inspected = 0;
-    while (iterator.hasNext() && inspected++ < inspectionLimit && removedFiles < maxFiles) {
-        iterator.next();
-        const QString name = iterator.fileName();
-        if (referencedPaths.contains(name)) continue;
-        if (!QFile::remove(iterator.filePath())) {
-            error = "Could not remove an orphan cover file.";
-            return false;
-        }
-        ++removedFiles;
-    }
-    return true;
 }

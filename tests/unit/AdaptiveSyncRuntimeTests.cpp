@@ -26,10 +26,6 @@ public:
         error.clear();
         return true;
     }
-    bool Remove(const SyncPartition &, QString &error) override {
-        error.clear();
-        return true;
-    }
 
     QList<SyncTaskState> states;
 };

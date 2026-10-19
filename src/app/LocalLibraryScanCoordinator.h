@@ -6,7 +6,7 @@
 #include <functional>
 #include <memory>
 
-#include "../application/library/ILocalFileRepository.h"
+#include "../application/library/ILocalFileScanRepository.h"
 #include "../application/library/ILocalLibraryScanner.h"
 
 class QThread;
@@ -18,7 +18,7 @@ class LocalLibraryScanCoordinator final : public QObject {
     Q_OBJECT
 public:
     using ScannerFactory = std::function<std::unique_ptr<ILocalLibraryScanner>(QString &error)>;
-    using RepositoryFactory = std::function<std::unique_ptr<ILocalFileRepository>(QString &error)>;
+    using RepositoryFactory = std::function<std::unique_ptr<ILocalFileScanRepository>(QString &error)>;
 
     LocalLibraryScanCoordinator(ScannerFactory scannerFactory, RepositoryFactory repositoryFactory,
                                 QObject *parent = nullptr);

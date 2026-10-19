@@ -8,10 +8,6 @@
 #include "../../src/infrastructure/database/SqliteDatabase.h"
 
 namespace {
-const auto ReadSql = QStringLiteral(":/sqlite/queries/read-cover-cache.sql");
-const auto UpsertSql = QStringLiteral(":/sqlite/queries/upsert-cover-cache.sql");
-const auto DeleteSql = QStringLiteral(":/sqlite/queries/delete-cover-cache.sql");
-const auto ClearSql = QStringLiteral(":/sqlite/queries/clear-cover-cache.sql");
 
 void InsertMedia(QSqlDatabase database, const int id) {
     QSqlQuery query(database);
@@ -53,8 +49,7 @@ void SqliteCoverCacheRepositoryTests::roundTripsAndReplacesEntry() {
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     InsertMedia(database.connection(), 42);
-    SqliteCoverCacheRepository repository(database.connection(), ReadSql, UpsertSql,
-                                          DeleteSql, ClearSql);
+    SqliteCoverCacheRepository repository(database.connection());
     QString error;
 
     QVERIFY2(repository.Upsert(Entry(42, QStringLiteral("https://img/old.jpg"),
@@ -79,8 +74,7 @@ void SqliteCoverCacheRepositoryTests::persistsEntryWithoutHttpValidators() {
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     InsertMedia(database.connection(), 42);
-    SqliteCoverCacheRepository repository(database.connection(), ReadSql, UpsertSql,
-                                          DeleteSql, ClearSql);
+    SqliteCoverCacheRepository repository(database.connection());
     auto entry = Entry(42, QStringLiteral("https://img/cover.jpg"),
                        QStringLiteral("42-cover.jpg"));
     entry.etag = {};
@@ -101,8 +95,7 @@ void SqliteCoverCacheRepositoryTests::rejectsAbsolutePath() {
     QVERIFY(database.open());
     QVERIFY(database.migrate());
     InsertMedia(database.connection(), 42);
-    SqliteCoverCacheRepository repository(database.connection(), ReadSql, UpsertSql,
-                                          DeleteSql, ClearSql);
+    SqliteCoverCacheRepository repository(database.connection());
     QString error;
 
     QVERIFY(!repository.Upsert(Entry(42, QStringLiteral("https://img/cover.jpg"),
@@ -117,8 +110,7 @@ void SqliteCoverCacheRepositoryTests::cascadesMediaDeletionAndClearsEntries() {
     QVERIFY(database.migrate());
     InsertMedia(database.connection(), 42);
     InsertMedia(database.connection(), 43);
-    SqliteCoverCacheRepository repository(database.connection(), ReadSql, UpsertSql,
-                                          DeleteSql, ClearSql);
+    SqliteCoverCacheRepository repository(database.connection());
     QString error;
     QVERIFY(repository.Upsert(Entry(42, QStringLiteral("https://img/42.jpg"),
                                     QStringLiteral("covers/42.jpg")), error));
@@ -167,8 +159,7 @@ void SqliteCoverCacheRepositoryTests::clearReportsCountAndPreservesPrimaryData()
         "size_bytes, modified_at, last_seen_scan_id) "
         "VALUES ('Q:/Library', 'Show/Episode.mkv', 'show/episode.mkv', 'Episode.mkv', "
         "'.mkv', 123, '2026-10-07T00:00:00Z', 1)")));
-    SqliteCoverCacheRepository repository(database.connection(), ReadSql, UpsertSql,
-                                          DeleteSql, ClearSql);
+    SqliteCoverCacheRepository repository(database.connection());
     QString error;
     QVERIFY(repository.Upsert(Entry(42, QStringLiteral("https://img/42.jpg"),
                                     QStringLiteral("covers/42.jpg")), error));

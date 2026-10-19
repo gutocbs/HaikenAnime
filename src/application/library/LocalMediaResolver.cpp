@@ -43,19 +43,9 @@ LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognit
 }
 
 LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognition,
-                                            const LocalMediaCatalogIndex &index) const {
-    return resolve(recognition, index, QString());
-}
-
-LocalMediaMatch LocalMediaResolver::resolve(const LocalFileRecognition &recognition,
                                             const LocalMediaCatalogIndex &index,
                                             const QString &absoluteFilePath) const {
     LocalMediaMatch result;
-    if (recognition.mediaKind != LocalMediaKind::Anime) {
-        result.state = LocalRecognitionState::Unsupported;
-        result.diagnostic = QStringLiteral("The local media kind is not supported yet.");
-        return result;
-    }
     const auto hasValidEpisode = recognition.episode.has_value() && recognition.episode.value() > 0;
     const auto folderMatches = absoluteFilePath.isEmpty() ? QList<int>() : index.findByFolder(absoluteFilePath);
     if (!folderMatches.isEmpty()) {

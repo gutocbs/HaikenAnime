@@ -14,7 +14,8 @@ public:
     /** Reads the complete SQL statement and reports filesystem errors through error. */
     [[nodiscard]] bool load(QString &query, QString &error) const;
 
-    /** Loads a SQL query from a Qt resource or filesystem path. */
+    /** Loads a SQL query from a Qt resource or filesystem path. Resources are read (and logged) only on the
+     *  first call and served from memory afterwards; filesystem files are always read again. */
     [[nodiscard]] static bool loadSource(const QString &source, QString &query, QString &error,
                                          AsyncLogger *logger = nullptr);
 

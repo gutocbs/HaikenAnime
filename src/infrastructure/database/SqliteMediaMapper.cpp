@@ -3,6 +3,41 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QVariant>
+
+namespace {
+QVariant OptionalValue(const std::optional<int> &value) {
+    return value.has_value() ? QVariant(value.value()) : QVariant();
+}
+
+QVariant OptionalValue(const std::optional<qint64> &value) {
+    return value.has_value() ? QVariant::fromValue(value.value()) : QVariant();
+}
+
+QString SerializeLinks(const QList<MediaLink> &links) {
+    QJsonArray array;
+    for (const auto &link : links) {
+        array.append(QJsonObject{{QStringLiteral("site"), link.Site},
+                                 {QStringLiteral("url"), link.Url}});
+    }
+    return QString::fromUtf8(QJsonDocument(array).toJson(QJsonDocument::Compact));
+}
+
+QList<MediaLink> ParseLinks(const QByteArray &json) {
+    QList<MediaLink> links;
+    for (const auto &value : QJsonDocument::fromJson(json).array()) {
+        const auto link = value.toObject();
+        const auto site = link.value(QStringLiteral("site"));
+        const auto url = link.value(QStringLiteral("url"));
+        if (site.isString() && url.isString()) links.append(MediaLink{site.toString(), url.toString()});
+    }
+    return links;
+}
+
+QString NonNullLocalPath(const Media &media) {
+    return media.LocalPath.isNull() ? QStringLiteral("") : media.LocalPath;
+}
+}
 
 Media SqliteMediaMapper::Map(const QSqlQuery &query) {
     Media media;
@@ -10,12 +45,7 @@ Media SqliteMediaMapper::Map(const QSqlQuery &query) {
     media.Name = query.value(1).toString();
     media.EnglishName = query.value(2).toString();
     media.OriginalName = query.value(3).toString();
-    const auto alternativeNames = QJsonDocument::fromJson(query.value(4).toByteArray());
-    for (const auto &name : alternativeNames.array()) {
-        if (name.isString()) {
-            media.AlternativeNames.append(name.toString());
-        }
-    }
+    media.AlternativeNames = ParseNames(query.value(4).toString());
     media.TotalChapters = query.value(5).toInt();
     media.ConsumedChapters = query.value(6).toInt();
     media.NextChapter = query.value(7).toInt();
@@ -35,14 +65,54 @@ Media SqliteMediaMapper::Map(const QSqlQuery &query) {
     if (!query.value(21).isNull()) media.NextAiringEpisode = query.value(21).toInt();
     if (!query.value(22).isNull()) media.NextAiringAt = query.value(22).toLongLong();
     media.AniListUrl = query.value(23).toString();
-    const auto externalLinks = QJsonDocument::fromJson(query.value(24).toByteArray());
-    for (const auto &value : externalLinks.array()) {
-        const auto link = value.toObject();
-        const auto site = link.value(QStringLiteral("site"));
-        const auto url = link.value(QStringLiteral("url"));
-        if (site.isString() && url.isString()) {
-            media.ExternalLinks.append(MediaLink{site.toString(), url.toString()});
-        }
-    }
+    media.ExternalLinks = ParseLinks(query.value(24).toByteArray());
     return media;
+}
+
+void SqliteMediaMapper::BindUpsert(QSqlQuery &query, const Media &media, const QStringList &alternativeNames) {
+    query.bindValue(QStringLiteral(":id"), media.Id);
+    query.bindValue(QStringLiteral(":name"), media.Name);
+    query.bindValue(QStringLiteral(":english_name"), media.EnglishName);
+    query.bindValue(QStringLiteral(":original_name"), media.OriginalName);
+    query.bindValue(QStringLiteral(":alternative_names"), SerializeNames(alternativeNames));
+    query.bindValue(QStringLiteral(":total_chapters"), media.TotalChapters);
+    query.bindValue(QStringLiteral(":consumed_chapters"), media.ConsumedChapters);
+    query.bindValue(QStringLiteral(":average_score"), media.AverageScore);
+    query.bindValue(QStringLiteral(":personal_score"), media.PersonalScore);
+    query.bindValue(QStringLiteral(":cover_url"), media.CoverUrl);
+    query.bindValue(QStringLiteral(":cover_medium_url"), media.CoverMediumUrl);
+    query.bindValue(QStringLiteral(":cover_large_url"), media.CoverLargeUrl);
+    query.bindValue(QStringLiteral(":cover_extra_large_url"), media.CoverExtraLargeUrl);
+    query.bindValue(QStringLiteral(":synopsis"), media.Synopsis);
+    query.bindValue(QStringLiteral(":type"), static_cast<int>(media.Type));
+    query.bindValue(QStringLiteral(":status"), static_cast<int>(media.Status));
+    query.bindValue(QStringLiteral(":user_list_status"), static_cast<int>(media.ListStatus));
+    query.bindValue(QStringLiteral(":local_path"), NonNullLocalPath(media));
+    query.bindValue(QStringLiteral(":season"), media.Season);
+    query.bindValue(QStringLiteral(":season_year"), OptionalValue(media.SeasonYear));
+    query.bindValue(QStringLiteral(":next_airing_episode"), OptionalValue(media.NextAiringEpisode));
+    query.bindValue(QStringLiteral(":next_airing_at"), OptionalValue(media.NextAiringAt));
+    query.bindValue(QStringLiteral(":anilist_url"), media.AniListUrl);
+    query.bindValue(QStringLiteral(":external_links"), SerializeLinks(media.ExternalLinks));
+}
+
+void SqliteMediaMapper::BindPersonalListUpdate(QSqlQuery &query, const Media &media) {
+    query.bindValue(QStringLiteral(":id"), media.Id);
+    query.bindValue(QStringLiteral(":consumed_chapters"), media.ConsumedChapters);
+    query.bindValue(QStringLiteral(":personal_score"), media.PersonalScore);
+    query.bindValue(QStringLiteral(":user_list_status"), static_cast<int>(media.ListStatus));
+    query.bindValue(QStringLiteral(":local_path"), NonNullLocalPath(media));
+    query.bindValue(QStringLiteral(":alternative_names"), SerializeNames(media.AlternativeNames));
+}
+
+QString SqliteMediaMapper::SerializeNames(const QStringList &names) {
+    return QString::fromUtf8(QJsonDocument::fromVariant(names).toJson());
+}
+
+QStringList SqliteMediaMapper::ParseNames(const QString &json) {
+    QStringList names;
+    for (const auto &value : QJsonDocument::fromJson(json.toUtf8()).array()) {
+        if (value.isString()) names.append(value.toString());
+    }
+    return names;
 }

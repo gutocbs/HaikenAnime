@@ -1,11 +1,12 @@
 #include "SqliteLocalFileRepository.h"
 
-#include <QDir>
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QPair>
 
 #include "SqliteMediaMapper.h"
+#include "../../application/library/LocalMediaCatalogIndex.h"
+#include "SqliteQueries.h"
 #include "SqlQueryStore.h"
 
 #include <utility>
@@ -59,32 +60,9 @@ LocalFileRecognitionRecord MapRecognitionRecord(const QSqlQuery &query) {
     record.diagnostic = query.value(14).toString();
     return record;
 }
-// Same cleaning and case rule as LocalMediaCatalogIndex::NormalizeFolder.
-QString ComparablePath(const QString &path) {
-    auto normalized = path.trimmed();
-    normalized.replace(QLatin1Char('\\'), QLatin1Char('/'));
-    if (normalized.isEmpty()) return {};
-    normalized = QDir::cleanPath(normalized);
-    while (normalized.endsWith(QLatin1Char('/'))) normalized.chop(1);
-    if (normalized == QLatin1String(".")) return {};
-#ifdef Q_OS_WIN
-    normalized = normalized.toCaseFolded();
-#endif
-    return normalized;
-}
 }
 
-SqliteLocalFileRepository::SqliteLocalFileRepository(QSqlDatabase database, QString beginQuery,
-    QString upsertQuery, QString completeQuery, QString failQuery, QString markUnavailableQuery,
-    QString readPendingQuery, QString readCatalogQuery, QString saveRecognitionQuery,
-    QString readUnderFolderQuery, QString readRootsQuery)
-    : database_(std::move(database)), beginQuery_(std::move(beginQuery)),
-      upsertQuery_(std::move(upsertQuery)), completeQuery_(std::move(completeQuery)),
-      failQuery_(std::move(failQuery)), markUnavailableQuery_(std::move(markUnavailableQuery)),
-      readPendingQuery_(std::move(readPendingQuery)), readCatalogQuery_(std::move(readCatalogQuery)),
-      saveRecognitionQuery_(std::move(saveRecognitionQuery)),
-      readUnderFolderQuery_(std::move(readUnderFolderQuery)),
-      readRootsQuery_(std::move(readRootsQuery)) {}
+SqliteLocalFileRepository::SqliteLocalFileRepository(QSqlDatabase database) : database_(std::move(database)) {}
 
 bool SqliteLocalFileRepository::beginScan(const QString &rootPath, qint64 &scanId, QString &error) {
     scanId = 0;
@@ -95,7 +73,7 @@ bool SqliteLocalFileRepository::beginScan(const QString &rootPath, qint64 &scanI
     }
     QSqlQuery query(database_);
     QString beginQuery;
-    if (!SqlQueryStore::loadSource(beginQuery_, beginQuery, error)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::BeginLibraryScan, beginQuery, error)) {
         return false;
     }
     if (!query.prepare(beginQuery)) {
@@ -136,8 +114,8 @@ bool SqliteLocalFileRepository::upsertBatch(qint64 scanId, const QList<LocalFile
     if (!transaction.begin(error)) return false;
     QSqlQuery query(database_);
     QString upsertQuery;
-    if (!SqlQueryStore::loadSource(upsertQuery_, upsertQuery, error)
-        || !query.prepare(upsertQuery)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpsertLocalFile, upsertQuery, error)) return false;
+    if (!query.prepare(upsertQuery)) {
         error = query.lastError().text();
         return false;
     }
@@ -164,8 +142,8 @@ bool SqliteLocalFileRepository::completeScan(qint64 scanId, qsizetype observedCo
     if (!transaction.begin(error)) return false;
     QSqlQuery unavailable(database_);
     QString markUnavailableQuery;
-    if (!SqlQueryStore::loadSource(markUnavailableQuery_, markUnavailableQuery, error)
-        || !unavailable.prepare(markUnavailableQuery)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::MarkLocalFilesUnavailable, markUnavailableQuery, error)) return false;
+    if (!unavailable.prepare(markUnavailableQuery)) {
         error = unavailable.lastError().text();
         return false;
     }
@@ -176,8 +154,8 @@ bool SqliteLocalFileRepository::completeScan(qint64 scanId, qsizetype observedCo
     }
     QSqlQuery complete(database_);
     QString completeQuery;
-    if (!SqlQueryStore::loadSource(completeQuery_, completeQuery, error)
-        || !complete.prepare(completeQuery)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::CompleteLibraryScan, completeQuery, error)) return false;
+    if (!complete.prepare(completeQuery)) {
         error = complete.lastError().text();
         return false;
     }
@@ -199,8 +177,8 @@ bool SqliteLocalFileRepository::failScan(qint64 scanId, LibraryScanStatus status
     }
     QSqlQuery query(database_);
     QString failQuery;
-    if (!SqlQueryStore::loadSource(failQuery_, failQuery, error)
-        || !query.prepare(failQuery)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::FailLibraryScan, failQuery, error)) return false;
+    if (!query.prepare(failQuery)) {
         error = query.lastError().text();
         return false;
     }
@@ -218,7 +196,7 @@ bool SqliteLocalFileRepository::readPendingRecognition(const QString &rootPath,
                                                        QString &error) {
     records.clear(); error.clear();
     QString readPendingQuery;
-    if (!SqlQueryStore::loadSource(readPendingQuery_, readPendingQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadPendingLocalFiles, readPendingQuery, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(readPendingQuery)) { error = query.lastError().text(); return false; }
     query.bindValue(QStringLiteral(":root_path"), rootPath);
@@ -231,22 +209,22 @@ bool SqliteLocalFileRepository::readFilesUnderFolder(const QString &folderPath,
                                                      QList<LocalFileRecognitionRecord> &records,
                                                      QString &error) {
     records.clear(); error.clear();
-    const auto folder = ComparablePath(folderPath);
+    const auto folder = LocalMediaCatalogIndex::NormalizeFolder(folderPath);
     if (folder.isEmpty()) {
         error = QStringLiteral("Reading local files under a folder requires a folder path.");
         return false;
     }
     QString readRootsQuery;
     QString readUnderFolderQuery;
-    if (!SqlQueryStore::loadSource(readRootsQuery_, readRootsQuery, error)
-        || !SqlQueryStore::loadSource(readUnderFolderQuery_, readUnderFolderQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadLocalFileRoots, readRootsQuery, error)
+        || !SqlQueryStore::loadSource(SqliteQueries::ReadLocalFilesUnderFolder, readUnderFolderQuery, error)) return false;
     // Root and folder are compared in C++ because SQLite NOCASE only folds ASCII.
     QSqlQuery rootsQuery(database_);
     if (!rootsQuery.prepare(readRootsQuery) || !rootsQuery.exec()) { error = rootsQuery.lastError().text(); return false; }
     QList<QPair<QString, QString>> matches;
     while (rootsQuery.next()) {
         const auto rootPath = rootsQuery.value(0).toString();
-        const auto root = ComparablePath(rootPath);
+        const auto root = LocalMediaCatalogIndex::NormalizeFolder(rootPath);
         if (root.isEmpty()) continue;
         if (folder == root) { matches.append({rootPath, QStringLiteral("")});  /* non-null: a null binds as SQL NULL */ continue; }
         // The separator boundary keeps "Show" from matching "Show 2".
@@ -269,7 +247,7 @@ bool SqliteLocalFileRepository::readFilesUnderFolder(const QString &folderPath,
 bool SqliteLocalFileRepository::readRecognitionCatalog(QList<Media> &media, QString &error) {
     media.clear(); error.clear();
     QString readCatalogQuery;
-    if (!SqlQueryStore::loadSource(readCatalogQuery_, readCatalogQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::ReadCatalogMediaForRecognition, readCatalogQuery, error)) return false;
     QSqlQuery query(database_);
     if (!query.prepare(readCatalogQuery) || !query.exec()) { error = query.lastError().text(); return false; }
     while (query.next()) media.append(SqliteMediaMapper::Map(query));
@@ -280,7 +258,7 @@ bool SqliteLocalFileRepository::saveRecognitionBatch(const QList<LocalFileRecogn
                                                      QString &error) {
     error.clear();
     QString saveRecognitionQuery;
-    if (!SqlQueryStore::loadSource(saveRecognitionQuery_, saveRecognitionQuery, error)) return false;
+    if (!SqlQueryStore::loadSource(SqliteQueries::SaveLocalFileRecognition, saveRecognitionQuery, error)) return false;
     if (records.isEmpty()) return true;
     Transaction transaction(database_);
     if (!transaction.begin(error)) return false;

@@ -1,4 +1,5 @@
 #include <QSignalSpy>
+#include <QTemporaryDir>
 #include <QtTest>
 #include <limits>
 #include <QMutexLocker>
@@ -7,10 +8,10 @@
 
 #include "../../src/presentation/settings/SettingsController.h"
 #include "../../src/app/LocalLibraryScanCoordinator.h"
-#include "../../src/application/cache/ClearLocalCacheUseCase.h"
+#include "../../src/app/ClearLocalCacheUseCase.h"
 #include "../../src/application/anilist/AniListAuthManager.h"
 #include "../../src/application/anilist/RemoveAniListAccountUseCase.h"
-#include "../../src/application/covers/CoverDownloadCoordinator.h"
+#include "../../src/app/CoverDownloadCoordinator.h"
 
 struct ScanFixture {
     QMutex mutex;
@@ -33,7 +34,7 @@ private:
     std::shared_ptr<ScanFixture> fixture_;
 };
 
-class ScanRepository final : public ILocalFileRepository {
+class ScanRepository final : public ILocalFileScanRepository {
 public:
     bool beginScan(const QString &, qint64 &id, QString &) override { id = 1; return true; }
     bool upsertBatch(qint64, const QList<LocalFileObservation> &, QString &) override { return true; }
@@ -132,7 +133,6 @@ public:
         error = failure;
         return failure.isEmpty();
     }
-    bool RemoveOrphans(const QSet<QString> &, int, int &, QString &) override { return true; }
     QString AbsolutePath(const QString &) const override { return {}; }
     int files = 0;
     QString failure;
@@ -141,23 +141,13 @@ public:
 class CleanupTemporaryFiles final : public ICoverTemporaryStore {
 public:
     bool ClearAbandoned(int &removedFiles, QString &error) const override {
+        if (onClear) onClear();
         removedFiles = files;
         error = failure;
         return failure.isEmpty();
     }
     int files = 0;
     QString failure;
-};
-
-class CleanupParticipant final : public ICacheCleanupParticipant {
-public:
-    QString Name() const override { return name; }
-    CacheCleanupParticipantResult Clear(const CacheCleanupCancellationProbe &) override {
-        if (onClear) onClear();
-        return result;
-    }
-    QString name = QStringLiteral("derived-metadata");
-    CacheCleanupParticipantResult result;
     std::function<void()> onClear;
 };
 
@@ -195,6 +185,8 @@ private slots:
     void publishesAniListAuthenticationFailureWithoutToken();
     void clearsLocalCacheWithoutChangingUnsavedDraft();
     void reportsPartialCleanupAndIgnoresConcurrentRequest();
+    void opensTheLogsFolderInTheFileExplorer();
+    void reportsWhenTheLogsFolderIsUnavailable();
 };
 
 void SettingsControllerTests::editsSavesAndEmitsCompletePreferences() {
@@ -262,7 +254,9 @@ void SettingsControllerTests::discardRestoresPersistedSnapshot() {
 
 void SettingsControllerTests::libraryDraftSavesAndDiscardsAtomically() {
     FakePreferencesRepository repository;
-    SettingsController controller(&repository, {});
+    UserPreferences initial;
+    initial.libraryRoots = {QStringLiteral("Q:\\")};
+    SettingsController controller(&repository, initial);
     controller.SetLibraryRoot(0, QStringLiteral("D:\\Anime"));
     controller.SetScanExtensionEnabled(QStringLiteral(".avi"), false);
     QVERIFY(controller.dirty());
@@ -286,9 +280,14 @@ void SettingsControllerTests::libraryDraftSavesAndDiscardsAtomically() {
 
 void SettingsControllerTests::addsEditsAndRemovesLibraryFolders() {
     FakePreferencesRepository repository;
-    SettingsController controller(&repository, {});
+    UserPreferences initial;
+    initial.libraryRoots = {QStringLiteral("Q:\\")};
+    SettingsController controller(&repository, initial);
+    // The last folder can be removed too: the library may have no folder.
     controller.RemoveLibraryRoot(0);
-    QCOMPARE(controller.libraryRoots(), QStringList{QStringLiteral("Q:\\")});
+    QVERIFY(controller.libraryRoots().isEmpty());
+    QVERIFY(controller.valid());
+    controller.AddLibraryRoot(QStringLiteral("Q:\\"));
 
     controller.AddLibraryRoot(QStringLiteral("R:\\Anime"));
     QCOMPARE(controller.libraryRoots(), QStringList({QStringLiteral("Q:\\"), QStringLiteral("R:\\Anime")}));
@@ -437,7 +436,9 @@ void SettingsControllerTests::savesEnabledUserListsAndRestoresThemOnDiscard() {
 
 void SettingsControllerTests::invalidLibraryDraftCannotSave() {
     FakePreferencesRepository repository;
-    SettingsController controller(&repository, {});
+    UserPreferences initial;
+    initial.libraryRoots = {QStringLiteral("Q:\\")};
+    SettingsController controller(&repository, initial);
     controller.SetLibraryRoot(0, QStringLiteral("   "));
     QVERIFY(!controller.valid());
     controller.Save();
@@ -762,24 +763,22 @@ void SettingsControllerTests::clearsLocalCacheWithoutChangingUnsavedDraft() {
     CleanupCache cache;
     CleanupFiles files;
     CleanupTemporaryFiles temporaryFiles;
-    CleanupParticipant participant;
     cache.entries = 2;
     files.files = 3;
     temporaryFiles.files = 4;
-    participant.result.removedItems = 5;
     CoverSettings settings;
     CoverDownloadCoordinator covers(downloader, cache, files, settings);
-    ClearLocalCacheUseCase cleanup(covers, temporaryFiles, {&participant});
+    ClearLocalCacheUseCase cleanup(covers, temporaryFiles);
     SettingsController controller(&repository, {}, &cleanup);
     QSignalSpy completed(&controller, &SettingsController::cacheCleanupCompleted);
 
-    controller.SetLibraryRoot(0, QStringLiteral("D:\\Draft"));
+    controller.AddLibraryRoot(QStringLiteral("D:\\Draft"));
     controller.ClearLocalCache();
 
     QVERIFY(!controller.cacheCleanupRunning());
     QCOMPARE(completed.count(), 1);
     QVERIFY(controller.cacheCleanupErrorMessage().isEmpty());
-    QVERIFY(controller.cacheCleanupStatusMessage().contains(QStringLiteral("14")));
+    QVERIFY(controller.cacheCleanupStatusMessage().contains(QStringLiteral("9")));
     QVERIFY(controller.dirty());
     QCOMPARE(controller.libraryRoots(), QStringList{QStringLiteral("D:\\Draft")});
 }
@@ -790,15 +789,14 @@ void SettingsControllerTests::reportsPartialCleanupAndIgnoresConcurrentRequest()
     CleanupCache cache;
     CleanupFiles files;
     CleanupTemporaryFiles temporaryFiles;
-    CleanupParticipant participant;
     files.files = 1;
     cache.failure = QStringLiteral("cover cache failed");
     CoverSettings settings;
     CoverDownloadCoordinator covers(downloader, cache, files, settings);
-    ClearLocalCacheUseCase cleanup(covers, temporaryFiles, {&participant});
+    ClearLocalCacheUseCase cleanup(covers, temporaryFiles);
     SettingsController controller(&repository, {}, &cleanup);
     QSignalSpy partial(&controller, &SettingsController::cacheCleanupPartialFailure);
-    participant.onClear = [&controller] { controller.ClearLocalCache(); };
+    temporaryFiles.onClear = [&controller] { controller.ClearLocalCache(); };
 
     controller.ClearLocalCache();
 
@@ -806,6 +804,34 @@ void SettingsControllerTests::reportsPartialCleanupAndIgnoresConcurrentRequest()
     QCOMPARE(partial.count(), 1);
     QVERIFY(controller.cacheCleanupStatusMessage().isEmpty());
     QVERIFY(controller.cacheCleanupErrorMessage().contains(QStringLiteral("parcial"), Qt::CaseInsensitive));
+}
+
+void SettingsControllerTests::opensTheLogsFolderInTheFileExplorer() {
+    FakePreferencesRepository repository;
+    SettingsController controller(&repository, {});
+    QTemporaryDir directory;
+    QUrl opened;
+    controller.SetLogsFolder(directory.path(), [&opened](const QUrl &url) {
+        opened = url;
+        return true;
+    });
+
+    QVERIFY(controller.OpenLogsFolder());
+
+    QCOMPARE(opened, QUrl::fromLocalFile(directory.path()));
+    QVERIFY(controller.errorMessage().isEmpty());
+}
+
+void SettingsControllerTests::reportsWhenTheLogsFolderIsUnavailable() {
+    FakePreferencesRepository repository;
+    SettingsController controller(&repository, {});
+    bool opened = false;
+    controller.SetLogsFolder({}, [&opened](const QUrl &) { return opened = true; });
+
+    QVERIFY(!controller.OpenLogsFolder());
+
+    QVERIFY(!opened);
+    QVERIFY(!controller.errorMessage().isEmpty());
 }
 
 QTEST_MAIN(SettingsControllerTests)

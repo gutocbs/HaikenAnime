@@ -109,6 +109,15 @@ ProgressDecision markWatched(const int from, const int to) {
     return {.kind = ProgressDecisionKind::MarkWatched, .previous = media(from), .updated = media(to)};
 }
 
+AniListPendingChange deletionChange(const int mediaId = MediaId) {
+    AniListPendingChange change;
+    change.id = 98;
+    change.mediaId = mediaId;
+    change.field = AniListField::Deletion;
+    change.status = AniListPendingChangeStatus::Succeeded;
+    return change;
+}
+
 AniListPendingChange progressChange(const int progress, const int mediaId = MediaId) {
     AniListPendingChange change;
     change.id = 99;
@@ -135,6 +144,10 @@ private slots:
     void ignoresOtherMediaLaterEpisodesAndNonProgressFields();
     void ignoresRecordsThatNeverRequiredSync();
     void historyFailureIsLoggedWithoutThrowing();
+    void sentDeletionMarksManualRemovalSynced();
+    void failedDeletionMarksManualRemovalFailed();
+    void deletionAndProgressSettleOnlyTheirOwnRecords();
+    void sentProgressSettlesManualReductionsOfTheMedia();
 
 private:
     std::unique_ptr<FakeHistoryRepository> repository;
@@ -143,6 +156,7 @@ private:
     QStringList logs;
 
     qint64 recordWatched(const QString &sessionKey, int episode);
+    qint64 recordRemoval(int mediaId = MediaId);
 };
 
 void RecognitionSyncFeedbackTests::init() {
@@ -199,7 +213,7 @@ void RecognitionSyncFeedbackTests::retryableFailureMarksRecordFailedWithRetryMes
     const auto &record = repository->byId(recordId);
     QCOMPARE(record.syncState(), RecognitionSyncState::Failed);
     QCOMPARE(record.syncError(), RecognitionSyncFeedback::SafeError(AniListSyncErrorCategory::Network));
-    QCOMPARE(record.syncError(), QStringLiteral("falha temporária de comunicação; nova tentativa automática"));
+    QCOMPARE(record.syncError(), QStringLiteral("retryable"));
     QCOMPARE(record.status(), RecognitionStatus::MarkedWatched);
 }
 
@@ -214,7 +228,7 @@ void RecognitionSyncFeedbackTests::definitiveFailureMarksRecordFailedWithAccount
     // Assert
     const auto &record = repository->byId(recordId);
     QCOMPARE(record.syncState(), RecognitionSyncState::Failed);
-    QCOMPARE(record.syncError(), QStringLiteral("conta do AniList não autorizada; reconecte a conta"));
+    QCOMPARE(record.syncError(), QStringLiteral("unauthorized"));
     QCOMPARE(record.status(), RecognitionStatus::MarkedWatched);
 }
 
@@ -234,7 +248,7 @@ void RecognitionSyncFeedbackTests::failureMessageNeverContainsRawErrorOrToken() 
         QVERIFY(!message.isEmpty());
         QVERIFY(!message.contains(QStringLiteral("Bearer"), Qt::CaseInsensitive));
         QVERIFY(!message.contains(QStringLiteral("token"), Qt::CaseInsensitive));
-        QCOMPARE(message.contains(QStringLiteral("nova tentativa")), IsRetryable(category));
+        QCOMPARE(message == QStringLiteral("retryable"), IsRetryable(category));
     }
 }
 
@@ -329,6 +343,78 @@ void RecognitionSyncFeedbackTests::historyFailureIsLoggedWithoutThrowing() {
     QCOMPARE(logs.size(), 2);
     QVERIFY(logs.first().contains(QStringLiteral("media 21")));
     QVERIFY(logs.last().contains(QStringLiteral("media 21")));
+}
+
+qint64 RecognitionSyncFeedbackTests::recordRemoval(const int mediaId) {
+    QString error;
+    auto removed = media(3);
+    removed.Id = mediaId;
+    const auto record = history->recordManualRemoval(removed, error);
+    if (!record.has_value()) qFatal("recording failed: %s", qPrintable(error));
+    return record->id();
+}
+
+void RecognitionSyncFeedbackTests::sentDeletionMarksManualRemovalSynced() {
+    // Arrange
+    const auto removal = recordRemoval();
+    const auto otherMedia = recordRemoval(999);
+    RecognitionSyncFeedback feedback(*history);
+
+    // Act
+    feedback.changesSent({deletionChange()});
+
+    // Assert
+    QCOMPARE(repository->byId(removal).syncState(), RecognitionSyncState::Synced);
+    QCOMPARE(repository->byId(otherMedia).syncState(), RecognitionSyncState::Pending);
+}
+
+void RecognitionSyncFeedbackTests::failedDeletionMarksManualRemovalFailed() {
+    // Arrange
+    const auto removal = recordRemoval();
+    RecognitionSyncFeedback feedback(*history);
+
+    // Act
+    feedback.changesFailed({deletionChange()}, AniListSyncErrorCategory::Network);
+
+    // Assert
+    const auto &record = repository->byId(removal);
+    QCOMPARE(record.syncState(), RecognitionSyncState::Failed);
+    QCOMPARE(record.syncError(), QStringLiteral("retryable"));
+    QCOMPARE(record.status(), RecognitionStatus::Removed);
+}
+
+void RecognitionSyncFeedbackTests::deletionAndProgressSettleOnlyTheirOwnRecords() {
+    // Arrange: a watched episode and a removal of the same media (the removal stores episode 3).
+    const auto watched = recordWatched(QStringLiteral("a"), 5);
+    const auto removal = recordRemoval();
+    RecognitionSyncFeedback feedback(*history);
+
+    // Act
+    feedback.changesFailed({deletionChange()}, AniListSyncErrorCategory::Network);
+    feedback.changesSent({progressChange(5)});
+
+    // Assert: the deletion settled only the removal and the progress only the watched episode.
+    QCOMPARE(repository->byId(watched).syncState(), RecognitionSyncState::Synced);
+    QCOMPARE(repository->byId(removal).syncState(), RecognitionSyncState::Failed);
+}
+
+void RecognitionSyncFeedbackTests::sentProgressSettlesManualReductionsOfTheMedia() {
+    // Arrange: progress lowered from 5 to 2, then raised to 3 before the drain (the outbox sends only 3).
+    QString error;
+    const auto reduced = history->recordManualProgress(media(5), media(2), error);
+    QVERIFY2(reduced.has_value(), qPrintable(error));
+    auto other = media(4);
+    other.Id = 999;
+    const auto otherMedia = history->recordManualProgress(media(5), other, error);
+    QVERIFY2(otherMedia.has_value(), qPrintable(error));
+    RecognitionSyncFeedback feedback(*history);
+
+    // Act
+    feedback.changesSent({progressChange(3)});
+
+    // Assert
+    QCOMPARE(repository->byId(reduced->id()).syncState(), RecognitionSyncState::Synced);
+    QCOMPARE(repository->byId(otherMedia->id()).syncState(), RecognitionSyncState::Pending);
 }
 
 QTEST_MAIN(RecognitionSyncFeedbackTests)

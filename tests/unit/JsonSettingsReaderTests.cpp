@@ -38,10 +38,9 @@ void JsonSettingsReaderTests::readsValidConfiguration() {
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
     file.write(R"({
-        "anilist": {"endpoint": "https://graphql.anilist.co", "mediaQueryFile": "query.graphql"},
+        "anilist": {"endpoint": "https://graphql.anilist.co"},
         "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100},
         "covers": {
-            "quality": "large",
             "maxConcurrentDownloads": 2,
             "timeoutMs": 4000,
             "maxRetries": 1,
@@ -67,7 +66,6 @@ void JsonSettingsReaderTests::readsValidConfiguration() {
     QVERIFY(reader.read(settings, error));
     QCOMPARE(settings.http.timeoutMs, 5000);
     QCOMPARE(settings.http.maxRetries, 1);
-    QCOMPARE(settings.covers.quality, CoverQuality::Large);
     QCOMPARE(settings.covers.maxConcurrentDownloads, 2);
     QCOMPARE(settings.covers.maxResponseBytes, 1048576);
     QCOMPARE(settings.userPreferences.scoreMinimum, 0.0);
@@ -88,7 +86,6 @@ void JsonSettingsReaderTests::rejectsAniListUserListChunkAboveMaximum() {
     file.write(R"({
         "anilist": {
           "endpoint": "https://graphql.anilist.co",
-          "mediaQueryFile": "query.graphql",
           "userListPerChunk": 501
         },
         "http": {"timeoutMs": 5000}
@@ -110,7 +107,6 @@ void JsonSettingsReaderTests::readsAniListOAuthConfiguration() {
     file.write(R"({
         "anilist": {
           "endpoint": "https://graphql.anilist.co",
-          "mediaQueryFile": "query.graphql",
           "oauthClientId": "12345",
           "oauthRedirectUri": "haikenanime://oauth/callback",
           "userListPerChunk": 100
@@ -135,7 +131,7 @@ void JsonSettingsReaderTests::readsSeasonalCatalogCachePolicy() {
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
     file.write(R"({
-        "anilist": {"endpoint": "https://graphql.anilist.co", "mediaQueryFile": "query.graphql"},
+        "anilist": {"endpoint": "https://graphql.anilist.co"},
         "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100},
         "seasonalCatalog": {"cacheTtlMs": 120000, "maxCacheEntries": 12, "minimumRequestIntervalMs": 750}
     })");
@@ -156,7 +152,7 @@ void JsonSettingsReaderTests::usesIndependentSafeDefaultsForInvalidSeasonalCatal
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
     file.write(R"({
-        "anilist": {"endpoint": "https://graphql.anilist.co", "mediaQueryFile": "query.graphql"},
+        "anilist": {"endpoint": "https://graphql.anilist.co"},
         "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100},
         "seasonalCatalog": {"cacheTtlMs": 9000, "maxCacheEntries": -1, "minimumRequestIntervalMs": "fast"}
     })");
@@ -179,7 +175,7 @@ void JsonSettingsReaderTests::usesSeasonalCatalogPolicyDefaultsWhenSectionIsMalf
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
     file.write(R"({
-        "anilist": {"endpoint": "https://graphql.anilist.co", "mediaQueryFile": "query.graphql"},
+        "anilist": {"endpoint": "https://graphql.anilist.co"},
         "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100},
         "seasonalCatalog": "not-an-object"
     })");
@@ -203,7 +199,7 @@ void JsonSettingsReaderTests::usesSafeUserPreferenceDefaultsWhenObjectIsMissing(
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
     file.write(R"({
-        "anilist": {"endpoint": "https://graphql.anilist.co", "mediaQueryFile": "query.graphql"},
+        "anilist": {"endpoint": "https://graphql.anilist.co"},
         "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100}
     })");
     file.close();
@@ -226,7 +222,7 @@ void JsonSettingsReaderTests::rejectsWrongUserPreferenceTypes() {
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
     file.write(R"({
-        "anilist": {"endpoint": "https://graphql.anilist.co", "mediaQueryFile": "query.graphql"},
+        "anilist": {"endpoint": "https://graphql.anilist.co"},
         "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100},
         "userPreferences": {
             "score": {"minimum": 0, "maximum": "ten", "step": 1},
@@ -249,7 +245,7 @@ void JsonSettingsReaderTests::rejectsWrongUserPreferenceSectionTypes() {
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
     file.write(R"({
-        "anilist": {"endpoint": "https://graphql.anilist.co", "mediaQueryFile": "query.graphql"},
+        "anilist": {"endpoint": "https://graphql.anilist.co"},
         "http": {"timeoutMs": 5000, "maxRetries": 1, "retryDelayMs": 100},
         "userPreferences": {
             "score": "0-10",
@@ -272,7 +268,7 @@ void JsonSettingsReaderTests::rejectsWrongNumericTypeInsteadOfUsingDefault() {
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
     file.write(R"({
-        "anilist": {"endpoint": "https://graphql.anilist.co", "mediaQueryFile": "query.graphql"},
+        "anilist": {"endpoint": "https://graphql.anilist.co"},
         "http": {"timeoutMs": "five seconds", "maxRetries": 1, "retryDelayMs": 100}
     })");
     file.close();
@@ -311,7 +307,7 @@ void JsonSettingsReaderTests::rejectsInvalidLibraryPreferences() {
     const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
-    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co","mediaQueryFile":"query.graphql"},
+    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co"},
         "http":{"timeoutMs":5000},"userPreferences":{"library":)");
     file.write(libraryJson);
     file.write("}}");
@@ -328,7 +324,7 @@ void JsonSettingsReaderTests::readsScannerPreferences() {
     const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
-    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co","mediaQueryFile":"query.graphql"},
+    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co"},
         "http":{"timeoutMs":5000},"userPreferences":{"library":{
         "root":"R:\\Anime", "extensions":["MKV", ".Mp4", "..AVI"]}}})");
     file.close();
@@ -343,20 +339,24 @@ void JsonSettingsReaderTests::readsScannerPreferences() {
 
 void JsonSettingsReaderTests::usesScannerDefaultsForMissingSections_data() {
     QTest::addColumn<QByteArray>("preferencesJson");
-    QTest::newRow("missing preferences") << QByteArray{};
-    QTest::newRow("missing library") << QByteArray(R"(,"userPreferences":{})");
-    QTest::newRow("empty library") << QByteArray(R"(,"userPreferences":{"library":{}})");
-    QTest::newRow("missing extensions") << QByteArray(R"(,"userPreferences":{"library":{"root":"Q:\\"}})");
-    QTest::newRow("missing root") << QByteArray(R"(,"userPreferences":{"library":{"extensions":[".mkv",".mp4",".avi",".webm",".m4v",".mov",".wmv",".ts"]}})");
+    QTest::addColumn<QStringList>("expectedRoots");
+    QTest::newRow("missing preferences") << QByteArray{} << QStringList{};
+    QTest::newRow("missing library") << QByteArray(R"(,"userPreferences":{})") << QStringList{};
+    QTest::newRow("empty library") << QByteArray(R"(,"userPreferences":{"library":{}})") << QStringList{};
+    QTest::newRow("missing extensions") << QByteArray(R"(,"userPreferences":{"library":{"root":"Q:\\"}})")
+                                        << QStringList{QStringLiteral("Q:\\")};
+    QTest::newRow("missing root") << QByteArray(R"(,"userPreferences":{"library":{"extensions":[".mkv",".mp4",".avi",".webm",".m4v",".mov",".wmv",".ts"]}})")
+                                  << QStringList{};
 }
 
 void JsonSettingsReaderTests::usesScannerDefaultsForMissingSections() {
     QFETCH(QByteArray, preferencesJson);
+    QFETCH(QStringList, expectedRoots);
     QTemporaryDir temporaryDirectory;
     const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
-    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co","mediaQueryFile":"query.graphql"},"http":{"timeoutMs":5000})");
+    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co"},"http":{"timeoutMs":5000})");
     file.write(preferencesJson);
     file.write("}");
     file.close();
@@ -364,7 +364,7 @@ void JsonSettingsReaderTests::usesScannerDefaultsForMissingSections() {
     Settings settings;
     QString error;
     QVERIFY2(reader.read(settings, error), qPrintable(error));
-    QCOMPARE(settings.userPreferences.libraryRoots, QStringList{QStringLiteral("Q:\\")});
+    QCOMPARE(settings.userPreferences.libraryRoots, expectedRoots);
     QCOMPARE(settings.userPreferences.scanExtensions, QStringList({".mkv", ".mp4", ".avi", ".webm",
                                                                  ".m4v", ".mov", ".wmv", ".ts"}));
 }
@@ -375,13 +375,15 @@ void JsonSettingsReaderTests::readsPackagedScannerDefaults() {
     QVERIFY(file.open(QIODevice::ReadOnly));
     const auto library = QJsonDocument::fromJson(file.readAll()).object()
                              .value("userPreferences").toObject().value("library").toObject();
-    QVERIFY(library.contains("root"));
+    // No default folder: the user chooses one in Settings.
+    QVERIFY(!library.contains("root"));
+    QVERIFY(!library.contains("roots"));
     QVERIFY(library.contains("extensions"));
     JsonSettingsReader reader(path);
     Settings settings;
     QString error;
     QVERIFY2(reader.read(settings, error), qPrintable(error));
-    QCOMPARE(settings.userPreferences.libraryRoots, QStringList{QStringLiteral("Q:\\")});
+    QVERIFY(settings.userPreferences.libraryRoots.isEmpty());
     QCOMPARE(settings.userPreferences.scanExtensions, QStringList({".mkv", ".mp4", ".avi", ".webm",
                                                                  ".m4v", ".mov", ".wmv", ".ts"}));
 }
@@ -391,7 +393,7 @@ void JsonSettingsReaderTests::readsSyncTaskPolicies() {
     const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
-    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co","mediaQueryFile":"query.graphql"},
+    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co"},
         "http":{"timeoutMs":5000},"sync":{"policies":{"user-list":{
         "normalIntervalMs":60000,"staleProtectionTtlMs":120000,"initialRetryDelayMs":1000,
         "maximumRetryDelayMs":8000,"cooldownMs":30000,"jitterRatio":0.25,
@@ -417,15 +419,15 @@ void JsonSettingsReaderTests::usesSyncTaskPolicyDefaultsWhenSettingsAreOmitted()
     const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
-    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co","mediaQueryFile":"query.graphql"},"http":{"timeoutMs":5000}})");
+    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co"},"http":{"timeoutMs":5000}})");
     file.close();
     JsonSettingsReader reader(path);
     Settings settings;
     QString error;
 
     QVERIFY2(reader.read(settings, error), qPrintable(error));
-    QCOMPARE(settings.syncTaskPolicies.at(SyncTaskKind::ActiveCatalog).normalInterval,
-             DefaultSyncSchedulePolicy(SyncTaskKind::ActiveCatalog).normalInterval);
+    QCOMPARE(settings.syncTaskPolicies.at(SyncTaskKind::PendingChange).normalInterval,
+             DefaultSyncSchedulePolicy(SyncTaskKind::PendingChange).normalInterval);
 }
 
 void JsonSettingsReaderTests::usesDistinctSyncTaskPolicyDefaultsWhenSettingsAreOmitted() {
@@ -433,7 +435,7 @@ void JsonSettingsReaderTests::usesDistinctSyncTaskPolicyDefaultsWhenSettingsAreO
     const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
-    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co","mediaQueryFile":"query.graphql"},"http":{"timeoutMs":5000}})");
+    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co"},"http":{"timeoutMs":5000}})");
     file.close();
     JsonSettingsReader reader(path);
     Settings settings;
@@ -444,8 +446,6 @@ void JsonSettingsReaderTests::usesDistinctSyncTaskPolicyDefaultsWhenSettingsAreO
             != settings.syncTaskPolicies.at(SyncTaskKind::PendingChange).normalInterval);
     QVERIFY(settings.syncTaskPolicies.at(SyncTaskKind::UserList).staleProtectionTtl
             != settings.syncTaskPolicies.at(SyncTaskKind::PendingChange).staleProtectionTtl);
-    QVERIFY(settings.syncTaskPolicies.at(SyncTaskKind::ActiveCatalog).normalInterval
-            != settings.syncTaskPolicies.at(SyncTaskKind::InactiveCatalog).normalInterval);
 }
 
 void JsonSettingsReaderTests::rejectsNegativeSyncTaskPolicyDurations() {
@@ -453,8 +453,8 @@ void JsonSettingsReaderTests::rejectsNegativeSyncTaskPolicyDurations() {
     const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
     QFile file(path);
     QVERIFY(file.open(QIODevice::WriteOnly | QIODevice::Text));
-    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co","mediaQueryFile":"query.graphql"},
-        "http":{"timeoutMs":5000},"sync":{"policies":{"cover":{"cooldownMs":-1}}}})");
+    file.write(R"({"anilist":{"endpoint":"https://graphql.anilist.co"},
+        "http":{"timeoutMs":5000},"sync":{"policies":{"pending-change":{"cooldownMs":-1}}}})");
     file.close();
     JsonSettingsReader reader(path);
     Settings settings;

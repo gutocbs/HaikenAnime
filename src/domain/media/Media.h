@@ -1,7 +1,3 @@
-//
-// Created by gutocbs on 22/09/2026.
-//
-
 #ifndef HAIKENANIME_MEDIA_H
 #define HAIKENANIME_MEDIA_H
 #include <QString>

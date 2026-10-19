@@ -8,12 +8,7 @@ Item {
     signal backRequested()
 
     property var controller: seasonalCatalogController
-    readonly property color ink: "#172033"
-    readonly property color muted: "#68758a"
-    readonly property color line: "#d7dee8"
-    readonly property color surface: "#ffffff"
-    readonly property color surfaceSoft: "#f6f8fb"
-    readonly property color accent: "#315d91"
+    readonly property Theme theme: Theme {}
 
     function indexForKey(options, key) {
         for (let index = 0; index < options.length; ++index) {
@@ -57,7 +52,7 @@ Item {
 
                 Label {
                     text: qsTr("HAIKEN ANIME")
-                    color: accent
+                    color: theme.accent
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                     font.letterSpacing: 2.2
@@ -65,7 +60,7 @@ Item {
 
                 Label {
                     text: qsTr("Catálogo sazonal")
-                    color: ink
+                    color: theme.ink
                     font.pixelSize: 25
                     font.weight: Font.Bold
                 }
@@ -80,13 +75,13 @@ Item {
             }
         }
 
-        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
+        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.line }
 
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: filterLayout.implicitHeight + 32
-            color: surface
-            border.color: line
+            color: theme.surface
+            border.color: theme.line
             border.width: 1
             radius: 8
 
@@ -99,7 +94,7 @@ Item {
                 Label {
                     height: yearSelector.height
                     text: qsTr("Filtrar por")
-                    color: muted
+                    color: theme.muted
                     font.pixelSize: 12
                     verticalAlignment: Text.AlignVCenter
                 }
@@ -146,8 +141,8 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: surface
-            border.color: line
+            color: theme.surface
+            border.color: theme.line
             border.width: 1
             radius: 8
 
@@ -168,7 +163,7 @@ Item {
                         Label {
                             Layout.alignment: Qt.AlignHCenter
                             text: qsTr("Carregando catálogo…")
-                            color: ink
+                            color: theme.ink
                             font.pixelSize: 17
                             font.weight: Font.DemiBold
                         }
@@ -192,7 +187,7 @@ Item {
                         Label {
                             Layout.alignment: Qt.AlignHCenter
                             text: qsTr("Nenhum título encontrado")
-                            color: ink
+                            color: theme.ink
                             font.pixelSize: 17
                             font.weight: Font.DemiBold
                         }
@@ -203,7 +198,7 @@ Item {
                             text: qsTr("Ajuste os filtros ou tente novamente.")
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.Wrap
-                            color: muted
+                            color: theme.muted
                         }
 
                         AppButton {
@@ -238,7 +233,7 @@ Item {
                             text: controller.errorMessage
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.Wrap
-                            color: muted
+                            color: theme.muted
                         }
 
                         AppButton {
@@ -262,7 +257,7 @@ Item {
                         Label {
                             Layout.alignment: Qt.AlignHCenter
                             text: qsTr("Escolha um ano e uma temporada")
-                            color: ink
+                            color: theme.ink
                             font.pixelSize: 17
                             font.weight: Font.DemiBold
                         }
@@ -273,7 +268,7 @@ Item {
                             text: qsTr("Os resultados só são buscados quando ambos os filtros forem selecionados.")
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.Wrap
-                            color: muted
+                            color: theme.muted
                         }
                     }
                 }
@@ -341,12 +336,6 @@ Item {
         id: seasonalDetails
         controller: seasonalCatalog.controller
         seasonalLayout: true
-        ink: seasonalCatalog.ink
-        muted: seasonalCatalog.muted
-        line: seasonalCatalog.line
-        surface: seasonalCatalog.surface
-        surfaceSoft: seasonalCatalog.surfaceSoft
-        accent: seasonalCatalog.accent
         seasonalListErrorMessage: controller.personalListErrorMessage
         onAddToMyListRequested: {
             personalListEditor.openForMedia(controller.selectedMediaId,
@@ -370,12 +359,6 @@ Item {
         listOptions: seasonalCatalog.controller.availablePersonalListOptions
         requiresExplicitStatus: true
         closeOnApply: false
-        ink: seasonalCatalog.ink
-        muted: seasonalCatalog.muted
-        line: seasonalCatalog.line
-        surface: seasonalCatalog.surface
-        surfaceSoft: seasonalCatalog.surfaceSoft
-        accent: seasonalCatalog.accent
         onApplyRequested: function(mediaId, progress, statusKey, score, path, alternativeNames) {
             if (controller.SaveSelectedToPersonalListFromEditor(progress, statusKey, score, path, alternativeNames)) personalListEditor.close()
         }

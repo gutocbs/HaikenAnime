@@ -8,12 +8,8 @@
 /** Persists the AniList update outbox in SQLite. */
 class SqlitePendingChangeRepository final : public IPendingChangeRepository {
 public:
-    /** Creates a repository with external SQL statements for the outbox operations. */
-    SqlitePendingChangeRepository(QSqlDatabase database, QString enqueueQuery,
-                                  QString pendingQuery, QString updateStatusQuery);
-    SqlitePendingChangeRepository(QSqlDatabase database, QString enqueueQuery,
-                                  QString pendingQuery, QString pendingMediaIdsQuery,
-                                  QString updateStatusQuery);
+    /** Creates a repository over an opened connection; SQL comes from SqliteQueries. */
+    explicit SqlitePendingChangeRepository(QSqlDatabase database);
 
     [[nodiscard]] bool enqueue(const AniListPendingChange &change, QString &error) override;
     [[nodiscard]] bool getPending(int mediaId, QList<AniListPendingChange> &changes,
@@ -32,13 +28,7 @@ public:
 
 private:
     QSqlDatabase database_;
-    QString enqueueQuery_;
-    QString pendingQuery_;
-    QString pendingMediaIdsQuery_;
-    QString updateStatusQuery_;
-    QString adoptOrphanChangesQuery_ = QStringLiteral(":/sqlite/queries/adopt-orphan-pending-changes.sql");
     qint64 ownerUserId_ = 0;
-    QString unsentMediaIdsQuery_ = QStringLiteral(":/sqlite/queries/read-unsent-media-ids.sql");
 };
 
 #endif // HAIKENANIME_SQLITEPENDINGCHANGEREPOSITORY_H

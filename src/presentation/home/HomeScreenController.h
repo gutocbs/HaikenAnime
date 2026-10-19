@@ -7,13 +7,12 @@
 #include <QVariantList>
 
 #include "../../application/media/IMediaReader.h"
-#include "../../application/covers/CoverDownloadCoordinator.h"
+#include "../../app/CoverDownloadCoordinator.h"
 #include "../../application/configuration/CardStatusPresentation.h"
 #include "../../application/media/MediaTitleResolver.h"
 
 class ILocalEpisodeReader;
 class ILocalFileOpener;
-class IPersonalListMediaWriter;
 class PersonalListChangeService;
 
 class HomeMediaModel final : public QAbstractListModel {
@@ -37,7 +36,7 @@ public:
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    void setMedia(QList<Media> media);
+    void SetMedia(QList<Media> media);
     bool UpdateCover(int mediaId, QString source, CoverState state);
     /// Locally cached cover of the media, empty when none was downloaded yet.
     [[nodiscard]] QString CoverSource(int mediaId) const;
@@ -63,7 +62,6 @@ class HomeScreenController final : public QObject {
     Q_PROPERTY(QString statusMessage READ statusMessage NOTIFY statusMessageChanged)
     Q_PROPERTY(QString errorMessage READ errorMessage NOTIFY errorMessageChanged)
     Q_PROPERTY(QString mediaOperationErrorMessage READ mediaOperationErrorMessage NOTIFY selectionChanged)
-    Q_PROPERTY(int mediaCount READ mediaCount NOTIFY mediaCountChanged)
     Q_PROPERTY(int filteredMediaCount READ filteredMediaCount NOTIFY mediaCountChanged)
     Q_PROPERTY(QString activeMediaType READ activeMediaType NOTIFY activeMediaTypeChanged)
     Q_PROPERTY(QVariantList availableMediaTypeOptions READ availableMediaTypeOptions NOTIFY browseOptionsChanged)
@@ -93,8 +91,8 @@ class HomeScreenController final : public QObject {
     Q_PROPERTY(QString selectedListStatusLabel READ selectedListStatusLabel NOTIFY selectionChanged)
     Q_PROPERTY(QStringList selectedAlternativeNames READ selectedAlternativeNames NOTIFY selectionChanged)
     Q_PROPERTY(QString selectedLocalPath READ selectedLocalPath NOTIFY selectionChanged)
+    Q_PROPERTY(QString selectedLocalFolderUrl READ selectedLocalFolderUrl NOTIFY selectionChanged)
     Q_PROPERTY(bool canWatch READ canWatch NOTIFY selectionChanged)
-    Q_PROPERTY(int nextLocalEpisode READ nextLocalEpisode NOTIFY selectionChanged)
     Q_PROPERTY(int availableLocalEpisodeCount READ availableLocalEpisodeCount NOTIFY selectionChanged)
     Q_PROPERTY(QString localLibraryStatusMessage READ localLibraryStatusMessage NOTIFY selectionChanged)
     Q_PROPERTY(QString localLibraryErrorMessage READ localLibraryErrorMessage NOTIFY selectionChanged)
@@ -144,6 +142,7 @@ public:
     QString selectedListStatusLabel() const;
     QStringList selectedAlternativeNames() const;
     QString selectedLocalPath() const;
+    QString selectedLocalFolderUrl() const;
     bool canWatch() const;
     int nextLocalEpisode() const;
     int availableLocalEpisodeCount() const;
@@ -161,11 +160,10 @@ public:
     void ConfigureCardStatusPresentation(CardStatusPresentation presentation);
     void ConfigurePreferredTitle(QString key);
     void SetLocalEpisodeServices(ILocalEpisodeReader *episodeReader, ILocalFileOpener *fileOpener);
-    void SetPersonalListMediaWriter(IPersonalListMediaWriter *personalListWriter);
     void SetPersonalListChangeService(PersonalListChangeService *personalListChangeService);
     void RefreshLocalEpisode();
 
-    void reload();
+    void Reload();
     Q_INVOKABLE void SetMediaType(const QString &typeKey);
     Q_INVOKABLE void SetListFilter(const QString &filterKey);
     Q_INVOKABLE void SetSort(const QString &sortKey);
@@ -176,15 +174,9 @@ public:
     Q_INVOKABLE bool RemoveSelectedMedia();
     Q_INVOKABLE bool SaveSelectedMediaFromEditor(int progress, const QString &statusKey, double score,
                                                  const QString &path, const QStringList &alternativeNames);
-    Q_INVOKABLE QVariantMap PreviewCardMetadata(int progress, const QString &listStatusKey,
-                                                double score) const;
-    Q_INVOKABLE QVariantMap PreviewCompactDetailMetadata(int progress,
-                                                         const QString &listStatusKey,
-                                                         double score) const;
     Q_INVOKABLE void RequestCoverWindow(const QString &scope, int firstVisibleIndex,
                                         int lastVisibleIndex, int prefetchCount);
     Q_INVOKABLE void ReportCoverLoadFailure(int mediaId);
-    Q_INVOKABLE void ClearCoverCache();
 
 signals:
     void stateChanged();
@@ -199,6 +191,9 @@ signals:
     void selectionChanged();
     // A saved edit asks to re-evaluate media folders (folderPaths) and/or its alternative names.
     void localRecognitionRequested(QStringList folderPaths, bool alternativeNamesChanged);
+    // A manual edit or removal was saved; the history records it.
+    void personalListEdited(Media previous, Media updated);
+    void personalListRemoved(Media removed);
 
 private:
     void setState(QString state);
@@ -231,7 +226,6 @@ private:
     bool hasSelection_ = false;
     ILocalEpisodeReader *episodeReader_ = nullptr;
     ILocalFileOpener *fileOpener_ = nullptr;
-    IPersonalListMediaWriter *personalListWriter_ = nullptr;
     PersonalListChangeService *personalListChangeService_ = nullptr;
     int nextLocalEpisode_ = 0;
     int availableLocalEpisodeCount_ = 0;

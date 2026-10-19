@@ -1,5 +1,7 @@
 #include "AniListMediaMapper.h"
 
+#include "../../application/anilist/AniListListStatus.h"
+
 #include <QJsonArray>
 #include <QRegularExpression>
 #include <QSet>
@@ -118,29 +120,6 @@ QList<MediaLink> NormalizeLinks(const QList<AniListMediaLinkDto> &externalLinks)
 
 }
 
-AniListMediaDto AniListMediaMapper::fromFixtureJson(const QJsonObject &object) {
-    AniListMediaDto media;
-    media.id = object.value(QStringLiteral("id")).toString().toInt();
-    media.mediaFormat = object.value(QStringLiteral("format")).toString();
-    media.mediaType = media.mediaFormat.compare(QStringLiteral("TV"), Qt::CaseInsensitive) == 0
-        ? QStringLiteral("ANIME")
-        : QStringLiteral("MANGA");
-    media.status = object.value(QStringLiteral("status")).toString();
-    media.listStatus = object.value(QStringLiteral("list")).toString();
-    media.titleRomaji = object.value(QStringLiteral("title")).toString();
-    media.titleEnglish = object.value(QStringLiteral("englishTitle")).toString();
-    media.titleNative = object.value(QStringLiteral("nativeTitle")).toString();
-    media.titleSynonyms = object.value(QStringLiteral("alternativeTitles")).toVariant().toStringList();
-    media.episodes = OptionalInteger(object.value(QStringLiteral("totalEpisodes")).toString());
-    const auto siteScore = object.value(QStringLiteral("siteScore")).toString();
-    if (!siteScore.isEmpty()) {
-        media.averageScore = qRound(siteScore.toDouble());
-    }
-    media.coverImageUrl = object.value(QStringLiteral("coverImageUrl")).toString();
-    media.description = object.value(QStringLiteral("synopsis")).toString();
-    return media;
-}
-
 AniListMediaDto AniListMediaMapper::FromGraphQlJson(const QJsonObject &object) {
     AniListMediaDto media;
     media.id = object.value(QStringLiteral("id")).toInt();
@@ -233,12 +212,9 @@ Media AniListMediaMapper::ToDomainMedia(const AniListMediaDto &externalMedia) {
         media.Type = MediaType::Unknown;
     }
 
-    if (externalMedia.status.compare(QStringLiteral("RELEASING"), Qt::CaseInsensitive) == 0
-        || externalMedia.status.compare(QStringLiteral("Releasing"), Qt::CaseInsensitive) == 0) {
+    if (externalMedia.status.compare(QStringLiteral("RELEASING"), Qt::CaseInsensitive) == 0) {
         media.Status = MediaStatus::Releasing;
-    } else if (externalMedia.status.compare(QStringLiteral("FINISHED"), Qt::CaseInsensitive) == 0
-               || externalMedia.status.compare(QStringLiteral("Finished Airing"), Qt::CaseInsensitive) == 0
-               || externalMedia.status.compare(QStringLiteral("RELEASED"), Qt::CaseInsensitive) == 0) {
+    } else if (externalMedia.status.compare(QStringLiteral("FINISHED"), Qt::CaseInsensitive) == 0) {
         media.Status = MediaStatus::Released;
     } else if (externalMedia.status.compare(QStringLiteral("NOT_YET_RELEASED"), Qt::CaseInsensitive) == 0) {
         media.Status = MediaStatus::NotReleased;
@@ -246,21 +222,9 @@ Media AniListMediaMapper::ToDomainMedia(const AniListMediaDto &externalMedia) {
         media.Status = MediaStatus::Unknown;
     }
 
-    const auto listStatus = externalMedia.listStatus.trimmed().toUpper();
-    if (listStatus == QStringLiteral("CURRENT")) {
-        media.ListStatus = UserListStatus::Current;
-    } else if (listStatus == QStringLiteral("PLANNING")
-               || listStatus == QStringLiteral("PLAN TO WATCH")
-               || listStatus == QStringLiteral("PLAN TO READ")) {
-        media.ListStatus = UserListStatus::Planning;
-    } else if (listStatus == QStringLiteral("PAUSED") || listStatus == QStringLiteral("ON_HOLD")) {
-        media.ListStatus = UserListStatus::OnHold;
-    } else if (listStatus == QStringLiteral("DROPPED")) {
-        media.ListStatus = UserListStatus::Dropped;
-    } else if (listStatus == QStringLiteral("COMPLETED")) {
-        media.ListStatus = UserListStatus::Completed;
-    } else {
-        media.ListStatus = UserListStatus::Unknown;
-    }
+    // AniList answers "PAUSED"; "ON_HOLD" is also accepted for that list, as before.
+    media.ListStatus = externalMedia.listStatus.trimmed().compare(QStringLiteral("ON_HOLD"), Qt::CaseInsensitive) == 0
+        ? UserListStatus::OnHold
+        : ParseAniListListStatus(externalMedia.listStatus).value_or(UserListStatus::Unknown);
     return media;
 }

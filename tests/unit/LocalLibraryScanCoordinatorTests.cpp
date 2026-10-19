@@ -40,7 +40,7 @@ struct State {
 
 // This fake isolates repository I/O while recording the coordinator's required
 // persistence protocol. Scanner traversal is real in the disappearing-root case.
-class Repository final : public ILocalFileRepository {
+class Repository final : public ILocalFileScanRepository {
 public:
     explicit Repository(State &state) : state_(state) { state_.repositoryCreated = QThread::currentThread(); }
     ~Repository() override { state_.repositoryDestroyed = QThread::currentThread(); }
@@ -397,7 +397,7 @@ void LocalLibraryScanCoordinatorTests::failureRecordingErrorIsVisible() {
 
 void LocalLibraryScanCoordinatorTests::factoryFailureIsVisible() {
     State state;
-    LocalLibraryScanCoordinator coordinator(scannerFactory(state, success()), [](QString &error) -> std::unique_ptr<ILocalFileRepository> {
+    LocalLibraryScanCoordinator coordinator(scannerFactory(state, success()), [](QString &error) -> std::unique_ptr<ILocalFileScanRepository> {
         error = QStringLiteral("database unavailable");
         return {};
     });
@@ -477,7 +477,7 @@ void LocalLibraryScanCoordinatorTests::logsEnumerationAndRepositoryErrors() {
         logger.start();
         LocalLibraryScanCoordinator coordinator(scannerFactory(state, success()), [](QString &error) {
             error = QStringLiteral("repository unavailable");
-            return std::unique_ptr<ILocalFileRepository>{};
+            return std::unique_ptr<ILocalFileScanRepository>{};
         });
         coordinator.setLogger(&logger);
         QSignalSpy failed(&coordinator, &LocalLibraryScanCoordinator::failed);
