@@ -10,9 +10,7 @@ ColumnLayout {
     property var field: ({})
     property var controller
 
-    readonly property color ink: "#172033"
-    readonly property color muted: "#68758a"
-    readonly property color danger: "#b42318"
+    readonly property Theme theme: Theme {}
 
     spacing: 5
     Layout.fillWidth: true
@@ -21,7 +19,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Label {
             text: fieldRoot.field.label + (fieldRoot.field.required ? " *" : "")
-            color: fieldRoot.ink
+            color: theme.ink
             font.pixelSize: 12
             font.weight: Font.DemiBold
             Layout.fillWidth: true
@@ -37,7 +35,7 @@ ColumnLayout {
     Label {
         visible: (fieldRoot.field.description || "").length > 0
         text: fieldRoot.field.description || ""
-        color: fieldRoot.muted
+        color: theme.muted
         font.pixelSize: 11
         wrapMode: Text.Wrap
         Layout.fillWidth: true

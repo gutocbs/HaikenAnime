@@ -12,14 +12,7 @@ Item {
     signal backRequested()
     property var controller: settingsController
 
-    readonly property color ink: "#172033"
-    readonly property color muted: "#68758a"
-    readonly property color line: "#d7dee8"
-    readonly property color surface: "#ffffff"
-    readonly property color surfaceSoft: "#f6f8fb"
-    readonly property color accent: "#315d91"
-    readonly property color accentSoft: "#e2ebf6"
-    readonly property color danger: "#b42318"
+    readonly property Theme theme: Theme {}
     property string activeSection: "overview"
     // Integer properties only notify on real changes, so editing a folder path does not
     // rebuild the folder rows (and drop keyboard focus) on every keystroke.
@@ -92,14 +85,14 @@ Item {
 
                 Label {
                     text: qsTr("HAIKEN ANIME")
-                    color: accent
+                    color: theme.accent
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                     font.letterSpacing: 2.2
                 }
                 Label {
                     text: qsTr("Preferências")
-                    color: ink
+                    color: theme.ink
                     font.pixelSize: 25
                     font.weight: Font.Bold
                 }
@@ -123,8 +116,8 @@ Item {
                     id: settingsHeaderMessageArea
                     Layout.fillWidth: true
                     Layout.preferredHeight: 36
-                    color: controller.errorMessage.length > 0 ? "#fff0f0" : surfaceSoft
-                    border.color: controller.errorMessage.length > 0 ? "#e6a6aa" : line
+                    color: controller.errorMessage.length > 0 ? "#fff0f0" : theme.surfaceSoft
+                    border.color: controller.errorMessage.length > 0 ? "#e6a6aa" : theme.line
                     border.width: 1
                     radius: 5
 
@@ -136,7 +129,7 @@ Item {
                         text: controller.errorMessage.length > 0 ? controller.errorMessage
                               : controller.statusMessage.length > 0 ? controller.statusMessage
                               : controller.dirty ? qsTr("Alterações não salvas") : qsTr("Configurações atualizadas")
-                        color: controller.errorMessage.length > 0 ? "#b13b43" : muted
+                        color: controller.errorMessage.length > 0 ? "#b13b43" : theme.muted
                         font.pixelSize: 11
                         elide: Text.ElideRight
                     }
@@ -152,7 +145,7 @@ Item {
             }
         }
 
-        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
+        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.line }
 
         RowLayout {
             Layout.fillWidth: true
@@ -162,9 +155,9 @@ Item {
             Rectangle {
                 Layout.preferredWidth: 258
                 Layout.fillHeight: true
-                color: surface
+                color: theme.surface
                 radius: 8
-                border.color: line
+                border.color: theme.line
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -176,7 +169,7 @@ Item {
                         Layout.topMargin: 6
                         Layout.bottomMargin: 8
                         text: qsTr("CATEGORIAS")
-                        color: muted
+                        color: theme.muted
                         font.pixelSize: 10
                         font.weight: Font.DemiBold
                         font.letterSpacing: 1.4
@@ -190,8 +183,8 @@ Item {
                             Layout.fillWidth: true
                             Layout.preferredHeight: modelData.key === "overview" ? 42 : 50
                             radius: 6
-                            color: selected ? accentSoft : navHover.hovered ? surfaceSoft : "transparent"
-                            border.color: activeFocus ? accent : "transparent"
+                            color: selected ? theme.accentSoft : navHover.hovered ? theme.surfaceSoft : "transparent"
+                            border.color: activeFocus ? theme.accent : "transparent"
                             border.width: activeFocus ? 2 : 0
                             activeFocusOnTab: true
                             Accessible.role: Accessible.Button
@@ -206,7 +199,7 @@ Item {
                                 width: 3
                                 height: 24
                                 radius: 2
-                                color: accent
+                                color: theme.accent
                             }
 
                             Label {
@@ -216,7 +209,7 @@ Item {
                                 anchors.rightMargin: 10
                                 anchors.verticalCenter: parent.verticalCenter
                                 text: modelData.label
-                                color: parent.selected ? accent : ink
+                                color: parent.selected ? theme.accent : theme.ink
                                 font.pixelSize: 12
                                 font.weight: parent.selected ? Font.DemiBold : Font.Normal
                                 wrapMode: Text.Wrap
@@ -237,9 +230,9 @@ Item {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: surface
+                color: theme.surface
                 radius: 8
-                border.color: line
+                border.color: theme.line
                 clip: true
 
                 ScrollView {
@@ -261,7 +254,7 @@ Item {
 
                             Label {
                                 text: settingsScreen.sectionData(activeSection).eyebrow
-                                color: accent
+                                color: theme.accent
                                 font.pixelSize: 10
                                 font.weight: Font.DemiBold
                                 font.letterSpacing: 1.5
@@ -269,7 +262,7 @@ Item {
                             Label {
                                 Layout.fillWidth: true
                                 text: settingsScreen.sectionData(activeSection).title
-                                color: ink
+                                color: theme.ink
                                 font.pixelSize: 24
                                 font.weight: Font.Bold
                                 wrapMode: Text.Wrap
@@ -277,13 +270,13 @@ Item {
                             Label {
                                 Layout.fillWidth: true
                                 text: settingsScreen.sectionData(activeSection).description
-                                color: muted
+                                color: theme.muted
                                 font.pixelSize: 12
                                 wrapMode: Text.Wrap
                             }
                         }
 
-                        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
+                        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.line }
 
                         Loader {
                             Layout.fillWidth: true
@@ -309,14 +302,14 @@ Item {
         default property alias content: cardLayout.data
         Layout.fillWidth: true
         implicitHeight: cardLayout.implicitHeight + 34
-        color: surfaceSoft
+        color: theme.surfaceSoft
         radius: 7
-        border.color: line
+        border.color: theme.line
         ColumnLayout { id: cardLayout; anchors.fill: parent; anchors.margins: 17; spacing: 12 }
     }
 
     component FieldLabel: Label {
-        color: muted
+        color: theme.muted
         font.pixelSize: 11
     }
 
@@ -331,9 +324,9 @@ Item {
 
         background: Rectangle {
             radius: 5
-            color: settingsCombo.enabled ? surface : surfaceSoft
+            color: settingsCombo.enabled ? theme.surface : theme.surfaceSoft
             border.width: settingsCombo.activeFocus ? 2 : 1
-            border.color: settingsCombo.activeFocus ? accent : line
+            border.color: settingsCombo.activeFocus ? theme.accent : theme.line
         }
 
         contentItem: Item {
@@ -345,7 +338,7 @@ Item {
 
                 Text {
                     text: settingsCombo.caption
-                    color: muted
+                    color: theme.muted
                     font.pixelSize: 9
                     font.weight: Font.DemiBold
                     font.letterSpacing: 0.8
@@ -354,7 +347,7 @@ Item {
                 Text {
                     width: parent.width
                     text: settingsCombo.displayText
-                    color: settingsCombo.enabled ? ink : muted
+                    color: settingsCombo.enabled ? theme.ink : theme.muted
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
@@ -366,7 +359,7 @@ Item {
             x: settingsCombo.width - width - 13
             anchors.verticalCenter: parent.verticalCenter
             text: "⌄"
-            color: settingsCombo.enabled ? accent : muted
+            color: settingsCombo.enabled ? theme.accent : theme.muted
             font.pixelSize: 15
         }
 
@@ -380,7 +373,7 @@ Item {
 
             contentItem: Text {
                 text: model[settingsCombo.textRole]
-                color: ink
+                color: theme.ink
                 font.pixelSize: 12
                 font.weight: settingsCombo.currentIndex === index ? Font.DemiBold : Font.Normal
                 verticalAlignment: Text.AlignVCenter
@@ -389,7 +382,7 @@ Item {
 
             background: Rectangle {
                 color: parent.highlighted ? "#eaf1f8"
-                                          : settingsCombo.currentIndex === index ? "#f4f7fb" : surface
+                                          : settingsCombo.currentIndex === index ? "#f4f7fb" : theme.surface
             }
         }
     }
@@ -400,9 +393,9 @@ Item {
         property string value: ""
         Layout.fillWidth: true
         implicitHeight: 64
-        color: surface
+        color: theme.surface
         radius: 5
-        border.color: line
+        border.color: theme.line
         ColumnLayout {
             anchors.fill: parent
             anchors.leftMargin: 13
@@ -411,7 +404,7 @@ Item {
             anchors.bottomMargin: 8
             spacing: 2
             FieldLabel { text: staticField.label.toUpperCase(); font.pixelSize: 9; font.weight: Font.DemiBold; font.letterSpacing: 0.8 }
-            Label { Layout.fillWidth: true; text: staticField.value; color: ink; font.pixelSize: 12; font.weight: Font.DemiBold; elide: Text.ElideRight }
+            Label { Layout.fillWidth: true; text: staticField.value; color: theme.ink; font.pixelSize: 12; font.weight: Font.DemiBold; elide: Text.ElideRight }
         }
     }
 
@@ -421,10 +414,10 @@ Item {
         readonly property string path: controller.libraryRoots[index] || ""
         Layout.fillWidth: true
         implicitHeight: 64
-        color: surface
+        color: theme.surface
         radius: 5
         border.width: folderInput.activeFocus ? 2 : 1
-        border.color: folderInput.activeFocus ? accent : line
+        border.color: folderInput.activeFocus ? theme.accent : theme.line
 
         RowLayout {
             anchors.fill: parent
@@ -446,9 +439,9 @@ Item {
                     id: folderInput
                     Layout.fillWidth: true
                     text: folderField.path
-                    color: ink
-                    selectionColor: accentSoft
-                    selectedTextColor: ink
+                    color: theme.ink
+                    selectionColor: theme.accentSoft
+                    selectedTextColor: theme.ink
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                     selectByMouse: true
@@ -461,7 +454,7 @@ Item {
                     Text {
                         visible: folderInput.text.length === 0
                         text: qsTr("Digite ou selecione uma pasta")
-                        color: muted
+                        color: theme.muted
                         font: folderInput.font
                     }
                 }
@@ -496,8 +489,8 @@ Item {
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 2
-            Label { Layout.fillWidth: true; text: settingSwitch.title; color: ink; font.pixelSize: 12; font.weight: Font.DemiBold; wrapMode: Text.Wrap }
-            Label { Layout.fillWidth: true; text: settingSwitch.description; color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
+            Label { Layout.fillWidth: true; text: settingSwitch.title; color: theme.ink; font.pixelSize: 12; font.weight: Font.DemiBold; wrapMode: Text.Wrap }
+            Label { Layout.fillWidth: true; text: settingSwitch.description; color: theme.muted; font.pixelSize: 10; wrapMode: Text.Wrap }
         }
         Switch { id: innerSwitch; checked: settingSwitch.checked; onToggled: function() { settingSwitch.toggled(innerSwitch.checked) } }
     }
@@ -506,7 +499,7 @@ Item {
         id: overviewContent
         ColumnLayout {
             spacing: 18
-            Label { text: qsTr("O que você pode configurar"); color: ink; font.pixelSize: 16; font.weight: Font.DemiBold }
+            Label { text: qsTr("O que você pode configurar"); color: theme.ink; font.pixelSize: 16; font.weight: Font.DemiBold }
             GridLayout {
                 Layout.fillWidth: true
                 columns: width >= 760 ? 2 : 1
@@ -518,9 +511,9 @@ Item {
                         required property var modelData
                         Layout.fillWidth: true
                         Layout.preferredHeight: 112
-                        color: surfaceSoft
+                        color: theme.surfaceSoft
                         radius: 7
-                        border.color: overviewHover.hovered ? accent : line
+                        border.color: overviewHover.hovered ? theme.accent : theme.line
                         activeFocusOnTab: true
                         Accessible.role: Accessible.Button
                         Accessible.name: modelData.label
@@ -532,10 +525,10 @@ Item {
                             spacing: 6
                             RowLayout {
                                 Layout.fillWidth: true
-                                Label { Layout.fillWidth: true; text: modelData.label; color: ink; font.pixelSize: 13; font.weight: Font.DemiBold }
-                                Label { text: "›"; color: accent; font.pixelSize: 18 }
+                                Label { Layout.fillWidth: true; text: modelData.label; color: theme.ink; font.pixelSize: 13; font.weight: Font.DemiBold }
+                                Label { text: "›"; color: theme.accent; font.pixelSize: 18 }
                             }
-                            Label { Layout.fillWidth: true; Layout.fillHeight: true; text: modelData.description; color: muted; font.pixelSize: 10; wrapMode: Text.Wrap; verticalAlignment: Text.AlignTop }
+                            Label { Layout.fillWidth: true; Layout.fillHeight: true; text: modelData.description; color: theme.muted; font.pixelSize: 10; wrapMode: Text.Wrap; verticalAlignment: Text.AlignTop }
                         }
                         HoverHandler { id: overviewHover }
                         TapHandler { onTapped: settingsScreen.activeSection = modelData.key }
@@ -552,7 +545,7 @@ Item {
         ColumnLayout {
             spacing: 16
             SectionCard {
-                Label { text: qsTr("Serviço conectado"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
+                Label { text: qsTr("Serviço conectado"); color: theme.ink; font.pixelSize: 14; font.weight: Font.DemiBold }
                 GridLayout {
                     Layout.fillWidth: true; columns: 2; columnSpacing: 12; rowSpacing: 10
                     StaticField { label: qsTr("Serviço"); value: "AniList" }
@@ -566,7 +559,7 @@ Item {
                     Layout.fillWidth: true
                     visible: controller.aniListAuthenticationMessage.length > 0
                     text: controller.aniListAuthenticationMessage
-                    color: muted
+                    color: theme.muted
                     font.pixelSize: 11
                     wrapMode: Text.Wrap
                 }
@@ -592,13 +585,13 @@ Item {
                 }
             }
             SectionCard {
-                Label { text: qsTr("Preferências de sincronização"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
+                Label { text: qsTr("Preferências de sincronização"); color: theme.ink; font.pixelSize: 14; font.weight: Font.DemiBold }
                 RowLayout {
                     Layout.fillWidth: true
                     ColumnLayout {
                         Layout.fillWidth: true
-                        Label { text: qsTr("Sincronização automática"); color: ink; font.pixelSize: 12; font.weight: Font.DemiBold }
-                        Label { Layout.fillWidth: true; text: qsTr("Atualizar a biblioteca em segundo plano quando o aplicativo for iniciado."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
+                        Label { text: qsTr("Sincronização automática"); color: theme.ink; font.pixelSize: 12; font.weight: Font.DemiBold }
+                        Label { Layout.fillWidth: true; text: qsTr("Atualizar a biblioteca em segundo plano quando o aplicativo for iniciado."); color: theme.muted; font.pixelSize: 10; wrapMode: Text.Wrap }
                     }
                     Switch {
                         id: synchronizationSwitch
@@ -610,8 +603,8 @@ Item {
                     Layout.fillWidth: true
                     ColumnLayout {
                         Layout.fillWidth: true
-                        Label { text: qsTr("Sincronização manual"); color: ink; font.pixelSize: 12; font.weight: Font.DemiBold }
-                        Label { Layout.fillWidth: true; text: qsTr("Atualize agora os dados da sua lista, sem aguardar o próximo intervalo automático."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
+                        Label { text: qsTr("Sincronização manual"); color: theme.ink; font.pixelSize: 12; font.weight: Font.DemiBold }
+                        Label { Layout.fillWidth: true; text: qsTr("Atualize agora os dados da sua lista, sem aguardar o próximo intervalo automático."); color: theme.muted; font.pixelSize: 10; wrapMode: Text.Wrap }
                     }
                     AppButton {
                         text: synchronizationStatus.running ? qsTr("Sincronizando…") : qsTr("Sincronizar agora")
@@ -623,7 +616,7 @@ Item {
                     Layout.fillWidth: true
                     status: synchronizationStatus
                 }
-                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
+                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.line }
                 GridLayout { Layout.fillWidth: true; columns: 2; columnSpacing: 12; rowSpacing: 6
                     SettingsComboBox {
                         Layout.fillWidth: true
@@ -655,8 +648,8 @@ Item {
         ColumnLayout {
             spacing: 16
             SectionCard {
-                Label { text: qsTr("Arquivos locais"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
-                Label { Layout.fillWidth: true; text: qsTr("Todas as pastas são escaneadas e reconhecidas. Uma pasta não pode estar dentro de outra já adicionada."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
+                Label { text: qsTr("Arquivos locais"); color: theme.ink; font.pixelSize: 14; font.weight: Font.DemiBold }
+                Label { Layout.fillWidth: true; text: qsTr("Todas as pastas são escaneadas e reconhecidas. Uma pasta não pode estar dentro de outra já adicionada."); color: theme.muted; font.pixelSize: 10; wrapMode: Text.Wrap }
                 ColumnLayout {
                     id: libraryFolderList
                     Layout.fillWidth: true
@@ -678,7 +671,7 @@ Item {
                         }
                     }
                 }
-                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
+                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.line }
                 FieldLabel { text: qsTr("EXTENSÕES INCLUÍDAS") }
                 Grid {
                     id: scanExtensionGrid
@@ -715,21 +708,21 @@ Item {
                     text: controller.scanRunning ? qsTr("Aguarde a varredura em andamento.")
                          : controller.saving ? qsTr("Aguarde o salvamento das configurações.")
                          : qsTr("Salve ou descarte as alterações antes de escanear.")
-                    color: muted
+                    color: theme.muted
                     font.pixelSize: 10
                     wrapMode: Text.Wrap
                 }
                 Label {
                     Layout.fillWidth: true
                     text: controller.scanStatusMessage
-                    color: ink
+                    color: theme.ink
                     font.pixelSize: 12
                     wrapMode: Text.Wrap
                 }
                 Label {
                     Layout.fillWidth: true
                     text: qsTr("Arquivos candidatos: %1").arg(controller.scanCandidateCount)
-                    color: muted
+                    color: theme.muted
                     font.pixelSize: 11
                 }
                 Label {
@@ -742,20 +735,20 @@ Item {
                 }
             }
             SectionCard {
-                Label { text: qsTr("Reconhecimento"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
+                Label { text: qsTr("Reconhecimento"); color: theme.ink; font.pixelSize: 14; font.weight: Font.DemiBold }
                 SettingSwitch { title: qsTr("Reconhecer arquivos automaticamente"); description: qsTr("Verifica a biblioteca ao iniciar o aplicativo."); checked: controller.automaticLocalFileRecognition; onToggled: function(checked) { controller.SetAutomaticLocalFileRecognition(checked) } }
-                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: line }
+                Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.line }
                 StaticField { label: qsTr("Reprodutor preferido"); value: qsTr("Padrão do Windows") }
             }
             SectionCard {
-                Label { text: qsTr("Cache local"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
-                Label { Layout.fillWidth: true; text: qsTr("Remove capas, arquivos temporários de capas e metadados derivados. Sua biblioteca, progresso e conta não são alterados."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
+                Label { text: qsTr("Cache local"); color: theme.ink; font.pixelSize: 14; font.weight: Font.DemiBold }
+                Label { Layout.fillWidth: true; text: qsTr("Remove capas, arquivos temporários de capas e metadados derivados. Sua biblioteca, progresso e conta não são alterados."); color: theme.muted; font.pixelSize: 10; wrapMode: Text.Wrap }
                 AppButton {
                     text: controller.cacheCleanupRunning ? qsTr("Limpando cache…") : qsTr("Limpar cache local")
                     enabled: !controller.cacheCleanupRunning
                     onClicked: controller.ClearLocalCache()
                 }
-                Label { Layout.fillWidth: true; visible: controller.cacheCleanupStatusMessage.length > 0; text: controller.cacheCleanupStatusMessage; color: ink; font.pixelSize: 11; wrapMode: Text.Wrap }
+                Label { Layout.fillWidth: true; visible: controller.cacheCleanupStatusMessage.length > 0; text: controller.cacheCleanupStatusMessage; color: theme.ink; font.pixelSize: 11; wrapMode: Text.Wrap }
                 Label { Layout.fillWidth: true; visible: controller.cacheCleanupErrorMessage.length > 0; text: controller.cacheCleanupErrorMessage; color: "#b13b43"; font.pixelSize: 11; wrapMode: Text.Wrap }
             }
         }
@@ -766,8 +759,8 @@ Item {
         ColumnLayout {
             spacing: 16
             SectionCard {
-                Label { text: qsTr("Estados incluídos"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
-                Label { Layout.fillWidth: true; text: qsTr("Defina quais listas poderão participar de filtros e futuras automações."); color: muted; font.pixelSize: 10; wrapMode: Text.Wrap }
+                Label { text: qsTr("Estados incluídos"); color: theme.ink; font.pixelSize: 14; font.weight: Font.DemiBold }
+                Label { Layout.fillWidth: true; text: qsTr("Defina quais listas poderão participar de filtros e futuras automações."); color: theme.muted; font.pixelSize: 10; wrapMode: Text.Wrap }
                 Repeater {
                     model: [
                         { key: "current", label: qsTr("Watching / Reading") },
@@ -786,7 +779,7 @@ Item {
                 }
             }
             SectionCard {
-                Label { text: qsTr("Catálogo sazonal"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
+                Label { text: qsTr("Catálogo sazonal"); color: theme.ink; font.pixelSize: 14; font.weight: Font.DemiBold }
                 SettingSwitch {
                     Layout.fillWidth: true
                     title: qsTr("INCLUIR CONTEÚDO ADULTO")
@@ -803,7 +796,7 @@ Item {
         ColumnLayout {
             spacing: 16
             SectionCard {
-                Label { text: qsTr("Interface"); color: ink; font.pixelSize: 14; font.weight: Font.DemiBold }
+                Label { text: qsTr("Interface"); color: theme.ink; font.pixelSize: 14; font.weight: Font.DemiBold }
                 GridLayout {
                     id: appearanceGrid
                     Layout.fillWidth: true
@@ -858,7 +851,7 @@ Item {
                     Layout.fillWidth: true
                     visible: controller.restartRequiredMessage.length > 0
                     text: controller.restartRequiredMessage
-                    color: accent
+                    color: theme.accent
                     font.pixelSize: 10
                     wrapMode: Text.Wrap
                 }
@@ -911,7 +904,7 @@ Item {
         Label {
             width: 360
             text: qsTr("Existem configurações alteradas que ainda não foram salvas.")
-            color: ink
+            color: theme.ink
             wrapMode: Text.Wrap
         }
     }
@@ -926,17 +919,17 @@ Item {
         closePolicy: Popup.CloseOnEscape
         padding: 20
 
-        background: Rectangle { color: settingsScreen.surface; border.color: settingsScreen.line; radius: 8 }
+        background: Rectangle { color: theme.surface; border.color: theme.line; radius: 8 }
         header: Label {
             text: removeAccountDialog.title
-            color: settingsScreen.ink
+            color: theme.ink
             font.pixelSize: 16
             font.weight: Font.DemiBold
             leftPadding: 20; topPadding: 20; rightPadding: 20
         }
         contentItem: Label {
             text: qsTr("A biblioteca local e as alterações não sincronizadas serão mantidas.")
-            color: settingsScreen.muted
+            color: theme.muted
             font.pixelSize: 12
             wrapMode: Text.Wrap
         }

@@ -7,12 +7,7 @@ Popup {
 
     property var controller
     property Item returnFocusItem: null
-    property color ink: "#172033"
-    property color muted: "#68758a"
-    property color line: "#d7dee8"
-    property color surface: "#ffffff"
-    property color surfaceSoft: "#f6f8fb"
-    property color accent: "#315d91"
+    readonly property Theme theme: Theme {}
     property bool seasonalLayout: false
     property string seasonalListErrorMessage: ""
 
@@ -40,8 +35,8 @@ Popup {
     }
     Overlay.modal: Rectangle { color: "#730f1d2e" }
     background: Rectangle {
-        color: panel.surface
-        border.color: panel.line
+        color: theme.surface
+        border.color: theme.line
         border.width: 1
     }
 
@@ -68,7 +63,7 @@ Popup {
 
                 Label {
                     text: qsTr("DETALHES COMPLETOS")
-                    color: panel.accent
+                    color: theme.accent
                     font.pixelSize: 11
                     font.weight: Font.DemiBold
                     font.letterSpacing: 1.5
@@ -77,7 +72,7 @@ Popup {
                 Label {
                     Layout.fillWidth: true
                     text: controller.selectedTitle
-                    color: panel.ink
+                    color: theme.ink
                     font.pixelSize: 20
                     font.weight: Font.Bold
                     wrapMode: Text.Wrap
@@ -95,7 +90,7 @@ Popup {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: panel.line
+            color: theme.line
         }
 
         ScrollView {
@@ -123,38 +118,38 @@ Popup {
                         columnSpacing: 18
                         rowSpacing: 10
 
-                        Label { text: qsTr("Tipo"); color: panel.muted; font.pixelSize: 11 }
-                        Label { text: controller.selectedTypeLabel; color: panel.ink; font.weight: Font.DemiBold }
-                        Label { text: qsTr("Status"); color: panel.muted; font.pixelSize: 11 }
-                        Label { text: controller.selectedStatusLabel; color: panel.ink; font.weight: Font.DemiBold }
-                        Label { text: qsTr("Progresso"); color: panel.muted; font.pixelSize: 11 }
-                        Label { text: controller.selectedProgress; color: panel.ink; font.weight: Font.DemiBold }
-                        Label { text: qsTr("Sua nota"); color: panel.muted; font.pixelSize: 11 }
-                        Label { text: controller.selectedScore; color: panel.ink; font.weight: Font.DemiBold }
-                        Label { text: qsTr("Nota AniList"); color: panel.muted; font.pixelSize: 11 }
-                        Label { text: controller.selectedAverageScore; color: panel.ink; font.weight: Font.DemiBold }
+                        Label { text: qsTr("Tipo"); color: theme.muted; font.pixelSize: 11 }
+                        Label { text: controller.selectedTypeLabel; color: theme.ink; font.weight: Font.DemiBold }
+                        Label { text: qsTr("Status"); color: theme.muted; font.pixelSize: 11 }
+                        Label { text: controller.selectedStatusLabel; color: theme.ink; font.weight: Font.DemiBold }
+                        Label { text: qsTr("Progresso"); color: theme.muted; font.pixelSize: 11 }
+                        Label { text: controller.selectedProgress; color: theme.ink; font.weight: Font.DemiBold }
+                        Label { text: qsTr("Sua nota"); color: theme.muted; font.pixelSize: 11 }
+                        Label { text: controller.selectedScore; color: theme.ink; font.weight: Font.DemiBold }
+                        Label { text: qsTr("Nota AniList"); color: theme.muted; font.pixelSize: 11 }
+                        Label { text: controller.selectedAverageScore; color: theme.ink; font.weight: Font.DemiBold }
                         Label {
                             visible: controller.selectedSeasonLabel.length > 0
                             text: qsTr("Temporada")
-                            color: panel.muted
+                            color: theme.muted
                             font.pixelSize: 11
                         }
                         Label {
                             visible: controller.selectedSeasonLabel.length > 0
                             text: controller.selectedSeasonLabel
-                            color: panel.ink
+                            color: theme.ink
                             font.weight: Font.DemiBold
                         }
                         Label {
                             visible: controller.selectedNextAiringLabel.length > 0
                             text: qsTr("Próximo episódio")
-                            color: panel.muted
+                            color: theme.muted
                             font.pixelSize: 11
                         }
                         Label {
                             visible: controller.selectedNextAiringLabel.length > 0
                             text: controller.selectedNextAiringLabel
-                            color: panel.ink
+                            color: theme.ink
                             font.weight: Font.DemiBold
                             wrapMode: Text.Wrap
                         }
@@ -167,7 +162,7 @@ Popup {
 
                         Label {
                             text: qsTr("Também conhecido como")
-                            color: panel.muted
+                            color: theme.muted
                             font.pixelSize: 11
                         }
 
@@ -175,7 +170,7 @@ Popup {
                             Layout.fillWidth: true
                             Layout.preferredHeight: contentHeight
                             text: controller.selectedAlternativeNames.join(" · ")
-                            color: panel.ink
+                            color: theme.ink
                             readOnly: true
                             selectByMouse: true
                             wrapMode: TextEdit.Wrap
@@ -188,7 +183,7 @@ Popup {
 
                         Label {
                             text: qsTr("Sinopse")
-                            color: panel.muted
+                            color: theme.muted
                             font.pixelSize: 11
                         }
 
@@ -198,7 +193,7 @@ Popup {
                             Layout.fillWidth: true
                             Layout.preferredHeight: contentHeight
                             text: controller.selectedSynopsis
-                            color: panel.ink
+                            color: theme.ink
                             readOnly: true
                             selectByMouse: true
                             wrapMode: TextEdit.Wrap
@@ -208,7 +203,7 @@ Popup {
                         Label {
                             visible: controller.selectedSynopsis.length === 0
                             text: qsTr("Sinopse não disponível.")
-                            color: panel.muted
+                            color: theme.muted
                             font.pixelSize: 13
                         }
                     }
@@ -220,7 +215,7 @@ Popup {
 
                         Label {
                             text: qsTr("Links")
-                            color: panel.muted
+                            color: theme.muted
                             font.pixelSize: 11
                         }
 
@@ -243,7 +238,7 @@ Popup {
                                         if (site.indexOf("netflix") >= 0) return "#b20710"
                                         if (site.indexOf("amazon") >= 0) return "#00a8e1"
                                         if (site.indexOf("anilist") >= 0) return "#02a9ff"
-                                        return panel.accent
+                                        return theme.accent
                                     }
                                     Layout.fillWidth: true
                                     text: modelData.site
@@ -275,7 +270,7 @@ Popup {
             visible: panel.seasonalLayout
             Layout.fillWidth: true
             Layout.preferredHeight: visible ? 1 : 0
-            color: panel.line
+            color: theme.line
         }
 
         RowLayout {

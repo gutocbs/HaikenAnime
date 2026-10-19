@@ -8,12 +8,7 @@ Popup {
     id: panel
 
     required property var controller
-    property color ink: "#172033"
-    property color muted: "#68758a"
-    property color line: "#d7dee8"
-    property color surface: "#ffffff"
-    property color surfaceSoft: "#f6f8fb"
-    property color accent: "#315d91"
+    readonly property Theme theme: Theme {}
     property int editingMediaId: 0
     property var listOptions: []
     property bool requiresExplicitStatus: false
@@ -57,8 +52,8 @@ Popup {
 
     Overlay.modal: Rectangle { color: "#260f1d2e" }
     background: Rectangle {
-        color: panel.surface
-        border.color: panel.line
+        color: theme.surface
+        border.color: theme.line
         border.width: 1
     }
 
@@ -73,14 +68,14 @@ Popup {
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 2
-                Label { text: qsTr("Editar mídia"); color: panel.ink; font.pixelSize: 20; font.weight: Font.Bold }
-                Label { text: panel.controller.selectedTitle; color: panel.muted; font.pixelSize: 12; elide: Text.ElideRight; Layout.fillWidth: true }
+                Label { text: qsTr("Editar mídia"); color: theme.ink; font.pixelSize: 20; font.weight: Font.Bold }
+                Label { text: panel.controller.selectedTitle; color: theme.muted; font.pixelSize: 12; elide: Text.ElideRight; Layout.fillWidth: true }
             }
 
             AppButton { text: qsTr("Fechar"); variant: "flat"; onClicked: panel.close() }
         }
 
-        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: panel.line }
+        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.line }
 
         Flickable {
             Layout.fillWidth: true
@@ -101,8 +96,8 @@ Popup {
                     columnSpacing: 14
                     rowSpacing: 8
 
-                    Label { text: qsTr("Progresso"); color: panel.muted; font.pixelSize: 11 }
-                    Label { text: qsTr("Status"); color: panel.muted; font.pixelSize: 11 }
+                    Label { text: qsTr("Progresso"); color: theme.muted; font.pixelSize: 11 }
+                    Label { text: qsTr("Status"); color: theme.muted; font.pixelSize: 11 }
 
                     Basic.SpinBox {
                         id: progressField
@@ -132,7 +127,7 @@ Popup {
 
                             contentItem: Text {
                                 text: model[statusField.textRole]
-                                color: panel.ink
+                                color: theme.ink
                                 font.pixelSize: 12
                                 font.weight: statusField.currentIndex === index
                                              ? Font.DemiBold : Font.Normal
@@ -143,7 +138,7 @@ Popup {
                             background: Rectangle {
                                 color: parent.highlighted ? "#eaf1f8"
                                                           : statusField.currentIndex === index
-                                                            ? "#f4f7fb" : panel.surface
+                                                            ? "#f4f7fb" : theme.surface
                             }
                         }
                     }
@@ -154,7 +149,7 @@ Popup {
                     Layout.maximumWidth: (form.width - 14) / 2
                     Layout.alignment: Qt.AlignLeft
                     spacing: 6
-                    Label { text: qsTr("Nota"); color: panel.muted; font.pixelSize: 11 }
+                    Label { text: qsTr("Nota"); color: theme.muted; font.pixelSize: 11 }
                     Basic.SpinBox {
                         id: scoreField
                         Layout.fillWidth: true
@@ -174,7 +169,7 @@ Popup {
                               .arg(panel.controller.scoreMinimum)
                               .arg(panel.controller.scoreMaximum)
                               .arg(panel.controller.scoreStep)
-                        color: panel.muted
+                        color: theme.muted
                         font.pixelSize: 10
                     }
                 }
@@ -182,7 +177,7 @@ Popup {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 6
-                    Label { text: qsTr("Pasta da mídia"); color: panel.muted; font.pixelSize: 11 }
+                    Label { text: qsTr("Pasta da mídia"); color: theme.muted; font.pixelSize: 11 }
                     RowLayout {
                         Layout.fillWidth: true
                         Basic.TextField { id: pathField; Layout.fillWidth: true; placeholderText: qsTr("C:\\Mídias\\Título") }
@@ -193,21 +188,21 @@ Popup {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 6
-                    Label { text: qsTr("Nomes alternativos"); color: panel.muted; font.pixelSize: 11 }
+                    Label { text: qsTr("Nomes alternativos"); color: theme.muted; font.pixelSize: 11 }
                     Basic.TextArea {
                         id: alternativeNamesField
                         Layout.fillWidth: true
                         Layout.preferredHeight: 118
                         placeholderText: qsTr("Nome em inglês; Nome original; Outro título")
                         wrapMode: TextEdit.Wrap
-                        background: Rectangle { color: panel.surfaceSoft; border.color: panel.line; radius: 5 }
+                        background: Rectangle { color: theme.surfaceSoft; border.color: theme.line; radius: 5 }
                     }
-                    Label { text: qsTr("Separe os nomes usando ponto e vírgula (;).") ; color: panel.muted; font.pixelSize: 10 }
+                    Label { text: qsTr("Separe os nomes usando ponto e vírgula (;).") ; color: theme.muted; font.pixelSize: 10 }
                 }
             }
         }
 
-        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: panel.line }
+        Rectangle { Layout.fillWidth: true; Layout.preferredHeight: 1; color: theme.line }
 
         Label {
             Layout.fillWidth: true
@@ -257,17 +252,17 @@ Popup {
         closePolicy: Popup.CloseOnEscape
         padding: 20
 
-        background: Rectangle { color: panel.surface; border.color: panel.line; radius: 8 }
+        background: Rectangle { color: theme.surface; border.color: theme.line; radius: 8 }
         header: Label {
             text: removeConfirmationDialog.title
-            color: panel.ink
+            color: theme.ink
             font.pixelSize: 16
             font.weight: Font.DemiBold
             leftPadding: 20; topPadding: 20; rightPadding: 20
         }
         contentItem: Label {
             text: qsTr("\"%1\" será removido da sua lista pessoal e da AniList.").arg(panel.controller.selectedTitle)
-            color: panel.muted
+            color: theme.muted
             font.pixelSize: 12
             wrapMode: Text.Wrap
         }

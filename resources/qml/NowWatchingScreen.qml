@@ -15,13 +15,7 @@ Item {
     readonly property var openSessions: controller ? controller.sessions : []
     readonly property bool hasSession: controller !== null && controller.active
 
-    readonly property color ink: "#172033"
-    readonly property color muted: "#68758a"
-    readonly property color line: "#d7dee8"
-    readonly property color surface: "#ffffff"
-    readonly property color surfaceSoft: "#f6f8fb"
-    readonly property color accent: "#315d91"
-    readonly property color accentSoft: "#e2ebf6"
+    readonly property Theme theme: Theme {}
     readonly property string placeholderCover: "qrc:/qt/qml/HaikenAnime/resources/images/cover-placeholder.svg"
 
     function coverOf(item) {
@@ -50,7 +44,7 @@ Item {
         width: 8
         height: 8
         radius: 4
-        color: paused ? nowWatching.muted : nowWatching.accent
+        color: paused ? theme.muted : theme.accent
         SequentialAnimation on opacity {
             running: nowWatching.visible && nowWatching.hasSession && !dot.paused
             // A paused or hidden dot rests fully visible instead of freezing mid-pulse.
@@ -73,14 +67,14 @@ Item {
             spacing: 2
             Label {
                 text: qsTr("HAIKEN ANIME")
-                color: nowWatching.accent
+                color: theme.accent
                 font.pixelSize: 12
                 font.weight: Font.DemiBold
                 font.letterSpacing: 2.2
             }
             Label {
                 text: qsTr("Assistindo agora")
-                color: nowWatching.ink
+                color: theme.ink
                 font.pixelSize: 25
                 font.weight: Font.Bold
             }
@@ -95,7 +89,7 @@ Item {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 1
-            color: nowWatching.line
+            color: theme.line
         }
 
         RowLayout {
@@ -109,9 +103,9 @@ Item {
                 Layout.fillHeight: true
                 Layout.minimumWidth: 320
                 Layout.horizontalStretchFactor: 2
-                color: nowWatching.surface
+                color: theme.surface
                 radius: 8
-                border.color: nowWatching.line
+                border.color: theme.line
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -123,14 +117,14 @@ Item {
                         spacing: 2
                         Label {
                             text: qsTr("Sessões abertas")
-                            color: nowWatching.ink
+                            color: theme.ink
                             font.pixelSize: 18
                             font.weight: Font.DemiBold
                         }
                         Label {
                             text: nowWatching.openSessions.length === 1 ? qsTr("1 reprodução em andamento")
                                   : qsTr("%1 reproduções em andamento").arg(nowWatching.openSessions.length)
-                            color: nowWatching.muted
+                            color: theme.muted
                             font.pixelSize: 12
                         }
                     }
@@ -138,7 +132,7 @@ Item {
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 1
-                        color: nowWatching.line
+                        color: theme.line
                     }
 
                     ListView {
@@ -157,8 +151,8 @@ Item {
                             width: ListView.view.width
                             height: 132
                             radius: 6
-                            color: selected ? "#edf4fc" : nowWatching.surface
-                            border.color: selected || activeFocus ? nowWatching.accent : "#e0e6ee"
+                            color: selected ? "#edf4fc" : theme.surface
+                            border.color: selected || activeFocus ? theme.accent : "#e0e6ee"
                             border.width: selected || activeFocus ? 2 : 1
                             activeFocusOnTab: true
                             Accessible.role: Accessible.Button
@@ -204,7 +198,7 @@ Item {
                                                                       sessionCard.modelData.device,
                                                                       sessionCard.modelData.paused === true
                                                                           ? qsTr("Pausado").toUpperCase() : undefined])
-                                            color: nowWatching.accent
+                                            color: theme.accent
                                             font.pixelSize: 10
                                             font.weight: Font.DemiBold
                                             font.letterSpacing: 1.2
@@ -214,7 +208,7 @@ Item {
                                     Label {
                                         Layout.fillWidth: true
                                         text: nowWatching.titleOf(sessionCard.modelData)
-                                        color: nowWatching.ink
+                                        color: theme.ink
                                         font.pixelSize: 14
                                         font.weight: Font.DemiBold
                                         elide: Text.ElideRight
@@ -222,7 +216,7 @@ Item {
                                     Label {
                                         Layout.fillWidth: true
                                         text: nowWatching.episodeLine(sessionCard.modelData)
-                                        color: nowWatching.muted
+                                        color: theme.muted
                                         font.pixelSize: 12
                                         elide: Text.ElideRight
                                     }
@@ -238,7 +232,7 @@ Item {
                         title: qsTr("Nada sendo reproduzido no momento")
                         description: qsTr("Os episódios em reprodução aparecem aqui.")
                         stateLabel: qsTr("ESTADO VAZIO")
-                        accentColor: nowWatching.accent
+                        accentColor: theme.accent
                     }
                 }
             }
@@ -249,9 +243,9 @@ Item {
                 Layout.fillHeight: true
                 Layout.minimumWidth: 480
                 Layout.horizontalStretchFactor: 3
-                color: nowWatching.surface
+                color: theme.surface
                 radius: 8
-                border.color: nowWatching.line
+                border.color: theme.line
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -265,7 +259,7 @@ Item {
                         Label {
                             Layout.fillWidth: true
                             text: qsTr("DETALHES")
-                            color: nowWatching.accent
+                            color: theme.accent
                             font.pixelSize: 11
                             font.weight: Font.DemiBold
                             font.letterSpacing: 1.5
@@ -290,7 +284,7 @@ Item {
                         title: qsTr("Nenhuma sessão selecionada")
                         description: qsTr("Os detalhes do anime e do episódio aparecem aqui durante a reprodução.")
                         stateLabel: qsTr("ESTADO VAZIO")
-                        accentColor: nowWatching.accent
+                        accentColor: theme.accent
                     }
 
                     ColumnLayout {
@@ -308,7 +302,7 @@ Item {
                                 Layout.preferredWidth: 150
                                 Layout.preferredHeight: 214
                                 radius: 6
-                                color: nowWatching.accentSoft
+                                color: theme.accentSoft
                                 clip: true
                                 Image {
                                     anchors.fill: parent
@@ -326,7 +320,7 @@ Item {
                                 TextEdit {
                                     Layout.fillWidth: true
                                     text: nowWatching.titleOf(nowWatching.current)
-                                    color: nowWatching.ink
+                                    color: theme.ink
                                     font.pixelSize: 20
                                     font.weight: Font.Bold
                                     readOnly: true
@@ -340,13 +334,13 @@ Item {
                                     implicitWidth: unassociatedLabel.implicitWidth + 16
                                     implicitHeight: unassociatedLabel.implicitHeight + 6
                                     radius: 4
-                                    color: nowWatching.surfaceSoft
-                                    border.color: nowWatching.line
+                                    color: theme.surfaceSoft
+                                    border.color: theme.line
                                     Label {
                                         id: unassociatedLabel
                                         anchors.centerIn: parent
                                         text: qsTr("não associado à biblioteca")
-                                        color: nowWatching.muted
+                                        color: theme.muted
                                         font.pixelSize: 11
                                     }
                                 }
@@ -354,10 +348,10 @@ Item {
                                 ColumnLayout {
                                     visible: nowWatching.current.progress !== undefined
                                     spacing: 4
-                                    Label { text: qsTr("Progresso"); color: nowWatching.muted; font.pixelSize: 11 }
+                                    Label { text: qsTr("Progresso"); color: theme.muted; font.pixelSize: 11 }
                                     Label {
                                         text: nowWatching.current.progress || ""
-                                        color: nowWatching.ink
+                                        color: theme.ink
                                         font.weight: Font.DemiBold
                                     }
                                 }
@@ -366,7 +360,7 @@ Item {
                                     visible: nowWatching.current.animeSynopsis !== undefined
                                     Layout.fillWidth: true
                                     text: nowWatching.current.animeSynopsis || ""
-                                    color: nowWatching.muted
+                                    color: theme.muted
                                     font.pixelSize: 12
                                     wrapMode: Text.Wrap
                                     maximumLineCount: 6
@@ -379,7 +373,7 @@ Item {
                         Rectangle {
                             Layout.fillWidth: true
                             Layout.preferredHeight: 1
-                            color: nowWatching.line
+                            color: theme.line
                         }
 
                         ColumnLayout {
@@ -392,7 +386,7 @@ Item {
                                 LiveDot { paused: nowWatching.current.paused === true }
                                 Label {
                                     text: qsTr("EPISÓDIO")
-                                    color: nowWatching.accent
+                                    color: theme.accent
                                     font.pixelSize: 11
                                     font.weight: Font.DemiBold
                                     font.letterSpacing: 1.5
@@ -402,13 +396,13 @@ Item {
                                     implicitWidth: pausedLabel.implicitWidth + 14
                                     implicitHeight: pausedLabel.implicitHeight + 6
                                     radius: 4
-                                    color: nowWatching.surfaceSoft
-                                    border.color: nowWatching.line
+                                    color: theme.surfaceSoft
+                                    border.color: theme.line
                                     Label {
                                         id: pausedLabel
                                         anchors.centerIn: parent
                                         text: qsTr("Pausado")
-                                        color: nowWatching.muted
+                                        color: theme.muted
                                         font.pixelSize: 11
                                     }
                                 }
@@ -420,7 +414,7 @@ Item {
                                 Label {
                                     Layout.fillWidth: true
                                     text: nowWatching.episodeLine(nowWatching.current)
-                                    color: nowWatching.ink
+                                    color: theme.ink
                                     font.pixelSize: 15
                                     font.weight: Font.DemiBold
                                     wrapMode: Text.Wrap
@@ -429,7 +423,7 @@ Item {
                                     Layout.alignment: Qt.AlignTop
                                     visible: text.length > 0
                                     text: nowWatching.joined([nowWatching.current.duration, nowWatching.current.airDate])
-                                    color: nowWatching.muted
+                                    color: theme.muted
                                     font.pixelSize: 12
                                 }
                             }
@@ -438,7 +432,7 @@ Item {
                                 visible: nowWatching.current.summary !== undefined
                                 Layout.fillWidth: true
                                 text: nowWatching.current.summary || ""
-                                color: nowWatching.ink
+                                color: theme.ink
                                 font.pixelSize: 12
                                 wrapMode: Text.Wrap
                                 maximumLineCount: 5
@@ -450,7 +444,7 @@ Item {
                                 visible: text.length > 0
                                 text: nowWatching.joined([nowWatching.current.source, nowWatching.current.user,
                                                           nowWatching.current.device])
-                                color: nowWatching.muted
+                                color: theme.muted
                                 font.pixelSize: 11
                             }
                         }
@@ -468,12 +462,6 @@ Item {
         active: false
         sourceComponent: MediaDetailsPanel {
             controller: nowWatching.current.details
-            ink: nowWatching.ink
-            muted: nowWatching.muted
-            line: nowWatching.line
-            surface: nowWatching.surface
-            surfaceSoft: nowWatching.surfaceSoft
-            accent: nowWatching.accent
         }
     }
 }

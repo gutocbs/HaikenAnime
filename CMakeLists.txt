@@ -158,6 +158,7 @@ qt_add_qml_module(HaikenAnime
         resources/qml/PluginSettingField.qml
         resources/qml/EpisodeRecognitionScreen.qml
         resources/qml/NowWatchingScreen.qml
+        resources/qml/Theme.qml
         RESOURCES resources/images/cover-placeholder.svg
 )
 

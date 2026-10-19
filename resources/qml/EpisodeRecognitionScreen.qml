@@ -9,11 +9,7 @@ ColumnLayout {
 
     property var controller: recognitionController
 
-    readonly property color ink: "#172033"
-    readonly property color muted: "#68758a"
-    readonly property color line: "#d7dee8"
-    readonly property color surfaceSoft: "#f6f8fb"
-    readonly property color danger: "#b42318"
+    readonly property Theme theme: Theme {}
 
     function statusLabel(key) {
         switch (key) {
@@ -42,7 +38,7 @@ ColumnLayout {
         Layout.fillWidth: true
         Label {
             text: qsTr("Reconhecimentos recentes")
-            color: recognitionScreen.ink
+            color: theme.ink
             font.pixelSize: 14
             font.weight: Font.DemiBold
             Layout.fillWidth: true
@@ -57,7 +53,7 @@ ColumnLayout {
     Label {
         visible: recognitionScreen.controller.errorMessage.length > 0
         text: recognitionScreen.controller.errorMessage
-        color: recognitionScreen.danger
+        color: theme.danger
         font.pixelSize: 11
         wrapMode: Text.Wrap
         Layout.fillWidth: true
@@ -66,7 +62,7 @@ ColumnLayout {
     Label {
         visible: historyList.count === 0
         text: qsTr("Nenhum episódio reconhecido ainda.")
-        color: recognitionScreen.muted
+        color: theme.muted
         font.pixelSize: 11
         wrapMode: Text.Wrap
         Layout.fillWidth: true
@@ -94,9 +90,9 @@ ColumnLayout {
 
             width: ListView.view.width
             implicitHeight: rowLayout.implicitHeight + 24
-            color: recognitionScreen.surfaceSoft
+            color: theme.surfaceSoft
             radius: 6
-            border.color: recognitionScreen.line
+            border.color: theme.line
 
             RowLayout {
                 id: rowLayout
@@ -111,7 +107,7 @@ ColumnLayout {
                         text: row.season !== undefined && row.season !== null
                               ? qsTr("%1 — T%2 E%3").arg(row.title).arg(row.season).arg(row.episode)
                               : qsTr("%1 — Episódio %2").arg(row.title).arg(row.episode)
-                        color: recognitionScreen.ink
+                        color: theme.ink
                         font.pixelSize: 12
                         font.weight: Font.DemiBold
                         elide: Text.ElideRight
@@ -119,13 +115,13 @@ ColumnLayout {
                     }
                     Label {
                         text: recognitionScreen.statusLabel(row.statusKey) + " · " + row.pluginId + " · " + row.updatedAt
-                        color: recognitionScreen.muted
+                        color: theme.muted
                         font.pixelSize: 11
                     }
                     Label {
                         visible: text.length > 0
                         text: recognitionScreen.syncLabel(row.syncState, row.syncError)
-                        color: row.syncState === "failed" ? recognitionScreen.danger : recognitionScreen.muted
+                        color: row.syncState === "failed" ? theme.danger : theme.muted
                         font.pixelSize: 11
                     }
                 }

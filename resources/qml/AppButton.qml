@@ -15,41 +15,34 @@ Basic.Button {
     property color baseColor: "transparent"
     readonly property bool hasBaseColor: baseColor.a > 0
 
-    readonly property color ink: "#172033"
-    readonly property color muted: "#68758a"
-    readonly property color line: "#d7dee8"
-    readonly property color surface: "#ffffff"
-    readonly property color surfaceSoft: "#f6f8fb"
-    readonly property color accent: "#315d91"
-    readonly property color accentSoft: "#e2ebf6"
-    readonly property color danger: "#b42318"
+    readonly property Theme theme: Theme {}
 
     readonly property bool isFlat: variant === "flat"
     readonly property bool isSecondary: variant === "secondary"
     readonly property bool isDanger: variant === "danger"
 
     readonly property color fillColor: {
-        if (!enabled) return isFlat ? "transparent" : surfaceSoft
-        if (isFlat) return down ? "#cfdcec" : hovered ? accentSoft : "transparent"
-        if (isSecondary) return down ? accentSoft : hovered ? surfaceSoft : surface
-        if (isDanger) return down ? "#8f1c12" : hovered ? "#c9362a" : danger
+        if (!enabled) return isFlat ? "transparent" : theme.surfaceSoft
+        if (isFlat) return down ? "#cfdcec" : hovered ? theme.accentSoft : "transparent"
+        if (isSecondary) return down ? theme.accentSoft : hovered ? theme.surfaceSoft : theme.surface
+        if (isDanger) return down ? "#8f1c12" : hovered ? "#c9362a" : theme.danger
         if (hasBaseColor) return down ? Qt.darker(baseColor, 1.2)
                                       : hovered ? Qt.lighter(baseColor, 1.08) : baseColor
-        return down ? "#24466d" : hovered ? "#3c6eaa" : accent
+        return down ? "#24466d" : hovered ? "#3c6eaa" : theme.accent
     }
     readonly property color outlineColor: {
-        if (activeFocus) return ink
-        if (!enabled) return isFlat ? "transparent" : line
+        if (activeFocus) return theme.ink
+        if (!enabled) return isFlat ? "transparent" : theme.line
         if (isFlat) return "transparent"
-        if (isSecondary) return hovered || down ? accent : line
-        if (isDanger) return danger
+        if (isSecondary) return hovered || down ? theme.accent : theme.line
+        if (isDanger) return theme.danger
         if (hasBaseColor) return Qt.darker(baseColor, 1.35)
-        return accent
+        return theme.accent
     }
     readonly property color labelColor: {
-        if (!enabled) return muted
-        if (isFlat || isSecondary) return isSecondary ? ink : accent
-        return surface
+        if (!enabled) return theme.muted
+        if (isFlat || isSecondary) return isSecondary ? theme.ink : theme.accent
+        return theme.surface
     }
 
     implicitHeight: 34

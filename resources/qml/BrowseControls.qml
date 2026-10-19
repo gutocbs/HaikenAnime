@@ -7,11 +7,7 @@ RowLayout {
     id: controls
 
     property var controller
-    property color ink: "#172033"
-    property color muted: "#68758a"
-    property color line: "#d7dee8"
-    property color surface: "#ffffff"
-    property color accent: "#315d91"
+    readonly property Theme theme: Theme {}
     spacing: 8
 
     function clearControlFocus() {
@@ -34,9 +30,9 @@ RowLayout {
 
         background: Rectangle {
             radius: 5
-            color: controls.surface
+            color: theme.surface
             border.width: combo.activeFocus ? 2 : 1
-            border.color: combo.activeFocus ? controls.accent : controls.line
+            border.color: combo.activeFocus ? theme.accent : theme.line
         }
 
         contentItem: Item {
@@ -48,7 +44,7 @@ RowLayout {
 
                 Text {
                     text: combo.caption
-                    color: controls.muted
+                    color: theme.muted
                     font.pixelSize: 9
                     font.weight: Font.DemiBold
                     font.letterSpacing: 0.7
@@ -57,7 +53,7 @@ RowLayout {
                 Text {
                     width: parent.width
                     text: combo.displayText
-                    color: controls.ink
+                    color: theme.ink
                     font.pixelSize: 12
                     font.weight: Font.DemiBold
                     elide: Text.ElideRight
@@ -69,7 +65,7 @@ RowLayout {
             x: combo.width - width - 12
             anchors.verticalCenter: parent.verticalCenter
             text: "⌄"
-            color: controls.accent
+            color: theme.accent
             font.pixelSize: 15
         }
 
@@ -83,7 +79,7 @@ RowLayout {
 
             contentItem: Text {
                 text: model[combo.textRole]
-                color: controls.ink
+                color: theme.ink
                 font.pixelSize: 12
                 font.weight: combo.currentIndex === index ? Font.DemiBold : Font.Normal
                 verticalAlignment: Text.AlignVCenter
@@ -92,7 +88,7 @@ RowLayout {
 
             background: Rectangle {
                 color: parent.highlighted ? "#eaf1f8"
-                                          : combo.currentIndex === index ? "#f4f7fb" : controls.surface
+                                          : combo.currentIndex === index ? "#f4f7fb" : theme.surface
             }
         }
     }
@@ -131,16 +127,16 @@ RowLayout {
         selectByMouse: true
         leftPadding: 14
         rightPadding: 14
-        color: controls.ink
+        color: theme.ink
         font.pixelSize: 12
         Accessible.name: qsTr("Buscar mídia por título")
         onTextEdited: searchTimer.restart()
 
         background: Rectangle {
             radius: 5
-            color: controls.surface
+            color: theme.surface
             border.width: searchField.activeFocus ? 2 : 1
-            border.color: searchField.activeFocus ? controls.accent : controls.line
+            border.color: searchField.activeFocus ? theme.accent : theme.line
         }
 
         Timer {

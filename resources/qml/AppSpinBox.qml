@@ -6,13 +6,7 @@ import QtQuick.Controls.Basic as Basic
 Basic.SpinBox {
     id: spin
 
-    readonly property color ink: "#172033"
-    readonly property color muted: "#68758a"
-    readonly property color line: "#d7dee8"
-    readonly property color surface: "#ffffff"
-    readonly property color surfaceSoft: "#f6f8fb"
-    readonly property color accent: "#315d91"
-    readonly property color accentSoft: "#e2ebf6"
+    readonly property Theme theme: Theme {}
     readonly property color accentPressed: "#cfdcec"
     readonly property int stepperWidth: 38
     readonly property bool canDecrease: enabled && value > Math.min(from, to)
@@ -29,9 +23,9 @@ Basic.SpinBox {
     contentItem: TextInput {
         text: spin.displayText
         font: spin.font
-        color: spin.enabled ? spin.ink : spin.muted
-        selectionColor: spin.accentSoft
-        selectedTextColor: spin.ink
+        color: spin.enabled ? theme.ink : theme.muted
+        selectionColor: theme.accentSoft
+        selectedTextColor: theme.ink
         horizontalAlignment: Qt.AlignHCenter
         verticalAlignment: Qt.AlignVCenter
         readOnly: !spin.editable
@@ -49,12 +43,12 @@ Basic.SpinBox {
         radius: 4
         color: !spin.canDecrease ? "transparent"
              : spin.down.pressed ? spin.accentPressed
-             : spin.down.hovered ? spin.accentSoft : "transparent"
+             : spin.down.hovered ? theme.accentSoft : "transparent"
 
         Text {
             anchors.centerIn: parent
             text: "−"
-            color: spin.canDecrease ? spin.accent : spin.line
+            color: spin.canDecrease ? theme.accent : theme.line
             font.pixelSize: 16
             font.weight: Font.DemiBold
         }
@@ -68,12 +62,12 @@ Basic.SpinBox {
         radius: 4
         color: !spin.canIncrease ? "transparent"
              : spin.up.pressed ? spin.accentPressed
-             : spin.up.hovered ? spin.accentSoft : "transparent"
+             : spin.up.hovered ? theme.accentSoft : "transparent"
 
         Text {
             anchors.centerIn: parent
             text: "+"
-            color: spin.canIncrease ? spin.accent : spin.line
+            color: spin.canIncrease ? theme.accent : theme.line
             font.pixelSize: 16
             font.weight: Font.DemiBold
         }
@@ -81,8 +75,8 @@ Basic.SpinBox {
 
     background: Rectangle {
         radius: 5
-        color: spin.enabled ? spin.surface : spin.surfaceSoft
+        color: spin.enabled ? theme.surface : theme.surfaceSoft
         border.width: spin.activeFocus ? 2 : 1
-        border.color: spin.activeFocus ? spin.accent : spin.line
+        border.color: spin.activeFocus ? theme.accent : theme.line
     }
 }
