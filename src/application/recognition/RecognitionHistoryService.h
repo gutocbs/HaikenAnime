@@ -33,9 +33,6 @@ public:
     /// existing record and never applies progress again.
     std::optional<RecognitionRecord> record(const PlaybackSession &session, const EpisodeCandidate &candidate,
                                             const ProgressDecision &decision, QString &error);
-    /// Records an observation that ended before the threshold; progress is never touched.
-    std::optional<RecognitionRecord> recordIncomplete(const PlaybackSession &session,
-                                                      const EpisodeCandidate &candidate, QString &error);
 
     bool list(const RecognitionHistoryFilter &filter, const RecognitionPage &page,
               QList<RecognitionRecord> &records, QString &error);

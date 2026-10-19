@@ -40,11 +40,10 @@ EpisodeRecognitionService::EpisodeRecognitionService(PluginRegistry &registry, I
       diagnostics_(std::move(diagnostics)) {
     observation_ = std::make_unique<PlaybackObservationService>(
         policy, ObservationCallbacks{
+                    // A session closed before the threshold is not recorded: nothing was watched.
                     .completed = [this](const PlaybackSession &session, const EpisodeCandidate &candidate) {
                         complete(session, candidate);
-                    },
-                    .incomplete = [this](const PlaybackSession &session, const EpisodeCandidate &candidate,
-                                         StopReason) { incomplete(session, candidate); }});
+                    }});
     decisions_.setPolicy(policy);
 }
 
@@ -95,13 +94,6 @@ void EpisodeRecognitionService::complete(const PlaybackSession &session, const E
     QString error;
     if (!history_.record(session, candidate, decision, error)) {
         report(QStringLiteral("Recognition history could not be saved for %1: %2").arg(session.id.key(), error));
-    }
-}
-
-void EpisodeRecognitionService::incomplete(const PlaybackSession &session, const EpisodeCandidate &candidate) {
-    QString error;
-    if (!history_.recordIncomplete(session, candidate, error)) {
-        report(QStringLiteral("Incomplete recognition could not be saved for %1: %2").arg(session.id.key(), error));
     }
 }
 

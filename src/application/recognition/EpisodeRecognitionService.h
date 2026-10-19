@@ -62,7 +62,6 @@ public:
 
 private:
     void complete(const PlaybackSession &session, const EpisodeCandidate &candidate);
-    void incomplete(const PlaybackSession &session, const EpisodeCandidate &candidate);
     void report(const QString &message) const;
 
     PluginRegistry &registry_;

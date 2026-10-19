@@ -141,8 +141,7 @@ private slots:
     void uncertainDecisionIsRecordedWithDiagnostic();
     void ignoredDecisionStaysCorrectableAsUncertain();
     void duplicateSessionEpisodeNeverAppliesProgressTwice();
-    void incompleteObservationIsRecordedWithoutProgress();
-    void completionAfterIncompleteReusesTheRecord();
+    void completionReusesAnIncompleteRecordFromAnOlderVersion();
     void progressWriteFailureKeepsRecordCorrectableWithoutSync();
     void syncFailureIsDurableAndKeepsLocalProgress();
     void correctionAppliesCorrectedProgress();
@@ -237,20 +236,13 @@ void RecognitionHistoryServiceTests::duplicateSessionEpisodeNeverAppliesProgress
     QCOMPARE(repository.records.size(), 1);
 }
 
-void RecognitionHistoryServiceTests::incompleteObservationIsRecordedWithoutProgress() {
+void RecognitionHistoryServiceTests::completionReusesAnIncompleteRecordFromAnOlderVersion() {
     QString error;
-
-    const auto record = service->recordIncomplete(session(), candidate(6), error);
-
-    QVERIFY(record.has_value());
-    QCOMPARE(record->status(), RecognitionStatus::Incomplete);
-    QVERIFY(progress.applied.isEmpty());
-}
-
-void RecognitionHistoryServiceTests::completionAfterIncompleteReusesTheRecord() {
-    QString error;
-    const auto incomplete = service->recordIncomplete(session(), candidate(6), error);
-    QVERIFY2(incomplete.has_value(), qPrintable(error));
+    // Older versions stored sessions closed before the threshold; those records stay and are reused.
+    auto incomplete = std::optional<RecognitionRecord>(
+        RecognitionRecord::create(session(), candidate(6), QDateTime::currentDateTimeUtc()));
+    QVERIFY(incomplete->transitionTo(RecognitionStatus::Incomplete, QDateTime::currentDateTimeUtc()));
+    QVERIFY2(repository.insert(*incomplete, error), qPrintable(error));
 
     const auto completed = service->record(session(), candidate(6), markWatched(5, 6), error);
 

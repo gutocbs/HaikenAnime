@@ -60,21 +60,6 @@ std::optional<RecognitionRecord> RecognitionHistoryService::record(const Playbac
     return record;
 }
 
-std::optional<RecognitionRecord> RecognitionHistoryService::recordIncomplete(const PlaybackSession &session,
-                                                                             const EpisodeCandidate &candidate,
-                                                                             QString &error) {
-    error.clear();
-    auto record = RecognitionRecord::create(session, candidate, now());
-    QList<RecognitionRecord> existing;
-    if (!repository_.find({.deduplicationKey = record.deduplicationKey(), .limit = 1}, existing, error)) {
-        return std::nullopt;
-    }
-    if (!existing.isEmpty()) return existing.first();
-    record.transitionTo(RecognitionStatus::Incomplete, now());
-    if (!repository_.insert(record, error)) return std::nullopt;
-    return record;
-}
-
 bool RecognitionHistoryService::list(const RecognitionHistoryFilter &filter, const RecognitionPage &page,
                                      QList<RecognitionRecord> &records, QString &error) {
     return repository_.find({.status = filter.status, .pluginId = filter.pluginId, .beforeId = page.beforeId,

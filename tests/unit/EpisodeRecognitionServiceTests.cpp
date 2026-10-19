@@ -142,7 +142,7 @@ private slots:
     void alreadyWatchedEpisodeIsRecordedWithoutProgress();
     void lowConfidenceCandidateIsRecordedAsUncertain();
     void duplicateSessionNeverAppliesProgressTwice();
-    void closingBeforeThresholdIsRecordedIncomplete();
+    void closingBeforeThresholdLeavesNoRecord();
     void outboxFailureKeepsRecordCorrectable();
     void configuredPolicyChangesThreshold();
     void stopStopsPluginsAndIgnoresLateEvents();
@@ -251,7 +251,7 @@ void EpisodeRecognitionServiceTests::duplicateSessionNeverAppliesProgressTwice()
     QCOMPARE(historyRepository.records.size(), 1);
 }
 
-void EpisodeRecognitionServiceTests::closingBeforeThresholdIsRecordedIncomplete() {
+void EpisodeRecognitionServiceTests::closingBeforeThresholdLeavesNoRecord() {
     auto service = makeService();
     service->start();
 
@@ -259,8 +259,7 @@ void EpisodeRecognitionServiceTests::closingBeforeThresholdIsRecordedIncomplete(
     mpv->close(QStringLiteral("pipe-1"));
 
     QVERIFY(progress.applied.isEmpty());
-    QCOMPARE(historyRepository.records.size(), 1);
-    QCOMPARE(historyRepository.records.first().status(), RecognitionStatus::Incomplete);
+    QVERIFY(historyRepository.records.isEmpty());
 }
 
 void EpisodeRecognitionServiceTests::outboxFailureKeepsRecordCorrectable() {
