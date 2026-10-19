@@ -279,6 +279,8 @@ haiken_add_test(LocalLibraryScannerTests)
 haiken_add_test(AnitomyLocalFileRecognizerTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 haiken_add_test(LocalMediaResolverTests INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 haiken_add_test(SqlQueryStoreTests)
+# Embeds migrations but no queries: covers the repositories' "query file missing" errors.
+haiken_add_test(RepositoryQueryErrorTests QT Sql MIGRATIONS)
 qt_add_resources(SqlQueryStoreTests query_store_resources PREFIX "/sqlite/queries" FILES resources/sqlite/queries/read-media.sql)
 haiken_add_test(JsonSettingsReaderTests SOURCE_DIR)
 haiken_add_test(SyncTaskPolicyTests)

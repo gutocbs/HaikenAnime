@@ -114,8 +114,8 @@ bool SqliteLocalFileRepository::upsertBatch(qint64 scanId, const QList<LocalFile
     if (!transaction.begin(error)) return false;
     QSqlQuery query(database_);
     QString upsertQuery;
-    if (!SqlQueryStore::loadSource(SqliteQueries::UpsertLocalFile, upsertQuery, error)
-        || !query.prepare(upsertQuery)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpsertLocalFile, upsertQuery, error)) return false;
+    if (!query.prepare(upsertQuery)) {
         error = query.lastError().text();
         return false;
     }
@@ -142,8 +142,8 @@ bool SqliteLocalFileRepository::completeScan(qint64 scanId, qsizetype observedCo
     if (!transaction.begin(error)) return false;
     QSqlQuery unavailable(database_);
     QString markUnavailableQuery;
-    if (!SqlQueryStore::loadSource(SqliteQueries::MarkLocalFilesUnavailable, markUnavailableQuery, error)
-        || !unavailable.prepare(markUnavailableQuery)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::MarkLocalFilesUnavailable, markUnavailableQuery, error)) return false;
+    if (!unavailable.prepare(markUnavailableQuery)) {
         error = unavailable.lastError().text();
         return false;
     }
@@ -154,8 +154,8 @@ bool SqliteLocalFileRepository::completeScan(qint64 scanId, qsizetype observedCo
     }
     QSqlQuery complete(database_);
     QString completeQuery;
-    if (!SqlQueryStore::loadSource(SqliteQueries::CompleteLibraryScan, completeQuery, error)
-        || !complete.prepare(completeQuery)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::CompleteLibraryScan, completeQuery, error)) return false;
+    if (!complete.prepare(completeQuery)) {
         error = complete.lastError().text();
         return false;
     }
@@ -177,8 +177,8 @@ bool SqliteLocalFileRepository::failScan(qint64 scanId, LibraryScanStatus status
     }
     QSqlQuery query(database_);
     QString failQuery;
-    if (!SqlQueryStore::loadSource(SqliteQueries::FailLibraryScan, failQuery, error)
-        || !query.prepare(failQuery)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::FailLibraryScan, failQuery, error)) return false;
+    if (!query.prepare(failQuery)) {
         error = query.lastError().text();
         return false;
     }

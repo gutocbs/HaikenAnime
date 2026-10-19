@@ -125,8 +125,11 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
     }
     QSqlQuery query(database_);
     QString upsertQuery;
-    if (!SqlQueryStore::loadSource(SqliteQueries::UpsertUserPreferences, upsertQuery, error)
-        || !query.prepare(upsertQuery)) {
+    if (!SqlQueryStore::loadSource(SqliteQueries::UpsertUserPreferences, upsertQuery, error)) {
+        database_.rollback();
+        return false;
+    }
+    if (!query.prepare(upsertQuery)) {
         error = query.lastError().text();
         database_.rollback();
         return false;
