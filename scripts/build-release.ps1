@@ -43,14 +43,18 @@ Invoke-Checked cmake @('--build', $BuildDir)
 if (Test-Path $OutputDir) { Remove-Item -Recurse -Force $OutputDir }
 New-Item -ItemType Directory -Path $OutputDir | Out-Null
 Copy-Item (Join-Path $BuildDir 'HaikenAnime.exe') $OutputDir
-Invoke-Checked (Join-Path $QtDir 'bin/windeployqt.exe') @('--release', '--compiler-runtime', '--qmldir', 'resources/qml', (Join-Path $OutputDir 'HaikenAnime.exe'))
 
-# windeployqt does not ship the DirectX Shader Compiler runtime.
+# The runtime goes next to both executables. Windows loads DLLs from the executable's folder before
+# PATH, so the build-directory executable no longer picks up another Qt (e.g. MinGW) from PATH.
 $dxcDir = "${env:ProgramFiles(x86)}\Windows Kits\10\Redist\D3D\x64"
-foreach ($dll in 'dxcompiler.dll', 'dxil.dll') {
-    $source = Join-Path $dxcDir $dll
-    if (Test-Path $source) { Copy-Item $source $OutputDir }
-    else { Write-Warning "$dll was not found in $dxcDir" }
+foreach ($directory in $OutputDir, $BuildDir) {
+    Invoke-Checked (Join-Path $QtDir 'bin/windeployqt.exe') @('--release', '--compiler-runtime', '--qmldir', 'resources/qml', (Join-Path $directory 'HaikenAnime.exe'))
+    # windeployqt does not ship the DirectX Shader Compiler runtime.
+    foreach ($dll in 'dxcompiler.dll', 'dxil.dll') {
+        $source = Join-Path $dxcDir $dll
+        if (Test-Path $source) { Copy-Item $source $directory }
+        else { Write-Warning "$dll was not found in $dxcDir" }
+    }
 }
 
 Write-Host "Release package ready: $(Resolve-Path $OutputDir)"
