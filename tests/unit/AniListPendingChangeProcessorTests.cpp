@@ -139,6 +139,8 @@ private slots:
     void doesNotNotifyObserverWhenUpdateIsCancelled();
     void doesNotNotifyObserverWhenSucceededStatusCannotBePersisted();
     void observerDoesNotChangeOutboxStatuses();
+    void notifiesObserverOfSentDeletion();
+    void notifiesObserverOfFailedDeletionWithCategory();
 };
 
 static AniListPendingChange progressChange(AniListPendingChangeStatus status =
@@ -563,6 +565,56 @@ void AniListPendingChangeProcessorTests::observerDoesNotChangeOutboxStatuses() {
     QCOMPARE(withObserver.statuses, withoutObserver.statuses);
     QCOMPARE(withObserver.updates.last().attempts, withoutObserver.updates.last().attempts);
     QCOMPARE(withObserver.updates.last().lastError, withoutObserver.updates.last().lastError);
+}
+
+void AniListPendingChangeProcessorTests::notifiesObserverOfSentDeletion() {
+    // Arrange
+    FakePendingRepository repository;
+    auto deletion = progressChange();
+    deletion.id = 2;
+    deletion.field = AniListField::Deletion;
+    repository.changes = {deletion};
+    FakeUpdateClient client;
+    AniListPendingChangeProcessor processor(repository, client, 42);
+    RecordingObserver observer;
+    processor.setObserver(&observer);
+    QString error;
+
+    // Act
+    QVERIFY2(processor.process(154587, error), qPrintable(error));
+
+    // Assert: the history learns the removal reached AniList.
+    QCOMPARE(observer.sent.size(), 1);
+    QCOMPARE(observer.sent.first().size(), 1);
+    QCOMPARE(observer.sent.first().first().field, AniListField::Deletion);
+    QCOMPARE(observer.sent.first().first().status, AniListPendingChangeStatus::Succeeded);
+    QVERIFY(observer.failed.isEmpty());
+}
+
+void AniListPendingChangeProcessorTests::notifiesObserverOfFailedDeletionWithCategory() {
+    // Arrange
+    FakePendingRepository repository;
+    auto deletion = progressChange();
+    deletion.id = 2;
+    deletion.field = AniListField::Deletion;
+    repository.changes = {deletion};
+    FakeUpdateClient client;
+    client.deleteSucceeds = false;
+    AniListPendingChangeProcessor processor(repository, client, 42);
+    RecordingObserver observer;
+    processor.setObserver(&observer);
+    QString error;
+
+    // Act
+    QVERIFY(!processor.process(154587, error));
+
+    // Assert: only the category travels, never the raw error.
+    QCOMPARE(observer.failed.size(), 1);
+    QCOMPARE(observer.failed.first().first().field, AniListField::Deletion);
+    QCOMPARE(observer.failed.first().first().status, AniListPendingChangeStatus::Failed);
+    QVERIFY(observer.failed.first().first().lastError.isEmpty());
+    QCOMPARE(observer.categories.size(), 1);
+    QVERIFY(observer.sent.isEmpty());
 }
 
 QTEST_MAIN(AniListPendingChangeProcessorTests)

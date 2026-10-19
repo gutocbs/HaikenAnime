@@ -50,6 +50,9 @@ bool AniListPendingChangeProcessor::processDeletion(const AniListPendingChange &
             error = statusError;
             return false;
         }
+        if (observer_) {
+            observer_->changesFailed(WithoutErrors({processing}), AniListSyncErrorClassifier::Classify(operationError));
+        }
         error = operationError;
         log(QStringLiteral("AniList list deletion failed for media %1: %2.")
                 .arg(deletion.mediaId).arg(operationError));
@@ -78,6 +81,7 @@ bool AniListPendingChangeProcessor::processDeletion(const AniListPendingChange &
     if (!repository_.updateStatus(processing, error)) {
         return false;
     }
+    if (observer_) observer_->changesSent(WithoutErrors({processing}));
     if (supersededCount > 0) {
         log(QStringLiteral("Superseded %1 pending AniList changes for media %2 after list deletion.")
                 .arg(supersededCount).arg(deletion.mediaId));
