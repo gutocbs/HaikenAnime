@@ -293,12 +293,16 @@ bool SqliteDatabase::migrate() {
         return committed;
     }
 
-    lastError_ = query.lastError().text();
-    if (lastError_.isEmpty()) {
-        lastError_ = QStringLiteral("SQLite migration versions 1 through 15 were not recorded.");
+    // A failed step already filled lastError_ with its own diagnostic; only the final version check needs one.
+    if (stepsSucceeded) {
+        lastError_ = query.lastError().text();
+        if (lastError_.isEmpty()) {
+            lastError_ = QStringLiteral("SQLite migration did not record every schema version from 1 through %1.")
+                             .arg(LatestSchemaVersion);
+        }
     }
     database_.rollback();
-    if (logger_) logger_->error(LogCategory::Migration, query.lastError().text());
+    if (logger_) logger_->error(LogCategory::Migration, lastError_);
     return false;
 }
 

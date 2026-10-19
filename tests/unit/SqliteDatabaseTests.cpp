@@ -22,6 +22,7 @@ private slots:
     void configuresConcurrentAccessPragmas();
     void migrationFailureExposesDiagnostic();
     void migrationRequiresVersionToBeRecorded();
+    void unrecordedVersionErrorNamesTheCurrentSchemaRange();
     void migrationProducesTheExpectedSchema();
     void migrationRollsBackWhenAVersionIsNotRecorded_data();
     void migrationRollsBackWhenAVersionIsNotRecorded();
@@ -292,6 +293,20 @@ void SqliteDatabaseTests::migrationProducesTheExpectedSchema() {
     QVERIFY(expectedFile.open(QIODevice::ReadOnly | QIODevice::Text));
     const auto expected = QString::fromUtf8(expectedFile.readAll()).split(QLatin1Char('\n'), Qt::SkipEmptyParts);
     QCOMPARE(actual, expected);
+}
+
+void SqliteDatabaseTests::unrecordedVersionErrorNamesTheCurrentSchemaRange() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QSqlQuery query(database.connection());
+    QVERIFY(query.exec(QStringLiteral("CREATE TABLE schema_version (version INTEGER PRIMARY KEY)")));
+    QVERIFY(query.exec(QStringLiteral("CREATE TRIGGER reject_version BEFORE INSERT ON schema_version "
+                                      "WHEN NEW.version = 26 BEGIN SELECT RAISE(IGNORE); END")));
+
+    QVERIFY(!database.migrate());
+
+    QVERIFY2(database.lastError().contains(QStringLiteral("1 through 26")), qPrintable(database.lastError()));
 }
 
 void SqliteDatabaseTests::migrationRollsBackWhenAVersionIsNotRecorded_data() {
