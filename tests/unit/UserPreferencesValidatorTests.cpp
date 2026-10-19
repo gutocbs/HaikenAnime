@@ -18,6 +18,7 @@ private slots:
     void rejectsUnsupportedLanguage();
     void rejectsUnsupportedPreferredTitle();
     void rejectsEmptyLibraryRoot();
+    void acceptsNoLibraryFolderYet();
     void acceptsMultipleIndependentLibraryRoots();
     void rejectsDuplicateNestedOrMissingLibraryRoots_data();
     void rejectsDuplicateNestedOrMissingLibraryRoots();
@@ -146,6 +147,14 @@ void UserPreferencesValidatorTests::rejectsUnsupportedPreferredTitle() {
 
     QVERIFY(!result.valid);
     QVERIFY(!result.error.isEmpty());
+}
+
+void UserPreferencesValidatorTests::acceptsNoLibraryFolderYet() {
+    // A new installation starts without folders; the user adds them in Settings.
+    const UserPreferences preferences;
+
+    QVERIFY(preferences.libraryRoots.isEmpty());
+    QVERIFY2(ValidateUserPreferences(preferences).valid, qPrintable(ValidateUserPreferences(preferences).error));
 }
 
 void UserPreferencesValidatorTests::rejectsEmptyLibraryRoot() {

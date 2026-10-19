@@ -339,15 +339,19 @@ void JsonSettingsReaderTests::readsScannerPreferences() {
 
 void JsonSettingsReaderTests::usesScannerDefaultsForMissingSections_data() {
     QTest::addColumn<QByteArray>("preferencesJson");
-    QTest::newRow("missing preferences") << QByteArray{};
-    QTest::newRow("missing library") << QByteArray(R"(,"userPreferences":{})");
-    QTest::newRow("empty library") << QByteArray(R"(,"userPreferences":{"library":{}})");
-    QTest::newRow("missing extensions") << QByteArray(R"(,"userPreferences":{"library":{"root":"Q:\\"}})");
-    QTest::newRow("missing root") << QByteArray(R"(,"userPreferences":{"library":{"extensions":[".mkv",".mp4",".avi",".webm",".m4v",".mov",".wmv",".ts"]}})");
+    QTest::addColumn<QStringList>("expectedRoots");
+    QTest::newRow("missing preferences") << QByteArray{} << QStringList{};
+    QTest::newRow("missing library") << QByteArray(R"(,"userPreferences":{})") << QStringList{};
+    QTest::newRow("empty library") << QByteArray(R"(,"userPreferences":{"library":{}})") << QStringList{};
+    QTest::newRow("missing extensions") << QByteArray(R"(,"userPreferences":{"library":{"root":"Q:\\"}})")
+                                        << QStringList{QStringLiteral("Q:\\")};
+    QTest::newRow("missing root") << QByteArray(R"(,"userPreferences":{"library":{"extensions":[".mkv",".mp4",".avi",".webm",".m4v",".mov",".wmv",".ts"]}})")
+                                  << QStringList{};
 }
 
 void JsonSettingsReaderTests::usesScannerDefaultsForMissingSections() {
     QFETCH(QByteArray, preferencesJson);
+    QFETCH(QStringList, expectedRoots);
     QTemporaryDir temporaryDirectory;
     const auto path = temporaryDirectory.filePath(QStringLiteral("Settings.json"));
     QFile file(path);
@@ -360,7 +364,7 @@ void JsonSettingsReaderTests::usesScannerDefaultsForMissingSections() {
     Settings settings;
     QString error;
     QVERIFY2(reader.read(settings, error), qPrintable(error));
-    QCOMPARE(settings.userPreferences.libraryRoots, QStringList{QStringLiteral("Q:\\")});
+    QCOMPARE(settings.userPreferences.libraryRoots, expectedRoots);
     QCOMPARE(settings.userPreferences.scanExtensions, QStringList({".mkv", ".mp4", ".avi", ".webm",
                                                                  ".m4v", ".mov", ".wmv", ".ts"}));
 }
@@ -371,13 +375,15 @@ void JsonSettingsReaderTests::readsPackagedScannerDefaults() {
     QVERIFY(file.open(QIODevice::ReadOnly));
     const auto library = QJsonDocument::fromJson(file.readAll()).object()
                              .value("userPreferences").toObject().value("library").toObject();
-    QVERIFY(library.contains("root"));
+    // No default folder: the user chooses one in Settings.
+    QVERIFY(!library.contains("root"));
+    QVERIFY(!library.contains("roots"));
     QVERIFY(library.contains("extensions"));
     JsonSettingsReader reader(path);
     Settings settings;
     QString error;
     QVERIFY2(reader.read(settings, error), qPrintable(error));
-    QCOMPARE(settings.userPreferences.libraryRoots, QStringList{QStringLiteral("Q:\\")});
+    QVERIFY(settings.userPreferences.libraryRoots.isEmpty());
     QCOMPARE(settings.userPreferences.scanExtensions, QStringList({".mkv", ".mp4", ".avi", ".webm",
                                                                  ".m4v", ".mov", ".wmv", ".ts"}));
 }

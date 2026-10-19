@@ -33,7 +33,6 @@
   },
   "userPreferences": {
     "library": {
-      "root": "Q:\\",
       "extensions": [".mkv", ".mp4", ".avi", ".webm", ".m4v", ".mov", ".wmv", ".ts"]
     },
     "score": {

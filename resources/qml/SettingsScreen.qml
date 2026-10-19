@@ -469,7 +469,7 @@ Item {
                 }
             }
             AppButton {
-                visible: settingsScreen.libraryFolderCount > 1
+                visible: settingsScreen.libraryFolderCount > 0
                 text: qsTr("Remover")
                 variant: "flat"
                 Accessible.name: qsTr("Remover pasta %1").arg(folderField.index + 1)

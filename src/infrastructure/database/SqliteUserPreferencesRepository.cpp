@@ -64,9 +64,11 @@ bool SqliteUserPreferencesRepository::read(UserPreferences &preferences, bool &f
     loaded.coverQuality = quality.value();
     loaded.synchronizationEnabled = query.value(4).toBool();
     loaded.synchronizationIntervalMs = query.value(5).toInt();
-    // library_roots (JSON array) replaced library_root; an empty array means the row predates it.
+    // library_roots (JSON array) replaced library_root. An empty array with a library_root means the row
+    // predates library_roots; with an empty library_root it means no folder was configured.
     const auto storedRoots = query.value(16).toString();
-    loaded.libraryRoots = {query.value(6).toString()};
+    const auto legacyRoot = query.value(6).toString();
+    loaded.libraryRoots = legacyRoot.isEmpty() ? QStringList{} : QStringList{legacyRoot};
     if (!storedRoots.isEmpty()) {
         QStringList roots;
         if (!ParseStringArray(storedRoots, roots,
@@ -151,7 +153,7 @@ bool SqliteUserPreferencesRepository::replace(const UserPreferences &preferences
         QJsonDocument(QJsonArray::fromStringList(preferences.enabledUserLists)).toJson(QJsonDocument::Compact)));
     query.bindValue(QStringLiteral(":last_anilist_user_id"), preferences.lastAniListUserId);
     // library_root keeps the first folder so older builds still read a usable value.
-    query.bindValue(QStringLiteral(":library_root"), preferences.libraryRoots.first());
+    query.bindValue(QStringLiteral(":library_root"), preferences.libraryRoots.value(0));
     query.bindValue(QStringLiteral(":library_roots"), QString::fromUtf8(
         QJsonDocument(QJsonArray::fromStringList(preferences.libraryRoots)).toJson(QJsonDocument::Compact)));
     query.bindValue(QStringLiteral(":scan_extensions"), QString::fromUtf8(

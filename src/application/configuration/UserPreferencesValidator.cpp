@@ -15,10 +15,7 @@ QString ComparableLibraryRoot(const QString &root) {
 
 bool ValidateLibraryRoots(const QStringList &roots, QString &error) {
     error.clear();
-    if (roots.isEmpty()) {
-        error = QStringLiteral("At least one library folder must be configured.");
-        return false;
-    }
+    // No folder is valid (a new installation); folders that are given must be distinct and non-blank.
     QStringList comparable;
     for (const auto &root : roots) {
         if (root.trimmed().isEmpty()) {

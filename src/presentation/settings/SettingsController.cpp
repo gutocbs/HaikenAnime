@@ -150,8 +150,7 @@ void SettingsController::SetLibraryRoot(const int index, const QString &root) {
 }
 
 void SettingsController::RemoveLibraryRoot(const int index) {
-    // The last folder can be edited but never removed: scanning needs at least one.
-    if (index < 0 || index >= draft_.libraryRoots.size() || draft_.libraryRoots.size() == 1) return;
+    if (index < 0 || index >= draft_.libraryRoots.size()) return;
     draft_.libraryRoots.removeAt(index);
     statusMessage_.clear(); errorMessage_.clear(); refreshValidation(); emit changed();
 }

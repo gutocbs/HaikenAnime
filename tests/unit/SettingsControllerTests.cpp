@@ -254,7 +254,9 @@ void SettingsControllerTests::discardRestoresPersistedSnapshot() {
 
 void SettingsControllerTests::libraryDraftSavesAndDiscardsAtomically() {
     FakePreferencesRepository repository;
-    SettingsController controller(&repository, {});
+    UserPreferences initial;
+    initial.libraryRoots = {QStringLiteral("Q:\\")};
+    SettingsController controller(&repository, initial);
     controller.SetLibraryRoot(0, QStringLiteral("D:\\Anime"));
     controller.SetScanExtensionEnabled(QStringLiteral(".avi"), false);
     QVERIFY(controller.dirty());
@@ -278,9 +280,14 @@ void SettingsControllerTests::libraryDraftSavesAndDiscardsAtomically() {
 
 void SettingsControllerTests::addsEditsAndRemovesLibraryFolders() {
     FakePreferencesRepository repository;
-    SettingsController controller(&repository, {});
+    UserPreferences initial;
+    initial.libraryRoots = {QStringLiteral("Q:\\")};
+    SettingsController controller(&repository, initial);
+    // The last folder can be removed too: the library may have no folder.
     controller.RemoveLibraryRoot(0);
-    QCOMPARE(controller.libraryRoots(), QStringList{QStringLiteral("Q:\\")});
+    QVERIFY(controller.libraryRoots().isEmpty());
+    QVERIFY(controller.valid());
+    controller.AddLibraryRoot(QStringLiteral("Q:\\"));
 
     controller.AddLibraryRoot(QStringLiteral("R:\\Anime"));
     QCOMPARE(controller.libraryRoots(), QStringList({QStringLiteral("Q:\\"), QStringLiteral("R:\\Anime")}));
