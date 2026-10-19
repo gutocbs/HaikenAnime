@@ -702,9 +702,17 @@ void HomeScreenController::Reload() {
         errorMessage_.clear();
         emit errorMessageChanged();
     }
+    const int selectedId = hasSelection_ ? selectedMedia_.Id : 0;
     allMedia_ = std::move(media);
     rebuildMediaModels();
-    clearSelection();
+    // A reload (sync finished, edit saved) keeps the open details on the same media with its new data;
+    // only a media that left the library or the active type closes them.
+    const bool stillListed = selectedId > 0 && std::any_of(allMedia_.cbegin(), allMedia_.cend(),
+        [this, selectedId](const Media &item) {
+            return item.Id == selectedId && mediaTypeKey(item.Type) == activeMediaType_;
+        });
+    if (stillListed) SelectMedia(selectedId);
+    else clearSelection();
     emit mediaCountChanged();
     setState(allMedia_.isEmpty() ? QStringLiteral("empty") : QStringLiteral("ready"));
     setStatusMessage(allMedia_.isEmpty()

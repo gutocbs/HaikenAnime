@@ -140,6 +140,8 @@ private slots:
     void Should_ShowQuestionMarkProgress_When_TotalChaptersIsUnknown();
     void exposesNineItemPreviewAndCompleteFilteredLibrary();
     void reloadReflectsANewLocalPersonalListEntryInPreviewAndFullList();
+    void reloadKeepsTheSelectedMediaWithItsNewData();
+    void reloadClearsTheSelectionWhenTheMediaIsGone();
     void changesMediaTypeUsingStableKeys();
     void exposesBackendDrivenBrowseOptions();
     void restoresConfiguredSortBeforeFirstModelPublication();
@@ -188,6 +190,46 @@ QString HomeScreenControllerTests::qmlSource(const QString &name) {
     QFile file(QStringLiteral(HAIKENANIME_TEST_SOURCE_DIR "/resources/qml/") + name);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) return {};
     return QString::fromUtf8(file.readAll());
+}
+
+void HomeScreenControllerTests::reloadKeepsTheSelectedMediaWithItsNewData() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 5;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    media.ConsumedChapters = 3;
+    reader.result = {media};
+    HomeScreenController controller(reader);
+    controller.Reload();
+    controller.SelectMedia(5);
+
+    // A synchronization finishes while the details are open and brings new progress.
+    reader.result.first().ConsumedChapters = 4;
+    controller.Reload();
+
+    QVERIFY(controller.hasSelection());
+    QCOMPARE(controller.selectedMediaId(), 5);
+    QCOMPARE(controller.selectedProgressValue(), 4);
+}
+
+void HomeScreenControllerTests::reloadClearsTheSelectionWhenTheMediaIsGone() {
+    FakeMediaReader reader;
+    Media media;
+    media.Id = 5;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    reader.result = {media};
+    HomeScreenController controller(reader);
+    controller.Reload();
+    controller.SelectMedia(5);
+
+    reader.result.clear();
+    controller.Reload();
+
+    QVERIFY(!controller.hasSelection());
 }
 
 void HomeScreenControllerTests::reloadReflectsANewLocalPersonalListEntryInPreviewAndFullList() {
