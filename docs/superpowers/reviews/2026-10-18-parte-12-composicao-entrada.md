@@ -2,7 +2,7 @@
 
 - **Plano:** [`2026-10-18-revisao-geral.md`](../plans/2026-10-18-revisao-geral.md)
 - **Commit analisado:** `00b33c6` (`feature/revisao-geral`)
-- **Status:** aprovado (com a recomendação) e aplicado — aguardando build do revisor
+- **Status:** aprovado (com a recomendação) e aplicado — validado
 
 ---
 
@@ -111,3 +111,7 @@ Notas:
 - P12-02: as duas mensagens de "preferências indisponíveis" viraram uma ("User preferences are
   unavailable."), que só aparece no log.
 - `ApplicationContext` ganhou `servicesShutdown`, a mesma guarda que antes era uma variável local do `main()`.
+
+### Validação final (build do revisor)
+- `scripts/validate.ps1`: build MSVC + `ctest` todo verde, incluindo `PresentationCompositionTests`; smoke
+  completo OK.
