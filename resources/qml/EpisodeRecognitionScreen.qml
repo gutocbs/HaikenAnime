@@ -55,7 +55,7 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         Label {
-            text: qsTr("Reconhecimentos recentes")
+            text: qsTr("Histórico de atualizações")
             color: theme.ink
             font.pixelSize: 14
             font.weight: Font.DemiBold
