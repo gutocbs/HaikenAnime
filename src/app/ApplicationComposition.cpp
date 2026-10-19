@@ -104,9 +104,6 @@ void composeEpisodeRecognition(ApplicationContext &context) {
          .progressApplied = [listener = context.recognitionProgressListener](const Media &media) {
              if (*listener) (*listener)(media);
          }});
-    for (const auto &warning : context.recognition->warnings) {
-        context.logger->warning(LogCategory::Application, warning);
-    }
     if (context.defaultLocalFileOpener) {
         context.localFileOpener = std::make_unique<MpvAwareLocalFileOpener>(*context.defaultLocalFileOpener,
                                                                             *context.recognition);

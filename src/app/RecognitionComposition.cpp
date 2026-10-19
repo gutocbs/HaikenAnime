@@ -33,7 +33,7 @@ PluginSettingsSchema RecognitionSchema() {
 }
 
 /// Persistent per installation; kept in the secret store so it never appears in the settings UI.
-QString PlexClientIdentifier(IPluginSecretStore &secrets, QStringList &warnings) {
+QString PlexClientIdentifier(IPluginSecretStore &secrets, RecognitionContext &context) {
     QString identifier;
     QString error;
     if (secrets.readSecret(PlexAuthentication::PluginId, ClientIdentifierKey, identifier, error) && !identifier.isEmpty()) {
@@ -41,7 +41,7 @@ QString PlexClientIdentifier(IPluginSecretStore &secrets, QStringList &warnings)
     }
     identifier = QUuid::createUuid().toString(QUuid::WithoutBraces);
     if (!secrets.writeSecret(PlexAuthentication::PluginId, ClientIdentifierKey, identifier, error)) {
-        warnings.append(QStringLiteral("The Plex client identifier could not be stored; a temporary one is used."));
+        context.Warn(QStringLiteral("The Plex client identifier could not be stored; a temporary one is used."));
     }
     return identifier;
 }
@@ -58,7 +58,7 @@ void RegisterSchema(RecognitionContext &context, const PluginSettingsSchema &sch
     QString error;
     if (!context.settings->registerSchema(schema, error)) {
         // Unreadable settings must not block startup; the plugin keeps running with defaults.
-        context.warnings.append(QStringLiteral("Settings of '%1' could not be loaded: %2").arg(schema.pluginId, error));
+        context.Warn(QStringLiteral("Settings of '%1' could not be loaded: %2").arg(schema.pluginId, error));
     }
 }
 }
@@ -66,12 +66,13 @@ void RegisterSchema(RecognitionContext &context, const PluginSettingsSchema &sch
 std::unique_ptr<RecognitionContext> createRecognitionContext(RecognitionCompositionDependencies dependencies) {
     auto context = std::make_unique<RecognitionContext>();
     auto &ctx = *context;
+    ctx.warningSink = dependencies.diagnostics;
     if (dependencies.mediaReader == nullptr || dependencies.changes == nullptr) {
-        ctx.warnings.append(QStringLiteral("The local library is unavailable; automatic recognition is disabled."));
+        ctx.Warn(QStringLiteral("The local library is unavailable; automatic recognition is disabled."));
         return context;
     }
     if (!dependencies.connection.isValid() || !dependencies.connection.isOpen()) {
-        ctx.warnings.append(QStringLiteral("The local database is unavailable; recognitions will not be saved."));
+        ctx.Warn(QStringLiteral("The local database is unavailable; recognitions will not be saved."));
     }
 
     ctx.timerOwner = std::make_unique<QObject>();
@@ -93,7 +94,7 @@ std::unique_ptr<RecognitionContext> createRecognitionContext(RecognitionComposit
     ctx.history = std::make_unique<RecognitionHistoryService>(*ctx.historyRepository, *ctx.progressWriter);
     // Before any plugin runs: records a crash left half-written must not stay "pending" forever.
     if (QString recoveryError; dependencies.connection.isOpen() && !ctx.history->recoverInterrupted(recoveryError)) {
-        ctx.warnings.append(QStringLiteral("Interrupted recognitions could not be recovered: %1").arg(recoveryError));
+        ctx.Warn(QStringLiteral("Interrupted recognitions could not be recovered: %1").arg(recoveryError));
     }
     // The decision reads the one media fresh from SQLite; only title matching uses a cached catalog.
     ctx.progressReader = std::make_unique<SqliteMediaProgressReader>(dependencies.connection);
@@ -111,7 +112,7 @@ std::unique_ptr<RecognitionContext> createRecognitionContext(RecognitionComposit
 
     ctx.network = std::make_unique<QNetworkAccessManager>();
     ctx.plexHttp = std::make_unique<QtPlexHttp>(*ctx.network, PlexHttpTimeoutMs);
-    const PlexClientIdentity identity{.clientIdentifier = PlexClientIdentifier(*ctx.secrets, ctx.warnings)};
+    const PlexClientIdentity identity{.clientIdentifier = PlexClientIdentifier(*ctx.secrets, ctx)};
     ctx.plexApi = std::make_unique<PlexApiClient>(*ctx.plexHttp, identity);
     ctx.plexAuthentication = std::make_unique<PlexAuthentication>(PlexAuthenticationDependencies{
         .http = ctx.plexHttp.get(), .secrets = ctx.secrets.get(), .identity = identity,
@@ -152,7 +153,7 @@ void applyRecognitionSettings(RecognitionContext &context) {
     if (!serverId.isEmpty() && context.plexAuthentication->hasToken()) {
         context.plex->selectServer(serverId, [&context](const bool selected, const QString &message) {
             if (!selected) {
-                context.warnings.append(message);
+                context.Warn(message);
                 return;
             }
             // A saved server must be observed even if polling had stopped (e.g. after a rejected token).
