@@ -80,7 +80,7 @@ ColumnLayout {
 
     Label {
         visible: historyList.count === 0
-        text: qsTr("Nenhum episódio reconhecido ainda.")
+        text: qsTr("Nenhuma atualização registrada ainda.")
         color: theme.muted
         font.pixelSize: 11
         wrapMode: Text.Wrap
