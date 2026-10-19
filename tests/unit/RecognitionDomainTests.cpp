@@ -56,6 +56,7 @@ private slots:
     void recordStartsWithoutIdAndSyncRequirement();
     void recordTracksSyncStateAndSafeError();
     void statusAndSyncStateNamesRoundTrip();
+    void removedIsAFinalOutcomeThatCannotBeCorrected();
     void restoreRebuildsStoredRecord();
     void restoreRejectsInvalidStoredData();
     void episodeDetailsDefaultEmptyAndCompareByValue();
@@ -262,7 +263,8 @@ void RecognitionDomainTests::recordTracksSyncStateAndSafeError() {
 void RecognitionDomainTests::statusAndSyncStateNamesRoundTrip() {
     for (const auto status : {RecognitionStatus::Pending, RecognitionStatus::Incomplete, RecognitionStatus::MarkedWatched,
                               RecognitionStatus::AlreadyWatched, RecognitionStatus::Uncertain,
-                              RecognitionStatus::Ignored, RecognitionStatus::Corrected}) {
+                              RecognitionStatus::Ignored, RecognitionStatus::Corrected,
+                              RecognitionStatus::Removed}) {
         QCOMPARE(RecognitionStatusFromString(ToString(status)), std::optional<RecognitionStatus>(status));
     }
     for (const auto state : {RecognitionSyncState::NotRequired, RecognitionSyncState::Pending,
@@ -271,6 +273,17 @@ void RecognitionDomainTests::statusAndSyncStateNamesRoundTrip() {
     }
     QVERIFY(!RecognitionStatusFromString(QStringLiteral("bogus")).has_value());
     QCOMPARE(ToString(RecognitionStatus::MarkedWatched), QStringLiteral("marked-watched"));
+    QCOMPARE(ToString(RecognitionStatus::Removed), QStringLiteral("removed"));
+}
+
+void RecognitionDomainTests::removedIsAFinalOutcomeThatCannotBeCorrected() {
+    auto record = RecognitionRecord::create(session(), candidate(1), at(0));
+
+    QVERIFY(record.transitionTo(RecognitionStatus::Removed, at(1)));
+
+    QVERIFY(!record.correct(candidate(2), at(2)));
+    QVERIFY(!record.transitionTo(RecognitionStatus::MarkedWatched, at(2)));
+    QCOMPARE(record.status(), RecognitionStatus::Removed);
 }
 
 void RecognitionDomainTests::restoreRebuildsStoredRecord() {

@@ -10,12 +10,13 @@ bool CanTransition(const RecognitionStatus from, const RecognitionStatus to) {
     case RecognitionStatus::MarkedWatched:
     case RecognitionStatus::AlreadyWatched:
     case RecognitionStatus::Uncertain:
+    case RecognitionStatus::Removed:
         return from == RecognitionStatus::Pending;
     case RecognitionStatus::Ignored:
         return from != RecognitionStatus::Ignored;
     case RecognitionStatus::Corrected:
-        // A still-pending observation has nothing to correct yet.
-        return from != RecognitionStatus::Pending;
+        // A still-pending observation has nothing to correct yet, and a removal has no episode to correct.
+        return from != RecognitionStatus::Pending && from != RecognitionStatus::Removed;
     }
     return false;
 }
@@ -76,6 +77,7 @@ constexpr std::pair<RecognitionStatus, const char *> StatusNames[] = {
     {RecognitionStatus::Uncertain, "uncertain"},
     {RecognitionStatus::Ignored, "ignored"},
     {RecognitionStatus::Corrected, "corrected"},
+    {RecognitionStatus::Removed, "removed"},
 };
 
 constexpr std::pair<RecognitionSyncState, const char *> SyncStateNames[] = {
