@@ -60,6 +60,56 @@ std::optional<RecognitionRecord> RecognitionHistoryService::record(const Playbac
     return record;
 }
 
+std::optional<RecognitionRecord> RecognitionHistoryService::recordManualProgress(const Media &previous,
+                                                                                const Media &updated,
+                                                                                QString &error) {
+    error.clear();
+    if (updated.ConsumedChapters <= previous.ConsumedChapters) return std::nullopt;
+    return recordManual(updated, updated.ConsumedChapters, RecognitionStatus::MarkedWatched, error);
+}
+
+std::optional<RecognitionRecord> RecognitionHistoryService::recordManualRemoval(const Media &removed, QString &error) {
+    error.clear();
+    return recordManual(removed, removed.ConsumedChapters, RecognitionStatus::Removed, error);
+}
+
+std::optional<RecognitionRecord> RecognitionHistoryService::recordManual(const Media &media, const int episode,
+                                                                        const RecognitionStatus status,
+                                                                        QString &error) {
+    const auto at = now();
+    // Each edit is its own "session"; the episode column requires >= 1, so a removal at 0 stores 1.
+    const auto sessionId = PlaybackSessionId::create(
+        ManualPluginId, QStringLiteral("%1-%2").arg(media.Id).arg(at.toMSecsSinceEpoch()));
+    const auto candidate = EpisodeCandidate::create(media.Name, media.Id, std::nullopt, qMax(1, episode), 1.0);
+    if (!sessionId || !candidate) {
+        error = QStringLiteral("Manual change of media %1 cannot be recorded.").arg(media.Id);
+        return std::nullopt;
+    }
+    auto record = RecognitionRecord::create({.id = *sessionId, .userId = QStringLiteral("local")}, *candidate, at);
+    record.transitionTo(status, at);
+    // The edit queued its AniList change; RecognitionSyncFeedback settles this when it is sent.
+    record.markSyncPending(at);
+    if (!repository_.insert(record, error)) return std::nullopt;
+    return record;
+}
+
+bool RecognitionHistoryService::findAwaitingRemovalSync(const int mediaId, QList<RecognitionRecord> &records,
+                                                        QString &error) {
+    records.clear();
+    QList<RecognitionRecord> found;
+    if (!repository_.find({.status = RecognitionStatus::Removed, .mediaId = mediaId, .awaitingSync = true,
+                           .limit = AwaitingSyncLimit},
+                          found, error)) {
+        return false;
+    }
+    for (auto &record : found) {
+        const bool awaiting = record.syncState() == RecognitionSyncState::Pending
+            || record.syncState() == RecognitionSyncState::Failed;
+        if (record.effectiveCandidate().mediaId() == mediaId && awaiting) records.append(std::move(record));
+    }
+    return true;
+}
+
 bool RecognitionHistoryService::list(const RecognitionHistoryFilter &filter, const RecognitionPage &page,
                                      QList<RecognitionRecord> &records, QString &error) {
     return repository_.find({.status = filter.status, .pluginId = filter.pluginId, .beforeId = page.beforeId,

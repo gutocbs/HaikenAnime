@@ -160,6 +160,9 @@ private slots:
     void recoveryTurnsInterruptedPendingRecordsUncertain();
     void recoveryTurnsUnqueuedSyncPendingRecordsUncertain();
     void recoveryKeepsQueuedSyncPendingRecords();
+    void manualProgressIncreaseIsRecordedAsMarkedWatchedByManual();
+    void manualEditWithoutMoreProgressRecordsNothing();
+    void manualRemovalIsRecordedAndAwaitsItsSync();
 
 private:
     FakeHistoryRepository repository;
@@ -480,6 +483,49 @@ void RecognitionHistoryServiceTests::recoveryKeepsQueuedSyncPendingRecords() {
 
     QCOMPARE(repository.records.first().status(), RecognitionStatus::MarkedWatched);
     QCOMPARE(repository.records.first().syncState(), RecognitionSyncState::Pending);
+}
+
+void RecognitionHistoryServiceTests::manualProgressIncreaseIsRecordedAsMarkedWatchedByManual() {
+    QString error;
+    auto updated = media(5);
+    updated.Name = QStringLiteral("One Piece");
+
+    const auto record = service->recordManualProgress(media(3), updated, error);
+
+    QVERIFY2(record.has_value(), qPrintable(error));
+    QCOMPARE(record->sessionId().pluginId(), ManualPluginId);
+    QCOMPARE(record->status(), RecognitionStatus::MarkedWatched);
+    QCOMPARE(record->candidate().episode(), 5);
+    QCOMPARE(record->candidate().mediaId(), std::optional<int>(21));
+    QCOMPARE(record->syncState(), RecognitionSyncState::Pending);
+    QCOMPARE(repository.records.size(), 1);
+    // The edit already saved the progress: the history never applies it again.
+    QVERIFY(progress.applied.isEmpty());
+}
+
+void RecognitionHistoryServiceTests::manualEditWithoutMoreProgressRecordsNothing() {
+    QString error;
+
+    QVERIFY(!service->recordManualProgress(media(5), media(5), error).has_value());
+    QVERIFY(!service->recordManualProgress(media(5), media(2), error).has_value());
+
+    QVERIFY(error.isEmpty());
+    QVERIFY(repository.records.isEmpty());
+}
+
+void RecognitionHistoryServiceTests::manualRemovalIsRecordedAndAwaitsItsSync() {
+    QString error;
+
+    const auto record = service->recordManualRemoval(media(0), error);
+
+    QVERIFY2(record.has_value(), qPrintable(error));
+    QCOMPARE(record->sessionId().pluginId(), ManualPluginId);
+    QCOMPARE(record->status(), RecognitionStatus::Removed);
+    QCOMPARE(record->candidate().episode(), 1);
+    QList<RecognitionRecord> awaiting;
+    QVERIFY2(service->findAwaitingRemovalSync(21, awaiting, error), qPrintable(error));
+    QCOMPARE(awaiting.size(), 1);
+    QCOMPARE(awaiting.first().id(), record->id());
 }
 
 QTEST_MAIN(RecognitionHistoryServiceTests)

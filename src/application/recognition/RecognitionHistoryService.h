@@ -12,6 +12,9 @@
 #include "IRecognitionProgressWriter.h"
 #include "ProgressDecisionService.h"
 
+/// Player shown for history entries made by manual edits (Home and seasonal catalog).
+inline const QString ManualPluginId = QStringLiteral("manual");
+
 struct RecognitionHistoryFilter final {
     std::optional<RecognitionStatus> status;
     QString pluginId;
@@ -33,6 +36,15 @@ public:
     /// existing record and never applies progress again.
     std::optional<RecognitionRecord> record(const PlaybackSession &session, const EpisodeCandidate &candidate,
                                             const ProgressDecision &decision, QString &error);
+
+    /// Records a manual edit that raised the progress as "marked watched" by ManualPluginId, awaiting its
+    /// AniList sync. Edits that do not raise the progress record nothing (std::nullopt with an empty error).
+    std::optional<RecognitionRecord> recordManualProgress(const Media &previous, const Media &updated,
+                                                          QString &error);
+    /// Records a manual removal from the personal list, awaiting its AniList sync.
+    std::optional<RecognitionRecord> recordManualRemoval(const Media &removed, QString &error);
+    /// Removed records of mediaId whose AniList sync is pending or failed.
+    bool findAwaitingRemovalSync(int mediaId, QList<RecognitionRecord> &records, QString &error);
 
     bool list(const RecognitionHistoryFilter &filter, const RecognitionPage &page,
               QList<RecognitionRecord> &records, QString &error);
@@ -56,6 +68,8 @@ private:
     [[nodiscard]] QDateTime now() const;
     std::optional<RecognitionRecord> load(qint64 recordId, QString &error);
     bool applyProgress(RecognitionRecord &record, const ProgressDecision &decision);
+    std::optional<RecognitionRecord> recordManual(const Media &media, int episode, RecognitionStatus status,
+                                                  QString &error);
 
     IRecognitionHistoryRepository &repository_;
     IRecognitionProgressWriter &progress_;
