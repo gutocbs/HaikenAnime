@@ -37,8 +37,8 @@ public:
     std::optional<RecognitionRecord> record(const PlaybackSession &session, const EpisodeCandidate &candidate,
                                             const ProgressDecision &decision, QString &error);
 
-    /// Records a manual edit that raised the progress as "marked watched" by ManualPluginId, awaiting its
-    /// AniList sync. Edits that do not raise the progress record nothing (std::nullopt with an empty error).
+    /// Records a manual progress edit by ManualPluginId, awaiting its AniList sync: a raise as MarkedWatched,
+    /// a decrease as ProgressReduced. Edits that keep the progress record nothing (std::nullopt, empty error).
     std::optional<RecognitionRecord> recordManualProgress(const Media &previous, const Media &updated,
                                                           QString &error);
     /// Records a manual removal from the personal list, awaiting its AniList sync.
@@ -61,7 +61,8 @@ public:
     /// Durable, visible AniList failure. Local progress stays as it is.
     bool markSyncFailure(qint64 recordId, const QString &safeError, QString &error);
     bool markSynced(qint64 recordId, QString &error);
-    /// MarkedWatched/Corrected records whose AniList sync is pending or failed for mediaId, up to an episode.
+    /// Records whose AniList sync is pending or failed for mediaId and that a sent progress settles:
+    /// MarkedWatched/Corrected up to an episode, and every ProgressReduced (compaction may change the value).
     bool findAwaitingSync(int mediaId, int upToEpisode, QList<RecognitionRecord> &records, QString &error);
 
 private:

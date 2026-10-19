@@ -64,8 +64,10 @@ std::optional<RecognitionRecord> RecognitionHistoryService::recordManualProgress
                                                                                 const Media &updated,
                                                                                 QString &error) {
     error.clear();
-    if (updated.ConsumedChapters <= previous.ConsumedChapters) return std::nullopt;
-    return recordManual(updated, updated.ConsumedChapters, RecognitionStatus::MarkedWatched, error);
+    if (updated.ConsumedChapters == previous.ConsumedChapters) return std::nullopt;
+    const auto status = updated.ConsumedChapters > previous.ConsumedChapters ? RecognitionStatus::MarkedWatched
+                                                                              : RecognitionStatus::ProgressReduced;
+    return recordManual(updated, updated.ConsumedChapters, status, error);
 }
 
 std::optional<RecognitionRecord> RecognitionHistoryService::recordManualRemoval(const Media &removed, QString &error) {
@@ -169,6 +171,21 @@ bool RecognitionHistoryService::findAwaitingSync(const int mediaId, const int up
     }
     for (auto &record : found) {
         if (record.status() == RecognitionStatus::MarkedWatched || record.status() == RecognitionStatus::Corrected) {
+            records.append(std::move(record));
+        }
+    }
+    // A reduction travels in any later progress of the media: the outbox keeps only the latest value.
+    QList<RecognitionRecord> reductions;
+    if (!repository_.find({.status = RecognitionStatus::ProgressReduced, .mediaId = mediaId, .awaitingSync = true,
+                           .limit = AwaitingSyncLimit},
+                          reductions, error)) {
+        return false;
+    }
+    for (auto &record : reductions) {
+        const bool awaiting = record.syncState() == RecognitionSyncState::Pending
+            || record.syncState() == RecognitionSyncState::Failed;
+        if (record.status() == RecognitionStatus::ProgressReduced && record.effectiveCandidate().mediaId() == mediaId
+            && awaiting) {
             records.append(std::move(record));
         }
     }

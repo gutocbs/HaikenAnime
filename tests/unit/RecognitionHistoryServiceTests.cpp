@@ -161,7 +161,8 @@ private slots:
     void recoveryTurnsUnqueuedSyncPendingRecordsUncertain();
     void recoveryKeepsQueuedSyncPendingRecords();
     void manualProgressIncreaseIsRecordedAsMarkedWatchedByManual();
-    void manualEditWithoutMoreProgressRecordsNothing();
+    void manualEditWithTheSameProgressRecordsNothing();
+    void manualProgressDecreaseIsRecordedAsReduced();
     void manualRemovalIsRecordedAndAwaitsItsSync();
 
 private:
@@ -503,14 +504,30 @@ void RecognitionHistoryServiceTests::manualProgressIncreaseIsRecordedAsMarkedWat
     QVERIFY(progress.applied.isEmpty());
 }
 
-void RecognitionHistoryServiceTests::manualEditWithoutMoreProgressRecordsNothing() {
+void RecognitionHistoryServiceTests::manualEditWithTheSameProgressRecordsNothing() {
     QString error;
 
     QVERIFY(!service->recordManualProgress(media(5), media(5), error).has_value());
-    QVERIFY(!service->recordManualProgress(media(5), media(2), error).has_value());
 
     QVERIFY(error.isEmpty());
     QVERIFY(repository.records.isEmpty());
+}
+
+void RecognitionHistoryServiceTests::manualProgressDecreaseIsRecordedAsReduced() {
+    QString error;
+
+    const auto reduced = service->recordManualProgress(media(5), media(2), error);
+    const auto reset = service->recordManualProgress(media(3), media(0), error);
+
+    QVERIFY2(reduced.has_value(), qPrintable(error));
+    QCOMPARE(reduced->sessionId().pluginId(), ManualPluginId);
+    QCOMPARE(reduced->status(), RecognitionStatus::ProgressReduced);
+    QCOMPARE(reduced->candidate().episode(), 2);
+    QCOMPARE(reduced->syncState(), RecognitionSyncState::Pending);
+    // The episode column requires >= 1, so a reset to 0 stores 1.
+    QVERIFY2(reset.has_value(), qPrintable(error));
+    QCOMPARE(reset->candidate().episode(), 1);
+    QVERIFY(progress.applied.isEmpty());
 }
 
 void RecognitionHistoryServiceTests::manualRemovalIsRecordedAndAwaitsItsSync() {

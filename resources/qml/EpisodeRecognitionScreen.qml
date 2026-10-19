@@ -21,6 +21,7 @@ ColumnLayout {
         case "ignored": return qsTr("Ignorado")
         case "corrected": return qsTr("Corrigido")
         case "removed": return qsTr("Removido da lista")
+        case "progress-reduced": return qsTr("Progresso reduzido")
         }
         return key
     }
@@ -122,8 +123,8 @@ ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 3
                     Label {
-                        // A removal concerns the whole entry, not an episode.
-                        text: row.statusKey === "removed" ? row.title
+                        // A removal or a reduction concerns the whole entry, not an episode.
+                        text: row.statusKey === "removed" || row.statusKey === "progress-reduced" ? row.title
                               : row.season !== undefined && row.season !== null
                               ? qsTr("%1 — T%2 E%3").arg(row.title).arg(row.season).arg(row.episode)
                               : qsTr("%1 — Episódio %2").arg(row.title).arg(row.episode)

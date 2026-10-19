@@ -147,6 +147,7 @@ private slots:
     void sentDeletionMarksManualRemovalSynced();
     void failedDeletionMarksManualRemovalFailed();
     void deletionAndProgressSettleOnlyTheirOwnRecords();
+    void sentProgressSettlesManualReductionsOfTheMedia();
 
 private:
     std::unique_ptr<FakeHistoryRepository> repository;
@@ -395,6 +396,25 @@ void RecognitionSyncFeedbackTests::deletionAndProgressSettleOnlyTheirOwnRecords(
     // Assert: the deletion settled only the removal and the progress only the watched episode.
     QCOMPARE(repository->byId(watched).syncState(), RecognitionSyncState::Synced);
     QCOMPARE(repository->byId(removal).syncState(), RecognitionSyncState::Failed);
+}
+
+void RecognitionSyncFeedbackTests::sentProgressSettlesManualReductionsOfTheMedia() {
+    // Arrange: progress lowered from 5 to 2, then raised to 3 before the drain (the outbox sends only 3).
+    QString error;
+    const auto reduced = history->recordManualProgress(media(5), media(2), error);
+    QVERIFY2(reduced.has_value(), qPrintable(error));
+    auto other = media(4);
+    other.Id = 999;
+    const auto otherMedia = history->recordManualProgress(media(5), other, error);
+    QVERIFY2(otherMedia.has_value(), qPrintable(error));
+    RecognitionSyncFeedback feedback(*history);
+
+    // Act
+    feedback.changesSent({progressChange(3)});
+
+    // Assert
+    QCOMPARE(repository->byId(reduced->id()).syncState(), RecognitionSyncState::Synced);
+    QCOMPARE(repository->byId(otherMedia->id()).syncState(), RecognitionSyncState::Pending);
 }
 
 QTEST_MAIN(RecognitionSyncFeedbackTests)
