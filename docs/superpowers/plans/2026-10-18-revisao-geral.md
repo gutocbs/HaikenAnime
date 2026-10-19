@@ -254,5 +254,5 @@ Perguntas em que há mais de um caminho razoável.
 | 9 | ☑ [report](../reviews/2026-10-18-parte-09-reconhecimento.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
 | 10 | ☑ [report](../reviews/2026-10-18-parte-10-controllers.md) | ☑ | ☑ validada: `ctest` verde, smoke OK |
 | 11 | ☑ [report](../reviews/2026-10-18-parte-11-qml-traducoes.md) | ☑ | ☑ validada: `ctest` 81/81 (P11-05 foi para a Parte 13) |
-| 12 | ☐ | ☐ | ☐ |
+| 12 | ☑ [report](../reviews/2026-10-18-parte-12-composicao-entrada.md) | ☐ | ☐ |
 | 13 | ☐ | ☐ | ☐ |
