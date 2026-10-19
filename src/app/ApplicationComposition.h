@@ -73,6 +73,7 @@ struct ApplicationContext final {
     std::unique_ptr<ILocalFileOpener> localFileOpener;
     QString initializationError;
     bool startupLibraryScanScheduled = false;
+    bool servicesShutdown = false;
     // Declared last so destruction joins worker threads before other dependencies.
     std::unique_ptr<LocalLibraryRecognitionCoordinator> localLibraryRecognition;
     std::unique_ptr<LocalLibraryScanCoordinator> localLibraryScan;
