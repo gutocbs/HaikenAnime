@@ -23,6 +23,7 @@ class SqliteRepositoryTests : public QObject {
 
 private slots:
     void mediaRoundTripPreservesAlternativeNames();
+    void failedUpsertPreparationLeavesNoOpenTransaction();
     void mediaRoundTripPreservesExtendedMetadata();
     void extendedMetadataUpsertPreservesUserEditedFields();
     void personalListUpdatePersistsEditorFieldsWithoutOverwritingCatalogMetadata();
@@ -77,6 +78,27 @@ void SqliteRepositoryTests::mediaRoundTripPreservesAlternativeNames() {
     QCOMPARE(actual.first().CoverMediumUrl, expected.CoverMediumUrl);
     QCOMPARE(actual.first().CoverLargeUrl, expected.CoverLargeUrl);
     QCOMPARE(actual.first().CoverExtraLargeUrl, expected.CoverExtraLargeUrl);
+}
+
+void SqliteRepositoryTests::failedUpsertPreparationLeavesNoOpenTransaction() {
+    QTemporaryDir directory;
+    SqliteDatabase database(directory.filePath(QStringLiteral("library.sqlite")));
+    QVERIFY(database.open());
+    QVERIFY(database.migrate());
+    QSqlQuery query(database.connection());
+    // Without the media table the upsert statement cannot be prepared.
+    QVERIFY(query.exec(QStringLiteral("ALTER TABLE media RENAME TO media_moved")));
+    SqliteMediaRepository repository(database.connection());
+    Media media;
+    media.Id = 1;
+    media.Name = QStringLiteral("Frieren");
+    QString error;
+
+    QVERIFY(!repository.upsert({media}, error));
+
+    QVERIFY(!error.isEmpty());
+    QVERIFY2(database.connection().transaction(), "the failed upsert left its transaction open");
+    QVERIFY(database.connection().rollback());
 }
 
 void SqliteRepositoryTests::mediaRoundTripPreservesExtendedMetadata() {

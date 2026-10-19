@@ -66,6 +66,7 @@ bool SqliteMediaRepository::upsert(const QList<Media> &media, QString &error) {
     QSqlQuery query(database_);
     if (!query.prepare(upsertQuery)) {
         error = query.lastError().text();
+        database_.rollback();
         return false;
     }
 
