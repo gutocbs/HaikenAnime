@@ -326,6 +326,8 @@ haiken_add_test(SynchronizationStatusControllerTests)
 haiken_add_test(QmlStructureTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
 haiken_add_test(QmlRecognitionStructureTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
 haiken_add_test(QmlScreensLoadTests QT Gui Qml Quick QuickControls2 SOURCE_DIR)
+# The screens point at the placeholder cover inside the app's QML module; give the test the same path.
+qt_add_resources(QmlScreensLoadTests qml_screens_placeholder PREFIX "/qt/qml/HaikenAnime" FILES resources/images/cover-placeholder.svg)
 haiken_add_test(AdaptiveSyncCoordinatorTests MIGRATIONS)
 haiken_add_test(AdaptiveSyncRuntimeTests)
 haiken_add_test(LocalLibraryScanCoordinatorTests)
