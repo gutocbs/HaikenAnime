@@ -7,8 +7,15 @@ padrões de desenvolvimento e de teste. Leia a seção da área antes de mudá-l
 
 ## Como trabalhar
 
+- **Toolchain Windows obrigatória:** use o Qt MinGW 6.8.3 com o MinGW distribuído pelo Qt
+  (`C:/Qt/6.8.3/mingw_64` + `C:/Qt/Tools/mingw1310_64`). Não misture `mingw_64` com o gerador
+  Visual Studio/MSVC, nem use `msvc2022_64` neste checkout. A configuração recomendada usa Ninja,
+  `gcc.exe` e `g++.exe` explicitamente:
+  `cmake -S . -B build-mingw -G Ninja -DCMAKE_C_COMPILER=C:/Qt/Tools/mingw1310_64/bin/gcc.exe`
+  `-DCMAKE_CXX_COMPILER=C:/Qt/Tools/mingw1310_64/bin/g++.exe -DCMAKE_PREFIX_PATH=C:/Qt/6.8.3/mingw_64`
+  `-DBUILD_TESTING=ON -DCMAKE_BUILD_TYPE=Debug`.
 - **Não rode build nem `ctest`.** O build é lento: quando precisar compilar ou testar, pare e peça ao revisor.
-  Ele roda `scripts/validate.ps1` (build MSVC com testes + `ctest`; `-Tests <regex>` filtra suítes) e
+  Ele roda `scripts/validate.ps1` (`-Tests <regex>` filtra suítes) e
   informa o resultado. Os logs ficam em
   `cmake-build-validation/Testing/Temporary/LastTest.log` e podem ser lidos.
 - **Um item = um commit pequeno** (`refactor:`, `fix:`, `test:`, `docs:`, `build:`), adicionando os arquivos
