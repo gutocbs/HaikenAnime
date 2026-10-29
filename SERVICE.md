@@ -320,6 +320,8 @@ mídia) → `PlaybackObservationService` + `RecognitionPolicy` (reprodução con
   `PluginSettingsService` valida e persiste em `plugin_setting` (segredos no Credential Manager via
   `WindowsPluginSecretStore`); `applyRecognitionSettings` empurra os valores para o runtime.
 - `ActiveSessionRegistry` mantém as sessões em andamento, exibidas por `NowWatchingController`.
+- Quando uma capa já solicitada pela Home fica disponível no cache, a composição atualiza também o
+  `NowWatchingController`, para que uma sessão aberta não permaneça mostrando o placeholder.
 - Uma sessão encerrada antes do tempo mínimo não gera registro.
 - `EpisodeRecognitionController` + `RecognitionListModel` exibem e apagam o histórico (tela "Histórico de
   atualizações"; registros manuais aparecem com "Manual" no lugar do player).

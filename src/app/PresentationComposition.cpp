@@ -278,6 +278,11 @@ std::unique_ptr<PresentationContext> CreatePresentationContext(ApplicationContex
         nowWatchingController->SetCoverSource([&homeController](const int mediaId) {
             return homeController.fullMediaModel()->CoverSource(mediaId);
         });
+        if (context.coverCoordinator) {
+            QObject::connect(context.coverCoordinator.get(), &CoverDownloadCoordinator::CoverAvailable,
+                             nowWatchingController.get(),
+                             [controller = nowWatchingController.get()](int) { controller->Refresh(); });
+        }
         QObject::connect(&settingsController, &SettingsController::preferencesApplied, nowWatchingController.get(),
                          [controller = nowWatchingController.get()](const UserPreferences &preferences) {
                              controller->ConfigurePreferredTitle(preferences.preferredTitleKey);

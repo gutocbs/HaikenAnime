@@ -9,6 +9,8 @@
 #include "../../src/app/ApplicationShutdown.h"
 #include "../../src/app/PresentationComposition.h"
 #include "../../src/application/recognition/RecognitionHistoryService.h"
+#include "../../src/domain/recognition/EpisodeCandidate.h"
+#include "../../src/domain/recognition/PlaybackSession.h"
 
 namespace {
 ApplicationCompositionOptions OptionsFor(const QTemporaryDir &directory) {
@@ -31,6 +33,7 @@ private slots:
     void homeSortChangeIsStoredInTheUserPreferences();
     void completedUserListSynchronizationReloadsTheHome();
     void manualHomeEditsAreRecordedInTheHistory();
+    void nowWatchingRefreshesWhenAHomeCoverBecomesAvailable();
     void exposesEveryControllerUnderItsQmlName();
     void shutdownStopsTheServicesOnlyOnce();
 };
@@ -109,6 +112,44 @@ void PresentationCompositionTests::manualHomeEditsAreRecordedInTheHistory() {
     QList<RecognitionRecord> removals;
     QVERIFY2(history.findAwaitingRemovalSync(media.Id, removals, error), qPrintable(error));
     QCOMPARE(removals.size(), 1);
+}
+
+void PresentationCompositionTests::nowWatchingRefreshesWhenAHomeCoverBecomesAvailable() {
+    QTemporaryDir directory;
+    auto context = createApplicationContext(OptionsFor(directory));
+    QVERIFY2(context.isReady(), qPrintable(context.initializationError));
+    QVERIFY(context.recognition && context.recognition->recognition);
+    AniListOAuthCallbackReceiver receiver(ReceiverName());
+    QObject lifetime;
+    const auto presentation = CreatePresentationContext(context, receiver, lifetime);
+
+    Media media;
+    media.Id = 7;
+    media.Name = QStringLiteral("Frieren");
+    media.Type = MediaType::Anime;
+    media.ListStatus = UserListStatus::Current;
+    media.CoverLargeUrl = QStringLiteral("https://img/frieren.jpg");
+    QString error;
+    QVERIFY2(context.mediaRepository->upsert({media}, error), qPrintable(error));
+    presentation->home->Reload();
+
+    const auto sessionId = PlaybackSessionId::create(QStringLiteral("plex"), QStringLiteral("cover-late"));
+    QVERIFY(sessionId.has_value());
+    const auto candidate = EpisodeCandidate::create(QStringLiteral("Frieren"), 7, 1, 1, 1.0);
+    QVERIFY(candidate.has_value());
+    const PlaybackSession session{.id = *sessionId,
+                                  .userId = QStringLiteral("user"),
+                                  .deviceId = QStringLiteral("device"),
+                                  .startedAt = QDateTime::currentDateTimeUtc()};
+
+    context.recognition->recognition->activeSessions().start(session, *candidate);
+    presentation->nowWatching->Refresh();
+    QVERIFY(!presentation->nowWatching->current().contains(QStringLiteral("coverUrl")));
+
+    emit context.coverCoordinator->CoverAvailable(7, QStringLiteral("C:/covers/frieren.jpg"));
+
+    QCOMPARE(presentation->nowWatching->current().value(QStringLiteral("coverUrl")).toString(),
+             QStringLiteral("file:///C:/covers/frieren.jpg"));
 }
 
 void PresentationCompositionTests::exposesEveryControllerUnderItsQmlName() {
