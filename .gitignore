@@ -38,3 +38,4 @@ cmake*/
 /.superpowers
 /docs/superpowers
 /dist
+/build*
